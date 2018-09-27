@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dateutils import relativedelta
 import pandas as pd
+import logging
 
 
 class TimeseriesModel(ABC):
@@ -85,30 +86,47 @@ class TimeseriesModel(ABC):
 
         df_to_use = df[[time_column, target_column]]
 
+        def _update_pointer_and_val_set(old_pointer, nr_steps=0):
+            new_pointer = self._add_time_delta_to_datetime(old_pointer, nr_steps, stepduration_str)
+            new_val_df = df_to_use[df_to_use[time_column] > new_pointer].iloc[:n, :]
+            return new_pointer, new_val_df
+
+        current_pointer, current_val_df = _update_pointer_and_val_set(start_dt)
         results = []
-        current_pointer = start_dt
-        val_df = df_to_use[df_to_use[time_column] > current_pointer].iloc[:n, :]
 
-        while len(val_df) == n:
+        while len(current_val_df) == n:
             train_df = df_to_use[df_to_use[time_column] <= current_pointer]
-            self.fit(train_df, target_column, time_column, stepduration_str)
-            preds = list(self.predict(n=n)['yhat'])
-            self.__init__()  # re-init model, as fit() stores some state
-            y_true = list(val_df[target_column])
 
-            if predict_nth_only:
-                # We only care about the last point
-                preds = list([preds[-1]])
-                y_true = list([y_true[-1]])
+            if len(train_df) == 0:
+                logging.warning('Skipping validation set starting on {}, as it yields empty training set.'
+                                .format(current_pointer))
+                current_pointer, current_val_df = _update_pointer_and_val_set(current_pointer, nr_steps_iter)
+                continue
 
-            results.append(eval_fun(y_true, preds))
+            try:
+                self.fit(train_df, target_column, time_column, stepduration_str)
+                preds = list(self.predict(n=n)['yhat'])
+                self.__init__()  # re-init model, as fit() stores some state
 
-            # update pointer and validation set
-            current_pointer = self._add_time_delta_to_datetime(current_pointer, nr_steps_iter, stepduration_str)
-            val_df = df_to_use[df_to_use[time_column] > current_pointer].iloc[:n, :]
+                y_true = list(current_val_df[target_column])
 
-        # if len(results) == 0:
-        #     logging.warning('Empty backtesting results: did you specify datetimes allowing at least 1 validation set?')
+                if predict_nth_only:
+                    # We only care about the last point
+                    preds = list([preds[-1]])
+                    y_true = list([y_true[-1]])
+
+                results.append(eval_fun(y_true, preds))
+            except:
+                # TODO: proper handling
+                logging.warning('Something went wrong when training, for validation set starting on {}'
+                                .format(current_pointer))
+            finally:
+                # update pointer and validation set
+                current_pointer, current_val_df = _update_pointer_and_val_set(current_pointer, nr_steps_iter)
+
+        if len(results) == 0:
+            logging.warning('Empty backtesting results: did you specify datetimes allowing at least 1 validation set?')
+
         return results
 
     def _add_time_delta_to_datetime(self, np_dt, i, stepduration_str):
