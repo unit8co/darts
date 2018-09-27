@@ -12,6 +12,9 @@ class Arima(TimeseriesModel):
         self.q = q
         self.model = None
 
+    def __str__(self):
+        return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
+
     def fit(self, df, target_column, time_column=None, stepduration_str=None):
         super(Arima, self).fit(df, target_column, time_column, stepduration_str)
         values = df[target_column].values
@@ -51,6 +54,9 @@ class AutoArima(TimeseriesModel):
         self.trace = trace
         self.suppress_warnings = suppress_warnings
         self.model = None
+
+    def __str__(self):
+        return 'auto-ARIMA'
 
     def fit(self, df, target_column, time_column=None, periodicity_str=None):
         super(AutoArima, self).fit(df, target_column, time_column, periodicity_str)
