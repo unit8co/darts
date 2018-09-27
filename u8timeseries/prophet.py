@@ -10,9 +10,9 @@ class Prophet(TimeseriesModel):
         super(Prophet, self).__init__()
         self.model = None
 
-    def fit(self, df, target_column, time_column, periodicity_str):
+    def fit(self, df, target_column, time_column, stepduration_str):
         assert time_column is not None, 'Prophet model requires a time column'
-        super(Prophet, self).fit(df, target_column, time_column, periodicity_str)
+        super(Prophet, self).fit(df, target_column, time_column, stepduration_str)
 
         values = df[target_column].values
 

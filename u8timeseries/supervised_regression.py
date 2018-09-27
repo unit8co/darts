@@ -13,6 +13,9 @@ class SupervisedRegression(SupervisedTimeSeriesModel):
         self.model = model
 
     def fit(self, df, target_column, feature_columns=None):
+
+        # TODO: encode feature columns
+
         if feature_columns is None:
             Xtrain = df.drop([target_column], axis=1)
         else:

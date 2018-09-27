@@ -12,8 +12,8 @@ class Arima(TimeseriesModel):
         self.q = q
         self.model = None
 
-    def fit(self, df, target_column, time_column=None, periodicity_str=None):
-        super(Arima, self).fit(df, target_column, time_column, periodicity_str)
+    def fit(self, df, target_column, time_column=None, stepduration_str=None):
+        super(Arima, self).fit(df, target_column, time_column, stepduration_str)
         values = df[target_column].values
 
         m = ARIMA(values, order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))

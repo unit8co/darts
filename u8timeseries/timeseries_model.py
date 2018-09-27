@@ -10,31 +10,36 @@ class TimeseriesModel(ABC):
 
     @abstractmethod
     def __init__(self):
-        self.allowed_periodicity_str = {'second', 'minute', 'hour', 'day', 'week', 'month', 'year'}
+        self.allowed_stepduration_str = {'second', 'minute', 'hour', 'day', 'week', 'month', 'year'}
 
         # Stores training date information (if provided):
         self.training_dates = None
         self.time_column = None
-        self.periodicity_str = None
+        self.stepduration_str = None
+
+        # state
+        self.fit_called = False
 
     @abstractmethod
-    def fit(self, df, target_column, time_column, periodicity_str):
+    def fit(self, df, target_column, time_column, stepduration_str):
         """
         :param df: A Pandas DataFrame that contains at least one column with time series values
         :param target_column: the column containing time series values
         :param time_column: optionally, the column containing corresponding timestamps (can be None)
-        :param periodicity_str: if [time_column] is provided, this must provide periodicty among following values:
-               {'second', 'minute', 'hour', 'day', 'week', 'month', 'year'}
+        :param stepduration_str: if [time_column] is provided, this must provide the duration of time steps,
+               among following values: {'second', 'minute', 'hour', 'day', 'week', 'month', 'year'}
 
         TODO: Interpolate missing values
         """
         if time_column is not None:
-            assert periodicity_str in self.allowed_periodicity_str, \
-                   'periodicity_str argument must be in {}'.format(self.allowed_periodicity_str)
+            assert stepduration_str in self.allowed_stepduration_str, \
+                   'periodicity_str argument must be in {}'.format(self.allowed_stepduration_str)
 
             self.time_column = time_column
             self.training_dates = df[time_column].values
-            self.periodicity_str = periodicity_str
+            self.stepduration_str = stepduration_str
+
+        self.fit_called = True
 
     @abstractmethod
     def predict(self, n):
@@ -45,7 +50,37 @@ class TimeseriesModel(ABC):
                  - y_lower (optional): lower confidence bound
                  - y_upper (optional): upper confidence bound
         """
-        pass
+        assert self.fit_called, 'predict() method called before fit()'
+
+    def backtest(self, df, target_column, time_column, stepduration_str,
+                 start_dt, n, eval_fun, nr_steps_iter=1, point_prediction=False):
+        """
+        Performs backtesting and returns the outputs of a user-provided evaluation function.
+
+        This function builds several validation sets, by iterating a pointer over the dataframe,
+        starting at [start_dt] and every [nr_steps_iter] time slot. The validation sets are the
+        [n] data points after the pointer. The function trains the model on the train set and emits
+        predictions for the [n] points of the validation set. It then calls [eval_fun()] on the
+        predicted values (and the targets), and returns a list containing the outputs of [eval_fun()]
+        on all validation sets.
+
+        :param df: a Pandas DataFrame that contains at least one column with time series values
+        :param target_column: the column containing time series values
+        :param time_column: *mandatory for backtesting*, the column containing corresponding timestamps
+        :param stepduration_str: this must provide the duration of time steps,
+               among following values: {'second', 'minute', 'hour', 'day', 'week', 'month', 'year'}
+        :param start_dt: the datetime corresponding to the beginning of the first validation set
+        :param n: number of points in each validation sets
+        :param eval_fun: a function of following form: eval_fun(true_values, predicted_values),
+                         which returns some evaluation of the prediction (typically, an error value)
+        :param nr_steps_iter: the number of time steps to elapse between each validation set
+        :param point_prediction: If true, evaluates the predictions only on the n-th point of each validation set
+
+        :return: A list containing the outputs of [eval_fun()] on all validation sets.
+        """
+
+        # TODO: at some point we can get rid of this requirement
+        assert time_column is not None, 'argument "time_column" must be provided for backtesting'
 
     def _get_new_dates(self, n):
         """
@@ -64,7 +99,7 @@ class TimeseriesModel(ABC):
                 'month': lambda dt: dt + relativedelta(months=+i),
                 'year': lambda dt: dt + relativedelta(years=+i)
             }
-            return switch[self.periodicity_str](datet)
+            return switch[self.stepduration_str](datet)
         return [_add_time_delta_to_datetime(self.training_dates[-1], i) for i in range(1, n + 1)]
 
     def _build_forecast_df(self, point_preds, lower_bound=None, upper_bound=None):
