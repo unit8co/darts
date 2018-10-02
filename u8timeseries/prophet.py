@@ -10,9 +10,12 @@ class Prophet(TimeseriesModel):
         super(Prophet, self).__init__()
         self.model = None
 
-    def fit(self, df, target_column, time_column, periodicity_str):
+    def __str__(self):
+        return 'Prophet'
+
+    def fit(self, df, target_column, time_column, stepduration_str):
         assert time_column is not None, 'Prophet model requires a time column'
-        super(Prophet, self).fit(df, target_column, time_column, periodicity_str)
+        super(Prophet, self).fit(df, target_column, time_column, stepduration_str)
 
         values = df[target_column].values
 
@@ -21,7 +24,8 @@ class Prophet(TimeseriesModel):
             'y': values
         })
 
-        self.model = fbprophet.Prophet()
+        # TODO: user-provided seasonalities, or "auto" based on stepduration
+        self.model = fbprophet.Prophet(weekly_seasonality=False, daily_seasonality=False)
         self.model.fit(in_df)
 
     def predict(self, n):

@@ -12,7 +12,13 @@ class SupervisedRegression(SupervisedTimeSeriesModel):
         super(SupervisedRegression, self).__init__()
         self.model = model
 
+    def __str__(self):
+        return 'supervised ({})'.format(self.model)
+
     def fit(self, df, target_column, feature_columns=None):
+
+        # TODO: encode feature columns
+
         if feature_columns is None:
             Xtrain = df.drop([target_column], axis=1)
         else:

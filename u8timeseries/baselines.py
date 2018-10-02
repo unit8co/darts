@@ -12,8 +12,11 @@ class KthValueAgoBaseline(TimeseriesModel):
         self.kth_value_ago = None
         self.K = K
 
-    def fit(self, df, target_column, time_column=None, periodicity_str=None):
-        super(KthValueAgoBaseline, self).fit(df, target_column, time_column, periodicity_str)
+    def __str__(self):
+        return '{} value ago baseline'.format(self.K)
+
+    def fit(self, df, target_column, time_column=None, stepduration_str=None):
+        super(KthValueAgoBaseline, self).fit(df, target_column, time_column, stepduration_str)
         values = df[target_column].values
         assert len(values) >= self.K, 'The time series has to contain at least K={} points'.format(self.K)
         self.kth_value_ago = values[-self.K]

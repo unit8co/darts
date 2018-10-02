@@ -11,8 +11,11 @@ class ExponentialSmoothing(TimeseriesModel):
         self.seasonal_periods = seasonal_periods
         self.model = None
 
-    def fit(self, df, target_column, time_column=None, periodicity_str=None):
-        super(ExponentialSmoothing, self).fit(df, target_column, time_column, periodicity_str)
+    def __str__(self):
+        return 'Exponential smoothing'
+
+    def fit(self, df, target_column, time_column=None, stepduration_str=None):
+        super(ExponentialSmoothing, self).fit(df, target_column, time_column, stepduration_str)
         values = df[target_column].values
         self.model = hw.ExponentialSmoothing(values,
                                              trend=self.trend,
