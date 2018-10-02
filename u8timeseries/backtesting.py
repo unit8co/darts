@@ -39,7 +39,8 @@ def backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval
     def _update_pointer_and_val_set(old_pointer, nr_steps=0):
         new_pointer = add_time_delta_to_datetime(old_pointer, nr_steps, stepduration_str)
         end_val_set_dt = add_time_delta_to_datetime(new_pointer, n, stepduration_str)
-        new_val_df = df[df[time_column] > new_pointer & df[time_column] <= end_val_set_dt]
+        mask = (new_pointer < df[time_column]) & (df[time_column] <= end_val_set_dt)
+        new_val_df = df.loc[mask]
         return new_pointer, new_val_df
 
     current_pointer, current_val_df = _update_pointer_and_val_set(start_dt)
@@ -59,8 +60,8 @@ def backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval
         try:
             fit_fn(train_df, target_column, time_column, stepduration_str)
             # self.fit(train_df, target_column, time_column, stepduration_str, feature_columns)
-            preds = predict_fn(current_val_df, n)  # TODO: kind of ugly?
-            #preds = list(self.predict(current_val_df, feature_columns)['yhat'])
+            preds = predict_fn(current_val_df, n)['yhat']  # TODO: is this kind of ugly?
+            # preds = list(self.predict(current_val_df, feature_columns)['yhat'])
 
             y_true = list(current_val_df[target_column])
 
@@ -70,10 +71,10 @@ def backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval
                 y_true = list([y_true[-1]])
 
             results.append(eval_fun(y_true, preds))
-        except:
+        except Exception as e:
             # TODO: proper handling
             logging.warning('Something went wrong when training, for validation set starting on {}'
-                            .format(current_pointer))
+                            .format(current_pointer) + ':\n' + str(e))
         finally:
             # update pointer and validation set
             current_pointer, current_val_df = _update_pointer_and_val_set(current_pointer, nr_steps_iter)

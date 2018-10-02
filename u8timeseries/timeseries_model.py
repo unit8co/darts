@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
-from .utils import add_time_delta_to_datetime, get_new_dates, fill_dates_between
+from .utils import add_time_delta_to_datetime, fill_dates_between
 from .backtesting import backtest
 
 
@@ -74,6 +74,14 @@ class TimeseriesModel(ABC):
         return backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval_fun, fit_fn,
                         predict_fn, nr_steps_iter, predict_nth_only)
 
+    def _get_new_dates(self, n):
+        """
+        This function creates a list of the n new dates (after the end of training set)
+        :param n: number of dates after training set to generate
+        """
+        return [add_time_delta_to_datetime(self.training_dates[-1], i, self.stepduration_str)
+                for i in range(1, n + 1)]
+
     def _build_forecast_df(self, point_preds, lower_bound=None, upper_bound=None):
         """
         Builds the pandas DataFrame to be returned by predict() method
@@ -91,7 +99,7 @@ class TimeseriesModel(ABC):
 
         if self.time_column is not None:
             n = len(point_preds)
-            new_dates = get_new_dates(self.training_dates[-1], n, self.stepduration_str)
+            new_dates = self._get_new_dates(n)
             columns[self.time_column] = pd.Series(new_dates)
 
         if lower_bound is not None:

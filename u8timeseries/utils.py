@@ -21,14 +21,6 @@ def add_time_delta_to_datetime(np_dt, i, stepduration_str):
     return switch[stepduration_str](datet)
 
 
-def get_new_dates(last_date_before, n, stepduration_str):
-    """
-    This function creates a list of the n new dates (after the end of training set)
-    :param n: number of dates after training set to generate
-    """
-    return [add_time_delta_to_datetime(last_date_before, i, stepduration_str) for i in range(1, n + 1)]
-
-
 def fill_dates_between(first_dt, last_dt, stepduration_str):
     """
     Returns a list of all dates between [first_dt] and [last_dt] (Numpy datetimes or datetimes) included,
