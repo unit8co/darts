@@ -59,9 +59,7 @@ def backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval
 
         try:
             fit_fn(train_df, target_column, time_column, stepduration_str)
-            # self.fit(train_df, target_column, time_column, stepduration_str, feature_columns)
             preds = predict_fn(current_val_df, n)['yhat']  # TODO: is this kind of ugly?
-            # preds = list(self.predict(current_val_df, feature_columns)['yhat'])
 
             y_true = list(current_val_df[target_column])
 

@@ -155,8 +155,8 @@ class SupervisedTimeSeriesModel:
         else:
             X_train = df
 
-        # TODO: retain only numerical columns
-        X_train = X_train if feature_columns is None else X_train[feature_columns]
+        # TODO: retain only numerical columns; or support automatic encoding of categorical features as well
+        X_train = X_train if feature_columns is None else X_train.copy()[feature_columns]
 
         self.target_column = target_column
 
@@ -166,16 +166,16 @@ class SupervisedTimeSeriesModel:
             # Encode time column using the same ordinal encoding used during training;
             # possibly interpolating if some time steps are missing
             le = LabelEncoder()
-            first_dt = min(X_train[time_column])
-            last_dt = max(X_train[time_column])
+            first_dt = min(df[time_column])
+            last_dt = max(df[time_column])
             all_dts = fill_dates_between(first_dt, last_dt, stepduration_str)
-
             le.fit(all_dts)
-            self.training_dates = [pd.Timestamp(d) for d in X_train[time_column].values]
 
+            self.training_dates = [pd.Timestamp(d) for d in df[time_column].values]
             time_codes = le.transform(self.training_dates)
-            X_train[time_column + '-u8ts_codes'] = time_codes
-            X_train = X_train.drop([time_column], axis=1)
+            X_train.loc[:, time_column + '-u8ts_codes'] = time_codes
+            if self.time_column in X_train:
+                X_train = X_train.drop([time_column], axis=1)
 
             self.time_column = time_column
             self.stepduration_str = stepduration_str
@@ -197,11 +197,11 @@ class SupervisedTimeSeriesModel:
         assert self.fit_called, 'predict() method called before fit()'
 
         if self.target_column in df.columns:
-            df_to_use = df.drop([self.target_column], axis=1)
+            X_test = df.drop([self.target_column], axis=1)
         else:
-            df_to_use = df
+            X_test = df
 
-        X_test = df_to_use if feature_columns is None else df[feature_columns]
+        X_test = X_test if feature_columns is None else df.copy()[feature_columns]
 
         if self.time_column is not None:
             # Apply an ordinal encoding consistent with training set
@@ -218,13 +218,15 @@ class SupervisedTimeSeriesModel:
             all_dates = fill_dates_between(start_train_date, end_test_date, self.stepduration_str)
             le = LabelEncoder()
             le.fit(all_dates)
-            test_time_codes = le.transform([pd.Timestamp(d) for d in X_test[self.time_column].values])
-            X_test[self.time_column + '-u8ts_codes'] = test_time_codes
-            X_test = X_test.drop([self.time_column], axis=1)
+            test_time_codes = le.transform([pd.Timestamp(d) for d in df[self.time_column].values])
+            X_test.loc[:, self.time_column + '-u8ts_codes'] = test_time_codes
+
+            if self.time_column in X_test:
+                X_test = X_test.drop([self.time_column], axis=1)
 
         predictions = self.model.predict(X_test)
         to_return = df.copy()
-        to_return['yhat'] = predictions
+        to_return.loc[:, 'yhat'] = predictions
         # TODO: perhaps also confidence intervals, depending what is supported by underlying sklearn model
         return to_return
 
