@@ -149,28 +149,35 @@ class SupervisedTimeSeriesModel:
         """
 
         assert len(df) >= 2, 'Need at least 2 data points'
-        assert time_column not in feature_columns, 'feature_columns must not contain the time column'
 
-        # clear any previous state
-        self.__init__(model=self.model)
+        if target_column in df.columns:
+            X_train = df.drop([target_column], axis=1)
+        else:
+            X_train = df
 
         # TODO: retain only numerical columns
-        X_train = df.drop([target_column], axis=1) if feature_columns is None else df[feature_columns]
+        X_train = X_train if feature_columns is None else X_train[feature_columns]
+
         self.target_column = target_column
 
         if time_column is not None:
             assert_step_duration(stepduration_str)
 
-            # Encode time column using ordinal encoding; possibly interpolating if some time steps are missing
+            # Encode time column using the same ordinal encoding used during training;
+            # possibly interpolating if some time steps are missing
             le = LabelEncoder()
-            first_dt = min(df[time_column])
-            last_dt = max(df[time_column])
+            first_dt = min(X_train[time_column])
+            last_dt = max(X_train[time_column])
             all_dts = fill_dates_between(first_dt, last_dt, stepduration_str)
+
             le.fit(all_dts)
-            time_codes = le.transform(df[time_column])
+            self.training_dates = [pd.Timestamp(d) for d in X_train[time_column].values]
+
+            time_codes = le.transform(self.training_dates)
             X_train[time_column + '-u8ts_codes'] = time_codes
+            X_train = X_train.drop([time_column], axis=1)
+
             self.time_column = time_column
-            self.training_dates = X_train[time_column].values
             self.stepduration_str = stepduration_str
 
         y_train = df[target_column].values
@@ -189,9 +196,12 @@ class SupervisedTimeSeriesModel:
 
         assert self.fit_called, 'predict() method called before fit()'
 
-        if self.target_column in df:
-            logging.warning('The test dataframe contains the target column; disregarding it.')
-        X_test = df.drop([self.target_column], axis=1) if feature_columns is None else df[feature_columns]
+        if self.target_column in df.columns:
+            df_to_use = df.drop([self.target_column], axis=1)
+        else:
+            df_to_use = df
+
+        X_test = df_to_use if feature_columns is None else df[feature_columns]
 
         if self.time_column is not None:
             # Apply an ordinal encoding consistent with training set
@@ -208,8 +218,9 @@ class SupervisedTimeSeriesModel:
             all_dates = fill_dates_between(start_train_date, end_test_date, self.stepduration_str)
             le = LabelEncoder()
             le.fit(all_dates)
-            test_time_codes = le.transform(X_test[self.time_column])
+            test_time_codes = le.transform([pd.Timestamp(d) for d in X_test[self.time_column].values])
             X_test[self.time_column + '-u8ts_codes'] = test_time_codes
+            X_test = X_test.drop([self.time_column], axis=1)
 
         predictions = self.model.predict(X_test)
         to_return = df.copy()
