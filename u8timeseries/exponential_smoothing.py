@@ -19,7 +19,7 @@ class ExponentialSmoothing(TimeseriesModel):
         values = df[target_column].values
         self.model = hw.ExponentialSmoothing(values,
                                              trend=self.trend,
-                                             seasonal=self.trend,
+                                             seasonal=self.seasonal,
                                              seasonal_periods=self.seasonal_periods).fit()
 
     def predict(self, n):
