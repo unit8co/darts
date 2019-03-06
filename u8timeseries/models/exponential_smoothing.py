@@ -1,4 +1,4 @@
-from .timeseries_model import TimeseriesModel
+from u8timeseries.models.timeseries_model import TimeseriesModel
 import statsmodels.tsa.holtwinters as hw
 
 

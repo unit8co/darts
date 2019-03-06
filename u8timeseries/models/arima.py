@@ -1,4 +1,4 @@
-from .timeseries_model import TimeseriesModel
+from u8timeseries.models.timeseries_model import TimeseriesModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pyramid.arima import auto_arima
 

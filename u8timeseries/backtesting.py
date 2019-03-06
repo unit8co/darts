@@ -59,14 +59,14 @@ def backtest(df, target_column, time_column, stepduration_str, start_dt, n, eval
 
         try:
             fit_fn(train_df, target_column, time_column, stepduration_str)
-            preds = predict_fn(current_val_df, n)['yhat']  # TODO: is this kind of ugly?
+            preds = list(predict_fn(current_val_df, n)['yhat'])  # TODO: is this kind of ugly?
 
             y_true = list(current_val_df[target_column])
 
             if predict_nth_only:
                 # We only care about the last point
-                preds = list([preds[-1]])
-                y_true = list([y_true[-1]])
+                preds = [preds[-1]]
+                y_true = [y_true[-1]]
 
             results.append(eval_fun(y_true, preds))
         except Exception as e:
