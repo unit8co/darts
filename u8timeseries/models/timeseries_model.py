@@ -1,7 +1,5 @@
 
 
-
-# TODO: move?
 class SupervisedTimeSeriesModel:
 
     def __init__(self, model=RandomForestRegressor(n_estimators=100, n_jobs=-1, random_state=0)):

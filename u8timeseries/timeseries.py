@@ -13,10 +13,27 @@ class TimeSeries:
         assert len(series) >= 1, 'Time series must have at least one value'
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex'
 
-        self.series: pd.Series = series.copy()
-        self.freq = self.series.index.freq
-        self.confidence_lo = confidence_lo.copy() if confidence_lo is not None else None
-        self.confidence_hi = confidence_hi.copy() if confidence_hi is not None else None
+        self._series: pd.Series = series.sort_index()  # Sort by time
+        self._freq: str = self._series.index.inferred_freq
+
+        # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
+        assert self._freq is not None, 'Could not infer frequency. Are some dates missing?'
+
+        # TODO: handle confidence intervals same way
+        self._confidence_lo = confidence_lo.copy() if confidence_lo is not None else None
+        self._confidence_hi = confidence_hi.copy() if confidence_hi is not None else None
+
+    def get_series(self) -> pd.Series:
+        return self._series.copy()
+
+    def get_values(self) -> np.ndarray:
+        return self._series.values
+
+    def get_time_index(self) -> pd.DatetimeIndex:
+        return self._series.index
+
+    def get_freq(self) -> str:
+        return self._freq
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
@@ -48,3 +65,6 @@ class TimeSeries:
         series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
 
         return TimeSeries(series, series_lo, series_hi)
+
+    def __len__(self):
+        return len(self._series)

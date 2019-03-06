@@ -1,9 +1,10 @@
-from u8timeseries.models.timeseries_model import TimeseriesModel
+from .autoregressive_model import AutoRegressiveModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pyramid.arima import auto_arima
+from ..timeseries import TimeSeries
 
 
-class Arima(TimeseriesModel):
+class Arima(AutoRegressiveModel):
 
     def __init__(self, p=12, d=1, q=0):
         super(Arima, self).__init__()
@@ -15,19 +16,19 @@ class Arima(TimeseriesModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, df, target_column, time_column=None, stepduration_str=None):
-        super(Arima, self).fit(df, target_column, time_column, stepduration_str)
-        values = df[target_column].values
+    def fit(self, series: TimeSeries):
+        super(Arima, self).fit(series)
 
-        m = ARIMA(values, order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))
+        m = ARIMA(series.get_values(),
+                  order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
     def predict(self, n):
         forecast = self.model.forecast(steps=n)[0]
-        return self._build_forecast_df(forecast)
+        return self._build_forecast_series(forecast)
 
 
-class AutoArima(TimeseriesModel):
+class AutoArima(AutoRegressiveModel):
 
     def __init__(self, start_p=1, max_p=12, start_q=0, max_q=12, max_P=2, max_Q=2, start_P=1, start_Q=1,
                  start_d=0, max_d=2, max_D=1, max_order=30, seasonal=True, stepwise=True, approximation=False,
@@ -58,9 +59,9 @@ class AutoArima(TimeseriesModel):
     def __str__(self):
         return 'auto-ARIMA'
 
-    def fit(self, df, target_column, time_column=None, periodicity_str=None):
-        super(AutoArima, self).fit(df, target_column, time_column, periodicity_str)
-        self.model = auto_arima(df[target_column].values,
+    def fit(self, series: TimeSeries):
+        super(AutoArima, self).fit(series)
+        self.model = auto_arima(series.get_values(),
                                 start_p=self.start_p,
                                 max_p=self.max_p,
                                 start_q=self.start_q,
@@ -82,4 +83,4 @@ class AutoArima(TimeseriesModel):
 
     def predict(self, n):
         forecast = self.model.predict(n_periods=n)
-        return self._build_forecast_df(forecast)
+        return self._build_forecast_series(forecast)

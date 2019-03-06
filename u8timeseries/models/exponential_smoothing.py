@@ -1,8 +1,9 @@
-from u8timeseries.models.timeseries_model import TimeseriesModel
+from .autoregressive_model import AutoRegressiveModel
+from ..timeseries import TimeSeries
 import statsmodels.tsa.holtwinters as hw
 
 
-class ExponentialSmoothing(TimeseriesModel):
+class ExponentialSmoothing(AutoRegressiveModel):
 
     def __init__(self, trend='additive', seasonal='additive', seasonal_periods=12):
         super(ExponentialSmoothing, self).__init__()
@@ -14,14 +15,13 @@ class ExponentialSmoothing(TimeseriesModel):
     def __str__(self):
         return 'Exponential smoothing'
 
-    def fit(self, df, target_column, time_column=None, stepduration_str=None):
-        super(ExponentialSmoothing, self).fit(df, target_column, time_column, stepduration_str)
-        values = df[target_column].values
-        self.model = hw.ExponentialSmoothing(values,
+    def fit(self, series: TimeSeries):
+        super(ExponentialSmoothing, self).fit(series)
+        self.model = hw.ExponentialSmoothing(series.get_values(),
                                              trend=self.trend,
                                              seasonal=self.trend,
                                              seasonal_periods=self.seasonal_periods).fit()
 
     def predict(self, n):
         forecast = self.model.forecast(n)
-        return self._build_forecast_df(forecast)
+        return self._build_forecast_series(forecast)

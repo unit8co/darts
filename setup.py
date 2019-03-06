@@ -14,7 +14,8 @@ setup(name='u8timeseries',
           'pyramid-arima',
           'fbprophet',
           'scikit-learn',
-          'pandas'
+          'pandas',
+          'numpy'
       ],
       zip_safe=False)
 

@@ -33,13 +33,19 @@ class AutoRegressiveModel(ABC):
         """
         assert self.fit_called, 'predict() method called before fit()'
 
+    def _generate_new_dates(self, n: int):
+        """
+        Generate n new dates after the end of the training set
+        """
+        return pd.date_range(start=self.training_series.get_time_index()[-1],
+                             periods=n+1,
+                             freq=self.training_series.get_time_index().freq)[-n:]
+
     def _build_forecast_series(self, points_preds: np.ndarray,
                                lower_bound: Union[np.ndarray,None] = None,
                                upper_bound: Union[np.ndarray, None] = None):
 
-        time_index = pd.date_range(start=self.training_series.series.index[-1],
-                                   periods=len(points_preds),
-                                   freq=self.training_series.series.index.freq)
+        time_index = self._generate_new_dates(len(points_preds))
 
         return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound)
 
