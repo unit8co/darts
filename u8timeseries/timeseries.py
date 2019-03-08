@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from pandas.tseries.frequencies import to_offset
+from typing import Tuple, Union, Optional
 
 
 class TimeSeries:
@@ -23,17 +25,60 @@ class TimeSeries:
         self._confidence_lo = confidence_lo.copy() if confidence_lo is not None else None
         self._confidence_hi = confidence_hi.copy() if confidence_hi is not None else None
 
-    def get_series(self) -> pd.Series:
+    def pd_series(self) -> pd.Series:
         return self._series.copy()
 
-    def get_values(self) -> np.ndarray:
+    def start_time(self) -> pd.Timestamp:
+        return self._series.index[0]
+
+    def end_time(self) -> pd.Timestamp:
+        return self._series.index[-1]
+
+    def values(self) -> np.ndarray:
         return self._series.values
 
-    def get_time_index(self) -> pd.DatetimeIndex:
+    def time_index(self) -> pd.DatetimeIndex:
         return self._series.index
 
-    def get_freq(self) -> str:
+    def freq(self) -> pd.Timedelta:
+        return pd.to_timedelta(to_offset(self._freq))
+
+    def freq_str(self) -> str:
         return self._freq
+
+    def duration(self) -> pd.Timedelta:
+        return self._series.index[-1] - self._series.index[0]
+
+    def split(self, ts: pd.Timestamp) -> Tuple[TimeSeries, TimeSeries]:
+        """
+        Splits a time series in two, around a provided timestamp. The timestamp will be included in the first
+        of the two time series, and not in the second. The timestamp must be in the time series.
+        """
+        assert ts in self._series.index, 'The provided timestamp is not in the time series'
+
+        start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
+        return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
+
+    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp):
+        """
+        Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
+        :param start_ts:
+        :param end_ts:
+        :return:
+        """
+        assert end_ts > start_ts, 'End timestamp must be strictly after start timestamp when slicing'
+        assert end_ts >= self.start_time(), 'End timestamp must be after the start of the time series when slicing'
+        assert start_ts <= self.end_time(), 'Start timestamp must be after the end of the time series when slicing'
+
+        def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
+            if s is not None:
+                s_a = s[s.index >= start_ts]
+                return s_a[s_a.indey <= end_ts]
+            return None
+
+        return TimeSeries(_slice_not_none(self._series),
+                          _slice_not_none(self._confidence_lo),
+                          _slice_not_none(self._confidence_hi))
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
@@ -48,7 +93,7 @@ class TimeSeries:
         """
 
         times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
-        series: pd.Series = pd.Series(df[value_col], index=times)
+        series: pd.Series = pd.Series(df[value_col].values, index=times)
 
         conf_lo = pd.Series(df[conf_lo_col], index=times) if conf_lo_col is not None else None
         conf_hi = pd.Series(df[conf_hi_col], index=times) if conf_hi_col is not None else None
