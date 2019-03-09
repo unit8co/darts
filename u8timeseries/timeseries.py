@@ -59,7 +59,7 @@ class TimeSeries:
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
-    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp):
+    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> TimeSeries:
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
         :param start_ts:
@@ -79,6 +79,16 @@ class TimeSeries:
         return TimeSeries(_slice_not_none(self._series),
                           _slice_not_none(self._confidence_lo),
                           _slice_not_none(self._confidence_hi))
+
+    def slice_duration(self, start_ts: pd.Timestamp, duration: pd.Timedelta) -> TimeSeries:
+        """
+        Returns a new time series, starting later than [start_ts] (inclusive) and having duration at most [duration]
+        :param start_ts:
+        :param duration:
+        :return:
+        """
+        end_ts: pd.Timestamp = start_ts + duration
+        return self.slice(start_ts, end_ts)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
