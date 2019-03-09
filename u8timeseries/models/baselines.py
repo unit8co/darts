@@ -20,7 +20,7 @@ class KthValueAgoBaseline(AutoRegressiveModel):
     def fit(self, series: TimeSeries):
         super(KthValueAgoBaseline, self).fit(series)
         assert len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K)
-        self.kth_value_ago = series.get_values()[-self.K]
+        self.kth_value_ago = series.values()[-self.K]
 
     def predict(self, n):
         forecast = np.array([self.kth_value_ago] * n)

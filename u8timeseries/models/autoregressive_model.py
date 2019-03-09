@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-from u8timeseries.utils import add_time_delta_to_datetime, fill_dates_between
+import math
 from u8timeseries.backtesting import backtest
 from ..timeseries import TimeSeries
 from typing import Union
@@ -27,19 +27,29 @@ class AutoRegressiveModel(ABC):
         self.fit_called = True
 
     @abstractmethod
-    def predict(self, n: int):
+    def predict(self, n: int) -> TimeSeries:
         """
-        :return: A TimeSeries containing the n next points
+        :return: A TimeSeries containing the n next points, starting after the end of the training time series.
         """
-        assert self.fit_called, 'predict() method called before fit()'
+        pass
+
+    def predict_interval(self, interval: pd.Timedelta) -> TimeSeries:
+        """
+        Generates a predicted time series lasting at least [interval] and starting after the end of the
+        training time series.
+        """
+        assert self.training_series is not None, 'You must first call fit() with a well-defined TimeSeries'
+
+        nr_steps = int(math.ceil(interval / self.training_series.freq()))
+        return self.predict(nr_steps)
 
     def _generate_new_dates(self, n: int):
         """
         Generate n new dates after the end of the training set
         """
-        return pd.date_range(start=self.training_series.get_time_index()[-1],
+        return pd.date_range(start=self.training_series.time_index()[-1],
                              periods=n+1,
-                             freq=self.training_series.get_time_index().freq)[-n:]
+                             freq=self.training_series.time_index().freq)[-n:]
 
     def _build_forecast_series(self, points_preds: np.ndarray,
                                lower_bound: Union[np.ndarray,None] = None,

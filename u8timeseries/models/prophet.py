@@ -17,8 +17,8 @@ class Prophet(AutoRegressiveModel):
         super(Prophet, self).fit(series)
 
         in_df = pd.DataFrame(data={
-            'ds': series.get_time_index(),
-            'y': series.get_values()
+            'ds': series.time_index(),
+            'y': series.values()
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
@@ -27,7 +27,7 @@ class Prophet(AutoRegressiveModel):
 
     def predict(self, n):
         # First we have to find which dates the next n points correspond to
-        new_dates = self.training_series.get_time_index().append(self._generate_new_dates(n))
+        new_dates = self.training_series.time_index().append(self._generate_new_dates(n))
 
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
         predictions = self.model.predict(new_dates_df)

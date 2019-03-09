@@ -19,7 +19,7 @@ class Arima(AutoRegressiveModel):
     def fit(self, series: TimeSeries):
         super(Arima, self).fit(series)
 
-        m = ARIMA(series.get_values(),
+        m = ARIMA(series.values(),
                   order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
@@ -61,7 +61,7 @@ class AutoArima(AutoRegressiveModel):
 
     def fit(self, series: TimeSeries):
         super(AutoArima, self).fit(series)
-        self.model = auto_arima(series.get_values(),
+        self.model = auto_arima(series.values(),
                                 start_p=self.start_p,
                                 max_p=self.max_p,
                                 start_q=self.start_q,
