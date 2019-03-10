@@ -8,7 +8,9 @@ def get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np.
     """
     Returns the numpy values of two time series, launching an Exception if time series cannot be compared
     """
-    assert series_a.has_same_time_as(series_b), 'The two time series must have same time index'
+    assert series_a.has_same_time_as(series_b), 'The two time series must have same time index.' \
+                                                '\nFirst series: {}\nSecond series: {}'.format(
+                                                series_a.time_index(), series_b.time_index())
     return series_a.values(), series_b.values()
 
 

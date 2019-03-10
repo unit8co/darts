@@ -20,10 +20,13 @@ class TimeSeries:
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex'
 
         self._series: pd.Series = series.sort_index()  # Sort by time
-        self._freq: str = self._series.index.inferred_freq
+        self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
         assert self._freq is not None, 'Could not infer frequency. Are some dates missing?'
+
+        # TODO: are there some pandas Series where the line below causes issues?
+        self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
 
         # Handle confidence intervals:
         self._confidence_lo = None
@@ -143,7 +146,7 @@ class TimeSeries:
     Some useful methods for TimeSeries combination:
     """
     def has_same_time_as(self, other: 'TimeSeries'):
-        return other.time_index() == self.time_index()
+        return all(other.time_index() == self.time_index())
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
@@ -182,3 +185,11 @@ class TimeSeries:
 
     def __truediv__(self, other: 'TimeSeries'):
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
+
+    def __str__(self):
+        df = pd.DataFrame({'value': self._series})
+        if self._confidence_lo is not None:
+            df['conf_low'] = self._confidence_lo
+        if self._confidence_hi is not None:
+            df['conf_high'] = self._confidence_hi
+        return str(df) + '\nFreq: {}'.format(self.freq_str())

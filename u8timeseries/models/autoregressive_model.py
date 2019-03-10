@@ -36,9 +36,8 @@ class AutoRegressiveModel(ABC):
         """
         Generate n new dates after the end of the training set
         """
-        return pd.date_range(start=self.training_series.time_index()[-1],
-                             periods=n+1,
-                             freq=self.training_series.time_index().freq)[-n:]
+        new_dates = [self.training_series.time_index()[-1] + i for i in range(1, n+1)]
+        return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
 
     def _build_forecast_series(self, points_preds: np.ndarray,
                                lower_bound: Optional[np.ndarray] = None,
