@@ -82,19 +82,20 @@ class TimeSeries:
 
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
-        Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
+        Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (exclusive)
         :param start_ts:
         :param end_ts:
         :return:
         """
         assert end_ts > start_ts, 'End timestamp must be strictly after start timestamp when slicing'
-        assert end_ts >= self.start_time(), 'End timestamp must be after the start of the time series when slicing'
+        assert end_ts > self.start_time(), 'End timestamp must be strictly after the start ' \
+                                           'of the time series when slicing'
         assert start_ts <= self.end_time(), 'Start timestamp must be after the end of the time series when slicing'
 
         def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
             if s is not None:
                 s_a = s[s.index >= start_ts]
-                return s_a[s_a.index <= end_ts]
+                return s_a[s_a.index < end_ts]
             return None
 
         return TimeSeries(_slice_not_none(self._series),
