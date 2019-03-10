@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from .timeseries import TimeSeries
+from u8timeseries.timeseries import TimeSeries
 
 """ Helper function
 """

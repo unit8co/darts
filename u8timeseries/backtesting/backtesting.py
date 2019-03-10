@@ -1,16 +1,16 @@
 import pandas as pd
-from .timeseries import TimeSeries
-from .models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.timeseries import TimeSeries
+from u8timeseries.models.autoregressive_model import AutoRegressiveModel
 from typing import Tuple, List, Callable
 
 
-def get_train_and_val_series(series: TimeSeries, start: pd.Timestamp, valset_duration: pd.Timedelta,
-                             nr_steps_iter: int = 1) -> List[Tuple[TimeSeries, TimeSeries]]:
+def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_in_val: int,
+                         nr_steps_iter: int = 1) -> List[Tuple[TimeSeries, TimeSeries]]:
     """
     Returns a list of (training_set, validation_set) pairs for backtesting.
     :param series: The full time series needs to be split
     :param start: the start time of the earliest validation set
-    :param valset_duration: the duration of the validation sets
+    :param nr_points_in_val: the number of points in the validation sets
     :param nr_steps_iter: the number of time steps to iterate between the successive validation sets
     :return: a list of (training_set, validation_set) pairs
     """
@@ -25,7 +25,7 @@ def get_train_and_val_series(series: TimeSeries, start: pd.Timestamp, valset_dur
         nonlocal curr_val_start
 
         train_series, val_series_all = series.split(curr_val_start)
-        val_series = val_series_all.slice_duration(val_series_all.start_time(), valset_duration)
+        val_series = val_series_all.slice_n_points(val_series_all.start_time(), nr_points_in_val)
 
         curr_val_start = curr_val_start + nr_steps_iter * series.freq()
         return train_series, val_series
@@ -33,7 +33,7 @@ def get_train_and_val_series(series: TimeSeries, start: pd.Timestamp, valset_dur
     series_pairs = []
     curr_train_series, curr_val_series = _get_train_val_and_increase_pointer()
 
-    while curr_val_series.duration() >= valset_duration:
+    while len(curr_val_series) >= nr_points_in_val:
         series_pairs.append((curr_train_series, curr_val_series))
         curr_train_series, curr_val_series = _get_train_val_and_increase_pointer()
 
@@ -52,6 +52,6 @@ def backtest_autoregressive_model(model: AutoRegressiveModel, train_val_series: 
     results = []
     for train, val in train_val_series:
         model.fit(train)
-        pred = model.predict_interval(val.duration())
+        pred = model.predict(len(val))
         results.append(eval_fn(val, pred))
     return results

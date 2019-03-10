@@ -58,8 +58,8 @@ class TimeSeries:
     def time_index(self) -> pd.DatetimeIndex:
         return self._series.index
 
-    def freq(self) -> pd.Timedelta:
-        return pd.to_timedelta(to_offset(self._freq))
+    def freq(self) -> pd.DateOffset:
+        return to_offset(self._freq)
 
     def freq_str(self) -> str:
         return self._freq
@@ -91,21 +91,21 @@ class TimeSeries:
         def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
             if s is not None:
                 s_a = s[s.index >= start_ts]
-                return s_a[s_a.indey <= end_ts]
+                return s_a[s_a.index <= end_ts]
             return None
 
         return TimeSeries(_slice_not_none(self._series),
                           _slice_not_none(self._confidence_lo),
                           _slice_not_none(self._confidence_hi))
 
-    def slice_duration(self, start_ts: pd.Timestamp, duration: pd.Timedelta) -> 'TimeSeries':
+    def slice_n_points(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
-        Returns a new time series, starting later than [start_ts] (inclusive) and having duration at most [duration]
+        Returns a new time series, starting later than [start_ts] (inclusive) and having (at most) [n] points
         :param start_ts:
-        :param duration:
+        :param n:
         :return:
         """
-        end_ts: pd.Timestamp = start_ts + duration
+        end_ts: pd.Timestamp = start_ts + n * self.freq()
         return self.slice(start_ts, end_ts)
 
     @staticmethod

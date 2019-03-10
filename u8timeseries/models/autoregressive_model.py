@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 import math
-from u8timeseries.backtesting import backtest
 from ..timeseries import TimeSeries
 from typing import Optional
 
@@ -32,16 +31,6 @@ class AutoRegressiveModel(ABC):
         :return: A TimeSeries containing the n next points, starting after the end of the training time series.
         """
         pass
-
-    def predict_interval(self, interval: pd.Timedelta) -> TimeSeries:
-        """
-        Generates a predicted time series lasting at least [interval] and starting after the end of the
-        training time series.
-        """
-        assert self.training_series is not None, 'You must first call fit() with a well-defined TimeSeries'
-
-        nr_steps = int(math.ceil(interval / self.training_series.freq()))
-        return self.predict(nr_steps)
 
     def _generate_new_dates(self, n: int):
         """
