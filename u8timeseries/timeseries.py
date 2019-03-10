@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable
 
@@ -33,12 +34,12 @@ class TimeSeries:
         self._confidence_hi = None
         if confidence_lo is not None:
             self._confidence_lo = confidence_lo.sort_index()
-            assert self._confidence_lo.index == self._series.index, 'Lower confidence interval and main series must ' \
-                                                                    'have the same time index'
+            assert all(self._confidence_lo.index == self._series.index), 'Lower confidence interval and main series ' \
+                                                                         'must have the same time index'
         if confidence_hi is not None:
             self._confidence_hi = confidence_hi.sort_index()
-            assert self._confidence_hi.index == self._series.index, 'Upper confidence interval and main series must' \
-                                                                    'have the same time index'
+            assert all(self._confidence_hi.index == self._series.index), 'Upper confidence interval and main series ' \
+                                                                         'must have the same time index'
 
     def pd_series(self) -> pd.Series:
         return self._series.copy()
@@ -70,7 +71,7 @@ class TimeSeries:
     def duration(self) -> pd.Timedelta:
         return self._series.index[-1] - self._series.index[0]
 
-    def split(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+    def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
         """
         Splits a time series in two, around a provided timestamp. The timestamp will be included in the first
         of the two time series, and not in the second. The timestamp must be in the time series.
@@ -82,20 +83,19 @@ class TimeSeries:
 
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
-        Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (exclusive)
+        Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
         :param start_ts:
         :param end_ts:
         :return:
         """
         assert end_ts > start_ts, 'End timestamp must be strictly after start timestamp when slicing'
-        assert end_ts > self.start_time(), 'End timestamp must be strictly after the start ' \
-                                           'of the time series when slicing'
+        assert end_ts >= self.start_time(), 'End timestamp must be after the start of the time series when slicing'
         assert start_ts <= self.end_time(), 'Start timestamp must be after the end of the time series when slicing'
 
         def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
             if s is not None:
                 s_a = s[s.index >= start_ts]
-                return s_a[s_a.index < end_ts]
+                return s_a[s_a.index <= end_ts]
             return None
 
         return TimeSeries(_slice_not_none(self._series),
@@ -109,7 +109,7 @@ class TimeSeries:
         :param n:
         :return:
         """
-        end_ts: pd.Timestamp = start_ts + n * self.freq()
+        end_ts: pd.Timestamp = start_ts + (n-1) * self.freq()  # (n-1) because slice() is inclusive on both sides
         return self.slice(start_ts, end_ts)
 
     @staticmethod
@@ -142,6 +142,14 @@ class TimeSeries:
         series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
 
         return TimeSeries(series, series_lo, series_hi)
+
+    def plot(self, *args, plot_ci=True, **kwargs):
+        """
+        Currently this is just a wrapper around pd.Series.plot()
+        """
+        self._series.plot(*args, **kwargs)
+        if plot_ci and self._confidence_lo is not None and self._confidence_hi is not None:
+            plt.fill_between(self.time_index(), self._confidence_lo.values, self._confidence_hi.values, alpha=0.5)
 
     """
     Some useful methods for TimeSeries combination:

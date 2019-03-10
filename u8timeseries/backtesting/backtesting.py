@@ -24,7 +24,7 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_in_v
     def _get_train_val_and_increase_pointer() -> Tuple[TimeSeries, TimeSeries]:
         nonlocal curr_val_start
 
-        train_series, val_series_all = series.split(curr_val_start)
+        train_series, val_series_all = series.split_after(curr_val_start)
         val_series = val_series_all.slice_n_points(val_series_all.start_time(), nr_points_in_val)
 
         curr_val_start = curr_val_start + nr_steps_iter * series.freq()

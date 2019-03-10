@@ -15,7 +15,7 @@ setup(name='u8timeseries',
           'fbprophet',
           'scikit-learn',
           'pandas',
-          'numpy'
+          'numpy==1.15.4'  # more recent not yet supported by Prophet
       ],
       zip_safe=False)
 
