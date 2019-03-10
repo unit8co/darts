@@ -4,7 +4,7 @@ import pandas as pd
 import math
 from u8timeseries.backtesting import backtest
 from ..timeseries import TimeSeries
-from typing import Union
+from typing import Optional
 
 
 class AutoRegressiveModel(ABC):
@@ -16,7 +16,7 @@ class AutoRegressiveModel(ABC):
     @abstractmethod
     def __init__(self):
         # Stores training date information:
-        self.training_series: Union[TimeSeries, None] = None
+        self.training_series: Optional[TimeSeries] = None
 
         # state
         self.fit_called = False
@@ -52,8 +52,8 @@ class AutoRegressiveModel(ABC):
                              freq=self.training_series.time_index().freq)[-n:]
 
     def _build_forecast_series(self, points_preds: np.ndarray,
-                               lower_bound: Union[np.ndarray,None] = None,
-                               upper_bound: Union[np.ndarray, None] = None):
+                               lower_bound: Optional[np.ndarray] = None,
+                               upper_bound: Optional[np.ndarray] = None):
 
         time_index = self._generate_new_dates(len(points_preds))
 

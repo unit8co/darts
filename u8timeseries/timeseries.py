@@ -1,17 +1,21 @@
 import pandas as pd
 import numpy as np
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Union, Optional
+from typing import Tuple, Optional, Callable
 
 
 class TimeSeries:
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
         """
+        A TimeSeries an immutable object, defined by the following three components:
+        :param series: the actual time series, as a pandas Series with a proper time index
+        :param confidence_lo: optionally, a pandas Series representing lower confidence interval
+        :param confidence_hi: optionally, a pandas Series representing upper confidence interval
 
-        :param series:
-        :param confidence_lo:
-        :param confidence_hi:
+        Within this class, TimeSeries type annotations are 'TimeSeries'; see:
+        https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
         """
+
         assert len(series) >= 1, 'Time series must have at least one value'
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex'
 
@@ -21,12 +25,26 @@ class TimeSeries:
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
         assert self._freq is not None, 'Could not infer frequency. Are some dates missing?'
 
-        # TODO: handle confidence intervals same way
-        self._confidence_lo = confidence_lo.copy() if confidence_lo is not None else None
-        self._confidence_hi = confidence_hi.copy() if confidence_hi is not None else None
+        # Handle confidence intervals:
+        self._confidence_lo = None
+        self._confidence_hi = None
+        if confidence_lo is not None:
+            self._confidence_lo = confidence_lo.sort_index()
+            assert self._confidence_lo.index == self._series.index, 'Lower confidence interval and main series must ' \
+                                                                    'have the same time index'
+        if confidence_hi is not None:
+            self._confidence_hi = confidence_hi.sort_index()
+            assert self._confidence_hi.index == self._series.index, 'Upper confidence interval and main series must' \
+                                                                    'have the same time index'
 
     def pd_series(self) -> pd.Series:
         return self._series.copy()
+
+    def conf_lo_pd_series(self) -> Optional[pd.Series]:
+        return self._confidence_lo.copy() if self._confidence_lo is not None else None
+
+    def conf_hi_pd_series(self) -> Optional[pd.Series]:
+        return self._confidence_hi.copy() if self._confidence_hi is not None else None
 
     def start_time(self) -> pd.Timestamp:
         return self._series.index[0]
@@ -49,7 +67,7 @@ class TimeSeries:
     def duration(self) -> pd.Timedelta:
         return self._series.index[-1] - self._series.index[0]
 
-    def split(self, ts: pd.Timestamp) -> Tuple[TimeSeries, TimeSeries]:
+    def split(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
         """
         Splits a time series in two, around a provided timestamp. The timestamp will be included in the first
         of the two time series, and not in the second. The timestamp must be in the time series.
@@ -59,7 +77,7 @@ class TimeSeries:
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
-    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> TimeSeries:
+    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
         :param start_ts:
@@ -80,7 +98,7 @@ class TimeSeries:
                           _slice_not_none(self._confidence_lo),
                           _slice_not_none(self._confidence_hi))
 
-    def slice_duration(self, start_ts: pd.Timestamp, duration: pd.Timedelta) -> TimeSeries:
+    def slice_duration(self, start_ts: pd.Timestamp, duration: pd.Timedelta) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and having duration at most [duration]
         :param start_ts:
@@ -121,5 +139,46 @@ class TimeSeries:
 
         return TimeSeries(series, series_lo, series_hi)
 
+    """
+    Some useful methods for TimeSeries combination:
+    """
+    def has_same_time_as(self, other: 'TimeSeries'):
+        return other.time_index() == self.time_index()
+
+    def _combine_from_pd_ops(self, other: 'TimeSeries',
+                             combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
+        """
+        Combines this TimeSeries with another one, using the [combine_fn] on the underlying Pandas Series
+        """
+
+        def _combine_or_none(series_a: Optional[pd.Series],
+                             series_b: Optional[pd.Series],
+                             combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
+            if series_a is not None and series_b is not None:
+                return combine_fn(series_a, series_b)
+            return None
+
+        assert self.has_same_time_as(other), 'The two time series must have the same time index'
+        series = combine_fn(self._series, other.pd_series())
+        conf_lo = _combine_or_none(self._confidence_lo, other.conf_lo_pd_series(), combine_fn)
+        conf_hi = _combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    """
+    Definition of some dunder methods
+    TODO: also support scalar operations with radd, rmul, etc
+    """
     def __len__(self):
         return len(self._series)
+
+    def __add__(self, other: 'TimeSeries'):
+        return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
+
+    def __sub__(self, other: 'TimeSeries'):
+        return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
+
+    def __mul__(self, other: 'TimeSeries'):
+        return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
+
+    def __truediv__(self, other: 'TimeSeries'):
+        return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
