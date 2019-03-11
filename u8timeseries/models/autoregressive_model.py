@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-import math
 from ..timeseries import TimeSeries
 from typing import Optional
 
@@ -15,13 +14,13 @@ class AutoRegressiveModel(ABC):
     @abstractmethod
     def __init__(self):
         # Stores training date information:
-        self.training_series: Optional[TimeSeries] = None
+        self.training_series: TimeSeries = None
 
         # state
         self.fit_called = False
 
     @abstractmethod
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries) -> None:
         self.training_series = series
         self.fit_called = True
 
