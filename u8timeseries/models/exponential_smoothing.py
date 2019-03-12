@@ -6,7 +6,7 @@ import statsmodels.tsa.holtwinters as hw
 class ExponentialSmoothing(AutoRegressiveModel):
 
     def __init__(self, trend='additive', seasonal='additive', seasonal_periods=12):
-        super(ExponentialSmoothing, self).__init__()
+        super().__init__()
         self.trend = trend
         self.seasonal = seasonal
         self.seasonal_periods = seasonal_periods
@@ -16,12 +16,13 @@ class ExponentialSmoothing(AutoRegressiveModel):
         return 'Exponential smoothing'
 
     def fit(self, series: TimeSeries):
-        super(ExponentialSmoothing, self).fit(series)
+        super().fit(series)
         self.model = hw.ExponentialSmoothing(series.values(),
                                              trend=self.trend,
                                              seasonal=self.trend,
                                              seasonal_periods=self.seasonal_periods).fit()
 
     def predict(self, n):
+        super().predict(n)
         forecast = self.model.forecast(n)
         return self._build_forecast_series(forecast)

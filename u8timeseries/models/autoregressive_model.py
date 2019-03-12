@@ -29,7 +29,7 @@ class AutoRegressiveModel(ABC):
         """
         :return: A TimeSeries containing the n next points, starting after the end of the training time series.
         """
-        pass
+        assert self.fit_called, 'fit() must be called before predict()'
 
     def _generate_new_dates(self, n: int):
         """

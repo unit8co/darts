@@ -10,7 +10,7 @@ class KthValueAgoBaseline(AutoRegressiveModel):
     """
 
     def __init__(self, K=1):
-        super(KthValueAgoBaseline, self).__init__()
+        super().__init__()
         self.last_k_vals = None
         self.K = K
 
@@ -18,10 +18,11 @@ class KthValueAgoBaseline(AutoRegressiveModel):
         return '{} value ago baseline'.format(self.K)
 
     def fit(self, series: TimeSeries):
-        super(KthValueAgoBaseline, self).fit(series)
+        super().fit(series)
         assert len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K)
         self.last_k_vals = series.values()[-self.K:]
 
     def predict(self, n):
+        super().predict(n)
         forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
         return self._build_forecast_series(forecast)

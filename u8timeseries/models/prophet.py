@@ -7,7 +7,7 @@ import fbprophet
 class Prophet(AutoRegressiveModel):
 
     def __init__(self, weekly_seasonality=False, daily_seasonality=False):
-        super(Prophet, self).__init__()
+        super().__init__()
 
         self.weekly_seasonality = weekly_seasonality
         self.daily_seasonality = daily_seasonality
@@ -17,7 +17,7 @@ class Prophet(AutoRegressiveModel):
         return 'Prophet'
 
     def fit(self, series):
-        super(Prophet, self).fit(series)
+        super().fit(series)
 
         in_df = pd.DataFrame(data={
             'ds': series.time_index(),
@@ -30,6 +30,7 @@ class Prophet(AutoRegressiveModel):
         self.model.fit(in_df)
 
     def predict(self, n):
+        super().predict(n)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
 
