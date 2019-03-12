@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-import numpy as np
-import pandas as pd
 from ..timeseries import TimeSeries
 from typing import List
 
@@ -34,6 +32,7 @@ class RegressiveModel(ABC):
         """
         :return: A TimeSeries containing the prediction obtained from [features], of same length as [features]
         """
+        assert self.fit_called, 'fit() must be called before predict()'
         assert len(features) == len(self.train_features), 'Provided features must have same dimensionality as ' \
                                                           'training features. There were {} training features and ' \
                                                           'the function has been called with {} features' \

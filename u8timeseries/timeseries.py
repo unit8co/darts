@@ -154,8 +154,20 @@ class TimeSeries:
     """
     Some useful methods for TimeSeries combination:
     """
-    def has_same_time_as(self, other: 'TimeSeries'):
+    def has_same_time_as(self, other: 'TimeSeries') -> bool:
         return all(other.time_index() == self.time_index())
+
+    def append(self, other: 'TimeSeries') -> 'TimeSeries':
+        assert other.start_time() == self.end_time() + self.freq(), 'appended TimeSeries must start one time step' \
+                                                                    'after current one'
+        series = self._series.append(other.pd_series())
+        conf_lo = None
+        conf_hi = None
+        if self._confidence_lo is not None and other.conf_lo_pd_series() is not None:
+            conf_lo = self._confidence_lo.append(other.conf_lo_pd_series())
+        if self._confidence_hi is not None and other.conf_hi_pd_series() is not None:
+            conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
+        return TimeSeries(series, conf_lo, conf_hi)
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
