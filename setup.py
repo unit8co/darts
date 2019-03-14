@@ -14,7 +14,8 @@ setup(name='u8timeseries',
           'pyramid-arima',
           'fbprophet',
           'scikit-learn',
-          'pandas'
+          'pandas',
+          'numpy==1.15.4'  # more recent not yet supported by Prophet
       ],
       zip_safe=False)
 
