@@ -7,7 +7,7 @@ from ..timeseries import TimeSeries
 class Arima(AutoRegressiveModel):
 
     def __init__(self, p=12, d=1, q=0):
-        super(Arima, self).__init__()
+        super().__init__()
         self.p = p
         self.d = d
         self.q = q
@@ -17,13 +17,14 @@ class Arima(AutoRegressiveModel):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
     def fit(self, series: TimeSeries):
-        super(Arima, self).fit(series)
+        super().fit(series)
 
         m = ARIMA(series.values(),
                   order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
     def predict(self, n):
+        super().predict(n)
         forecast = self.model.forecast(steps=n)[0]
         return self._build_forecast_series(forecast)
 
@@ -34,7 +35,7 @@ class AutoArima(AutoRegressiveModel):
                  start_d=0, max_d=2, max_D=1, max_order=30, seasonal=True, stepwise=True, approximation=False,
                  error_action='ignore', trace=False, suppress_warnings=True):
 
-        super(AutoArima, self).__init__()
+        super().__init__()
 
         self.start_p = start_p
         self.max_p = max_p
@@ -60,7 +61,7 @@ class AutoArima(AutoRegressiveModel):
         return 'auto-ARIMA'
 
     def fit(self, series: TimeSeries):
-        super(AutoArima, self).fit(series)
+        super().fit(series)
         self.model = auto_arima(series.values(),
                                 start_p=self.start_p,
                                 max_p=self.max_p,
@@ -82,5 +83,6 @@ class AutoArima(AutoRegressiveModel):
                                 suppress_warnings=self.suppress_warnings)
 
     def predict(self, n):
+        super().predict(n)
         forecast = self.model.predict(n_periods=n)
         return self._build_forecast_series(forecast)

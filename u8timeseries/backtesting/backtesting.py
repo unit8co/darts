@@ -1,6 +1,7 @@
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.models.regressive_model import RegressiveModel
 from typing import Tuple, List, Callable
 
 
@@ -55,3 +56,7 @@ def backtest_autoregressive_model(model: AutoRegressiveModel, train_val_series: 
         pred = model.predict(len(val))
         results.append(eval_fn(val, pred))
     return results
+
+
+def backtest_regressive_model(model: RegressiveModel, ):
+    pass
