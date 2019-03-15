@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable
+from typing import Tuple, Optional, Callable, Any
 
 
 class TimeSeries:
@@ -24,7 +24,7 @@ class TimeSeries:
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
-        assert self._freq is not None, 'Could not infer frequency. Are some dates missing?'
+        assert self._freq is not None, 'Could not infer frequency. Are some dates missing? Is Series too short (n=2)?'
 
         # TODO: are there some pandas Series where the line below causes issues?
         self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
@@ -34,10 +34,14 @@ class TimeSeries:
         self._confidence_hi = None
         if confidence_lo is not None:
             self._confidence_lo = confidence_lo.sort_index()
+            assert len(self._confidence_lo) == len(self._series), 'Lower confidence interval must have same size as ' \
+                                                                  'the main time series'
             assert all(self._confidence_lo.index == self._series.index), 'Lower confidence interval and main series ' \
                                                                          'must have the same time index'
         if confidence_hi is not None:
             self._confidence_hi = confidence_hi.sort_index()
+            assert len(self._confidence_hi) == len(self._series), 'Upper confidence interval must have same size as ' \
+                                                                  'the main time series'
             assert all(self._confidence_hi.index == self._series.index), 'Upper confidence interval and main series ' \
                                                                          'must have the same time index'
 
@@ -169,29 +173,47 @@ class TimeSeries:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
         return TimeSeries(series, conf_lo, conf_hi)
 
+    @staticmethod
+    def _combine_or_none(series_a: Optional[pd.Series],
+                         series_b: Optional[pd.Series],
+                         combine_fn: Callable[[pd.Series, pd.Series], Any]):
+        if series_a is not None and series_b is not None:
+            return combine_fn(series_a, series_b)
+        return None
+
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
         """
         Combines this TimeSeries with another one, using the [combine_fn] on the underlying Pandas Series
         """
 
-        def _combine_or_none(series_a: Optional[pd.Series],
-                             series_b: Optional[pd.Series],
-                             combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
-            if series_a is not None and series_b is not None:
-                return combine_fn(series_a, series_b)
-            return None
-
         assert self.has_same_time_as(other), 'The two time series must have the same time index'
         series = combine_fn(self._series, other.pd_series())
-        conf_lo = _combine_or_none(self._confidence_lo, other.conf_lo_pd_series(), combine_fn)
-        conf_hi = _combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
+        conf_lo = self._combine_or_none(self._confidence_lo, other.conf_lo_pd_series(), combine_fn)
+        conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
         return TimeSeries(series, conf_lo, conf_hi)
 
     """
     Definition of some dunder methods
     TODO: also support scalar operations with radd, rmul, etc
     """
+    def __eq__(self, other):
+        if isinstance(other, TimeSeries):
+            if not self._series.equals(other.pd_series()):
+                return False
+            for other_ci in [other.conf_lo_pd_series(), other.conf_hi_pd_series()]:
+                if (other_ci is None) ^ (self._confidence_lo is None):
+                    # only one is None
+                    return False
+                if self._combine_or_none(self._confidence_lo, other_ci, lambda s1, s2: s1.equals(s2)) == False:
+                    # Note: we check for "False" explicitely, because None is OK..
+                    return False
+            return True
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __len__(self):
         return len(self._series)
 

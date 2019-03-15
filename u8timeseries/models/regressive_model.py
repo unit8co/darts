@@ -7,6 +7,10 @@ class RegressiveModel(ABC):
     """
     This is a base class for various implementations of multi-variate models - models predicting time series
     from one or several time series. It also allows to do ensembling.
+
+    TODO: Extend this to a "DynamicRegressiveModel" class, which acts on List[List[TimeSeries]].
+    TODO: The first List[] would contain time-sliding lists of time series, letting the model
+    TODO: be able to learn how to change weights over time. When len() of outer List[] is 0 it's a particular case
     """
 
     @abstractmethod

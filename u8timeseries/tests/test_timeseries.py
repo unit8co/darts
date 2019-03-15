@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+
 from timeseries import TimeSeries
 
 
