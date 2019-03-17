@@ -21,9 +21,9 @@ class StandardRegressiveModel(RegressiveModel):
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
 
-    def fit(self, train_features: List[TimeSeries], target_series: TimeSeries):
-        super().fit(train_features, target_series)
-        self.model.fit(self._get_features_matrix_from_series(train_features), target_series.values())
+    def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
+        super().fit(train_features, train_target)
+        self.model.fit(self._get_features_matrix_from_series(train_features), train_target.values())
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)

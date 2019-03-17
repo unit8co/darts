@@ -17,18 +17,18 @@ class RegressiveModel(ABC):
     def __init__(self):
         # Stores training date information:
         self.train_features: List[TimeSeries] = None
-        self.target_series: TimeSeries = None
+        self.train_target: TimeSeries = None
 
         # state
         self.fit_called = False
 
     @abstractmethod
-    def fit(self, train_features: List[TimeSeries], target_series: TimeSeries) -> None:
+    def fit(self, train_features: List[TimeSeries], train_target: TimeSeries) -> None:
         assert len(train_features) > 0, 'Need at least one feature series'
-        assert all([s.has_same_time_as(target_series) for s in train_features]), 'All provided time series must ' \
-                                                                                 'have the same time index'
+        assert all([s.has_same_time_as(train_target) for s in train_features]), 'All provided time series must ' \
+                                                                                'have the same time index'
         self.train_features = train_features
-        self.target_series = target_series
+        self.train_target = train_target
         self.fit_called = True
 
     @abstractmethod
@@ -41,3 +41,12 @@ class RegressiveModel(ABC):
                                                           'training features. There were {} training features and ' \
                                                           'the function has been called with {} features' \
                                                           .format(len(self.train_features), len(features))
+
+    def residuals(self) -> TimeSeries:
+        """
+        :return: a time series of residuals (absolute errors of the model on the training set)
+        """
+        assert self.fit_called, 'fit() must be called before residuals()'
+
+        train_pred = self.predict(self.train_features)
+        return abs(train_pred - self.train_target)

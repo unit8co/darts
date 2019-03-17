@@ -181,6 +181,10 @@ class TimeSeries:
             return combine_fn(series_a, series_b)
         return None
 
+    @staticmethod
+    def _op_or_none(series: Optional[pd.Series], op: Callable[pd.Series, Any]):
+        return op(series) if series is not None else None
+
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
         """
@@ -228,6 +232,18 @@ class TimeSeries:
 
     def __truediv__(self, other: 'TimeSeries'):
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
+
+    def __abs__(self):
+        series = abs(self._series)
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: abs(s))
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: abs(s))
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def __neg__(self):
+        series = -self._series
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: -s)
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: -s)
+        return TimeSeries(series, conf_lo, conf_hi)
 
     def __str__(self):
         df = pd.DataFrame({'value': self._series})
