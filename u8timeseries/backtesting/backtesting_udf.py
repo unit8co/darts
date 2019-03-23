@@ -10,6 +10,9 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
                          nr_steps_iter: int = 1) -> List[Tuple[TimeSeries, TimeSeries]]:
     """
     Returns a list of (training_set, validation_set) pairs for backtesting.
+
+    TODO: this is expanding training window, implement optional sliding window
+
     :param series: The full time series needs to be split
     :param start: the start time of the earliest validation set
     :param nr_points_val: the number of points in the validation sets
@@ -17,8 +20,8 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     :return: a list of (training_set, validation_set) pairs
     """
 
-    assert start in series.time_index(), 'The provided start timestamp is not in the time series.'
-    assert start != series.time_index()[-1], 'The provided start timestamp is the last timestamp of the time series'
+    assert start in series, 'The provided start timestamp is not in the time series.'
+    assert start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series'
     # TODO: maybe also check that valset_duration >= series frequency
 
     curr_val_start: pd.Timestamp = start
@@ -27,7 +30,7 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
         nonlocal curr_val_start
 
         train_series, val_series_all = series.split_after(curr_val_start)
-        val_series = val_series_all.slice_n_points(val_series_all.start_time(), nr_points_val)
+        val_series = val_series_all.slice_n_points_after(val_series_all.start_time(), nr_points_val)
 
         curr_val_start = curr_val_start + nr_steps_iter * series.freq()
         return train_series, val_series
@@ -87,7 +90,42 @@ def get_train_val_series_for_regr_model(ar_models: List[AutoRegressiveModel],
     :param nr_steps_iter: the number of time steps to iterate between the successive validation sets
     :return:
     """
-    pass
+
+    curr_train_start: pd.Timestamp = start_regr_training
+    curr_val_start: pd.Timestamp = curr_train_start + nr_points_training * series.freq()
+
+    for s in [series] + external_series:
+        assert curr_train_start in s, 'The specified start of training set must be in all provided time series'
+        assert curr_val_start in s, 'The start of train set and training set duration must be such that the first' \
+                                    'validation set start time is in all provided time series'
+
+    def _get_train_val_and_increase_pointer() -> Tuple[TimeSeries, TimeSeries]:
+        """
+        Returns new (auto-regressive) training series, new (regressive) training series and
+        (regressive) validation series; updates training set pointer
+        """
+        nonlocal curr_train_start, curr_val_start
+
+        # split main series
+        train_ar_series, rest = series.split_after(curr_train_start)
+        train_regr_series = rest.slice_n_points_after(curr_train_start, nr_points_training)
+        val_regr_series = rest.slice_n_points_after(curr_val_start, nr_points_val)
+
+        # split external series
+        external_train: List[TimeSeries] = []  # (regressive) training features
+        external_val: List[TimeSeries] = []  # (regressive) validation features
+
+        for es in external_series:
+            external_train.append(es.slice_n_points_after(curr_train_start, nr_points_training))
+            external_val.append(es.slice_n_points_after(curr_val_start, nr_points_val))
+
+        increment = nr_steps_iter * series.freq()  # we'll iterate both pointer by the same duration
+        curr_train_start = curr_train_start + increment
+        curr_val_start = curr_val_start + increment
+
+        # TODO from here
+
+        return train_series, val_series
 
 
 def backtest_regressive_model(model: RegressiveModel,
