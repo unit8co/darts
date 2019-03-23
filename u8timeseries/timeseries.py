@@ -106,7 +106,7 @@ class TimeSeries:
                           _slice_not_none(self._confidence_lo),
                           _slice_not_none(self._confidence_hi))
 
-    def slice_n_points(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+    def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and having (at most) [n] points
         :param start_ts:
@@ -114,6 +114,16 @@ class TimeSeries:
         :return:
         """
         end_ts: pd.Timestamp = start_ts + (n-1) * self.freq()  # (n-1) because slice() is inclusive on both sides
+        return self.slice(start_ts, end_ts)
+
+    def slice_n_points_before(self, end_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+        """
+        Returns a new time series, ending before [end_ts] (inclusive) and having (at most) [n] points
+        :param end_ts:
+        :param n:
+        :return:
+        """
+        start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
         return self.slice(start_ts, end_ts)
 
     @staticmethod
@@ -244,6 +254,11 @@ class TimeSeries:
         conf_lo = self._op_or_none(self._confidence_lo, lambda s: -s)
         conf_hi = self._op_or_none(self._confidence_hi, lambda s: -s)
         return TimeSeries(series, conf_lo, conf_hi)
+
+    def __contains__(self, item):
+        if isinstance(item, pd.Timestamp):
+            return item in self._series.index
+        return False
 
     def __str__(self):
         df = pd.DataFrame({'value': self._series})

@@ -7,14 +7,20 @@ from sklearn.linear_model import LinearRegression
 
 
 class StandardRegressiveModel(RegressiveModel):
-    """
-    Simple regression based on other fit() predict() models (e.g., from sklearn)
-    """
-    def __init__(self, model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+
+    def __init__(self, train_n_points, model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+        """
+        Simple regression based on other fit() predict() models (e.g., from sklearn)
+        :param train_n_points: The number of most recent points from the training time series that
+                               will be used to train the regressive model. If the provided training series
+                               contain fewer points, they will all be used for training.
+        :param model: The actual regressive model. It must contain fit() and predict() methods.
+        """
         super(StandardRegressiveModel, self).__init__()
         assert callable(getattr(model, "fit", None)), 'Provided model object must have a fit() method'
         assert callable(getattr(model, "predict", None)), 'Provided model object must have a predict() method'
 
+        self.train_n_points = train_n_points
         self.model = model
 
     @staticmethod
@@ -23,7 +29,12 @@ class StandardRegressiveModel(RegressiveModel):
 
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
         super().fit(train_features, train_target)
-        self.model.fit(self._get_features_matrix_from_series(train_features), train_target.values())
+
+        # Get (at most) the last [train_n_points] of each series
+        last_train_ts = train_features[0].end_time()
+        last_n_points_series = [s.slice_n_points_before(last_train_ts, self.train_n_points) for s in train_features]
+
+        self.model.fit(self._get_features_matrix_from_series(last_n_points_series), train_target.values())
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)
