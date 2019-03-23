@@ -20,7 +20,7 @@ class RegressiveModel(ABC):
         self.train_target: TimeSeries = None
 
         # state
-        self.fit_called = False
+        self._fit_called = False
 
     @abstractmethod
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries) -> None:
@@ -29,14 +29,14 @@ class RegressiveModel(ABC):
                                                                                 'have the same time index'
         self.train_features = train_features
         self.train_target = train_target
-        self.fit_called = True
+        self._fit_called = True
 
     @abstractmethod
     def predict(self, features: List[TimeSeries]) -> TimeSeries:
         """
         :return: A TimeSeries containing the prediction obtained from [features], of same length as [features]
         """
-        assert self.fit_called, 'fit() must be called before predict()'
+        assert self._fit_called, 'fit() must be called before predict()'
         assert len(features) == len(self.train_features), 'Provided features must have same dimensionality as ' \
                                                           'training features. There were {} training features and ' \
                                                           'the function has been called with {} features' \
@@ -46,7 +46,7 @@ class RegressiveModel(ABC):
         """
         :return: a time series of residuals (absolute errors of the model on the training set)
         """
-        assert self.fit_called, 'fit() must be called before residuals()'
+        assert self._fit_called, 'fit() must be called before residuals()'
 
         train_pred = self.predict(self.train_features)
         return abs(train_pred - self.train_target)
