@@ -32,9 +32,10 @@ class StandardRegressiveModel(RegressiveModel):
 
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
-        last_n_points_series = [s.slice_n_points_before(last_train_ts, self.train_n_points) for s in train_features]
+        last_n_points_features = [s.slice_n_points_before(last_train_ts, self.train_n_points) for s in train_features]
+        last_n_points_target = train_target.slice_n_points_before(last_train_ts, self.train_n_points)
 
-        self.model.fit(self._get_features_matrix_from_series(last_n_points_series), train_target.values())
+        self.model.fit(self._get_features_matrix_from_series(last_n_points_features), last_n_points_target.values())
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)
