@@ -85,6 +85,16 @@ class TimeSeries:
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
+    def split_before(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+        """
+        Splits a time series in two, around a provided timestamp. The timestamp will be included in the second
+        of the two time series, and not in the first. The timestamp must be in the time series.
+        """
+        assert ts in self._series.index, 'The provided timestamp is not in the time series'
+
+        end_first_series: pd.Timestamp = ts - self.freq() # second series does not include ts
+        return self.slice(self.start_time(), end_first_series), self.slice(ts, self.end_time())
+
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
@@ -125,6 +135,14 @@ class TimeSeries:
         """
         start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
         return self.slice(start_ts, end_ts)
+
+    def intersect(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Returns a slice containing the intersection of this TimeSeries and the one provided in argument
+        :param other:
+        :return:
+        """
+        return self.slice(other.start_time(), other.end_time())
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
@@ -192,7 +210,7 @@ class TimeSeries:
         return None
 
     @staticmethod
-    def _op_or_none(series: Optional[pd.Series], op: Callable[pd.Series, Any]):
+    def _op_or_none(series: Optional[pd.Series], op: Callable[[pd.Series], Any]):
         return op(series) if series is not None else None
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
