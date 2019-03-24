@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm, tqdm_notebook
-import sys
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
 from u8timeseries.models.regressive_model import RegressiveModel
