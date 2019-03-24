@@ -187,6 +187,8 @@ class TimeSeries:
     Some useful methods for TimeSeries combination:
     """
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
+        if self.__len__() != len(other):
+            return False
         return all(other.time_index() == self.time_index())
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
