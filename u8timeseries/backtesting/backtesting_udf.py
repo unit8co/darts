@@ -1,9 +1,7 @@
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from u8timeseries.models.regressive_model import RegressiveModel
 from typing import Tuple, List, Callable, Any
-from ..utils.types import RegrFeatures, RegrDataset
 
 """ This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
     on some validation sets, sliding over time.
