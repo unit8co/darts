@@ -12,11 +12,7 @@
 - seq2seq (https://www.youtube.com/watch?v=VYpAodcdFfA)
 
 # Backtesting
-A different backtesting, to really simulate historical predictions. I.e., with an increment of 1,
-and returning a TimeSeries corresponding to forecasts that would have been made.
-
-The function should accept a *list* of time horizons, and return a *list* of corresponding
-predicted time series.
+Track weights history in `simulate_forecast_regr()`
 
 
 # Useful TimeSeries
