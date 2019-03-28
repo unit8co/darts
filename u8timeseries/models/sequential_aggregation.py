@@ -15,8 +15,8 @@ class SequentialAggregation(RegressiveModel):
     def __init__(self):
         super().__init__()
 
-    def fit(self, train_features: List[TimeSeries], target_series: TimeSeries):
-        super().fit(train_features, target_series)
+    def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
+        super().fit(train_features, train_target)
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)

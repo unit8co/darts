@@ -17,19 +17,19 @@ class AutoRegressiveModel(ABC):
         self.training_series: TimeSeries = None
 
         # state
-        self.fit_called = False
+        self._fit_called = False
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
         self.training_series = series
-        self.fit_called = True
+        self._fit_called = True
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
         """
         :return: A TimeSeries containing the n next points, starting after the end of the training time series.
         """
-        assert self.fit_called, 'fit() must be called before predict()'
+        assert self._fit_called, 'fit() must be called before predict()'
 
     def _generate_new_dates(self, n: int):
         """

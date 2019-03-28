@@ -72,11 +72,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(seriesC.end_time(), pd.Timestamp('20130110'))
 
         # n points, base case
-        seriesD = self.series1.slice_n_points(pd.Timestamp('20130102'), n=3)
+        seriesD = self.series1.slice_n_points_after(pd.Timestamp('20130102'), n=3)
         self.assertEqual(seriesD.start_time(), pd.Timestamp('20130102'))
         self.assertEqual(seriesD.end_time(), pd.Timestamp('20130104'))
 
-        seriesE = self.series1.slice_n_points(pd.Timestamp('20130107 12:00:10'), n=10)
+        seriesE = self.series1.slice_n_points_after(pd.Timestamp('20130107 12:00:10'), n=10)
         self.assertEqual(seriesE.start_time(), pd.Timestamp('20130108'))
         self.assertEqual(seriesE.end_time(), pd.Timestamp('20130110'))
 

@@ -20,7 +20,7 @@ class Arima(AutoRegressiveModel):
         super().fit(series)
 
         m = ARIMA(series.values(),
-                  order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(values, order=(self.p, self.q))
+                  order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(series.values(), order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
     def predict(self, n):

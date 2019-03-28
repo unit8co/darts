@@ -85,6 +85,16 @@ class TimeSeries:
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
+    def split_before(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+        """
+        Splits a time series in two, around a provided timestamp. The timestamp will be included in the second
+        of the two time series, and not in the first. The timestamp must be in the time series.
+        """
+        assert ts in self._series.index, 'The provided timestamp is not in the time series'
+
+        end_first_series: pd.Timestamp = ts - self.freq() # second series does not include ts
+        return self.slice(self.start_time(), end_first_series), self.slice(ts, self.end_time())
+
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and ending before [end_ts] (inclusive)
@@ -106,7 +116,7 @@ class TimeSeries:
                           _slice_not_none(self._confidence_lo),
                           _slice_not_none(self._confidence_hi))
 
-    def slice_n_points(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+    def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
         Returns a new time series, starting later than [start_ts] (inclusive) and having (at most) [n] points
         :param start_ts:
@@ -115,6 +125,24 @@ class TimeSeries:
         """
         end_ts: pd.Timestamp = start_ts + (n-1) * self.freq()  # (n-1) because slice() is inclusive on both sides
         return self.slice(start_ts, end_ts)
+
+    def slice_n_points_before(self, end_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+        """
+        Returns a new time series, ending before [end_ts] (inclusive) and having (at most) [n] points
+        :param end_ts:
+        :param n:
+        :return:
+        """
+        start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
+        return self.slice(start_ts, end_ts)
+
+    def intersect(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Returns a slice containing the intersection of this TimeSeries and the one provided in argument
+        :param other:
+        :return:
+        """
+        return self.slice(other.start_time(), other.end_time())
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
@@ -159,6 +187,8 @@ class TimeSeries:
     Some useful methods for TimeSeries combination:
     """
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
+        if self.__len__() != len(other):
+            return False
         return all(other.time_index() == self.time_index())
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
@@ -180,6 +210,10 @@ class TimeSeries:
         if series_a is not None and series_b is not None:
             return combine_fn(series_a, series_b)
         return None
+
+    @staticmethod
+    def _op_or_none(series: Optional[pd.Series], op: Callable[[pd.Series], Any]):
+        return op(series) if series is not None else None
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]):
@@ -228,6 +262,23 @@ class TimeSeries:
 
     def __truediv__(self, other: 'TimeSeries'):
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
+
+    def __abs__(self):
+        series = abs(self._series)
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: abs(s))
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: abs(s))
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def __neg__(self):
+        series = -self._series
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: -s)
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: -s)
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def __contains__(self, item):
+        if isinstance(item, pd.Timestamp):
+            return item in self._series.index
+        return False
 
     def __str__(self):
         df = pd.DataFrame({'value': self._series})
