@@ -19,6 +19,7 @@ class TimeSeries:
 
         assert len(series) >= 1, 'Time series must have at least one value'
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex'
+        assert np.issubdtype(series.dtype, np.number), 'Series must contain numerical values'
 
         self._series: pd.Series = series.sort_index()  # Sort by time
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
@@ -143,6 +144,29 @@ class TimeSeries:
         :return:
         """
         return self.slice(other.start_time(), other.end_time())
+
+    def rescale_with_value(self, value_at_first_step: float):
+        """
+        Returns a new time series, which is a multiple of this time series having first value [value_at_first_step]
+        :param value_at_first_step:
+        :return:
+        """
+        coef = value_at_first_step / self.values()[0]
+        new_series = coef * self._series
+        new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
+        new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * coef)
+        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
+
+    def shift(self, n):
+        """
+        Wrapper around pandas.Series.shift().
+        :param n:
+        :return:
+        """
+        new_series = self._series.shift(n)
+        new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s.shift(n))
+        new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s.shift(n))
+        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame, time_col: str, value_col: str,
