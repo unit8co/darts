@@ -51,7 +51,7 @@ def simulate_forecast_ar(series: TimeSeries,
     assert start in series, 'The provided start timestamp is not in the time series.'
     assert start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series'
 
-    last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.end_time()
+    last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -65,8 +65,9 @@ def simulate_forecast_ar(series: TimeSeries,
     iterator = _build_iterator(pred_times, verbose)
 
     for pred_time in iterator:
-        if not verbose: print('.', end='')
-        train, _ = series.split_after(pred_time)  # build the training series
+        if not verbose:
+            print('.', end='')
+        train = series.drop_end(pred_time)  # build the training series
 
         model.fit(train)
         pred = model.predict(fcast_horizon_n)
@@ -104,7 +105,7 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     assert start in target_series, 'The provided start timestamp is not in the time series.'
     assert start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series'
 
-    last_pred_time = target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series else target_series.end_time()
+    last_pred_time = target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series else target_series.time_index()[-2]
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -118,10 +119,11 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     iterator = _build_iterator(pred_times, verbose)
 
     for pred_time in iterator:
-        if not verbose: print('.', end='')
+        if not verbose:
+            print('.', end='')
         # build train/val series
-        train_features = [s.split_after(pred_time)[0] for s in feature_series]
-        train_target, _ = target_series.split_after(pred_time)
+        train_features = [s.drop_end(pred_time) for s in feature_series]
+        train_target = target_series.drop_end(pred_time)
         val_features = [s.slice_n_points_after(pred_time + target_series.freq(), fcast_horizon_n)
                         for s in feature_series]
 
