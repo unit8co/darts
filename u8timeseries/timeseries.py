@@ -93,8 +93,24 @@ class TimeSeries:
         """
         assert ts in self._series.index, 'The provided timestamp is not in the time series'
 
-        end_first_series: pd.Timestamp = ts - self.freq() # second series does not include ts
+        end_first_series: pd.Timestamp = ts - self.freq()  # second series does not include ts
         return self.slice(self.start_time(), end_first_series), self.slice(ts, self.end_time())
+
+    def drop_end(self, ts: pd.Timestamp) -> 'TimeSeries':
+        """
+        Drops everything after ts, included
+        """
+        assert ts in self._series.index, 'The provided timestamp is not in the time series'
+        end_series: pd.Timestamp = ts - self.freq()
+        return self.slice(self.start_time(), end_series)
+
+    def drop_beginning(self, ts: pd.Timestamp) -> 'TimeSeries':
+        """
+        Drops everything before ts, included
+        """
+        assert ts in self._series.index, 'The provided timestamp is not in the time series'
+        start_series: pd.Timestamp = ts + self.freq()
+        return self.slice(start_series, self.end_time())
 
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
@@ -159,13 +175,21 @@ class TimeSeries:
 
     def shift(self, n):
         """
-        Wrapper around pandas.Series.shift().
-        :param n:
-        :return:
+        Shifts the time axis of this TimeSeries by [n] time steps in the future;
+        e.g., with n=2, Jan 2013 becomes March 2013.
         """
-        new_series = self._series.shift(n)
-        new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s.shift(n))
-        new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s.shift(n))
+        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
+        new_series = self._series.copy()
+        new_series.index = new_time_index
+        new_conf_lo = None
+        new_conf_hi = None
+        if self._confidence_lo is not None:
+            new_conf_lo = self._confidence_lo.copy()
+            new_conf_lo.index = new_time_index
+        if self._confidence_hi is not None:
+            new_conf_hi = self._confidence_hi.copy()
+            new_conf_hi.index = new_time_index
+
         return TimeSeries(new_series, new_conf_lo, new_conf_hi)
 
     @staticmethod
