@@ -10,14 +10,13 @@ setup(name='u8timeseries',
       packages=find_packages(),
       install_requires=[
           'dateutils>=0.6.6',
+          'scipy==1.2',  # latest cause issue with pmdarima imports
           'statsmodels>=0.9.0',
-          'scipy==1.2.1',  # pdmarima requires 1.2.1, not 1.3.*
-          'pmdarima>=1.2.0',
+          'pmdarima',
           'fbprophet>=0.5',
-          'scikit-learn>=0.21.2',
-          'pandas==0.20.1',  # new versions have plotting bug
+          'scikit->=0.21.2',
+          'pandas>=0.23.1',
           'tqdm>=4.32.1',
           'numpy>=1.15.4'
       ],
       zip_safe=False)
-
