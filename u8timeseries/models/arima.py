@@ -1,6 +1,6 @@
 from .autoregressive_model import AutoRegressiveModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
-from pyramid.arima import auto_arima
+from pmdarima import auto_arima
 from ..timeseries import TimeSeries
 
 

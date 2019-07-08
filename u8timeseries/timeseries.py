@@ -227,7 +227,12 @@ class TimeSeries:
         """
         Currently this is just a wrapper around pd.Series.plot()
         """
-        self._series.plot(*args, **kwargs)
+        # temporary work-around for the pandas.plot issue
+        plt.plot(self.time_index(), self.values(), *args, **kwargs)
+        x_label = self.time_index().name
+        if x_label is not None and len(x_label) > 0:
+            plt.xlabel(x_label)
+        # TODO: use pandas plot in the future
         if plot_ci and self._confidence_lo is not None and self._confidence_hi is not None:
             plt.fill_between(self.time_index(), self._confidence_lo.values, self._confidence_hi.values, alpha=0.5)
 
