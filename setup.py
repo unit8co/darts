@@ -11,7 +11,7 @@ setup(name='u8timeseries',
       install_requires=[
           'dateutils',
           'scipy<1.3',
-          'statsmodels',
+          'statsmodels==0.9.0',
           'pmdarima',
           'fbprophet',
           'scikit-learn',
