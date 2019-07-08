@@ -1,6 +1,7 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
 import statsmodels.tsa.holtwinters as hw
+import numpy as np
 
 
 class ExponentialSmoothing(AutoRegressiveModel):
@@ -17,7 +18,7 @@ class ExponentialSmoothing(AutoRegressiveModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.model = hw.ExponentialSmoothing(series.values(),
+        self.model = hw.ExponentialSmoothing(series.values().astyoe(np.double),
                                              trend=self.trend,
                                              seasonal=self.seasonal,
                                              seasonal_periods=self.seasonal_periods).fit()
