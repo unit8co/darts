@@ -18,7 +18,7 @@ class ExponentialSmoothing(AutoRegressiveModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.model = hw.ExponentialSmoothing(series.values().astype(np.double),
+        self.model = hw.ExponentialSmoothing(series.values(),
                                              trend=self.trend,
                                              seasonal=self.seasonal,
                                              seasonal_periods=self.seasonal_periods).fit()
