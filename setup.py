@@ -14,7 +14,7 @@ setup(name='u8timeseries',
           'statsmodels>=0.9.0',
           'pmdarima',
           'fbprophet>=0.5',
-          'scikit->=0.21.2',
+          'scikit-learn>=0.21.2',
           'pandas>=0.23.1',
           'tqdm>=4.32.1',
           'numpy>=1.15.4'
