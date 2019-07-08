@@ -18,11 +18,7 @@ USER $NB_USER
 
 # u8ts specific deps
 RUN pip install pystan
-<<<<<<< HEAD
 COPY requirements-docker.txt /deps/requirements.txt
-=======
-COPY requirements.txt /deps/requirements.txt
->>>>>>> Dockerfile for dev including jupyter-notebook and all dependancies
 WORKDIR /deps
 RUN pip install -r requirements.txt
 ADD . /home/jovyan/work
