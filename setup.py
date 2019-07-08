@@ -9,14 +9,14 @@ setup(name='u8timeseries',
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=[
-          'dateutils>=0.6.6',
-          'scipy==1.2',  # latest cause issue with pmdarima imports
-          'statsmodels>=0.9.0',
+          'dateutils',
+          'scipy<1.3',
+          'statsmodels',
           'pmdarima',
-          'fbprophet>=0.5',
-          'scikit-learn>=0.21.2',
-          'pandas>=0.23.1',
-          'tqdm>=4.32.1',
-          'numpy>=1.15.4'
+          'fbprophet',
+          'scikit-learn',
+          'pandas',
+          'tqdm',
+          'numpy'
       ],
       zip_safe=False)
