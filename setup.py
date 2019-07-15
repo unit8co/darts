@@ -10,13 +10,15 @@ setup(name='u8timeseries',
       packages=['u8timeseries'],
       install_requires=[
           'dateutils',
-          'statsmodels',
-          'pyramid-arima',
-          'fbprophet',
+          'scipy<1.3',
+          'statsmodels==0.9.0',
+          'pmdarima',
+          'plotly',
+          'fbprophet>=0.5',
           'scikit-learn',
           'pandas',
           'tqdm',
-          'numpy==1.15.4'  # more recent not yet supported by Prophet
+          'numpy'
       ],
       zip_safe=False)
 
