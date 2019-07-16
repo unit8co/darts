@@ -12,7 +12,7 @@ class Prophet(AutoRegressiveModel):
 
                                  See: https://github.com/dr-prodigy/python-holidays
 
-                                 In addition, In addition to those countries, Prophet includes holidays for these
+                                 In addition to those countries, Prophet includes holidays for these
                                  countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
                                  Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
                                  Egypt (EG), China (CN), and Russian (RU).
