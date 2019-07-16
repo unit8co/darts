@@ -1,0 +1,13 @@
+numpy
+pystan
+scikit-learn
+scipy<1.3
+pmdarima
+dateutils
+statsmodels==0.9.0
+matplotlib
+pandas
+tqdm
+joblib
+plotly
+fbprophet

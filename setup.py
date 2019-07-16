@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='u8timeseries',
       version='0.1',
@@ -7,7 +7,7 @@ setup(name='u8timeseries',
       author='Unit8',
       author_email='info@unit8.co',
       license='Apache License 2.0',
-      packages=['u8timeseries'],
+      packages=find_packages(),
       install_requires=[
           'dateutils',
           'scipy<1.3',
@@ -21,4 +21,3 @@ setup(name='u8timeseries',
           'numpy'
       ],
       zip_safe=False)
-
