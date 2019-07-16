@@ -6,7 +6,7 @@ import fbprophet
 
 class Prophet(AutoRegressiveModel):
 
-    def __init__(self, country_holidays: str=None, weekly_seasonality=False, daily_seasonality=False):
+    def __init__(self, weekly_seasonality=False, daily_seasonality=False, country_holidays: str=None):
         """
         :param country_holidays: An optional country code, for which holidays can be taken into account by Prophet.
 
