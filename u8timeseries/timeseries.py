@@ -167,6 +167,9 @@ class TimeSeries:
         :param value_at_first_step:
         :return:
         """
+        
+        assert self.values()[0] != 0, 'Cannot rescale with first value 0.'
+        
         coef = value_at_first_step / self.values()[0]
         new_series = coef * self._series
         new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
@@ -243,10 +246,11 @@ class TimeSeries:
         if self.__len__() != len(other):
             return False
         return all(other.time_index() == self.time_index())
-
+    
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
-        assert other.start_time() == self.end_time() + self.freq(), 'appended TimeSeries must start one time step' \
-                                                                    'after current one'
+        assert other.start_time() == self.end_time() + self.freq(), 'Appended TimeSeries must start one time step ' \
+                                                                    'after current one.'
+                                                                    
         series = self._series.append(other.pd_series())
         conf_lo = None
         conf_hi = None
@@ -303,17 +307,57 @@ class TimeSeries:
 
     def __len__(self):
         return len(self._series)
-
-    def __add__(self, other: 'TimeSeries'):
+    
+    def __add__(self, other):
+        if isinstance(other, (int, float)):
+            new_series = self._series + other
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s + other)
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s + other)
+            return TimeSeries(new_series, conf_lo, conf_hi)
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
-
-    def __sub__(self, other: 'TimeSeries'):
+        
+    def __radd__(self, other):
+        return self + other
+    
+    def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            new_series = self._series - other
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
+            return TimeSeries(new_series, conf_lo, conf_hi)
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
+    
+    def __rsub__(self, other):
+        return other + (-self)
 
-    def __mul__(self, other: 'TimeSeries'):
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            new_series = self._series * other
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
+            return TimeSeries(new_series, conf_lo, conf_hi)
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
+    
+    def __rmul__(self, other):
+        return self * other
+  
+    def __pow__(self, n):
+        new_series = self._series ** n
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: s ** n)
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** n)
+        return TimeSeries(new_series, conf_lo, conf_hi)        
 
-    def __truediv__(self, other: 'TimeSeries'):
+    def __truediv__(self, other):
+        if isinstance(other, (int, float)):
+            assert other != 0, 'Cannot divide by 0.'
+            
+            new_series = self._series / other
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s / other)
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s / other)
+            return TimeSeries(new_series, conf_lo, conf_hi)        
+        
+        assert all(other.values() != 0), 'Cannot divide by a TimeSeries with a value 0.'
+        
         return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
 
     def __abs__(self):
