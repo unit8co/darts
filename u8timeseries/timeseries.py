@@ -383,7 +383,7 @@ class TimeSeries:
 
         if self.__len__() != len(other):
             return False
-        return other.time_index() == self.time_index().all()
+        return (other.time_index() == self.time_index()).all()
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
