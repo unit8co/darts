@@ -243,8 +243,7 @@ class TimeSeries:
 
         assert n >= 0, 'n should be a positive integer.'
 
-        if (start_ts < self.start_time()) or (start_ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+        self._raise_if_not_within(ts)
 
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
 
@@ -264,8 +263,7 @@ class TimeSeries:
 
         assert n >= 0, 'n should be a positive integer.'
 
-        if (end_ts < self.start_time()) or (end_ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+        self._raise_if_not_within(ts)
 
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
 
