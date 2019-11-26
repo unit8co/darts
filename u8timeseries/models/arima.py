@@ -5,6 +5,9 @@ from ..timeseries import TimeSeries
 
 
 class Arima(AutoRegressiveModel):
+    """
+    Implements ARIMA  model
+    """
 
     def __init__(self, p=12, d=1, q=0):
         super().__init__()
