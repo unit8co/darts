@@ -131,6 +131,11 @@ class TimeSeries:
         """
         return self._series.index[-1] - self._series.index[0]
 
+    def _raise_if_not_within(self, ts: pd.Timestamp):
+
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+
     def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
         """
         Splits the TimeSeries in two, around a provided timestamp [ts].
@@ -142,8 +147,8 @@ class TimeSeries:
         :return: A tuple (s1, s2) of TimeSeries with indices smaller or equal to [ts]
                  and greater than [ts] respectively.
         """
-        if (ts < self.start_time()) or (ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+
+        self._raise_if_not_within(ts)
 
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
 
@@ -161,8 +166,7 @@ class TimeSeries:
         :return: A tuple (s1, s2) of TimeSeries with indices smaller than [ts]
                  and greater or equal to [ts] respectively.
         """
-        if (ts < self.start_time()) or (ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+        self._raise_if_not_within(ts)
 
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
 
@@ -178,8 +182,7 @@ class TimeSeries:
         :param ts: The timestamp that indicates cut-off time.
         :return: A new TimeSeries, with indices smaller than [ts].
         """
-        if (ts < self.start_time()) or (ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+        self._raise_if_not_within(ts)
 
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
 
@@ -195,8 +198,7 @@ class TimeSeries:
         :param ts: The timestamp that indicates cut-off time.
         :return: A new TimeSeries, with indices greater than [ts].
         """
-        if (ts < self.start_time()) or (ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+        self._raise_if_not_within(ts)
 
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
 
