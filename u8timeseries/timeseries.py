@@ -1,8 +1,12 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
+from statsmodels.tsa.stattools import acf
+from scipy.stats import norm
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 class TimeSeries:
@@ -135,8 +139,11 @@ class TimeSeries:
         first of the two TimeSeries, and not in the second.
         
         :param ts: The timestamp that indicates the splitting time.
-        :return: A tuple (s1, s2) of TimeSeries with indices smaller or equal to ts and greater than ts respectively.
+        :return: A tuple (s1, s2) of TimeSeries with indices smaller or equal to [ts]
+                 and greater than [ts] respectively.
         """
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
 
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
 
@@ -151,38 +158,45 @@ class TimeSeries:
         second of the two TimeSeries, and not in the first.
 
         :param ts: The timestamp that indicates the splitting time.
-        :return: A tuple (s1, s2) of TimeSeries with indices smaller than ts and greater or equal to ts respectively.
+        :return: A tuple (s1, s2) of TimeSeries with indices smaller than [ts]
+                 and greater or equal to [ts] respectively.
         """
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
 
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
 
         end_first_series: pd.Timestamp = ts - self.freq()  # second series does not include ts
         return self.slice(self.start_time(), end_first_series), self.slice(ts, self.end_time())
 
-    def drop_end(self, ts: pd.Timestamp) -> 'TimeSeries':
+    def drop_after(self, ts: pd.Timestamp) -> 'TimeSeries':
         """
-        Drops everything after the provided timestamp [ts].
+        Drops everything after the provided timestamp [ts], included.
 
         The timestamp may not be in the TimeSeries. If it is, the timestamp will be dropped.
 
         :param ts: The timestamp that indicates cut-off time.
-        :return: A new TimeSeries, with indices smaller or equal than [ts].
+        :return: A new TimeSeries, with indices smaller than [ts].
         """
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
 
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
 
         end_series: pd.Timestamp = ts - self.freq()  # new series does not include ts
         return self.slice(self.start_time(), end_series)
 
-    def drop_beginning(self, ts: pd.Timestamp) -> 'TimeSeries':
+    def drop_before(self, ts: pd.Timestamp) -> 'TimeSeries':
         """
-        Drops everything before the provided timestamp [ts].
+        Drops everything before the provided timestamp [ts], included.
 
         The timestamp may not be in the TimeSeries. If it is, the timestamp will be dropped.
 
         :param ts: The timestamp that indicates cut-off time.
         :return: A new TimeSeries, with indices greater than [ts].
         """
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
 
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
 
@@ -191,7 +205,7 @@ class TimeSeries:
 
     def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
         """
-        Returns a new TimeSeries, starting later than [start_ts] and ending before [end_ts].
+        Returns a new TimeSeries, starting later than [start_ts] and ending before [end_ts], inclusive on both ends.
 
         The timestamps may not be in the time series. If any is, it will be included in the new time series.
 
@@ -216,7 +230,7 @@ class TimeSeries:
 
     def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
-        Returns a new TimeSeries, starting later than [start_ts] and having (at most) [n] points.
+        Returns a new TimeSeries, starting later than [start_ts] (included) and having (at most) [n] points.
 
         The timestamp may not be in the time series. If it is, it will be included in the new TimeSeries.
 
@@ -227,6 +241,9 @@ class TimeSeries:
 
         assert n >= 0, 'n should be a positive integer.'
 
+        if (start_ts < self.start_time()) or (start_ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
 
         end_ts: pd.Timestamp = start_ts + (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
@@ -234,7 +251,7 @@ class TimeSeries:
 
     def slice_n_points_before(self, end_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
-        Returns a new TimeSeries, ending before [end_ts] and having (at most) [n] points.
+        Returns a new TimeSeries, ending before [end_ts] (included) and having (at most) [n] points.
 
         The timestamp may not be in the TimeSeries. If it is, it will be included in the new TimeSeries.
 
@@ -244,6 +261,9 @@ class TimeSeries:
         """
 
         assert n >= 0, 'n should be a positive integer.'
+
+        if (end_ts < self.start_time()) or (end_ts > self.end_time()):
+            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
 
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
 
@@ -262,6 +282,9 @@ class TimeSeries:
         def _intersect_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
             if s is not None:
                 new_index = self.time_index().intersection(other.time_index())
+
+                assert len(s) > 2, 'The two series do not have enough common times.'
+
                 return s[new_index]
             return None
 
