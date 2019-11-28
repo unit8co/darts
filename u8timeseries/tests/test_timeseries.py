@@ -84,9 +84,27 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
         targetAdd = TimeSeries(pd.Series(range(2, 12), index=self.pd_series1.index))
         targetSub = TimeSeries(pd.Series(range(-2, 8), index=self.pd_series1.index))
+        targetMul = TimeSeries(pd.Series(range(0, 20, 2), index=self.pd_series1.index))
+        targetDiv = TimeSeries(pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index))
+        targetPow = TimeSeries(pd.Series([float(i ** 2) for i in range(10)], index=self.pd_series1.index))
 
         self.assertEqual(self.series1 + seriesA, targetAdd)
+        self.assertEqual(self.series1 + 2, targetAdd)
         self.assertEqual(self.series1 - seriesA, targetSub)
+        self.assertEqual(self.series1 - 2, targetSub)
+        self.assertEqual(self.series1 * seriesA, targetMul)
+        self.assertEqual(self.series1 * 2, targetMul)
+        self.assertEqual(self.series1 / seriesA, targetDiv)
+        self.assertEqual(self.series1 / 2, targetDiv)
+        self.assertEqual(self.series1 ** 2, targetPow)
+
+        with self.assertRaises(AssertionError):
+            # Cannot divide by a TimeSeries with a value 0.
+            self.series1 / self.series1
+
+        with self.assertRaises(AssertionError):
+            # Cannot divide by 0.
+            self.series1 / 0
 
 
 if __name__ == "__main__":
