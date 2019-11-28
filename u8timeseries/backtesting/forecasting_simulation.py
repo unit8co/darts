@@ -67,7 +67,7 @@ def simulate_forecast_ar(series: TimeSeries,
     for pred_time in iterator:
         if not verbose:
             print('.', end='')
-        train = series.drop_end(pred_time)  # build the training series
+        train = series.drop_after(pred_time)  # build the training series
 
         model.fit(train)
         pred = model.predict(fcast_horizon_n)
@@ -122,8 +122,8 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
         if not verbose:
             print('.', end='')
         # build train/val series
-        train_features = [s.drop_end(pred_time) for s in feature_series]
-        train_target = target_series.drop_end(pred_time)
+        train_features = [s.drop_after(pred_time) for s in feature_series]
+        train_target = target_series.drop_after(pred_time)
         val_features = [s.slice_n_points_after(pred_time + target_series.freq(), fcast_horizon_n)
                         for s in feature_series]
 
