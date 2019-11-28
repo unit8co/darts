@@ -539,16 +539,15 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float)):
-            if isinstance(other, (int, float)):
-                new_series = self._series - other
-                conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
-                conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
-                return TimeSeries(new_series, conf_lo, conf_hi)
-            elif isinstance(other, TimeSeries):
-                return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
-            else:
-                raise TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
-                                .format(type(self).__name__, type(other).__name__))
+            new_series = self._series - other
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
+            return TimeSeries(new_series, conf_lo, conf_hi)
+        elif isinstance(other, TimeSeries):
+            return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
+        else:
+            raise TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
 
     def __rsub__(self, other):
         return other + (-self)

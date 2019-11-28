@@ -90,10 +90,12 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         self.assertEqual(self.series1 + seriesA, targetAdd)
         self.assertEqual(self.series1 + 2, targetAdd)
+        self.assertEqual(2 + self.series1, targetAdd)
         self.assertEqual(self.series1 - seriesA, targetSub)
         self.assertEqual(self.series1 - 2, targetSub)
         self.assertEqual(self.series1 * seriesA, targetMul)
         self.assertEqual(self.series1 * 2, targetMul)
+        self.assertEqual(2 * self.series1, targetMul)
         self.assertEqual(self.series1 / seriesA, targetDiv)
         self.assertEqual(self.series1 / 2, targetDiv)
         self.assertEqual(self.series1 ** 2, targetPow)
