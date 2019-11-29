@@ -1,12 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
-from statsmodels.tsa.stattools import acf
-from scipy.stats import norm
-from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 class TimeSeries:
@@ -243,7 +239,7 @@ class TimeSeries:
 
         assert n >= 0, 'n should be a positive integer.'
 
-        self._raise_if_not_within(ts)
+        self._raise_if_not_within(start_ts)
 
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
 
@@ -263,7 +259,7 @@ class TimeSeries:
 
         assert n >= 0, 'n should be a positive integer.'
 
-        self._raise_if_not_within(ts)
+        self._raise_if_not_within(end_ts)
 
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
 
@@ -532,7 +528,11 @@ class TimeSeries:
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s + other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s + other)
             return TimeSeries(new_series, conf_lo, conf_hi)
-        return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
+        elif isinstance(other, TimeSeries):
+            return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
+        else:
+            raise TypeError('unsupported operand type(s) for + or add(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
 
     def __radd__(self, other):
         return self + other
@@ -543,7 +543,11 @@ class TimeSeries:
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
             return TimeSeries(new_series, conf_lo, conf_hi)
-        return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
+        elif isinstance(other, TimeSeries):
+            return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
+        else:
+            raise TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
 
     def __rsub__(self, other):
         return other + (-self)
@@ -554,19 +558,27 @@ class TimeSeries:
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
             return TimeSeries(new_series, conf_lo, conf_hi)
-        return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
+        elif isinstance(other, TimeSeries):
+            return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
+        else:
+            raise TypeError('unsupported operand type(s) for * or mul(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
 
     def __rmul__(self, other):
         return self * other
 
     def __pow__(self, n):
-        if n < 0:
-            assert all(self.values() != 0), 'Cannot divide by a TimeSeries with a value 0.'
+        if isinstance(n, (int, float)):
+            if n < 0:
+                assert all(self.values() != 0), 'Cannot divide by a TimeSeries with a value 0.'
 
-        new_series = self._series ** n
-        conf_lo = self._op_or_none(self._confidence_lo, lambda s: s ** n)
-        conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** n)
-        return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._series ** float(n)
+            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s ** float(n))
+            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** float(n))
+            return TimeSeries(new_series, conf_lo, conf_hi)
+        else:
+            raise TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.' \
+                            .format(type(self).__name__, type(n).__name__))
 
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
@@ -577,9 +589,13 @@ class TimeSeries:
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s / other)
             return TimeSeries(new_series, conf_lo, conf_hi)
 
-        assert all(other.values() != 0), 'Cannot divide by a TimeSeries with a value 0.'
+        elif isinstance(other, TimeSeries):
+            assert all(other.values() != 0), 'Cannot divide by a TimeSeries with a value 0.'
 
-        return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
+            return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
+        else:
+            raise TypeError('unsupported operand type(s) for / or truediv(): \'{}\' and \'{}\'.' \
+                            .format(type(self).__name__, type(other).__name__))
 
     def __rtruediv__(self, n):
         return n * (self ** (-1))
