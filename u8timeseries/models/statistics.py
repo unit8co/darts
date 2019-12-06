@@ -24,8 +24,11 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
     :return: A tuple (season, m), where s is a boolean indicating whether the TimeSeries has seasonality or not
              and m is the seasonality period.
     """
-    if m is not None and m < 0:
-        raise ValueError('m must be a positive integer.')
+    if m is not None and (m < 2 or not isinstance(m, int)):
+        raise ValueError('m must be an integer greater than 1.')
+
+    if m is not None and m > max_lag:
+        raise ValueError('max_lag must be greater or equal than m.')
 
     n_unique = np.unique(ts.values()).shape[0]
 
@@ -37,43 +40,44 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
     gradient = np.gradient(r)
     gradient_signs_changes = np.diff(np.sign(gradient))
 
-    if m is None:
-        # Tries to infer seasonality from AutoCorrelation Function if no value of m has been provided.
-        # We look for the first positive significant local maximum of the ACF by checking the sign changes
-        # in the gradient.
+    # Tries to infer seasonality from Auto-Correlation Function if no value of m has been provided.
+    # We look for the first positive significant local maximum of the ACF by checking the sign changes
+    # in the gradient.
 
-        # Local maximum is indicated by signs_change == -2.
-        if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
-            return False, 0
+    # Local maximum is indicated by signs_change == -2.
+    if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
+        print('The ACF has no local maximum.')
+        return False, 0
 
-        candidate = np.nonzero((gradient_signs_changes == -2))[0].tolist()
+    # Building a list of candidates for local maximum.
+    candidates = np.nonzero((gradient_signs_changes == -2))[0].tolist()
 
-    else:
+    # If a -2 value appears in gradient_signs_changes at index i, then the local
+    # maximum of r occurs either at index i or i+1. We check manually and change the candidates accordingly.
+    candidates = [i if r[i] >= r[i + 1] else i + 1 for i in candidates]
+
+    if m is not None:
         # Check for local maximum when m is user defined.
-        if m - 1 not in np.nonzero((gradient_signs_changes == -2))[0]:
+        test = m not in candidates
+
+        if test:
             return False, m
 
-        candidate = [m - 1]
+        candidates = [m]
 
     # Remove r[0], the auto-correlation at lag order 0, that introduces bias.
     r = r[1:]
 
     # The non-adjusted upper limit of the significance interval.
-    band_upper = r.mean() + norm.ppf(1 - alpha/2)*r.var()
+    band_upper = r.mean() + norm.ppf(1 - alpha / 2) * r.var()
 
-    # Significance test, stops at first admissible value.
-    is_significant = False
-    i = 0
-    c = 0
-
-    while not is_significant and i < len(candidate):
-        c = candidate[i] + 1
-        stat = _bartlett_formula(r, c - 1, len(ts))
-
-        is_significant = r[c-1] > stat * band_upper
-        i += 1
-
-    return is_significant, c
+    # Significance test, stops at first admissible value. The two '-1' below
+    # compensate for the index change due to the restriction of the original r to r[1:].
+    for candidate in candidates:
+        stat = _bartlett_formula(r, candidate - 1, len(ts))
+        if r[candidate - 1] > stat * band_upper:
+            return True, candidate
+    return False, 0
 
 
 def _bartlett_formula(r, m, length) -> float:
