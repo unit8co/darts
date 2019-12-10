@@ -46,7 +46,7 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
 
     # Local maximum is indicated by signs_change == -2.
     if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
-        print('The ACF has no local maximum.')
+        print('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
 
     # Building a list of candidates for local maximum.
