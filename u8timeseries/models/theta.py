@@ -29,18 +29,20 @@ class Theta(AutoRegressiveModel):
         self.seasonality = None
         self.season_period = 0
 
-        # The restriction of values is due to the following facts:
+        # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
-        # - if theta = 2, the formula for self.coef below fails.
+        # - if theta = 2, the formula for self.coef below fails, hence it is forbidden.
 
-        assert self.theta not in [1, 2], 'Theta should be neither 1 nor 2.'
+        if self.theta == 2:
+            raise ValueError('The parameter theta cannot be equal to 2.')
 
     def fit(self, ts, season_period: int = None):
         """
-        Fits the Theta method with parameter `theta` to the TimeSeries `ts` assuming that \
-                                                    the data has seasonality `season_period`.
+        Fits the Theta method to the TimeSeries `ts`.
 
 
+        The model decomposition is defined by the parameters `theta`, and the TimeSeries `ts`
+        is de-seasonalized according to `season_period`.
 
         :param ts: The TimeSeries to fit.
         :param season_period: User-defined seasonality period. Default to None.
@@ -53,6 +55,8 @@ class Theta(AutoRegressiveModel):
         # or infers season_period from the TimeSeries itself.
         self.is_seasonal, self.season_period = check_seasonality(ts, season_period)
 
+        new_ts = ts
+
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period)
@@ -61,9 +65,11 @@ class Theta(AutoRegressiveModel):
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
 
-        # Linear Regression part of the decomposition.
-        self.coef = np.polyfit(np.array([i for i in range(0, self.length)]),
-                               (1 - self.theta) * new_ts.values(), 1)[0] / (2.0 - self.theta)
+        # Linear Regression part of the decomposition. We select the degree one coefficient.
+        b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
+
+        # Normalization of the coefficient b_theta.
+        self.coef = b_theta / (2.0 - self.theta)
 
         self.alpha = self.model.params["smoothing_level"]
 
