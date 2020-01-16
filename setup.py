@@ -15,9 +15,9 @@ setup(name='u8timeseries',
           'pmdarima',
           'plotly',
           'fbprophet>=0.5',
-          'scikit-learn',
-          'pandas',
-          'tqdm',
-          'numpy'
+          'scikit-learn>=0.21.2',
+          'pandas>=0.23.1',
+          'tqdm>=4.32.1',
+          'numpy>=1.15.4'
       ],
       zip_safe=False)
