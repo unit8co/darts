@@ -6,9 +6,8 @@ from typing import Tuple, Optional, Callable, Any
 
 
 class TimeSeries:
-    def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
-        """
-        A TimeSeries is an immutable object defined by the following three components:
+    """
+        A TimeSeries is an immutable object defined by the following three components.
 
         :param series: The actual time series, as a pandas Series with a proper time index.
         :param confidence_lo: Optionally, a Pandas Series representing lower confidence interval.
@@ -16,7 +15,9 @@ class TimeSeries:
 
         Within this class, TimeSeries type annotations are 'TimeSeries'; see:
         https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
-        """
+    """
+
+    def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
         assert len(series) >= 1, 'Series must have at least one value.'
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.'

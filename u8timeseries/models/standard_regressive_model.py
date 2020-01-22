@@ -10,7 +10,8 @@ class StandardRegressiveModel(RegressiveModel):
 
     def __init__(self, train_n_points, model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
-        Simple regression based on other fit() predict() models (e.g., from sklearn)
+        Simple regression based on other fit() predict() models (e.g., from sklearn).
+
         :param train_n_points: The number of most recent points from the training time series that
                                will be used to train the regressive model. If the provided training series
                                contain fewer points, they will all be used for training.

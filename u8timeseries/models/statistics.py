@@ -10,12 +10,12 @@ import math
 
 def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05):
     """
-    Returns whether the TimeSeries [ts] is seasonal with period [m] or not.
+    Returns whether the TimeSeries `ts` is seasonal with period `m` or not.
 
     If [m] is None, we work under the assumption that there is a unique seasonality period, which is inferred
     from the Auto-correlation Function (ACF).
 
-    TODO : Generalize to multiple seasonality periods.
+    .. todo: Generalize to multiple seasonality periods.
 
     :param ts: The TimeSeries to check for seasonality.
     :param m: The seasonality period to check.
@@ -82,12 +82,12 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
 
 def _bartlett_formula(r, m, length) -> float:
     """
-    Computes the standard error of [r] at order [m] with respect to [length] according to Bartlett's formula.
+    Computes the standard error of `r` at order `m` with respect to `length` according to Bartlett's formula.
 
     :param r: The array whose standard error is to be computed.
     :param m: The order of the standard error.
     :param length: The size of the underlying sample to be used.
-    :return: The standard error of [r] with order [m].
+    :return: The standard error of `r` with order `m`.
     """
     if m == 1:
         return math.sqrt(1/length)
@@ -98,7 +98,7 @@ def _bartlett_formula(r, m, length) -> float:
 def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
                                                                 -> Tuple['TimeSeries', 'TimeSeries']:
     """
-    Extracts trend and seasonality from the TimeSeries [ts] using statsmodels.seasonal_decompose.
+    Extracts trend and seasonality from the TimeSeries `ts` using statsmodels.seasonal_decompose.
 
     :param ts: The TimeSeries to study.
     :param freq: The seasonality period to use.
@@ -116,12 +116,12 @@ def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str
 
 def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'TimeSeries':
     """
-    Removes the TimeSeries [other] from the TimeSeries [ts] according to the specified model.
+    Removes the TimeSeries `other` from the TimeSeries `ts` according to the specified model.
 
     :param ts: The TimeSeries to be modified.
     :param other: The TimeSeries to remove.
     :param model: The type of model considered (either 'additive' or 'multiplicative').
-    :return: A TimeSeries [new_ts], defined by removing [other] from [ts].
+    :return: A TimeSeries `new_ts`, defined by removing `other` from `ts`.
     """
     if (other.values() < 1e-6).any() and model == 'multiplicative':
         print("WARNING indexes equal to zero, cannot remove for a multiplicative model.")
@@ -138,7 +138,7 @@ def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'Ti
 def remove_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
                                                         -> 'TimeSeries':
     """
-    Adjusts the TimeSeries [ts] for a seasonality of order [frequency] using the [model] decomposition.
+    Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
     :param ts: The TimeSeries to adjust.
     :param freq: The seasonality period to use.
@@ -156,7 +156,7 @@ def remove_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multipl
 
 def remove_trend(ts: 'TimeSeries', model='multiplicative') -> 'TimeSeries':
     """
-    Adjusts the TimeSeries [ts] for a trend using the [model] decomposition.
+    Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.
 
     :param ts: The TimeSeries to adjust.
     :param model: The type of decomposition to use (additive or multiplicative).
@@ -173,14 +173,13 @@ def remove_trend(ts: 'TimeSeries', model='multiplicative') -> 'TimeSeries':
 def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05,
              fig_size: Tuple[int, int] = (10, 5)):
     """
-    Plots the ACF of [ts], highlighting it at lag [m], with corresponding significance interval.
+    Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
 
     :param ts: The TimeSeries whose ACF should be plotted.
     :param m:  The lag to highlight.
     :param max_lag: The maximal lag order to consider.
     :param alpha: The confidence interval.
     :param fig_size: The size of the figure to be displayed.
-    :return:
     """
     r = acf(ts.values(), nlags=max_lag)
 

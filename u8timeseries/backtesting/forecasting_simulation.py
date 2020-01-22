@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from IPython import get_ipython
 from tqdm import tqdm, tqdm_notebook
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
@@ -30,23 +31,27 @@ def _build_iterator(iterable, verbose):
     return iterator
 
 
-def simulate_forecast_ar(series: TimeSeries,
-                         model: AutoRegressiveModel,
-                         start: pd.Timestamp,
+def simulate_forecast_ar(series: 'TimeSeries',
+                         model: 'AutoRegressiveModel',
+                         start: 'pd.Timestamp',
                          fcast_horizon_n: int,
                          trim_to_series: bool = True,
-                         verbose=False) -> TimeSeries:
+                         verbose=False) -> 'TimeSeries':
     """
-    Returns a TimeSeries containing the forecasts that would have been obtained from a given AutoRegressiveModel,
-    on a given forecast time horizon.
+    Provides an environment for forecasting future values of the TimeSeries 'series`.
 
-    :param series: the main series to forecast
-    :param model: the AutoRegressiveModel to use
-    :param start: when the forecasts start (i.e., the first time at which a prediction is produced for a future time)
-    :param fcast_horizon_n: the forecast horizon
-    :param trim_to_series: whether the returned predicted series has the end trimmed to match the end of the main series
-    :param verbose: whether to print progress
-    :return:
+    This function predicts the `fcast_horizon_n` values for the TimeSeries `series` starting from the date `start`
+    according to the auto-regressive model `model`.
+
+    :param series: The TimeSeries to forecast.
+    :param model: The AutoRegressiveModel to use.
+    :param start: The first time at which a prediction is produced for a future time.
+    :param fcast_horizon_n: The number of future values to predict.
+    :param trim_to_series: Whether the predicted series has the end trimmed to match the end of the main series or not.
+    :param verbose: Whether to print progress or not.
+    :return: A TimeSeries containing the fore-casted values of `series` over the horizon with respect to the model \
+    `model`.
+
     """
     assert start in series, 'The provided start timestamp is not in the time series.'
     assert start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series'
@@ -88,8 +93,9 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     Returns a TimeSeries containing the forecasts that would have been obtained from a given RegressiveModel,
     on a given forecast time horizon.
 
-    TODO: optionally also return weights, when those are available in model
-    TODO: (getattr(model.model, 'coef_', None) is not None)
+    .. todo: review and add to documentation.
+    .. todo: optionally also return weights, when those are available in model
+    .. todo: (getattr(model.model, 'coef_', None) is not None)
 
     :param feature_series: the feature time series of the regressive model
     :param target_series: the target time series of the regressive model (i.e., the series to predict)

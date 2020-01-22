@@ -16,7 +16,7 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     """
     Returns a list of (training_set, validation_set) pairs for backtesting.
 
-    TODO: this is expanding training window, implement optional sliding window
+    .. todo: this is expanding training window, implement optional sliding window
 
     :param series: The full time series needs to be split
     :param start: the start time of the earliest validation set
@@ -50,13 +50,24 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     return series_pairs
 
 
-def backtest_autoregressive_model(model: AutoRegressiveModel, train_val_series: List[Tuple[TimeSeries, TimeSeries]],
-                                  eval_fn: Callable[[TimeSeries, TimeSeries], Any]) -> List[Any]:
+def backtest_autoregressive_model(model: 'AutoRegressiveModel',
+                                  train_val_series: List[Tuple['TimeSeries', 'TimeSeries']],
+                                  eval_fn: Callable[['TimeSeries', 'TimeSeries'], Any]) -> List[Any]:
     """
-    Returns a list of results obtained when calling [eval_fn] on the validation time series in [train_val_series] as
-    well as on the corresponding prediction obtained from [model]
+    Provides a back-testing environment.
 
-    TODO: option for point-prediction
+    Going through the list 'train_val_series`, this function successively trains a chosen auto-regressive model `model`
+    on the training TimeSeries provided, compares the prediction with the validation TimeSeries provided using
+    `eval_fn`.
+
+    The results are stored in a list, returned to the user.
+
+    .. todo: option for point-prediction
+
+    :param train_val_series: A list of tuples (train, val) to be passed to the model `model`.
+    :param model: The chosen model to use.
+    :param eval_fn: The evaluation criteria.
+    :return: A list of results obtain via the process described above.
     """
 
     results = []

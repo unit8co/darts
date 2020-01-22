@@ -5,20 +5,24 @@ import fbprophet
 
 
 class Prophet(AutoRegressiveModel):
+    """
+    Implementation of the Prophet model.
 
-    def __init__(self, weekly_seasonality=False, daily_seasonality=False, country_holidays: str=None):
-        """
-        :param country_holidays: An optional country code, for which holidays can be taken into account by Prophet.
+    Currently just a wrapper around the fbprophet implementation.
 
-                                 See: https://github.com/dr-prodigy/python-holidays
+    :param country_holidays: An optional country code, for which holidays can be taken into account by Prophet.
 
-                                 In addition to those countries, Prophet includes holidays for these
-                                 countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
-                                 Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
-                                 Egypt (EG), China (CN), and Russian (RU).
-        :param weekly_seasonality:
-        :param daily_seasonality:
-        """
+                             See: https://github.com/dr-prodigy/python-holidays
+
+                             In addition to those countries, Prophet includes holidays for these
+                             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
+                             Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
+                             Egypt (EG), China (CN), and Russian (RU).
+    :param weekly_seasonality:
+    :param daily_seasonality:
+    """
+
+    def __init__(self, weekly_seasonality=False, daily_seasonality=False, country_holidays: str = None):
 
         super().__init__()
 

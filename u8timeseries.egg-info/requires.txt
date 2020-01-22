@@ -1,0 +1,10 @@
+dateutils
+scipy<1.3
+statsmodels==0.9.0
+pmdarima
+plotly
+fbprophet>=0.5
+scikit-learn
+pandas
+tqdm
+numpy
