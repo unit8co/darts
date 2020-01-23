@@ -54,29 +54,30 @@ def change_of_state(ts: 'TimeSeries') -> Tuple[int, List]:
     return len(a[0]), list(a[0])
 
 
-def auto_fillna(ts: 'TimeSeries') -> 'TimeSeries':
+def auto_fillna(ts: 'TimeSeries', value: float = None) -> 'TimeSeries':
     """
-    This function automatically fills the missing value in the TimeSeries `ts`.
+    This function automatically fills the missing value in the TimeSeries `ts`, assuming they are represented by np.nan.
 
     The rules for completion are given below.
 
-    Missing values at the beginning are set to 0.
+    Missing values at the beginning are filled with constant value `value`. Defaults to backwards-fill.
     Missing values at the end are filled with a forward-fill.
     Missing values between to numeric values are set by linear interpolation.
 
     .. todo: be more flexible on the filling methods.
 
     :param ts: A TimeSeries `ts`.
+    :param value: The value to use for filling the beginning of the TimeSeries. Defaults to first known value in `ts`.
     :return: A new TimeSeries with all missing values filled according to the rules above.
     """
 
-    # We compute the number of times entries of the TimeSeries go from mssing to numeric and vice-versa
+    # We compute the number of times entries of the TimeSeries go from missing to numeric and vice-versa
     arr = np.where(np.diff(np.isnan(ts.values())) == True)[0]
 
-    ts_temp = ts.pd_series()
-
     if len(arr) == 0:
-        raise ValueError('Your TimeSeries has no missing value.')
+        return ts
+
+    ts_temp = ts.pd_series()
 
     # Checks if first value is missing
     entry_1 = np.isnan(ts.values()[0])
@@ -88,8 +89,12 @@ def auto_fillna(ts: 'TimeSeries') -> 'TimeSeries':
         nan_num = [arr[i] for i in range(len(arr)) if i % 2 == 0]
         num_nan = [arr[i] for i in range(len(arr)) if i % 2 == 1]
 
-        # If the TimeSeries starts with missing value, insert 0 everywhere
-        ts_temp[:nan_num[0] + 1] = 0
+        # If the TimeSeries starts with missing value, set value to be first known value.
+        if value is None:
+            value = ts_temp[nan_num[0] + 1]
+
+        # Insert value everywhere
+        ts_temp[:nan_num[0] + 1] = value
 
         nan_num.pop(0)
 
@@ -98,7 +103,7 @@ def auto_fillna(ts: 'TimeSeries') -> 'TimeSeries':
         nan_num = [arr[i] for i in range(len(arr)) if i % 2 == 1]
         num_nan = [arr[i] for i in range(len(arr)) if i % 2 == 0]
 
-    # One has that len(nan_num) = len(num_nan) or len(num_nan) - 1
+    # One has that either len(nan_num) = len(num_nan) or len(num_nan) - 1
 
     # As long as nan_num is not empty, the missing values are both preceded and followed by numeric values
     # Thus we can use linear interpolation between the closest known values to fill in the gaps.
@@ -118,4 +123,4 @@ def auto_fillna(ts: 'TimeSeries') -> 'TimeSeries':
     if len(num_nan) > 0:
         ts_temp[num_nan[0] + 1:] = ts_temp[num_nan[0]]
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values())
+    return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values)
