@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from timeseries import TimeSeries
+from ..timeseries import TimeSeries
 
 
 class TimeSeriesTestCase(unittest.TestCase):
@@ -50,10 +50,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130104'))
         self.assertEqual(seriesA.end_time(), pd.Timestamp('20130104'))
         self.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
-
-        with self.assertRaises(AssertionError):
-            # Timestamp must be in time series
-            _, _ = self.series1.split_after(pd.Timestamp('20130103 10:30:00'))
 
     def test_slice(self):
         # base case
