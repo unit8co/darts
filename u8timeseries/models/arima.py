@@ -5,8 +5,17 @@ from ..timeseries import TimeSeries
 
 
 class Arima(AutoRegressiveModel):
+    """
+    Implementation of an ARIMA model.
 
-    def __init__(self, p=12, d=1, q=0):
+    Currently a wrapper around the statsmodel implementation.
+
+    :param p: An integer representing the lag order.
+    :param d: An integer for the order of differentiation.
+    :param q: An interger for the size of the moving average window.
+    """
+
+    def __init__(self, p: int = 12, d: int = 1, q: int = 0):
         super().__init__()
         self.p = p
         self.d = d

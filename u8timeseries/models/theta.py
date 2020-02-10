@@ -12,10 +12,9 @@ class Theta(AutoRegressiveModel):
 
     :param theta: User-defined value for the theta parameter. Default to 0.
 
-    TODO: Maybe? Explain a bit what it is?
-    TODO: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
-    TODO: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
-    TODO: Try with something different than SES? They do that in the paper.
+    .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
+    .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
+    .. todo: Try with something different than SES? They do that in the paper.
     """
     def __init__(self, theta: int = 0):
         super().__init__()

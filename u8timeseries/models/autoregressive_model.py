@@ -7,7 +7,9 @@ from typing import Optional
 
 class AutoRegressiveModel(ABC):
     """
-    This is a base class for various implementation of uni-variate time series forecasting models
+    Base class for implementation of Auto-regressive models.
+
+    This is a base class for various implementation of uni-variate time series forecasting models.
     These models predict future values of one time series using no other data.
     """
 
@@ -27,13 +29,13 @@ class AutoRegressiveModel(ABC):
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
         """
-        :return: A TimeSeries containing the n next points, starting after the end of the training time series.
+        :return: A TimeSeries containing the `n` next points, starting after the end of the training time series.
         """
         assert self._fit_called, 'fit() must be called before predict()'
 
     def _generate_new_dates(self, n: int):
         """
-        Generate n new dates after the end of the training set
+        Generate `n` new dates after the end of the training set
         """
         new_dates = [self.training_series.time_index()[-1] + (i * self.training_series.freq()) for i in range(1, n+1)]
         return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())

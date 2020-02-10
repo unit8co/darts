@@ -4,8 +4,17 @@ import statsmodels.tsa.holtwinters as hw
 
 
 class ExponentialSmoothing(AutoRegressiveModel):
+    """
+    Implementation of a Simple Exponential Smoothing.
 
-    def __init__(self, trend='additive', seasonal='additive', seasonal_periods=12):
+    Currently just a wrapper around the statsmodels holtwinter implementation.
+
+    :param trend: A string for the type of trend to consider: either `additive` (default) or `multiplicative`.
+    :param seasonal: A string for the type of seasonality to consider: either `additive` (default) or `multiplicative`.
+    :param seasonal_periods: An integer, the order of seasonality to consider.
+    """
+
+    def __init__(self, trend: str = 'additive', seasonal: str = 'additive', seasonal_periods: int = 12):
         super().__init__()
         self.trend = trend
         self.seasonal = seasonal

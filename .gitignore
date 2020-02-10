@@ -1,2 +1,4 @@
 .idea
 *.pyc
+docs/
+u8timeseries.egg-info/
