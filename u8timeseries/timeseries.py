@@ -27,6 +27,7 @@ class TimeSeries:
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
+        # TODO: what to do when Series short (n<3)? Need to find frequency, or drop it?
         assert self._freq is not None, 'Could not infer frequency. Are some dates missing? Is Series too short (n=2)?'
 
         # TODO: are there some pandas Series where the line below causes issues?
@@ -206,7 +207,7 @@ class TimeSeries:
         """
         Returns a new TimeSeries, starting later than [start_ts] and ending before [end_ts], inclusive on both ends.
 
-        The timestamps may not be in the time series. If any is, it will be included in the new time series.
+        The timestamps may not be in the time series. TODO: should new timestamps be added?
 
         :param start_ts: The timestamp that indicates the left cut-off.
         :param end_ts: The timestamp that indicates the right cut-off.
@@ -238,7 +239,7 @@ class TimeSeries:
         :return: A new TimeSeries, with length at most [n] and indices greater or equal than [start_ts].
         """
 
-        assert n >= 0, 'n should be a positive integer.'
+        assert n >= 0, 'n should be a positive integer.'  # TODO: logically raise if n<3, cf. init
 
         self._raise_if_not_within(start_ts)
 
@@ -270,6 +271,8 @@ class TimeSeries:
     def intersect(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
+
+        TODO: this function does not really behave as described
 
         :param other: A second TimeSeries.
         :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
@@ -405,6 +408,8 @@ class TimeSeries:
             return False
         return (other.time_index() == self.time_index()).all()
 
+    # TODO: is union function useful too?
+    # TODO: should append only at the end of the series? or completing holes?
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Appends another TimeSeries to this TimeSeries.
@@ -492,6 +497,9 @@ class TimeSeries:
 
     def sum(self, axis=None, skipna=None, level=None, numeric_only=None, min_count=0, **kwargs) -> float:
         return self._series.sum(axis, skipna, level, numeric_only, min_count, **kwargs)
+
+    def median(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self._series.median(axis, skipna, level, numeric_only, **kwargs)
 
     def autocorr(self, lag=1) -> float:
         return self._series.autocorr(lag)
