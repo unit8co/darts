@@ -16,10 +16,10 @@ class TimeSeries:
         Within this class, TimeSeries type annotations are 'TimeSeries'; see:
         https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
     """
-
+    # TODO maybe add different init instead of different function
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
-        assert len(series) >= 1, 'Series must have at least one value.'
+        assert len(series) >= 3, 'Series must have at least one value.'  # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.'
         assert np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.'
 
@@ -27,7 +27,6 @@ class TimeSeries:
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
-        # TODO: what to do when Series short (n<3)? Need to find frequency, or drop it?
         assert self._freq is not None, 'Could not infer frequency. Are some dates missing? Is Series too short (n=2)?'
 
         # TODO: are there some pandas Series where the line below causes issues?
@@ -409,17 +408,19 @@ class TimeSeries:
         return (other.time_index() == self.time_index()).all()
 
     # TODO: is union function useful too?
-    # TODO: should append only at the end of the series? or completing holes?
+    # TODO: should append only at the end of the series? or can we create holes and "infer" their values?
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Appends another TimeSeries to this TimeSeries.
 
-        :param other: As second TimeSeries.
+        :param other: A second TimeSeries.
         :return: A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
 
         assert other.start_time() == self.end_time() + self.freq(), 'Appended TimeSeries must start one time step ' \
                                                                     'after current one.'
+        # TODO additional check?
+        assert other.freq() == self.freq(), 'Appended TimeSeries must have the same frequency as the current one'
 
         series = self._series.append(other.pd_series())
         conf_lo = None
@@ -429,6 +430,84 @@ class TimeSeries:
         if self._confidence_hi is not None and other.conf_hi_pd_series() is not None:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
         return TimeSeries(series, conf_lo, conf_hi)
+
+    def add(self, values: np.ndarray, index: pd.DatetimeIndex = None,
+            conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
+        """
+        Appends values to current TimeSeries. If no index is provided, assumes that the data follow the original data.
+
+        Do not add new confidence values if there were none first.
+
+        :param values: An array with the values to append.
+        :param index: A DateTimeIndex for each value (optional).
+        :param conf_lo: The lower confidence interval values (optional).
+        :param conf_hi: The higher confidence interval values (optional).
+        :return: A new TimeSeries with the new values appended
+        """
+        if index is None:
+            index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(len(values))])
+        assert isinstance(index, pd.DatetimeIndex), 'values must be indexed with a DatetimeIndex.'
+        assert len(index) == len(values)
+        assert self.time_index().intersection(index).empty, "cannot add already present time index"
+        new_indices = index.argsort()
+        index = index[new_indices]
+        # TODO do we really want that?
+        assert index[0] == self.end_time() + self.freq(), 'Appended index must start one time step ' \
+                                                          'after current one.'
+        assert index.freq == self.freq(), 'Appended index must have the same frequency as the current one'
+        values = values[new_indices]
+        new_series = pd.Series(values, index=index)
+        series = self._series.append(new_series)
+        if conf_lo is not None and self._confidence_lo is not None:
+            assert len(index) == len(conf_lo)
+            conf_lo = conf_lo[new_indices]
+            conf_lo = self._confidence_lo.append(pd.Series(conf_lo, index=index))
+        if conf_hi is not None and self._confidence_hi is not None:
+            assert len(index) == len(conf_hi)
+            conf_hi = conf_hi[new_indices]
+            conf_hi = self._confidence_hi.append(pd.Series(conf_hi, index=index))
+
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def update(self, index: pd.DatetimeIndex, values: np.ndarray = None,
+            conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
+        """
+        Updates the Series with the new values provided.
+        If indices are not in original TimeSeries, they will be discarded.
+        At least one parameter other than index must be filled.
+
+        :param index: A DateTimeIndex containing the indices to replace.
+        :param values: An array containing the values to replace (optional).
+        :param conf_lo: The lower confidence interval values to change (optional).
+        :param conf_hi: The higher confidence interval values (optional).
+        :return: A new TimeSeries with values updated.
+        """
+        assert not (values is None and conf_lo is None and conf_hi is None), "At least one parameter must be filled " \
+                                                                             "other than index"
+        assert True if values is None else len(values) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(values), len(index))
+        assert True if conf_lo is None else len(conf_lo) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(conf_lo), len(index))
+        assert True if conf_hi is None else len(conf_hi) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(conf_hi), len(index))
+        ignored_indices = [index.get_loc(ind) for ind in (set(index)-set(self.time_index()))]
+        index = index.delete(ignored_indices)
+        series = values if values is None else pd.Series(np.delete(values, ignored_indices), index=index)
+        conf_lo = conf_lo if conf_lo is None else pd.Series(np.delete(conf_lo, ignored_indices), index=index)
+        conf_hi = conf_hi if conf_hi is None else pd.Series(np.delete(conf_hi, ignored_indices), index=index)
+        assert len(index) > 0, "must give at least one correct index"
+        new_series = self.pd_series()
+        if series is not None:
+            self.pd_series().update(series)
+        print(new_series)
+        new_lo = self.conf_lo_pd_series()
+        if conf_lo is not None:
+            self.conf_lo_pd_series().update(conf_lo)
+        new_hi = self.conf_hi_pd_series()
+        if conf_hi is not None:
+            self.conf_hi_pd_series().update(conf_hi)
+
+        return TimeSeries(new_series, new_lo, new_hi)
 
     @staticmethod
     def _combine_or_none(series_a: Optional[pd.Series],
@@ -515,11 +594,12 @@ class TimeSeries:
         if isinstance(other, TimeSeries):
             if not self._series.equals(other.pd_series()):
                 return False
-            for other_ci in [other.conf_lo_pd_series(), other.conf_hi_pd_series()]:
-                if (other_ci is None) ^ (self._confidence_lo is None):
+            for other_ci, self_ci in zip([other.conf_lo_pd_series(), other.conf_hi_pd_series()],
+                                [self._confidence_lo, self._confidence_hi]):
+                if (other_ci is None) ^ (self_ci is None):
                     # only one is None
                     return False
-                if self._combine_or_none(self._confidence_lo, other_ci, lambda s1, s2: s1.equals(s2)) is False:
+                if self._combine_or_none(self_ci, other_ci, lambda s1, s2: s1.equals(s2)) is False:
                     # Note: we check for "False" explicitly, because None is OK..
                     return False
             return True
