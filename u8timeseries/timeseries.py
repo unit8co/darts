@@ -16,10 +16,9 @@ class TimeSeries:
         Within this class, TimeSeries type annotations are 'TimeSeries'; see:
         https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
     """
-    # TODO maybe add different init instead of different function
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
-        assert len(series) >= 3, 'Series must have at least one value.'  # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
+        assert len(series) >= 3, 'Series must have at least three values.'  # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.'
         assert np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.'
 
@@ -206,7 +205,7 @@ class TimeSeries:
         """
         Returns a new TimeSeries, starting later than [start_ts] and ending before [end_ts], inclusive on both ends.
 
-        The timestamps may not be in the time series. TODO: should new timestamps be added?
+        The timestamps may not be in the time series. TODO: should new timestamps be added? Think not
 
         :param start_ts: The timestamp that indicates the left cut-off.
         :param end_ts: The timestamp that indicates the right cut-off.
@@ -271,7 +270,8 @@ class TimeSeries:
         """
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
 
-        TODO: this function does not really behave as described
+        TODO: This function does not really behave as described. Not really an intersect
+        TODO: In case of no intersection found (or too small), should it raise an error (like now), or return None?
 
         :param other: A second TimeSeries.
         :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
@@ -291,10 +291,12 @@ class TimeSeries:
                           _intersect_not_none(self._confidence_lo),
                           _intersect_not_none(self._confidence_hi))
 
+    # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
         """
         Returns a new TimeSeries, which is a multiple of this TimeSeries such that
         the first value is [value_at_first_step].
+        Numerical imprecisions appear with [value_at_first_step] > 1e+24
 
         :param value_at_first_step: The new value for the first entry of the TimeSeries.
         :return: A new TimeSeries, whose first value was changed to [value_at_first_step] and whose others values
@@ -303,7 +305,7 @@ class TimeSeries:
 
         assert self.values()[0] != 0, 'Cannot rescale with first value 0.'
 
-        coef = value_at_first_step / self.values()[0]
+        coef = value_at_first_step / self.values()[0]  # TODO: should the new TimeSeries have the same dtype?
         new_series = coef * self._series
         new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
         new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * coef)
@@ -321,7 +323,7 @@ class TimeSeries:
         :return: A new TimeSeries, with a shifted index.
         """
 
-        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
+        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())  # TODO: check for overflow, otherwise not correct error message
         new_series = self._series.copy()
         new_series.index = new_time_index
         new_conf_lo = None
@@ -332,7 +334,6 @@ class TimeSeries:
         if self._confidence_hi is not None:
             new_conf_hi = self._confidence_hi.copy()
             new_conf_hi.index = new_time_index
-
         return TimeSeries(new_series, new_conf_lo, new_conf_hi)
 
     @staticmethod
@@ -348,6 +349,7 @@ class TimeSeries:
         :param conf_hi_col: The upper confidence interval column name (optional).
         :return: A TimeSeries constructed from the inputs.
         """
+        # TODO: return a list, object, ... of TimeSeries if there are multiple features (value-col). To decide
 
         times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
         series: pd.Series = pd.Series(df[value_col].values, index=times)
@@ -706,6 +708,53 @@ class TimeSeries:
             return item in self._series.index
         return False
 
+    def __round__(self, n=None):
+        series = self._series.round(n)
+        confidence_lo = self._op_or_none(self._confidence_lo, lambda s: s.round(n))
+        confidence_hi = self._op_or_none(self._confidence_hi, lambda s: s.round(n))
+        return TimeSeries(series, confidence_lo, confidence_hi)
+
+    # TODO: Ignoring confidence series for now
+    def __lt__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series < other
+        elif isinstance(other, TimeSeries):
+            series = self._series < other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series  # TODO should we return only the ndarray, the pd series, or our timeseries?
+
+    def __gt__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series > other
+        elif isinstance(other, TimeSeries):
+            series = self._series > other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for > : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
+    def __le__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series <= other
+        elif isinstance(other, TimeSeries):
+            series = self._series <= other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for <= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
+    def __ge__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series >= other
+        elif isinstance(other, TimeSeries):
+            series = self._series >= other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for >= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
     def __str__(self):
         df = pd.DataFrame({'value': self._series})
         if self._confidence_lo is not None:
@@ -713,3 +762,6 @@ class TimeSeries:
         if self._confidence_hi is not None:
             df['conf_high'] = self._confidence_hi
         return str(df) + '\nFreq: {}'.format(self.freq_str())
+
+    def __repr__(self):
+        return self.__str__()
