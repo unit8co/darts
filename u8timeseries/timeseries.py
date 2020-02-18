@@ -322,8 +322,13 @@ class TimeSeries:
         :param n: The signed number of time steps to shift by.
         :return: A new TimeSeries, with a shifted index.
         """
-
-        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())  # TODO: check for overflow, otherwise not correct error message
+        # TODO: no error raised if freq is different than day and overflow happens, so raise it ourselves
+        try:
+            self.time_index()[-1] + n * self.freq()
+        except pd.errors.OutOfBoundsDatetime:
+            raise OverflowError("the add operation between {} and {} will overflow".format(n * self.freq(),
+                                                                                           self.time_index()[-1]))
+        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
         new_series = self._series.copy()
         new_series.index = new_time_index
         new_conf_lo = None
@@ -385,6 +390,9 @@ class TimeSeries:
         Currently this is just a wrapper around pd.Series.plot()
         """
         # temporary work-around for the pandas.plot issue
+        # errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,
+        #                                lambda x, y: np.vstack([x.values, y.values]))
+        # self._series.plot(yerr=errors, *args, **kwargs)
         plt.plot(self.time_index(), self.values(), *args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
@@ -410,7 +418,7 @@ class TimeSeries:
         return (other.time_index() == self.time_index()).all()
 
     # TODO: is union function useful too?
-    # TODO: should append only at the end of the series? or can we create holes and "infer" their values?
+    # TODO: should append only at the end of the series? or can we create holes and "interpolate" their values?
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Appends another TimeSeries to this TimeSeries.
@@ -447,7 +455,7 @@ class TimeSeries:
         :return: A new TimeSeries with the new values appended
         """
         if index is None:
-            index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(len(values))])
+            index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(1, 1+len(values))])
         assert isinstance(index, pd.DatetimeIndex), 'values must be indexed with a DatetimeIndex.'
         assert len(index) == len(values)
         assert self.time_index().intersection(index).empty, "cannot add already present time index"
@@ -456,7 +464,7 @@ class TimeSeries:
         # TODO do we really want that?
         assert index[0] == self.end_time() + self.freq(), 'Appended index must start one time step ' \
                                                           'after current one.'
-        assert index.freq == self.freq(), 'Appended index must have the same frequency as the current one'
+        assert index.inferred_freq == self.freq_str(), 'Appended index must have the same frequency as the current one'
         values = values[new_indices]
         new_series = pd.Series(values, index=index)
         series = self._series.append(new_series)
