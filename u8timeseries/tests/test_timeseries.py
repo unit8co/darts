@@ -256,37 +256,38 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(seriesD.append(seriesE), self.series2)
         self.assertEqual(seriesD.append(seriesE).freq(), self.series2.freq())
 
-    def test_add(self):
+    def test_append_values(self):
         # reconstruct series
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130106'))
-        self.assertEqual(seriesA.add(seriesB.values(), seriesB.time_index()), self.series1)
-        self.assertEqual(seriesA.add(seriesB.values()), self.series1)
+        self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()), self.series1)
+        self.assertEqual(seriesA.append_values(seriesB.values()), self.series1)
 
         # same with CI
         seriesC, seriesD = self.series2.split_after(pd.Timestamp('20130106'))
-        self.assertEqual(seriesC.add(seriesD.values(), seriesD.time_index(),
+        self.assertEqual(seriesC.append_values(seriesD.values(), seriesD.time_index(),
                                      seriesD.conf_lo_pd_series().values,
                                      seriesD.conf_hi_pd_series().values), self.series2)
 
         # add only few element
-        self.assertEqual(self.series1.drop_after(pd.Timestamp('20130110')).add([9]), self.series1)
-        self.assertEqual(seriesA.add([]), seriesA)
+        self.assertEqual(self.series1.drop_after(pd.Timestamp('20130110')).append_values([9]), self.series1)
+        self.assertEqual(seriesA.append_values([]), seriesA)
 
         # randomize order
         rd_order = np.random.permutation(range(len(seriesB.values())))
-        self.assertEqual(seriesA.add(seriesB.values()[rd_order], seriesB.time_index()[rd_order]), self.series1)
+        self.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index()[rd_order]),
+                         self.series1)
 
         # add non consecutive index
         with self.assertRaises(AssertionError):
-            self.assertEqual(seriesA.add(seriesB.values(), seriesB.time_index()+seriesB.freq()), self.series1)
+            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()+seriesB.freq()), self.series1)
 
         # add existing indices
         with self.assertRaises(AssertionError):
-            self.assertEqual(seriesA.add(seriesB.values(), seriesB.time_index()-3*seriesB.freq()), self.series1)
+            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()-3*seriesB.freq()), self.series1)
 
         # other frequency
         with self.assertRaises(AssertionError):
-            self.assertEqual(seriesA.add(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
+            self.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
                              self.series1)
 
     def test_update(self):
@@ -349,14 +350,14 @@ class TimeSeriesTestCase(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.series1.update(self.times, conf_lo=range(5, 15))
 
-    def test_drop(self):
-        seriesA = self.series1.add([1])
-        self.assertEqual(seriesA.drop(pd.Timestamp('20130111'), inplace=False), self.series1)
-        seriesA.drop(pd.Timestamp('20130111'))
+    def test_drop_values(self):
+        seriesA = self.series1.append_values([1])
+        self.assertEqual(seriesA.drop_values(pd.Timestamp('20130111'), inplace=False), self.series1)
+        seriesA.drop_values(pd.Timestamp('20130111'))
         self.assertEqual(seriesA, self.series1)
 
         with self.assertRaises(KeyError):
-            seriesA.drop(pd.Timestamp('20130112'))
+            seriesA.drop_values(pd.Timestamp('20130112'))
 
     def test_ops(self):
         seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))

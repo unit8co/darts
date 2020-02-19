@@ -26,7 +26,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1+1, self.series1+1), 0)
-        self.assertEqual(metrics.mase_seasonal(self.series1+1, self.series1+1, 1), 0)
+        self.assertEqual(metrics.mase(self.series1+1, self.series1+1, 1), 0)
         self.assertEqual(metrics.marre(self.series1+1, self.series1+1), 0)
         self.assertEqual(metrics.r2_score(self.series1+1, self.series1+1), 1)
         self.assertEqual(metrics.overall_percentage_error(self.series1+1, self.series1+1), 0)
@@ -43,7 +43,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_season(self):
         with self.assertRaises(AssertionError):
-            metrics.mase_seasonal(self.series3, self.series3 * 1.3, 8)
+            metrics.mase(self.series3, self.series3 * 1.3, 8)
 
 
 if __name__ == '__main__':

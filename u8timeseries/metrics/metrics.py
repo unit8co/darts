@@ -56,7 +56,7 @@ def mase_old(true_series: TimeSeries, pred_series: TimeSeries) -> float:
     return errors / scale
 
 
-def mase_seasonal(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) -> float:
+def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) -> float:
     """
     Computes the Mean Absolute Scaled Error (MASE).
 
@@ -76,7 +76,8 @@ def mase_seasonal(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) 
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
     errors = np.sum(np.abs(y_true - y_pred))
     t = y_true.size
-    scale = t/(t-m) * np.sum(np.abs(np.diff(y_true, m)))
+    scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
+    assert not np.isclose(scale, 0), "cannot use MASE with periodical signals"
     return errors / scale
 
 

@@ -282,7 +282,6 @@ class TimeSeries:
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
 
         TODO: This function does not really behave as described. Not really an intersect
-        TODO: In case of no intersection found (or too small), should it raise an error (like now), or return None?
 
         :param other: A second TimeSeries.
         :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
@@ -452,7 +451,7 @@ class TimeSeries:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
         return TimeSeries(series, conf_lo, conf_hi)
 
-    def add(self, values: np.ndarray, index: pd.DatetimeIndex = None,
+    def append_values(self, values: np.ndarray, index: pd.DatetimeIndex = None,
             conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
         """
         Appends values to current TimeSeries, to the given indices.
@@ -552,7 +551,7 @@ class TimeSeries:
                 new_hi.update(conf_hi)
             return TimeSeries(new_series, new_lo, new_hi)
 
-    def drop(self, index: pd.DatetimeIndex, inplace: bool = True, **kwargs):
+    def drop_values(self, index: pd.DatetimeIndex, inplace: bool = True, **kwargs):
         """
         Remove elements of all series with specified indices.
 
