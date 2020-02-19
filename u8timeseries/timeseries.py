@@ -127,6 +127,17 @@ class TimeSeries:
         """
         return self._series.index[-1] - self._series.index[0]
 
+    def copy(self, deep: bool = True):
+        """
+        Make a copy of this object time series
+        :param deep: Make a deep copy. If False, the Series will be the same
+        :return: A copy of the TimeSeries
+        """
+        if deep:
+            return TimeSeries(self.pd_series(), self.conf_lo_pd_series(), self.conf_hi_pd_series())
+        else:
+            return TimeSeries(self._series, self._confidence_lo, self._confidence_hi)
+
     def _raise_if_not_within(self, ts: pd.Timestamp):
 
         if (ts < self.start_time()) or (ts > self.end_time()):
@@ -444,9 +455,11 @@ class TimeSeries:
     def add(self, values: np.ndarray, index: pd.DatetimeIndex = None,
             conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
         """
-        Appends values to current TimeSeries. If no index is provided, assumes that the data follow the original data.
+        Appends values to current TimeSeries, to the given indices.
 
-        Do not add new confidence values if there were none first.
+        If no index is provided, assumes that it follows the original data.
+        Does not add new confidence values if there were none first.
+        Does not update value if already existing indices are provided.
 
         :param values: An array with the values to append.
         :param index: A DateTimeIndex for each value (optional).
@@ -454,6 +467,10 @@ class TimeSeries:
         :param conf_hi: The higher confidence interval values (optional).
         :return: A new TimeSeries with the new values appended
         """
+        if len(values) < 1:
+            return self
+        if isinstance(values, list):
+            values = np.array(values)
         if index is None:
             index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(1, 1+len(values))])
         assert isinstance(index, pd.DatetimeIndex), 'values must be indexed with a DatetimeIndex.'
@@ -464,7 +481,12 @@ class TimeSeries:
         # TODO do we really want that?
         assert index[0] == self.end_time() + self.freq(), 'Appended index must start one time step ' \
                                                           'after current one.'
-        assert index.inferred_freq == self.freq_str(), 'Appended index must have the same frequency as the current one'
+        if len(index) > 2:
+            assert index.inferred_freq == self.freq_str(), 'Appended index must have ' \
+                                                           'the same frequency as the current one'
+        elif len(index) == 2:
+            assert index[-1] == index[0] + self.freq(), 'Appended index must have ' \
+                                                        'the same frequency as the current one'
         values = values[new_indices]
         new_series = pd.Series(values, index=index)
         series = self._series.append(new_series)
@@ -480,17 +502,21 @@ class TimeSeries:
         return TimeSeries(series, conf_lo, conf_hi)
 
     def update(self, index: pd.DatetimeIndex, values: np.ndarray = None,
-            conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
+               conf_lo: np.ndarray = None, conf_hi: np.ndarray = None, inplace: bool = True) -> 'TimeSeries':
         """
         Updates the Series with the new values provided.
         If indices are not in original TimeSeries, they will be discarded.
         At least one parameter other than index must be filled.
+        Use np.nan to ignore a specific index in a series.
+
+        It will raise an error if try to update a missing CI series
 
         :param index: A DateTimeIndex containing the indices to replace.
         :param values: An array containing the values to replace (optional).
         :param conf_lo: The lower confidence interval values to change (optional).
         :param conf_hi: The higher confidence interval values (optional).
-        :return: A new TimeSeries with values updated.
+        :param inplace: If True, do operation inplace and return None, defaults to True.
+        :return: A TimeSeries with values updated
         """
         assert not (values is None and conf_lo is None and conf_hi is None), "At least one parameter must be filled " \
                                                                              "other than index"
@@ -506,18 +532,41 @@ class TimeSeries:
         conf_lo = conf_lo if conf_lo is None else pd.Series(np.delete(conf_lo, ignored_indices), index=index)
         conf_hi = conf_hi if conf_hi is None else pd.Series(np.delete(conf_hi, ignored_indices), index=index)
         assert len(index) > 0, "must give at least one correct index"
-        new_series = self.pd_series()
-        if series is not None:
-            self.pd_series().update(series)
-        print(new_series)
-        new_lo = self.conf_lo_pd_series()
-        if conf_lo is not None:
-            self.conf_lo_pd_series().update(conf_lo)
-        new_hi = self.conf_hi_pd_series()
-        if conf_hi is not None:
-            self.conf_hi_pd_series().update(conf_hi)
+        if inplace:
+            if series is not None:
+                self._series.update(series)
+            if conf_lo is not None:
+                self._confidence_lo.update(conf_lo)
+            if conf_hi is not None:
+                self._confidence_hi.update(conf_hi)
+            return None
+        else:
+            new_series = self.pd_series()
+            new_lo = self.conf_lo_pd_series()
+            new_hi = self.conf_hi_pd_series()
+            if series is not None:
+                new_series.update(series)
+            if conf_lo is not None:
+                new_lo.update(conf_lo)
+            if conf_hi is not None:
+                new_hi.update(conf_hi)
+            return TimeSeries(new_series, new_lo, new_hi)
 
-        return TimeSeries(new_series, new_lo, new_hi)
+    def drop(self, index: pd.DatetimeIndex, inplace: bool = True, **kwargs):
+        """
+        Remove elements of all series with specified indices.
+
+        :param index: The indices to be dropped
+        :param kwargs: Option to pass to pd.Series drop method
+        :param inplace: If True, do operation inplace and return None, defaults to True.
+        :return: A TimeSeries with values dropped
+        """
+        series = self._series.drop(index=index, inplace=inplace, **kwargs)
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: s.drop(index, inplace=inplace, **kwargs))
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: s.drop(index, inplace=inplace, **kwargs))
+        if inplace:
+            return None
+        return TimeSeries(series, conf_lo, conf_hi)
 
     @staticmethod
     def _combine_or_none(series_a: Optional[pd.Series],
@@ -773,3 +822,9 @@ class TimeSeries:
 
     def __repr__(self):
         return self.__str__()
+
+    def __copy__(self, deep: bool = True):
+        return self.copy(deep=deep)
+
+    def __deepcopy__(self, memodict={}):
+        return self.copy(deep=True)
