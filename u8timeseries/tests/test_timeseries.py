@@ -387,6 +387,22 @@ class TimeSeriesTestCase(unittest.TestCase):
             # Cannot divide by 0.
             self.series1 / 0
 
+    def test_getitem(self):
+        seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
+        self.assertEqual(self.series1[pd.date_range('20130101', ' 20130104')], seriesA)
+        self.assertEqual(self.series1[:4], seriesA)
+        self.assertTrue(self.series1[pd.Timestamp('20130101')].equals(self.series1.pd_series()[:1]))
+        self.assertEqual(self.series1[pd.Timestamp('20130101'):pd.Timestamp('20130105')], seriesA)
+
+        with self.assertRaises(IndexError):
+            self.series1[pd.date_range('19990101', '19990201')]
+
+        with self.assertRaises(IndexError):
+            self.series1['19990101']
+
+        with self.assertRaises(IndexError):
+            self.series1[::-1]
+
 
 if __name__ == "__main__":
     unittest.main()

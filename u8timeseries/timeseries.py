@@ -827,3 +827,33 @@ class TimeSeries:
 
     def __deepcopy__(self, memodict={}):
         return self.copy(deep=True)
+
+    def __getitem__(self, item):
+        # return only main series if nb of values < 3
+        if isinstance(item, (int, pd.Timestamp)):
+            return self._series[[item]]
+        elif isinstance(item, (pd.DatetimeIndex, slice, list, np.ndarray)):
+            if isinstance(item, slice):
+                # if create a slice with timestamp, convert to indices
+                if item.start.__class__ == pd.Timestamp or item.stop.__class__ == pd.Timestamp:
+                    istart = None if item.start is None else self.time_index().get_loc(item.start)
+                    istop = None if item.stop is None else self.time_index().get_loc(item.stop)
+                    item = slice(istart, istop, item.step)
+                # cannot reverse order
+                if item.indices(len(self))[-1] == -1:
+                    raise IndexError("Cannot have a backward TimeSeries")
+            # Verify that values in item are really in index to avoid the creation of NaN values
+            if isinstance(item, (np.ndarray, pd.DatetimeIndex)):
+                check = np.array([elem in self.time_index() for elem in item])
+                if not np.all(check):
+                    raise IndexError("None of {} in the index".format(item[~check]))
+            try:
+                return TimeSeries(self._series[item],
+                                  self._op_or_none(self._confidence_lo, lambda s: s[item]),
+                                  self._op_or_none(self._confidence_hi, lambda s: s[item]))
+            except AssertionError:
+                # return only main series if nb of values < 3
+                return self._series[item]
+        else:
+            raise IndexError("Input {} of class {} is not a possible key.\n"\
+                             "Please use integers, pd.DateTimeIndex, arrays or slice".format(item, item.__class__))
