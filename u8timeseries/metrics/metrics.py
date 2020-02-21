@@ -22,18 +22,24 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
     return series_a.values(), series_b.values()
 
 
-def mape(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def mape(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
     """
     Computes the Mean Absolute Percentage Error (MAPE).
 
     This function computes the MAPE of `pred_series` with respect to `true_series`.
+    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
+    Use `time_diff` mainly when the time series are monotonic.
+    Otherwise, it will be difficult to analyze the results.
 
     :param true_series: A TimeSeries.
     :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the MAPE of `pred_series` with respect to `true_series`.
     """
     # Mean absolute percentage error
     y_true, y_hat = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_hat = np.diff(y_true), np.diff(y_hat)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
@@ -56,15 +62,17 @@ def mase_old(true_series: TimeSeries, pred_series: TimeSeries) -> float:
     return errors / scale
 
 
-def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) -> float:
+def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1, time_diff: bool = False) -> float:
     """
     Computes the Mean Absolute Scaled Error (MASE).
 
     This function computes the MASE of `pred_series` with respect to `true_series` and the seasonal period m.
+    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
 
     :param true_series: A TimeSeries.
     :param pred_series: A TimeSeries to be compared with `true_series`.
     :param m: A int, the seasonality period to take into account. If None, try to infer one from ACF
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the MASE of `pred_series` with respect to `true_series`.
     """
     if m is None:
@@ -74,6 +82,8 @@ def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) -> float:
             warn("No seasonality found. The period is fixed to 1.", UserWarning)
             m = 1
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     errors = np.sum(np.abs(y_true - y_pred))
     t = y_true.size
     scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
@@ -81,46 +91,60 @@ def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1) -> float:
     return errors / scale
 
 
-def overall_percentage_error(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def overall_percentage_error(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
     """
     Computes the Overall Percentage Erroe (OPE):
 
     This function computes the OPE of `pred_series` with respect to `true_series`.
+    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
+    Use `time_diff` mainly when the time series are monotonic.
+    Otherwise, it will be difficult to analyze the results.
 
     :param true_series: A TimeSeries.
     :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the OPE of `pred_series` with respect to `true_series`.
     """
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     y_true_sum, y_pred_sum = np.sum(np.array(y_true)), np.sum(np.array(y_pred))
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
-def marre(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def marre(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
     """
     Computes the Mean Absolute Ranged Relative Error (MARRE).
 
     This function computes the MARRE of `pred_series` with respect to `true_series`.
+    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
 
     :param true_series: A TimeSeries.
     :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the MARRE of `pred_series` with respect to `true_series`.
     """
     y_true, y_hat = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_hat= np.diff(y_true), np.diff(y_hat)
     true_range = y_true.max() - y_true.min()
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
 
-def r2_score(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def r2_score(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
     """
-    Computes the coefficient of determination R2
+    Computes the coefficient of determination R2.
+    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
 
     This function computes the R2 score of `pred_series` with respect to `true_series`.
     :param true_series: A TimeSeries
     :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the coefficient R2
     """
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     ss_errors = np.sum((y_true - y_pred)**2)
     y_hat = y_true.mean()
     ss_tot = np.sum((y_true-y_hat)**2)
