@@ -7,7 +7,7 @@ from warnings import warn
 def _import_check_seasonality():
     try:
         from u8timeseries.models.statistics import check_seasonality as cs
-    except Exception as e:
+    except ImportError as e:
         raise ImportError('Cannot import check_seasonality. Choose a fixed period')
     return cs
 
@@ -20,6 +20,75 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
                                                 '\nFirst series: {}\nSecond series: {}'.format(
                                                 series_a.time_index(), series_b.time_index())
     return series_a.values(), series_b.values()
+
+
+def mae(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
+    """
+    Compute the Mean Absolute Error (MAE).
+
+    :param true_series: A TimeSeries.
+    :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
+    :return: A float, the MAE of `pred_series` with respect to `true_series`.
+    """
+    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
+    return np.mean(np.abs(y_true - y_pred))
+
+
+def mse(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
+    """
+    Compute the Mean Squared Error (MSE).
+
+    :param true_series: A TimeSeries.
+    :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
+    :return: A float, the MSE of `pred_series` with respect to `true_series`.
+    """
+    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    if time_diff:
+        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
+    return np.mean((y_true - y_pred)**2)
+
+
+def rmse(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
+    """
+    Compute the Root Mean Squared Error (RMSE).
+
+    :param true_series: A TimeSeries.
+    :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
+    :return: A float, the RMSE of `pred_series` with respect to `true_series`.
+    """
+    return np.sqrt(mse(true_series, pred_series, time_diff))
+
+
+def rmsle(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+    """
+    Compute the Root Mean Squared Log Error (RMSLE).
+
+    Penalize more the under-estimate than the over-estimate.
+
+    :param true_series: A TimeSeries.
+    :param pred_series: A TimeSeries to be compared with `true_series`.
+    :return: A float, the RMSLE of `pred_series` with respect to `true_series`.
+    """
+    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
+    y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
+    return np.sqrt(np.mean((y_true - y_pred)**2))
+
+
+def coefficient_variation(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
+    """
+    Compute the Root Mean Squared Error (RMSE).
+
+    :param true_series: A TimeSeries.
+    :param pred_series: A TimeSeries to be compared with `true_series`.
+    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
+    :return: A float, the RMSE of `pred_series` with respect to `true_series`.
+    """
+    return 100 * rmse(true_series, pred_series, time_diff)/true_series.mean()
 
 
 def mape(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
