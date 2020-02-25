@@ -21,14 +21,14 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
     :param m: The seasonality period to check.
     :param max_lag: The maximal lag allowed in the ACF.
     :param alpha: The desired confidence level (default 5%).
-    :return: A tuple (season, m), where s is a boolean indicating whether the TimeSeries has seasonality or not
+    :return: A tuple (season, m), where season is a boolean indicating whether the TimeSeries has seasonality or not
              and m is the seasonality period.
     """
     if m is not None and (m < 2 or not isinstance(m, int)):
         raise ValueError('m must be an integer greater than 1.')
 
     if m is not None and m > max_lag:
-        raise ValueError('max_lag must be greater or equal than m.')
+        raise ValueError('max_lag must be greater than or equal to m.')
 
     n_unique = np.unique(ts.values()).shape[0]
 
@@ -181,7 +181,7 @@ def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 
     :param alpha: The confidence interval.
     :param fig_size: The size of the figure to be displayed.
     """
-    r = acf(ts.values(), nlags=max_lag)
+    r = acf(ts.values(), nlags=max_lag)  # , alpha=alpha) and confint as output too
 
     # Computes the confidence interval at level alpha for all lags.
     stats = []

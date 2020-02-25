@@ -3,18 +3,21 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries.utils.mising_values import auto_fillna
+from u8timeseries.utils.missing_values import auto_fillna
 
 
-class MiisingValuesTestCase(unittest.TestCase):
+class MissingValuesTestCase(unittest.TestCase):
     __test__ = True
 
     time = pd.date_range('20130101', '20130130')
     lin = [float(i) for i in range(len(time))]
+    cub = [float(i-4)**2 for i in range(len(time))]
     series1: TimeSeries = TimeSeries.from_times_and_values(time, np.array([2.0]*len(time)))
     series2: TimeSeries = TimeSeries.from_times_and_values(time, np.array(lin))
     series3: TimeSeries = TimeSeries.from_times_and_values(time, np.array([10]*10 + lin[-20:]))
     series4: TimeSeries = TimeSeries.from_times_and_values(time, np.array(lin[:20] + [19]*10))
+    series5: TimeSeries = TimeSeries.from_times_and_values(time, np.array(cub))
+    series6: TimeSeries = TimeSeries.from_times_and_values(time, [0]*2 + cub[2:-2] + [-1]*2)
 
     def test_fill_constant(self):
         seriesA: TimeSeries = TimeSeries.from_times_and_values(self.time,
@@ -39,13 +42,27 @@ class MiisingValuesTestCase(unittest.TestCase):
 
         # Check that auto-backfill works properly
         self.assertEqual(self.series3, auto_fillna(seriesC))
-        self.assertNotEqual(self.series3, auto_fillna(seriesC, value=2))
+        self.assertNotEqual(self.series3, auto_fillna(seriesC, first=2))
 
     def test_ffil(self):
         seriesD: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.lin[:20] + [np.nan] * 10))
 
         self.assertEqual(self.series4, auto_fillna(seriesD))
+        self.assertNotEqual(self.series4, auto_fillna(seriesD, last=20))
+
+    def test_fill_quad(self):
+        seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time,
+                                                               np.array(self.cub[:10] + [np.nan]*10 + self.cub[-10:]))
+        seriesF: TimeSeries = TimeSeries.from_times_and_values(self.time,
+                                                               np.array([np.nan]*2 + self.cub[2:10] +
+                                                                        [np.nan]*10 + self.cub[-10:-2] + [np.nan]*2))
+
+        self.assertEqual(self.series5, round(auto_fillna(seriesE, interpolate='quadratic'), 7))
+        self.assertEqual(self.series6, round(auto_fillna(seriesF, first=0, last=-1, interpolate='quadratic'), 2))
+        # extrapolate values outside
+        self.assertEqual(self.series5,
+                         round(auto_fillna(seriesF, interpolate='quadratic', fill_value='extrapolate'), 2))
 
 
 if __name__ == "__main__":

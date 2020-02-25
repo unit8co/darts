@@ -16,10 +16,9 @@ class TimeSeries:
         Within this class, TimeSeries type annotations are 'TimeSeries'; see:
         https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
     """
-
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
-        assert len(series) >= 1, 'Series must have at least one value.'
+        assert len(series) >= 3, 'Series must have at least three values.'  # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.'
         assert np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.'
 
@@ -128,6 +127,17 @@ class TimeSeries:
         """
         return self._series.index[-1] - self._series.index[0]
 
+    def copy(self, deep: bool = True):
+        """
+        Make a copy of this object time series
+        :param deep: Make a deep copy. If False, the Series will be the same
+        :return: A copy of the TimeSeries
+        """
+        if deep:
+            return TimeSeries(self.pd_series(), self.conf_lo_pd_series(), self.conf_hi_pd_series())
+        else:
+            return TimeSeries(self._series, self._confidence_lo, self._confidence_hi)
+
     def _raise_if_not_within(self, ts: pd.Timestamp):
 
         if (ts < self.start_time()) or (ts > self.end_time()):
@@ -206,7 +216,7 @@ class TimeSeries:
         """
         Returns a new TimeSeries, starting later than [start_ts] and ending before [end_ts], inclusive on both ends.
 
-        The timestamps may not be in the time series. If any is, it will be included in the new time series.
+        The timestamps may not be in the time series. TODO: should new timestamps be added? Think not
 
         :param start_ts: The timestamp that indicates the left cut-off.
         :param end_ts: The timestamp that indicates the right cut-off.
@@ -238,7 +248,7 @@ class TimeSeries:
         :return: A new TimeSeries, with length at most [n] and indices greater or equal than [start_ts].
         """
 
-        assert n >= 0, 'n should be a positive integer.'
+        assert n >= 0, 'n should be a positive integer.'  # TODO: logically raise if n<3, cf. init
 
         self._raise_if_not_within(start_ts)
 
@@ -271,6 +281,8 @@ class TimeSeries:
         """
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
 
+        TODO: This function does not really behave as described. Not really an intersect
+
         :param other: A second TimeSeries.
         :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
                 TimeSeries' indices.
@@ -289,10 +301,12 @@ class TimeSeries:
                           _intersect_not_none(self._confidence_lo),
                           _intersect_not_none(self._confidence_hi))
 
+    # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
         """
         Returns a new TimeSeries, which is a multiple of this TimeSeries such that
         the first value is [value_at_first_step].
+        Numerical imprecisions appear with [value_at_first_step] > 1e+24
 
         :param value_at_first_step: The new value for the first entry of the TimeSeries.
         :return: A new TimeSeries, whose first value was changed to [value_at_first_step] and whose others values
@@ -301,7 +315,7 @@ class TimeSeries:
 
         assert self.values()[0] != 0, 'Cannot rescale with first value 0.'
 
-        coef = value_at_first_step / self.values()[0]
+        coef = value_at_first_step / self.values()[0]  # TODO: should the new TimeSeries have the same dtype?
         new_series = coef * self._series
         new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
         new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * coef)
@@ -318,7 +332,12 @@ class TimeSeries:
         :param n: The signed number of time steps to shift by.
         :return: A new TimeSeries, with a shifted index.
         """
-
+        # TODO: no error raised if freq is different than day and overflow happens, so raise it ourselves
+        try:
+            self.time_index()[-1] + n * self.freq()
+        except pd.errors.OutOfBoundsDatetime:
+            raise OverflowError("the add operation between {} and {} will overflow".format(n * self.freq(),
+                                                                                           self.time_index()[-1]))
         new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
         new_series = self._series.copy()
         new_series.index = new_time_index
@@ -330,7 +349,6 @@ class TimeSeries:
         if self._confidence_hi is not None:
             new_conf_hi = self._confidence_hi.copy()
             new_conf_hi.index = new_time_index
-
         return TimeSeries(new_series, new_conf_lo, new_conf_hi)
 
     @staticmethod
@@ -346,6 +364,7 @@ class TimeSeries:
         :param conf_hi_col: The upper confidence interval column name (optional).
         :return: A TimeSeries constructed from the inputs.
         """
+        # TODO: return a list, object, ... of TimeSeries if there are multiple features (value-col). To decide
 
         times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
         series: pd.Series = pd.Series(df[value_col].values, index=times)
@@ -381,6 +400,9 @@ class TimeSeries:
         Currently this is just a wrapper around pd.Series.plot()
         """
         # temporary work-around for the pandas.plot issue
+        # errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,
+        #                                lambda x, y: np.vstack([x.values, y.values]))
+        # self._series.plot(yerr=errors, *args, **kwargs)
         plt.plot(self.time_index(), self.values(), *args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
@@ -405,16 +427,20 @@ class TimeSeries:
             return False
         return (other.time_index() == self.time_index()).all()
 
+    # TODO: is union function useful too?
+    # TODO: should append only at the end of the series? or can we create holes and "interpolate" their values?
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Appends another TimeSeries to this TimeSeries.
 
-        :param other: As second TimeSeries.
+        :param other: A second TimeSeries.
         :return: A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
 
         assert other.start_time() == self.end_time() + self.freq(), 'Appended TimeSeries must start one time step ' \
                                                                     'after current one.'
+        # TODO additional check?
+        assert other.freq() == self.freq(), 'Appended TimeSeries must have the same frequency as the current one'
 
         series = self._series.append(other.pd_series())
         conf_lo = None
@@ -423,6 +449,122 @@ class TimeSeries:
             conf_lo = self._confidence_lo.append(other.conf_lo_pd_series())
         if self._confidence_hi is not None and other.conf_hi_pd_series() is not None:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def append_values(self, values: np.ndarray, index: pd.DatetimeIndex = None,
+            conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
+        """
+        Appends values to current TimeSeries, to the given indices.
+
+        If no index is provided, assumes that it follows the original data.
+        Does not add new confidence values if there were none first.
+        Does not update value if already existing indices are provided.
+
+        :param values: An array with the values to append.
+        :param index: A DateTimeIndex for each value (optional).
+        :param conf_lo: The lower confidence interval values (optional).
+        :param conf_hi: The higher confidence interval values (optional).
+        :return: A new TimeSeries with the new values appended
+        """
+        if len(values) < 1:
+            return self
+        if isinstance(values, list):
+            values = np.array(values)
+        if index is None:
+            index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(1, 1+len(values))])
+        assert isinstance(index, pd.DatetimeIndex), 'values must be indexed with a DatetimeIndex.'
+        assert len(index) == len(values)
+        assert self.time_index().intersection(index).empty, "cannot add already present time index"
+        new_indices = index.argsort()
+        index = index[new_indices]
+        # TODO do we really want that?
+        assert index[0] == self.end_time() + self.freq(), 'Appended index must start one time step ' \
+                                                          'after current one.'
+        if len(index) > 2:
+            assert index.inferred_freq == self.freq_str(), 'Appended index must have ' \
+                                                           'the same frequency as the current one'
+        elif len(index) == 2:
+            assert index[-1] == index[0] + self.freq(), 'Appended index must have ' \
+                                                        'the same frequency as the current one'
+        values = values[new_indices]
+        new_series = pd.Series(values, index=index)
+        series = self._series.append(new_series)
+        if conf_lo is not None and self._confidence_lo is not None:
+            assert len(index) == len(conf_lo)
+            conf_lo = conf_lo[new_indices]
+            conf_lo = self._confidence_lo.append(pd.Series(conf_lo, index=index))
+        if conf_hi is not None and self._confidence_hi is not None:
+            assert len(index) == len(conf_hi)
+            conf_hi = conf_hi[new_indices]
+            conf_hi = self._confidence_hi.append(pd.Series(conf_hi, index=index))
+
+        return TimeSeries(series, conf_lo, conf_hi)
+
+    def update(self, index: pd.DatetimeIndex, values: np.ndarray = None,
+               conf_lo: np.ndarray = None, conf_hi: np.ndarray = None, inplace: bool = True) -> 'TimeSeries':
+        """
+        Updates the Series with the new values provided.
+        If indices are not in original TimeSeries, they will be discarded.
+        At least one parameter other than index must be filled.
+        Use np.nan to ignore a specific index in a series.
+
+        It will raise an error if try to update a missing CI series
+
+        :param index: A DateTimeIndex containing the indices to replace.
+        :param values: An array containing the values to replace (optional).
+        :param conf_lo: The lower confidence interval values to change (optional).
+        :param conf_hi: The higher confidence interval values (optional).
+        :param inplace: If True, do operation inplace and return None, defaults to True.
+        :return: A TimeSeries with values updated
+        """
+        assert not (values is None and conf_lo is None and conf_hi is None), "At least one parameter must be filled " \
+                                                                             "other than index"
+        assert True if values is None else len(values) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(values), len(index))
+        assert True if conf_lo is None else len(conf_lo) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(conf_lo), len(index))
+        assert True if conf_hi is None else len(conf_hi) == len(index), \
+            "The number of values must correspond to the number of indices: {} != {}".format(len(conf_hi), len(index))
+        ignored_indices = [index.get_loc(ind) for ind in (set(index)-set(self.time_index()))]
+        index = index.delete(ignored_indices)
+        series = values if values is None else pd.Series(np.delete(values, ignored_indices), index=index)
+        conf_lo = conf_lo if conf_lo is None else pd.Series(np.delete(conf_lo, ignored_indices), index=index)
+        conf_hi = conf_hi if conf_hi is None else pd.Series(np.delete(conf_hi, ignored_indices), index=index)
+        assert len(index) > 0, "must give at least one correct index"
+        if inplace:
+            if series is not None:
+                self._series.update(series)
+            if conf_lo is not None:
+                self._confidence_lo.update(conf_lo)
+            if conf_hi is not None:
+                self._confidence_hi.update(conf_hi)
+            return None
+        else:
+            new_series = self.pd_series()
+            new_lo = self.conf_lo_pd_series()
+            new_hi = self.conf_hi_pd_series()
+            if series is not None:
+                new_series.update(series)
+            if conf_lo is not None:
+                new_lo.update(conf_lo)
+            if conf_hi is not None:
+                new_hi.update(conf_hi)
+            return TimeSeries(new_series, new_lo, new_hi)
+
+    def drop_values(self, index: pd.DatetimeIndex, inplace: bool = True, **kwargs):
+        """
+        Remove elements of all series with specified indices.
+
+        :param index: The indices to be dropped
+        :param kwargs: Option to pass to pd.Series drop method
+        :param inplace: If True, do operation inplace and return None, defaults to True.
+        :return: A TimeSeries with values dropped
+        """
+        series = self._series.drop(index=index, inplace=inplace, **kwargs)
+        conf_lo = self._op_or_none(self._confidence_lo, lambda s: s.drop(index, inplace=inplace, **kwargs))
+        conf_hi = self._op_or_none(self._confidence_hi, lambda s: s.drop(index, inplace=inplace, **kwargs))
+        if inplace:
+            return None
         return TimeSeries(series, conf_lo, conf_hi)
 
     @staticmethod
@@ -493,6 +635,9 @@ class TimeSeries:
     def sum(self, axis=None, skipna=None, level=None, numeric_only=None, min_count=0, **kwargs) -> float:
         return self._series.sum(axis, skipna, level, numeric_only, min_count, **kwargs)
 
+    def median(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self._series.median(axis, skipna, level, numeric_only, **kwargs)
+
     def autocorr(self, lag=1) -> float:
         return self._series.autocorr(lag)
 
@@ -507,11 +652,12 @@ class TimeSeries:
         if isinstance(other, TimeSeries):
             if not self._series.equals(other.pd_series()):
                 return False
-            for other_ci in [other.conf_lo_pd_series(), other.conf_hi_pd_series()]:
-                if (other_ci is None) ^ (self._confidence_lo is None):
+            for other_ci, self_ci in zip([other.conf_lo_pd_series(), other.conf_hi_pd_series()],
+                                [self._confidence_lo, self._confidence_hi]):
+                if (other_ci is None) ^ (self_ci is None):
                     # only one is None
                     return False
-                if self._combine_or_none(self._confidence_lo, other_ci, lambda s1, s2: s1.equals(s2)) is False:
+                if self._combine_or_none(self_ci, other_ci, lambda s1, s2: s1.equals(s2)) is False:
                     # Note: we check for "False" explicitly, because None is OK..
                     return False
             return True
@@ -618,6 +764,53 @@ class TimeSeries:
             return item in self._series.index
         return False
 
+    def __round__(self, n=None):
+        series = self._series.round(n)
+        confidence_lo = self._op_or_none(self._confidence_lo, lambda s: s.round(n))
+        confidence_hi = self._op_or_none(self._confidence_hi, lambda s: s.round(n))
+        return TimeSeries(series, confidence_lo, confidence_hi)
+
+    # TODO: Ignoring confidence series for now
+    def __lt__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series < other
+        elif isinstance(other, TimeSeries):
+            series = self._series < other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series  # TODO should we return only the ndarray, the pd series, or our timeseries?
+
+    def __gt__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series > other
+        elif isinstance(other, TimeSeries):
+            series = self._series > other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for > : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
+    def __le__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series <= other
+        elif isinstance(other, TimeSeries):
+            series = self._series <= other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for <= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
+    def __ge__(self, other):
+        if isinstance(other, (int, float, np.ndarray)):
+            series = self._series >= other
+        elif isinstance(other, TimeSeries):
+            series = self._series >= other.pd_series()
+        else:
+            raise TypeError('unsupported operand type(s) for >= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__))
+        return series
+
     def __str__(self):
         df = pd.DataFrame({'value': self._series})
         if self._confidence_lo is not None:
@@ -625,3 +818,42 @@ class TimeSeries:
         if self._confidence_hi is not None:
             df['conf_high'] = self._confidence_hi
         return str(df) + '\nFreq: {}'.format(self.freq_str())
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __copy__(self, deep: bool = True):
+        return self.copy(deep=deep)
+
+    def __deepcopy__(self, memodict={}):
+        return self.copy(deep=True)
+
+    def __getitem__(self, item):
+        # return only main series if nb of values < 3
+        if isinstance(item, (int, pd.Timestamp)):
+            return self._series[[item]]
+        elif isinstance(item, (pd.DatetimeIndex, slice, list, np.ndarray)):
+            if isinstance(item, slice):
+                # if create a slice with timestamp, convert to indices
+                if item.start.__class__ == pd.Timestamp or item.stop.__class__ == pd.Timestamp:
+                    istart = None if item.start is None else self.time_index().get_loc(item.start)
+                    istop = None if item.stop is None else self.time_index().get_loc(item.stop)
+                    item = slice(istart, istop, item.step)
+                # cannot reverse order
+                if item.indices(len(self))[-1] == -1:
+                    raise IndexError("Cannot have a backward TimeSeries")
+            # Verify that values in item are really in index to avoid the creation of NaN values
+            if isinstance(item, (np.ndarray, pd.DatetimeIndex)):
+                check = np.array([elem in self.time_index() for elem in item])
+                if not np.all(check):
+                    raise IndexError("None of {} in the index".format(item[~check]))
+            try:
+                return TimeSeries(self._series[item],
+                                  self._op_or_none(self._confidence_lo, lambda s: s[item]),
+                                  self._op_or_none(self._confidence_hi, lambda s: s[item]))
+            except AssertionError:
+                # return only main series if nb of values < 3
+                return self._series[item]
+        else:
+            raise IndexError("Input {} of class {} is not a possible key.\n"\
+                             "Please use integers, pd.DateTimeIndex, arrays or slice".format(item, item.__class__))
