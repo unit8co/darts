@@ -12,3 +12,5 @@ joblib
 plotly
 fbprophet  # holydays==0.9.5 to exploit the last bug with dateutils
 # add jupyter notebook?
+pytorch
+tensorboard # if we want tensorboard

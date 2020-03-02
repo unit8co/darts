@@ -365,8 +365,12 @@ class TimeSeries:
         :return: A TimeSeries constructed from the inputs.
         """
         # TODO: return a list, object, ... of TimeSeries if there are multiple features (value-col). To decide
+        # TODO: must be able to chose the original index
 
-        times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
+        if time_col is None:
+            times: pd.DatetimeIndex = pd.to_datetime(df.index, errors='raise')
+        else:
+            times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
         series: pd.Series = pd.Series(df[value_col].values, index=times)
 
         conf_lo = pd.Series(df[conf_lo_col], index=times) if conf_lo_col is not None else None
@@ -566,6 +570,10 @@ class TimeSeries:
         if inplace:
             return None
         return TimeSeries(series, conf_lo, conf_hi)
+
+    def in_range_index(self, ts: pd.Timestamp) -> bool:
+        index = self.time_index()
+        return index[0] <= ts <= index[-1]
 
     @staticmethod
     def _combine_or_none(series_a: Optional[pd.Series],
