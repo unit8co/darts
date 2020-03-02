@@ -7,11 +7,22 @@ import torch
 class TimeSeriesDataset(torch.utils.data.Dataset):
     def __init__(self, series: TimeSeries, scaler: TransformerMixin,
                  train_window: int = 1, label_window: int = 1):
-        self.series = series.values()
-        self.series = scaler.transform(self.series.reshape(-1, 1))
+        """
+        Construct a dataset for pytorch use
+
+        :param series: A TimeSeries
+        :param scaler:
+        :param train_window:
+        :param label_window:
+        """
+        self.series = series.values().reshape(-1, 1)
+        if scaler is not None:
+            self.series = scaler.transform(self.series)
         self.series = torch.from_numpy(self.series).float()
         self.tw = train_window
         self.lw = label_window
+        assert self.tw > 0, "The input sequence length must be non null. It is {}".format(self.tw)
+        assert self.lw > 0, "The output sequence length must be non null. It is {}".format(self.lw)
         # self.sequences, self.labels = self._input_label_batch(series, train_window, label_window)
         # only if series is not too big to hold in RAM
 
