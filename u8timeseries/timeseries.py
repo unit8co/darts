@@ -281,25 +281,12 @@ class TimeSeries:
         """
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
 
-        TODO: This function does not really behave as described. Not really an intersect
-
         :param other: A second TimeSeries.
         :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
                 TimeSeries' indices.
         """
 
-        def _intersect_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
-            if s is not None:
-                new_index = self.time_index().intersection(other.time_index())
-
-                assert len(s) > 2, 'The two series do not have enough common times.'
-
-                return s[new_index]
-            return None
-
-        return TimeSeries(_intersect_not_none(self._series),
-                          _intersect_not_none(self._confidence_lo),
-                          _intersect_not_none(self._confidence_hi))
+        return self.time_index().intersection(other.time_index())
 
     # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':

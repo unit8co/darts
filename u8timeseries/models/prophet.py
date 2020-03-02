@@ -22,11 +22,13 @@ class Prophet(AutoRegressiveModel):
     :param daily_seasonality:
     """
 
-    def __init__(self, weekly_seasonality=False, daily_seasonality=False, country_holidays: str = None):
+    def __init__(self, yearly_seasonality=False, weekly_seasonality=False,
+                 daily_seasonality=False, country_holidays: str = None):
 
         super().__init__()
 
         self.country_holidays = country_holidays
+        self.yearly_seasonality = yearly_seasonality
         self.weekly_seasonality = weekly_seasonality
         self.daily_seasonality = daily_seasonality
         self.model = None
@@ -43,7 +45,8 @@ class Prophet(AutoRegressiveModel):
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
-        self.model = fbprophet.Prophet(weekly_seasonality=self.weekly_seasonality,
+        self.model = fbprophet.Prophet(yearly_seasonality=self.yearly_seasonality,
+                                       weekly_seasonality=self.weekly_seasonality,
                                        daily_seasonality=self.daily_seasonality)
 
         # Input built-in country holidays
