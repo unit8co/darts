@@ -4,3 +4,6 @@ docs/
 u8timeseries.egg-info/
 examples/.ipynb_checkpoints/
 runs/
+examples/dataset/
+examples/checkpoints/
+exaples/runs/

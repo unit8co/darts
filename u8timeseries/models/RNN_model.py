@@ -194,8 +194,9 @@ class RNNModel(AutoRegressiveModel):
             raise AssertionError("optimizer and scheduler must be set to launch the training")
         super().fit(series)
         if self.from_scratch:
+            shutil.rmtree('./checkpoints/{}/'.format(self.exp_name), ignore_errors=True)
             self.scaler.fit(series.values().reshape(-1, 1))
-        self.dataset = TimeSeriesDataset(series, self.scaler, self.seq_len, self.out_size)
+        self.set_train_dataset(series)
         if self.bsize is None:
             self.bsize = len(self.dataset)
         self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=True,
@@ -222,12 +223,17 @@ class RNNModel(AutoRegressiveModel):
             self.writer.flush()
             self.writer.close()
 
-    def predict(self, n: int = None):
+    def predict(self, n: int = None, is_best: bool = False):
+        if is_best:
+            self.load_from_checkpoint(is_best=True)  # TODO: can we always call it?
         if n is None:
             n = self.out_size
         super().predict(n)
 
-        pred_in = self.dataset[len(self.dataset)][0].unsqueeze(0).to(self.device)
+        try:
+            pred_in = self.dataset[len(self.dataset)][0].unsqueeze(0).to(self.device)
+        except TypeError:
+            raise AssertionError("Must call set_train_dataset before predict if the model is loaded")
         test_out = []
         for i in range(n):
             out = self.model(pred_in)
@@ -239,6 +245,10 @@ class RNNModel(AutoRegressiveModel):
 
     def set_val_series(self, val_series: TimeSeries):
         self.val_series = val_series
+
+    def set_train_dataset(self, train_series: TimeSeries):
+        self.training_series = train_series
+        self.dataset = TimeSeriesDataset(train_series, self.scaler, self.seq_len, self.out_size)
 
     def set_optimizer(self, optimizer: torch.optim.Optimizer = torch.optim.Adam, learning_rate: float = 1e-2,
                       swa: bool = False, **kwargs):
@@ -306,12 +316,11 @@ class RNNModel(AutoRegressiveModel):
             return p['lr']
 
     def _train(self):
-        best_loss = np.inf
+        self.best_loss = np.inf
         for epoch in tqdm(range(self.start_epoch, self.n_epochs)):
             self.epoch = epoch
             tot_loss_mse = 0
             tot_loss_diff = 0
-            is_best = False
 
             for batch_idx, (data, target) in enumerate(self.train_loader):
                 self.model.train()
@@ -329,16 +338,13 @@ class RNNModel(AutoRegressiveModel):
             if self.vis_tb:
                 for name, param in self.model.named_parameters():
                     self.writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
-                self.writer.add_scalar("training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training_loss_mse", tot_loss_mse / (batch_idx + 1), epoch)
-                self.writer.add_scalar("learning_rate", self._get_learning_rate(), epoch)
+                self.writer.add_scalar("loss/training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
+                self.writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
+                self.writer.add_scalar("training/training_loss_mse", tot_loss_mse / (batch_idx + 1), epoch)
+                self.writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
             print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
-            if (tot_loss_mse + tot_loss_diff) / (batch_idx + 1) < best_loss:
-                best_loss = (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
-                is_best = True
-            self._save_model(is_best, self.save_path)
+            self._save_model(False, self.save_path)
 
             if epoch % 10 == 0:
                 self._val()
@@ -357,10 +363,15 @@ class RNNModel(AutoRegressiveModel):
             tot_loss_mse += loss_mse.item()
             tot_loss_diff += loss_diff.item()
         if self.vis_tb:
-            self.writer.add_scalar("validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
-            self.writer.add_scalar("validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
-            self.writer.add_scalar("validation_loss_mse", tot_loss_mse / (batch_idx + 1), self.epoch)
-        print("Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
+            self.writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
+            self.writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
+            self.writer.add_scalar("validation/validation_loss_mse", tot_loss_mse / (batch_idx + 1), self.epoch)
+        print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
+              end="\r")
+
+        if (tot_loss_mse + tot_loss_diff) / (batch_idx + 1) < self.best_loss:
+            self.best_loss = (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
+            self._save_model(True, self.save_path)
 
     def plot_result_train(self):
         self._plot_result(self.dataset)
@@ -404,7 +415,7 @@ class RNNModel(AutoRegressiveModel):
         # maybe move to cpu to save
         # TODO: should we save the dataloader state? (i think not)
         state = {
-            'epoch': self.start_epoch + 1,  # state in the loop (why +1 ?)
+            'epoch': self.epoch + 1,  # state in the loop (why +1 ?)
             'state_dict': self.model.state_dict(),  # model params state
             'optimizer': self.optimizer.state_dict(),  # adam optimizer state
             'scheduler': self.scheduler.state_dict(),  # learning rate state  ## state_dict?
@@ -433,14 +444,13 @@ class RNNModel(AutoRegressiveModel):
                     os.remove(chkpt)
 
     def _load_model(self, save_path: str, filename: str):
-        if os.path.isfile(save_path + filename):
-            print("=> loading checkpoint '{}'".format(filename))
-            checkpoint = torch.load(save_path + filename, map_location=self.device)
+        if os.path.isfile(os.path.join(save_path, filename)):
+            checkpoint = torch.load(os.path.join(save_path, filename), map_location=self.device)
             self.start_epoch = checkpoint['epoch']
             self.scaler = checkpoint['scaler']
             self.scheduler.load_state_dict(checkpoint['scheduler'])
             self.model.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded checkpoint '{}' (epoch {})".format(filename, checkpoint['epoch']))
+            print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
         else:
-            print("=> no checkpoint found at '{}'".format(save_path + filename))
+            print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
