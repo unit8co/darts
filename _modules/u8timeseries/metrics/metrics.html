@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>u8timeseries.metrics.metrics &mdash; u8timeseries v0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> u8timeseries
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Getting Started</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentation.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devguide.html">Developer’s Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">u8timeseries</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>u8timeseries.metrics.metrics</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for u8timeseries.metrics.metrics</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.timeseries</span> <span class="k">import</span> <span class="n">TimeSeries</span>
+
+
+<span class="k">def</span> <span class="nf">_get_values_or_raise</span><span class="p">(</span><span class="n">series_a</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series_b</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the numpy values of two time series, launching an Exception if time series cannot be compared</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">series_a</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">series_b</span><span class="p">),</span> <span class="s1">&#39;The two time series must have same time index.&#39;</span> \
+                                                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">First series: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">Second series: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                <span class="n">series_a</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">series_b</span><span class="o">.</span><span class="n">time_index</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">series_a</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">series_b</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="mape"><a class="viewcode-back" href="../../../api/u8timeseries.metrics.html#u8timeseries.metrics.mape">[docs]</a><span class="k">def</span> <span class="nf">mape</span><span class="p">(</span><span class="n">true_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the Mean Average Percentage Error (MAPE).</span>
+
+<span class="sd">    This function computes the MAPE of `pred_series` with respect to `true_series`.</span>
+
+<span class="sd">    :param true_series: A TimeSeries.</span>
+<span class="sd">    :param pred_series: A TimeSeries to be compared with `true_series`.</span>
+<span class="sd">    :return: A float, the MAPE of `pred_series` with respect to `true_series`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Mean absolute percentage error</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">true_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">100.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_true</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="mase"><a class="viewcode-back" href="../../../api/u8timeseries.metrics.html#u8timeseries.metrics.mase">[docs]</a><span class="k">def</span> <span class="nf">mase</span><span class="p">(</span><span class="n">true_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the Mean Average Scaled Error (MASE).</span>
+
+<span class="sd">    This function computes the MASE of `pred_series` with respect to `true_series`.</span>
+
+<span class="sd">    :param true_series: A TimeSeries.</span>
+<span class="sd">    :param pred_series: A TimeSeries to be compared with `true_series`.</span>
+<span class="sd">    :return: A float, the MASE of `pred_series` with respect to `true_series`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">true_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">y_true</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="p">(</span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y_true</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">scale</span></div>
+
+
+<div class="viewcode-block" id="overall_percentage_error"><a class="viewcode-back" href="../../../api/u8timeseries.metrics.html#u8timeseries.metrics.overall_percentage_error">[docs]</a><span class="k">def</span> <span class="nf">overall_percentage_error</span><span class="p">(</span><span class="n">true_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the Overall Percentage Erroe (OPE):</span>
+
+<span class="sd">    This function computes the OPE of `pred_series` with respect to `true_series`.</span>
+
+<span class="sd">    :param true_series: A TimeSeries.</span>
+<span class="sd">    :param pred_series: A TimeSeries to be compared with `true_series`.</span>
+<span class="sd">    :return: A float, the OPE of `pred_series` with respect to `true_series`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">true_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
+    <span class="n">y_true_sum</span><span class="p">,</span> <span class="n">y_pred_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_true</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">y_true_sum</span> <span class="o">-</span> <span class="n">y_pred_sum</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_true_sum</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, unit8
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
