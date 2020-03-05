@@ -20,26 +20,38 @@ from tqdm.notebook import tqdm  # add check for different tqdm
 
 
 # TODO add batch norm
-class VanillaRNN(nn.Module):
-    def __init__(self, input_size, output_size, hidden_dim, n_layers, hidden_linear=[], dropout=0):
-        super(VanillaRNN, self).__init__()
+class RNN(nn.Module):
+    def __init__(self, name, input_size, output_length, hidden_dim, n_layers, hidden_linear=[], dropout=0):
+        """
+        PyTorch nn module implementing a simple RNN with the specified `name` layer.
+
+        :param name: The name of the specific PyTorch RNN layer.
+        :param input_size: The number of feature in th time series.
+        :param output_length: The number of steps to predict in the future.
+        :param hidden_dim: The dimension of the hidden layer.
+        :param n_layers: The number of RNN layers.
+        :param hidden_linear: A list containing the dimension of the hidden layers of the fully connected NN.
+        :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
+        """
+        super(RNN, self).__init__()
 
         self.device = torch.device("cpu")
         # Defining some parameters
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
+        self.name = name
 
         # Defining the layers
         # RNN Layer
         # TODO: should we implement different hiddensize for RNN?
-        self.rnn = nn.RNN(input_size, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.rnn = getattr(nn, name)(input_size, hidden_dim, n_layers, batch_first=True, dropout=dropout)
         # Fully connected layer
         last = hidden_dim
         feats = []
-        for feature in hidden_linear + [output_size]:
+        for feature in hidden_linear + [output_length]:
             feats.append(nn.Linear(last, feature))
             last = feature
-        self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_size)
+        self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_length)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -48,62 +60,12 @@ class VanillaRNN(nn.Module):
         hidden = self.init_hidden(batch_size)
 
         # Passing in the input and hidden state into the model and obtaining outputs
-        out, hidden = self.rnn(x, hidden)
+        _, hidden = self.rnn(x, hidden)
 
         # Reshaping the outputs such that it can be fit into the fully connected layer
-        # out = out.contiguous().view(self.batch_size, -1, self.hidden_dim)
+        if self.name == "LSTM":
+            hidden = hidden[0]
         hidden = hidden[-1, :, :]
-        hidden = self.fc(hidden)
-
-        return hidden
-
-    def init_hidden(self, batch_size):
-        # This method generates the first hidden state of zeros which we'll use in the forward pass
-        # We'll send the tensor holding the hidden state to the device we specified earlier as well
-        hidden = torch.zeros(self.n_layers, batch_size, self.hidden_dim)
-        # self.register_buffer("hidden_zero", hidden)
-        hidden = hidden.to(self.device)
-        return hidden
-
-    def to(self, *args, **kwargs):
-        self = super().to(*args, **kwargs)
-        self.device = args[0]
-        return self
-
-
-class LSTM(nn.Module):
-    def __init__(self, input_size, output_size, hidden_dim, n_layers, hidden_linear=[], dropout=0):
-        super(LSTM, self).__init__()
-
-        self.device = torch.device("cpu")
-        # Defining some parameters
-        self.hidden_dim = hidden_dim
-        self.n_layers = n_layers
-
-        # Defining the layers
-        # LSTM Layer
-        # TODO: should we implement different hiddensize for RNN?
-        self.lstm = nn.LSTM(input_size, hidden_dim, n_layers, batch_first=True, dropout=dropout)
-        # Fully connected layer
-        last = hidden_dim
-        feats = []
-        for feature in hidden_linear + [output_size]:
-            feats.append(nn.Linear(last, feature))
-            last = feature
-        self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_size)
-
-    def forward(self, x):
-        batch_size = x.size(0)
-
-        # Initializing hidden state for first input using method defined below
-        hidden_cell = self.init_hidden(batch_size)
-
-        # Passing in the input and hidden state into the model and obtaining outputs
-        _, hidden_cell = self.lstm(x, hidden_cell)
-
-        # Reshaping the outputs such that it can be fit into the fully connected layer
-        # out = out.contiguous().view(self.batch_size, -1, self.hidden_dim)
-        hidden = hidden_cell[0][-1, :, :]
         predictions = self.fc(hidden)
 
         return predictions
@@ -111,8 +73,12 @@ class LSTM(nn.Module):
     def init_hidden(self, batch_size):
         # This method generates the first hidden state of zeros which we'll use in the forward pass
         # We'll send the tensor holding the hidden state to the device we specified earlier as well
-        hidden = (torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device),
-                  torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device))
+        if self.name == 'LSTM':
+            hidden = (torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device),
+                      torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device))
+        else:
+            hidden = torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device)
+        # self.register_buffer("hidden_zero", hidden)
         return hidden
 
     def to(self, *args, **kwargs):
@@ -122,8 +88,8 @@ class LSTM(nn.Module):
 
 
 class RNNModel(AutoRegressiveModel):
-    def __init__(self, model: [str, nn.Module] = 'RNN', input_size: int = 1, output_size: int = 1,
-                 sequence_length: int = 12, hidden_size: int = 25, n_rnn_layers: int = 1,
+    def __init__(self, model: [str, nn.Module] = 'RNN', input_size: int = 1, output_length: int = 1,
+                 input_length: int = 12, hidden_size: int = 25, n_rnn_layers: int = 1,
                  hidden_fc_size: list = [], dropout: float = 0., batch_size: int = None, n_epochs: int = 800,
                  scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)),
                  loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False):
@@ -132,8 +98,8 @@ class RNNModel(AutoRegressiveModel):
 
         model: kind of RNN module, or custom pytorch module
         input_size: number of features/channels in input (Must be identical to module in size)
-        output_size: number of steps to predict (Must be identical to module out size)
-        sequence_length: number of previous time stamps taken into account
+        output_length: number of steps to predict (Must be identical to module out size)
+        input_length: number of previous time stamps taken into account
         hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
         n_rnn_layers: number of rnn layers (unnecessary if module given)
         hidden_fc_size: size of hidden layers for the fully connected part (unnecessary if module given)
@@ -148,16 +114,13 @@ class RNNModel(AutoRegressiveModel):
         self._torch_device()
         self.scaler = scaler
         self.in_size = input_size
-        self.out_size = output_size
-        self.seq_len = sequence_length
+        self.out_size = output_length
+        self.seq_len = input_length
         self.vis_tb = vis_tb
 
-        if model is 'RNN':
-            self.model = VanillaRNN(input_size=input_size, output_size=output_size, hidden_dim=hidden_size,
-                                    n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout)
-        elif model is 'LSTM':
-            self.model = LSTM(input_size=input_size, output_size=output_size, hidden_dim=hidden_size,
-                              n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout)
+        if model in ['RNN', 'LSTM', 'GRU']:
+            self.model = RNN(name=model, input_size=input_size, output_length=output_length, hidden_dim=hidden_size,
+                             n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout)
         elif model is 'Seq2Seq':
             raise NotImplementedError("seq2seq is not yet implemented")
         elif isinstance(model, nn.Module):
@@ -342,12 +305,14 @@ class RNNModel(AutoRegressiveModel):
                 self.writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
                 self.writer.add_scalar("training/training_loss_mse", tot_loss_mse / (batch_idx + 1), epoch)
                 self.writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
-            print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
+            # print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
             self._save_model(False, self.save_path)
 
             if epoch % 10 == 0:
-                self._val()
+                val_loss = self._val()
+                print("Training loss: {:.4f}, validation loss: {:.4f}".
+                      format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1), val_loss), end="\r")
 
     def _val(self):
         if self.val_loader is None:
@@ -366,12 +331,13 @@ class RNNModel(AutoRegressiveModel):
             self.writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
             self.writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
             self.writer.add_scalar("validation/validation_loss_mse", tot_loss_mse / (batch_idx + 1), self.epoch)
-        print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
-              end="\r")
+        # print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
+        #       end="\r")
 
         if (tot_loss_mse + tot_loss_diff) / (batch_idx + 1) < self.best_loss:
             self.best_loss = (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
             self._save_model(True, self.save_path)
+        return (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
 
     def plot_result_train(self):
         self._plot_result(self.dataset)
@@ -423,7 +389,7 @@ class RNNModel(AutoRegressiveModel):
             'scaler': self.scaler
         }
         checklist = glob(os.path.join(save_path, "checkpoint_*"))
-        checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[0]))
+        checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
         filename = 'checkpoint_{0}.pth.tar'
         filename = filename.format(self.epoch)
         os.makedirs(save_path, exist_ok=True)
@@ -437,7 +403,7 @@ class RNNModel(AutoRegressiveModel):
             best_name = os.path.join(save_path, 'model_best_{0}.pth.tar'.format(self.epoch))
             shutil.copyfile(filename, best_name)
             checklist = glob(os.path.join(save_path, "model_best_*"))
-            checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[0]))
+            checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
             if len(checklist) >= 2:
                 # remove older files
                 for chkpt in checklist[:-1]:
