@@ -18,12 +18,18 @@ class TimeSeries:
     """
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
-        assert len(series) >= 3, 'Series must have at least three values.'  # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
+        assert len(series) >= 3, 'Series must have at least three values.'
         assert isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.'
         assert np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.'
 
         self._series: pd.Series = series.sort_index()  # Sort by time
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
+
+        if self._freq is None:
+            # Fill missing dates
+            from .utils.missing_values import fill_missing_dates
+            self._series = fill_missing_dates(self._series)
+            self._freq: str = self._series.index.inferred_freq
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
         assert self._freq is not None, 'Could not infer frequency. Are some dates missing? Is Series too short (n=2)?'
@@ -281,9 +287,10 @@ class TimeSeries:
         """
         Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
 
+        This slice can be used with the `__getitem__` method.
+
         :param other: A second TimeSeries.
-        :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both
-                TimeSeries' indices.
+        :return: A pd.DateTimeIndex containing the dates in the intersection of the two TimeSeries.
         """
 
         return self.time_index().intersection(other.time_index())
@@ -834,6 +841,10 @@ class TimeSeries:
                     istart = None if item.start is None else self.time_index().get_loc(item.start)
                     istop = None if item.stop is None else self.time_index().get_loc(item.stop)
                     item = slice(istart, istop, item.step)
+                elif item.start.__class__ == str or item.stop.__class__ == str:
+                    istart = None if item.start is None else self.time_index().get_loc(pd.Timestamp(item.start))
+                    istop = None if item.stop is None else self.time_index().get_loc(pd.Timestamp(item.stop))
+                    item = slice(istart, istop, item.step)
                 # cannot reverse order
                 if item.indices(len(self))[-1] == -1:
                     raise IndexError("Cannot have a backward TimeSeries")
@@ -849,6 +860,8 @@ class TimeSeries:
             except AssertionError:
                 # return only main series if nb of values < 3
                 return self._series[item]
+        elif isinstance(item, str):
+            return self._series[[pd.Timestamp(item)]]
         else:
             raise IndexError("Input {} of class {} is not a possible key.\n"\
                              "Please use integers, pd.DateTimeIndex, arrays or slice".format(item, item.__class__))
