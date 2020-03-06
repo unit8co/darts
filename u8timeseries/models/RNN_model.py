@@ -21,7 +21,8 @@ from tqdm.notebook import tqdm  # add check for different tqdm
 
 # TODO add batch norm
 class RNN(nn.Module):
-    def __init__(self, name, input_size, output_length, hidden_dim, n_layers, hidden_linear=[], dropout=0):
+    def __init__(self, name, input_size, output_length, hidden_dim, n_layers, hidden_linear=[], dropout=0,
+                 many=False, teacher_forcing=False):
         """
         PyTorch nn module implementing a simple RNN with the specified `name` layer.
 
@@ -32,6 +33,7 @@ class RNN(nn.Module):
         :param n_layers: The number of RNN layers.
         :param hidden_linear: A list containing the dimension of the hidden layers of the fully connected NN.
         :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
+        :param full: If True, will compare the output of all time-steps instead of only the last one.
         """
         super(RNN, self).__init__()
 
@@ -39,7 +41,12 @@ class RNN(nn.Module):
         # Defining some parameters
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
+        self.out_len = output_length
         self.name = name
+        self.many = many
+        self.teach_force = 0
+        if teacher_forcing:
+            self.teach_force = self.out_len - 1
 
         # Defining the layers
         # RNN Layer
@@ -53,21 +60,50 @@ class RNN(nn.Module):
             last = feature
         self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_length)
 
-    def forward(self, x):
+    def forward(self, x, y=None, epoch=0):
+        # data is batch_size X input_length X input_size
         batch_size = x.size(0)
 
         # Initializing hidden state for first input using method defined below
         hidden = self.init_hidden(batch_size)
 
         # Passing in the input and hidden state into the model and obtaining outputs
-        _, hidden = self.rnn(x, hidden)
+        out, hidden = self.rnn(x, hidden)
 
         # Reshaping the outputs such that it can be fit into the fully connected layer
-        if self.name == "LSTM":
-            hidden = hidden[0]
-        hidden = hidden[-1, :, :]
-        predictions = self.fc(hidden)
+        if self.many:
+            predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
+            predictions = predictions.view(batch_size, x.size(1), self.out_len)
+        else:
+            if self.name == "LSTM":
+                hidden = hidden[0]
+            predictions = hidden[-1, :, :]
+            predictions = self.fc(predictions)
 
+        initial_pred = predictions
+
+        for i in range(self.teach_force):  # still buggy
+            future = x.roll(-1, 1)
+            if y is None:
+                break
+            if np.random.random() > epoch/600 * 0.5:
+                future[:, -1, :] = y[:, i].unsqueeze(1)
+            else:
+                future[:, -1, :] = initial_pred[:, i].unsqueeze(1)
+            out, hidden = self.rnn(future, hidden)
+
+            if self.many:
+                predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
+                predictions = predictions.view(batch_size, x.size(1), self.out_len)
+                initial_pred[:, :, i + 1] = predictions[:, :, i]
+            else:
+                if self.name == "LSTM":
+                    hidden = hidden[0]
+                predictions = hidden[-1, :, :]
+                predictions = self.fc(predictions)
+                initial_pred[:, i+1] = predictions[:, 0]
+
+        # predictions is batch_size X output_length
         return predictions
 
     def init_hidden(self, batch_size):
@@ -91,7 +127,7 @@ class RNNModel(AutoRegressiveModel):
     def __init__(self, model: [str, nn.Module] = 'RNN', input_size: int = 1, output_length: int = 1,
                  input_length: int = 12, hidden_size: int = 25, n_rnn_layers: int = 1,
                  hidden_fc_size: list = [], dropout: float = 0., batch_size: int = None, n_epochs: int = 800,
-                 scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)),
+                 scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)), full: bool = False,
                  loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False):
         """
         Implementation of different RNN for forecasting.
@@ -117,10 +153,11 @@ class RNNModel(AutoRegressiveModel):
         self.out_size = output_length
         self.seq_len = input_length
         self.vis_tb = vis_tb
+        self.full = full
 
         if model in ['RNN', 'LSTM', 'GRU']:
             self.model = RNN(name=model, input_size=input_size, output_length=output_length, hidden_dim=hidden_size,
-                             n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout)
+                             n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout, many=full)
         elif model is 'Seq2Seq':
             raise NotImplementedError("seq2seq is not yet implemented")
         elif isinstance(model, nn.Module):
@@ -158,11 +195,13 @@ class RNNModel(AutoRegressiveModel):
         super().fit(series)
         if self.from_scratch:
             shutil.rmtree('./checkpoints/{}/'.format(self.exp_name), ignore_errors=True)
-            self.scaler.fit(series.values().reshape(-1, 1))
+            if not hasattr(self.scaler, "scale_"):
+                # TODO: use partial fit to include validation set?
+                self.scaler.fit(series.values().reshape(-1, 1))
         self.set_train_dataset(series)
         if self.bsize is None:
             self.bsize = len(self.dataset)
-        self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=True,
+        self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=False,
                                        num_workers=0, pin_memory=True, drop_last=True)
 
         # Tensorboard
@@ -176,7 +215,7 @@ class RNNModel(AutoRegressiveModel):
                 self.writer = SummaryWriter('runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
 
         if self.val_series is not None:
-            val_dataset = TimeSeriesDataset(self.val_series, self.scaler, self.seq_len, self.out_size)
+            val_dataset = TimeSeriesDataset(self.val_series, self.scaler, self.seq_len, self.out_size, full=self.full)
             self.val_loader = DataLoader(val_dataset, batch_size=self.bsize, shuffle=False,
                                          num_workers=0, pin_memory=True, drop_last=False)
 
@@ -187,23 +226,26 @@ class RNNModel(AutoRegressiveModel):
             self.writer.close()
 
     def predict(self, n: int = None, is_best: bool = False):
+        # TODO: this is more of a generate function than a predict...
         if is_best:
-            self.load_from_checkpoint(is_best=True)  # TODO: can we always call it?
+            self.load_from_checkpoint(is_best=True)
         if n is None:
             n = self.out_size
         super().predict(n)
 
         try:
-            pred_in = self.dataset[len(self.dataset)][0].unsqueeze(0).to(self.device)
+            pred_in = self.dataset[len(self.dataset)-1+self.out_size][0].unsqueeze(0).to(self.device)
         except TypeError:
-            raise AssertionError("Must call set_train_dataset before predict if the model is loaded")
+            raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
         test_out = []
         for i in range(n):
             out = self.model(pred_in)
+            if self.full:
+                out = out[:, -1, :]
             pred_in = pred_in.roll(-1, 1)
             pred_in[:, -1, :] = out[:, 0]
-            test_out.append(out.cpu().detach().numpy()[0])
-        test_out = self.scaler.inverse_transform(np.stack(test_out))
+            test_out.append(out.cpu().detach().numpy()[0, 0])
+        test_out = self.scaler.inverse_transform(np.stack(test_out).reshape(-1, 1))
         return self._build_forecast_series(test_out.squeeze())
 
     def set_val_series(self, val_series: TimeSeries):
@@ -211,7 +253,7 @@ class RNNModel(AutoRegressiveModel):
 
     def set_train_dataset(self, train_series: TimeSeries):
         self.training_series = train_series
-        self.dataset = TimeSeriesDataset(train_series, self.scaler, self.seq_len, self.out_size)
+        self.dataset = TimeSeriesDataset(train_series, self.scaler, self.seq_len, self.out_size, full=self.full)
 
     def set_optimizer(self, optimizer: torch.optim.Optimizer = torch.optim.Adam, learning_rate: float = 1e-2,
                       swa: bool = False, **kwargs):
@@ -316,7 +358,7 @@ class RNNModel(AutoRegressiveModel):
 
     def _val(self):
         if self.val_loader is None:
-            return
+            return np.nan
         tot_loss_mse = 0
         tot_loss_diff = 0
         self.model.eval()
@@ -343,7 +385,7 @@ class RNNModel(AutoRegressiveModel):
         self._plot_result(self.dataset)
 
     def test_series(self, tseries: TimeSeries):
-        test_dataset = TimeSeriesDataset(tseries, self.scaler, self.seq_len, self.out_size)
+        test_dataset = TimeSeriesDataset(tseries, self.scaler, self.seq_len, self.out_size, full=self.full)
         self._plot_result(test_dataset)
 
     def _plot_result(self, dataset):
@@ -359,27 +401,28 @@ class RNNModel(AutoRegressiveModel):
             predictions.append(output.cpu().detach().numpy())
         targets = np.vstack(targets)
         predictions = np.vstack(predictions)
+        if self.full:
+            targets = targets[:, -1, :]
+            predictions = predictions[:, -1, :]
         index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
         index_p = index_p.reshape(-1, self.out_size)
         true_labels_p = self.scaler.inverse_transform(targets)
         predictions_p = self.scaler.inverse_transform(predictions)
         if self.out_size != 1:
-            index_p = index_p.T
-            true_labels_p = true_labels_p.T
-            predictions_p = predictions_p.T
+            index_p = index_p[:, 0]  # .T
+            true_labels_p = true_labels_p[:, 0]  # .T
+            predictions_p = predictions_p[:, 0]  # .T
         plt.plot(index_p, true_labels_p, label="true labels")
-        if self.out_size != 1:
-            plt.figure()
+        # if self.out_size != 1:
+        #     plt.figure()
         plt.plot(index_p, predictions_p, label="predictions")
-        if self.out_size == 1:
-            plt.legend()
+        # if self.out_size == 1:
+        plt.legend()
         plt.show()
         print("MSE: {:.6f}".format(torch.nn.MSELoss()(torch.from_numpy(predictions_p),
                                                       torch.from_numpy(true_labels_p)).item()))
 
     def _save_model(self, is_best: bool, save_path: str):
-        # maybe move to cpu to save
-        # TODO: should we save the dataloader state? (i think not)
         state = {
             'epoch': self.epoch + 1,  # state in the loop (why +1 ?)
             'state_dict': self.model.state_dict(),  # model params state
@@ -420,3 +463,18 @@ class RNNModel(AutoRegressiveModel):
             print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
+
+    def true_predict(self, is_best: bool = False):
+        if is_best:
+            self.load_from_checkpoint(is_best=True)
+        n = self.out_size
+        super().predict(n)
+
+        try:
+            pred_in = self.dataset[len(self.dataset)-self.out_size][0].unsqueeze(0).to(self.device)
+        except TypeError:
+            raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
+        out = self.model(pred_in)
+        out = out.cpu().detach().numpy()
+        test_out = self.scaler.inverse_transform(out)
+        return self._build_forecast_series(test_out.squeeze())
