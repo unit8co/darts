@@ -132,7 +132,7 @@ class RNNModel(AutoRegressiveModel):
                  hidden_fc_size: list = [], dropout: float = 0., batch_size: int = None, n_epochs: int = 800,
                  scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)), full: bool = False,
                  loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False,
-                 work_dir: str ='./'):
+                 work_dir: str = './'):
         """
         Implementation of different RNN for forecasting.
 
@@ -239,10 +239,10 @@ class RNNModel(AutoRegressiveModel):
             self.writer.close()
 
     def predict(self, series: 'TimeSeries' = None, n: int = None, is_best: bool = False):
-        # TODO: this is more of a generate function than a predict...
-        self.load_from_checkpoint(is_best=is_best)
+        # TODO: merge the different functions
         if n is None:
-            n = self.out_size
+            return self.true_predict(series, is_best)
+        self.load_from_checkpoint(is_best=is_best)
         if series is None:
             series = self.training_series
         else:
@@ -377,7 +377,7 @@ class RNNModel(AutoRegressiveModel):
                     self.writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
                 self.writer.add_scalar("loss/training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
                 self.writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training/training_loss_mse", tot_loss_mse / (batch_idx + 1), epoch)
+                self.writer.add_scalar("training/training_loss", tot_loss_mse / (batch_idx + 1), epoch)
                 self.writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
             # print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
@@ -407,7 +407,7 @@ class RNNModel(AutoRegressiveModel):
         if self.vis_tb:
             self.writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
             self.writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
-            self.writer.add_scalar("validation/validation_loss_mse", tot_loss_mse / (batch_idx + 1), self.epoch)
+            self.writer.add_scalar("validation/validation_loss", tot_loss_mse / (batch_idx + 1), self.epoch)
         # print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
         #       end="\r")
 
@@ -472,7 +472,7 @@ class RNNModel(AutoRegressiveModel):
         # if self.out_size == 1:
         plt.legend()
         plt.show()
-        print("MSE: {:.6f}".format(torch.nn.MSELoss()
+        print("Loss: {:.6f}".format(self.criterion
                                    (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))),
                                     torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1)))).item()))
 
@@ -519,7 +519,7 @@ class RNNModel(AutoRegressiveModel):
             print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
 
     def true_predict(self, series: 'TimeSeries', is_best: bool = False):
-        # TODO: merge predict and true_predict (for example, if n is none, do a true predict)
+        # TODO: future deprecation
         self.load_from_checkpoint(is_best=is_best)
         n = self.out_size
         super().predict(n)
