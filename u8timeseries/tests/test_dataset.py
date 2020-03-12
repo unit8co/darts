@@ -6,7 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 import torch
 
 from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset
+from ..utils import TimeSeriesDataset1D
 
 
 class MyTestCase(unittest.TestCase):
@@ -15,26 +15,26 @@ class MyTestCase(unittest.TestCase):
     pd_series = pd.Series(range(100), index=times)
     series: TimeSeries = TimeSeries(pd_series)
     scaler = MinMaxScaler()
-    scaler.fit(series.values().reshape(-1, 1))
-    data, label = TimeSeriesDataset._input_label_batch(series, 12, 4)
+    data, label = TimeSeriesDataset1D._input_label_batch(series, 12, 4)
 
     def test_creation(self):
         # Should be a timeseries object
-        with self.assertRaises(TypeError):
-            dataset = TimeSeriesDataset(self.pd_series, self.scaler)
+        with self.assertRaises(AttributeError):
+            dataset = TimeSeriesDataset1D(self.pd_series, scaler=self.scaler)
         # Should have a scaler fitted
         with self.assertRaises(sklearn.exceptions.NotFittedError):
-            dataset = TimeSeriesDataset(self.series, MinMaxScaler())
+            dataset = TimeSeriesDataset1D(self.series, scaler=self.scaler)
+            dataset.transform()
         # Cannot have train window <= 0
         with self.assertRaises(AssertionError):
-            dataset = TimeSeriesDataset(self.series, self.scaler, -1)
+            dataset = TimeSeriesDataset1D(self.series, -1)
         # Cannot have label window <= 0
         with self.assertRaises(AssertionError):
-            dataset = TimeSeriesDataset(self.series, self.scaler, 1, -1)
+            dataset = TimeSeriesDataset1D(self.series, 1, -1)
 
     def test_content(self):
         # Can have no transformation
-        dataset = TimeSeriesDataset(self.series, None, 12, 4)
+        dataset = TimeSeriesDataset1D(self.series, 12, 4)
         self.assertEqual(len(dataset), len(self.data))
         # correct types
         self.assertEqual(type(dataset[0][0]), torch.Tensor)

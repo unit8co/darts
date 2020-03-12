@@ -1,5 +1,5 @@
 from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset
+from ..utils import TimeSeriesDataset1D
 from .. import AutoRegressiveModel
 
 import torch
@@ -18,11 +18,13 @@ from sklearn.preprocessing import MinMaxScaler
 
 from tqdm.notebook import tqdm  # add check for different tqdm
 
+from typing import List
+
 
 # TODO add batch norm
 class RNN(nn.Module):
     def __init__(self, name, input_size, output_length, hidden_dim, n_layers, hidden_linear=[], dropout=0,
-                 many=False, teacher_forcing=False):
+                 many=False):
         """
         PyTorch nn module implementing a simple RNN with the specified `name` layer.
 
@@ -33,7 +35,7 @@ class RNN(nn.Module):
         :param n_layers: The number of RNN layers.
         :param hidden_linear: A list containing the dimension of the hidden layers of the fully connected NN.
         :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
-        :param full: If True, will compare the output of all time-steps instead of only the last one.
+        :param many: If True, will compare the output of all time-steps instead of only the last one.
         """
         super(RNN, self).__init__()
 
@@ -44,9 +46,9 @@ class RNN(nn.Module):
         self.out_len = output_length
         self.name = name
         self.many = many
-        self.teach_force = 0
-        if teacher_forcing:
-            self.teach_force = self.out_len - 1
+        # self.teach_force = 0
+        # if teacher_forcing:
+        #     self.teach_force = self.out_len - 1
 
         # Defining the layers
         # RNN Layer
@@ -79,29 +81,30 @@ class RNN(nn.Module):
                 hidden = hidden[0]
             predictions = hidden[-1, :, :]
             predictions = self.fc(predictions)
+            predictions = predictions.view(batch_size, self.out_len, 1)
 
-        initial_pred = predictions
+        # initial_pred = predictions
 
-        for i in range(self.teach_force):  # still buggy
-            future = x.roll(-1, 1)
-            if y is None:
-                break
-            if np.random.random() > epoch/600 * 0.5:
-                future[:, -1, :] = y[:, i].unsqueeze(1)
-            else:
-                future[:, -1, :] = initial_pred[:, i].unsqueeze(1)
-            out, hidden = self.rnn(future, hidden)
-
-            if self.many:
-                predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
-                predictions = predictions.view(batch_size, x.size(1), self.out_len)
-                initial_pred[:, :, i + 1] = predictions[:, :, i]
-            else:
-                if self.name == "LSTM":
-                    hidden = hidden[0]
-                predictions = hidden[-1, :, :]
-                predictions = self.fc(predictions)
-                initial_pred[:, i+1] = predictions[:, 0]
+        # for i in range(self.teach_force):  # TODO: still buggy
+        #     future = x.roll(-1, 1)
+        #     if y is None:
+        #         break
+        #     if np.random.random() > epoch/600 * 0.5:
+        #         future[:, -1, :] = y[:, i].unsqueeze(1)
+        #     else:
+        #         future[:, -1, :] = initial_pred[:, i].unsqueeze(1)
+        #     out, hidden = self.rnn(future, hidden)
+        #
+        #     if self.many:
+        #         predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
+        #         predictions = predictions.view(batch_size, x.size(1), self.out_len)
+        #         initial_pred[:, :, i + 1] = predictions[:, :, i]
+        #     else:
+        #         if self.name == "LSTM":
+        #             hidden = hidden[0]
+        #         predictions = hidden[-1, :, :]
+        #         predictions = self.fc(predictions)
+        #         initial_pred[:, i+1] = predictions[:, 0]
 
         # predictions is batch_size X output_length
         return predictions
@@ -128,23 +131,25 @@ class RNNModel(AutoRegressiveModel):
                  input_length: int = 12, hidden_size: int = 25, n_rnn_layers: int = 1,
                  hidden_fc_size: list = [], dropout: float = 0., batch_size: int = None, n_epochs: int = 800,
                  scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)), full: bool = False,
-                 loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False):
+                 loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False,
+                 work_dir: str ='./'):
         """
         Implementation of different RNN for forecasting.
 
-        model: kind of RNN module, or custom pytorch module
-        input_size: number of features/channels in input (Must be identical to module in size)
-        output_length: number of steps to predict (Must be identical to module out size)
-        input_length: number of previous time stamps taken into account
-        hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
-        n_rnn_layers: number of rnn layers (unnecessary if module given)
-        hidden_fc_size: size of hidden layers for the fully connected part (unnecessary if module given)
-        dropout: percent of neuron dropped in RNN hidden layers (unnecessary if module given)
-        batch_size: number of time series used in each training pass
-        n_epochs: number of epochs to train the model
-        loss: pytorch loss used during training (default: torch.nn.MSELoss())
-        exp_name: name of the save and tensorboard directory
-        vis_tb: if True, use tensorboard to log the different parameters
+        :param model: kind of RNN module, or custom pytorch module
+        :param input_size: number of features/channels in input (Must be identical to module in size)
+        :param output_length: number of steps to predict (Must be identical to module out size)
+        :param input_length: number of previous time stamps taken into account
+        :param hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
+        :param n_rnn_layers: number of rnn layers (unnecessary if module given)
+        :param hidden_fc_size: size of hidden layers for the fully connected part (unnecessary if module given)
+        :param dropout: percent of neuron dropped in RNN hidden layers (unnecessary if module given)
+        :param batch_size: number of time series used in each training pass
+        :param n_epochs: number of epochs to train the model
+        :param loss: pytorch loss used during training (default: torch.nn.MSELoss()).
+        :param exp_name: name of the checkpoint and tensorboard directory
+        :param vis_tb: if True, use tensorboard to log the different parameters
+        :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries.
         """
         super().__init__()
         self._torch_device()
@@ -168,14 +173,15 @@ class RNNModel(AutoRegressiveModel):
                              format(model.__class__.__name__))
         self.model = self.model.to(self.device)
         self.exp_name = exp_name
-        self.save_path = os.path.join('./', 'checkpoints', exp_name)
+        self.cwd = work_dir
+        self.save_path = os.path.join(self.cwd, 'checkpoints', exp_name)
         self.start_epoch = 0
         self.n_epochs = n_epochs
         self.bsize = batch_size
         self.epoch = None
         self.dataset = None
         self.train_loader = None
-        self.val_series = None
+        self.val_dataset = None
         self.val_loader = None
         self.from_scratch = True  # do we train the model from scratch
 
@@ -189,34 +195,41 @@ class RNNModel(AutoRegressiveModel):
 
         # self.load_from_checkpoint()
 
-    def fit(self, series: TimeSeries):
+    def fit(self, dataset: torch.utils.data.dataset):
+        # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
+        # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
+        # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
         if self.scheduler is None or self.optimizer is None:
             raise AssertionError("optimizer and scheduler must be set to launch the training")
-        super().fit(series)
+        if type(dataset) is TimeSeries or type(dataset) is list:
+            self.set_train_dataset(dataset)
+            dataset = self.dataset
+        super().fit(dataset.series[0])
+        self.dataset = dataset
+        self.scaler = self.dataset.fit_scaler(self.scaler)
         if self.from_scratch:
-            shutil.rmtree('./checkpoints/{}/'.format(self.exp_name), ignore_errors=True)
-            if not hasattr(self.scaler, "scale_"):
-                # TODO: use partial fit to include validation set?
-                self.scaler.fit(series.values().reshape(-1, 1))
-        self.set_train_dataset(series)
+            shutil.rmtree(self.cwd+'checkpoints/{}/'.format(self.exp_name), ignore_errors=True)
+        #     if not hasattr(self.scaler, "scale_"):
+        #         self.scaler.fit(series.values().reshape(-1, 1))
+        # self.set_train_dataset(series)
         if self.bsize is None:
             self.bsize = len(self.dataset)
-        self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=False,
+        self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=True,
                                        num_workers=0, pin_memory=True, drop_last=True)
 
         # Tensorboard
         if self.vis_tb:
             if self.from_scratch:
-                shutil.rmtree('runs/{}/'.format(self.exp_name), ignore_errors=True)
-                self.writer = SummaryWriter('runs/{}'.format(self.exp_name))
+                shutil.rmtree(self.cwd+'runs/{}/'.format(self.exp_name), ignore_errors=True)
+                self.writer = SummaryWriter(self.cwd+'runs/{}'.format(self.exp_name))
                 dummy_input = torch.empty(self.bsize, self.seq_len, self.in_size).to(self.device)
                 self.writer.add_graph(self.model, dummy_input)
             else:
-                self.writer = SummaryWriter('runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
+                self.writer = SummaryWriter(self.cwd+'runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
 
-        if self.val_series is not None:
-            val_dataset = TimeSeriesDataset(self.val_series, self.scaler, self.seq_len, self.out_size, full=self.full)
-            self.val_loader = DataLoader(val_dataset, batch_size=self.bsize, shuffle=False,
+        if self.val_dataset is not None:
+            self.val_dataset.transform(self.scaler)
+            self.val_loader = DataLoader(self.val_dataset, batch_size=self.bsize, shuffle=False,
                                          num_workers=0, pin_memory=True, drop_last=False)
 
         self._train()
@@ -225,19 +238,25 @@ class RNNModel(AutoRegressiveModel):
             self.writer.flush()
             self.writer.close()
 
-    def predict(self, n: int = None, is_best: bool = False):
+    def predict(self, series: 'TimeSeries' = None, n: int = None, is_best: bool = False):
         # TODO: this is more of a generate function than a predict...
-        if is_best:
-            self.load_from_checkpoint(is_best=True)
+        self.load_from_checkpoint(is_best=is_best)
         if n is None:
             n = self.out_size
+        if series is None:
+            series = self.training_series
+        else:
+            self.training_series = series
         super().predict(n)
 
-        try:
-            pred_in = self.dataset[len(self.dataset)-1+self.out_size][0].unsqueeze(0).to(self.device)
-        except TypeError:
-            raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
+        scaled_series = self.scaler.transform(series.values()[-self.seq_len:].reshape(-1, 1))
+        pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
+        # try:
+        #     pred_in = self.dataset[len(self.dataset)-1+self.out_size][0].unsqueeze(0).to(self.device)
+        # except TypeError:
+        #     raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
         test_out = []
+        self.model.eval()
         for i in range(n):
             out = self.model(pred_in)
             if self.full:
@@ -248,12 +267,21 @@ class RNNModel(AutoRegressiveModel):
         test_out = self.scaler.inverse_transform(np.stack(test_out).reshape(-1, 1))
         return self._build_forecast_series(test_out.squeeze())
 
-    def set_val_series(self, val_series: TimeSeries):
-        self.val_series = val_series
+    def set_val_series(self, val_series: List[TimeSeries]):
+        if type(val_series) is not list:
+            val_series = [val_series]
+        self.val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.out_size, full=self.full)
 
-    def set_train_dataset(self, train_series: TimeSeries):
-        self.training_series = train_series
-        self.dataset = TimeSeriesDataset(train_series, self.scaler, self.seq_len, self.out_size, full=self.full)
+    def set_train_dataset(self, train_series: List[TimeSeries]):
+        # todo: can pass a dataset object too
+        if type(train_series) is not list:
+            train_series = [train_series]
+        self.training_series = train_series[0]
+        self.dataset = TimeSeriesDataset1D(train_series, self.seq_len, self.out_size, full=self.full)
+        self.scaler = self.dataset.fit_scaler(self.scaler)
+
+    def set_val_dataset(self, dataset: torch.utils.data.dataset):
+        self.val_dataset = dataset
 
     def set_optimizer(self, optimizer: torch.optim.Optimizer = torch.optim.Adam, learning_rate: float = 1e-2,
                       swa: bool = False, **kwargs):
@@ -331,8 +359,12 @@ class RNNModel(AutoRegressiveModel):
                 self.model.train()
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
+                # print(target.size(), output.size())
                 loss_mse = self.criterion(output, target)
-                loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+                if self.out_size == 1 and not self.full:
+                    loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+                else:
+                    loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
                 loss = loss_mse + loss_diff
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -366,7 +398,10 @@ class RNNModel(AutoRegressiveModel):
             data, target = data.to(self.device), target.to(self.device)
             output = self.model(data)
             loss_mse = self.criterion(output, target)
-            loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+            if self.out_size == 1 and not self.full:
+                loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+            else:
+                loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
             tot_loss_mse += loss_mse.item()
             tot_loss_diff += loss_diff.item()
         if self.vis_tb:
@@ -385,7 +420,13 @@ class RNNModel(AutoRegressiveModel):
         self._plot_result(self.dataset)
 
     def test_series(self, tseries: TimeSeries):
-        test_dataset = TimeSeriesDataset(tseries, self.scaler, self.seq_len, self.out_size, full=self.full)
+        if issubclass(type(tseries), torch.utils.data.Dataset):
+            self._plot_result(tseries)
+            return
+        if type(tseries) is not list:
+            tseries = [tseries]
+        test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, full=self.full, scaler=self.scaler)
+        test_dataset.transform()
         self._plot_result(test_dataset)
 
     def _plot_result(self, dataset):
@@ -401,17 +442,29 @@ class RNNModel(AutoRegressiveModel):
             predictions.append(output.cpu().detach().numpy())
         targets = np.vstack(targets)
         predictions = np.vstack(predictions)
+
         if self.full:
-            targets = targets[:, -1, :]
-            predictions = predictions[:, -1, :]
-        index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
-        index_p = index_p.reshape(-1, self.out_size)
-        true_labels_p = self.scaler.inverse_transform(targets)
-        predictions_p = self.scaler.inverse_transform(predictions)
-        if self.out_size != 1:
-            index_p = index_p[:, 0]  # .T
+            index_p = np.arange(dataset.tw)
+            true_labels_p = targets[:1, :, 0].T
+            predictions_p = predictions[:1, :, 0].T
+        else:
+            label_per_serie = dataset.len_series - dataset.tw - dataset.lw + 1
+            index_p = np.arange(label_per_serie)
+            # print(label_per_serie)
+            true_labels_p = targets[:label_per_serie, 0:1, 0]
+            predictions_p = predictions[:label_per_serie, 0:1, 0]
+        # if self.full:
+        #     targets = targets[:, -1, :]
+        #     predictions = predictions[:, -1, :]
+        # index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
+        # index_p = index_p.reshape(-1, self.out_size)
+        true_labels_p = self.scaler.inverse_transform(true_labels_p)
+        predictions_p = self.scaler.inverse_transform(predictions_p)
+        if self.out_size != 1 and not self.full:
+        #     index_p = index_p[:, 0]  # .T
             true_labels_p = true_labels_p[:, 0]  # .T
             predictions_p = predictions_p[:, 0]  # .T
+
         plt.plot(index_p, true_labels_p, label="true labels")
         # if self.out_size != 1:
         #     plt.figure()
@@ -419,8 +472,9 @@ class RNNModel(AutoRegressiveModel):
         # if self.out_size == 1:
         plt.legend()
         plt.show()
-        print("MSE: {:.6f}".format(torch.nn.MSELoss()(torch.from_numpy(predictions_p),
-                                                      torch.from_numpy(true_labels_p)).item()))
+        print("MSE: {:.6f}".format(torch.nn.MSELoss()
+                                   (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))),
+                                    torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1)))).item()))
 
     def _save_model(self, is_best: bool, save_path: str):
         state = {
@@ -464,17 +518,20 @@ class RNNModel(AutoRegressiveModel):
         else:
             print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
 
-    def true_predict(self, is_best: bool = False):
-        if is_best:
-            self.load_from_checkpoint(is_best=True)
+    def true_predict(self, series: 'TimeSeries', is_best: bool = False):
+        # TODO: merge predict and true_predict (for example, if n is none, do a true predict)
+        self.load_from_checkpoint(is_best=is_best)
         n = self.out_size
         super().predict(n)
+        self.training_series = series
 
-        try:
-            pred_in = self.dataset[len(self.dataset)-self.out_size][0].unsqueeze(0).to(self.device)
-        except TypeError:
-            raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
+        scaled_serie = self.scaler.transform(series.values()[-self.seq_len:].reshape(-1, 1))
+        pred_in = torch.from_numpy(scaled_serie).float().view(1, -1, 1).to(self.device)
+        # try:
+        #     pred_in = self.dataset[len(self.dataset)-self.out_size][0].unsqueeze(0).to(self.device)
+        # except TypeError:
+        #     raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
         out = self.model(pred_in)
-        out = out.cpu().detach().numpy()
+        out = out.cpu().detach().numpy()[0, :, :]
         test_out = self.scaler.inverse_transform(out)
         return self._build_forecast_series(test_out.squeeze())
