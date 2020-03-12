@@ -54,10 +54,12 @@ class Theta(AutoRegressiveModel):
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        max_lag = 24
-        if season_period >= 24:
-            max_lag = int(1.5 * season_period)
-        self.is_seasonal, self.season_period = check_seasonality(ts, season_period, max_lag=max_lag)
+        if season_period is None:
+            max_lag = 24
+            self.is_seasonal, self.season_period = check_seasonality(ts, season_period, max_lag=max_lag)
+        else:
+            self.season_period = season_period
+            self.is_seasonal = True  # force the user-defined seasonality to be considered as a true seasonal period.
 
         new_ts = ts
 
