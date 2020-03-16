@@ -472,9 +472,13 @@ class RNNModel(AutoRegressiveModel):
         # if self.out_size == 1:
         plt.legend()
         plt.show()
+        pshape = predictions.shape
+        tshape = targets.shape
         print("Loss: {:.6f}".format(self.criterion
-                                   (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))),
-                                    torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1)))).item()))
+                                    (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))
+                                                      .reshape(pshape)),
+                                     torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1))
+                                                      .reshape(tshape))).item()))
 
     def _save_model(self, is_best: bool, save_path: str):
         state = {
