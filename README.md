@@ -6,9 +6,21 @@ conda install gcc
 conda install -c conda-forge fbprophet
 ```
 
-And then:
+Also, for the installation to be successful, numpy has to be already installed.
+
+Next, from the root of u8timeseries:
 ```
 pip install .
+```
+
+If Fortran is not installed on the device, the following error message might be printed during the installation:
+
+```
+error: library dfftpack has Fortran sources but no Fortran compiler found
+```
+This can be solved by installing gcc using Homebrew:
+```
+brew install gcc
 ```
 
 ## Usage
