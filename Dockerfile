@@ -25,3 +25,7 @@ RUN pip install -r requirements.txt
 ADD . /home/jovyan/work
 WORKDIR /home/jovyan/work
 RUN pip install .
+
+# to run tests
+COPY run_tests.sh /home/jovyan/run_tests.sh
+
