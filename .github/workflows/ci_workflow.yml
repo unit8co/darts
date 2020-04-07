@@ -1,0 +1,24 @@
+name: ci_workflow
+
+on:
+  push:
+    branches:
+      - github_action_CI
+      - master
+
+
+jobs:
+
+  run_tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout step
+      uses: actions/checkout@v2
+
+    - name: Build and execute container step
+      id: tests
+      uses: ./
