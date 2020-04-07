@@ -28,4 +28,5 @@ RUN pip install .
 
 # to run tests
 COPY run_tests.sh /home/jovyan/run_tests.sh
+ENTRYPOINT ["/home/jovyan/run_tests.sh"]
 
