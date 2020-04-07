@@ -14,11 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: ls
+    - name: Build docker step
+      run: ./build_docker.sh
 
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - name: Checkout step
-      uses: actions/checkout@v2
-
-    - name: Build and execute container step
-      id: tests
-      uses: ./
+    - name: Run docker step
+      run: ./run_test_docker.sh
