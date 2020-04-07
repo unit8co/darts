@@ -3,4 +3,4 @@ description: 'Runs unit tests upon push.'
 runs:
   using: 	'docker'
   image: 	'Dockerfile'
-  entrypoint:	'/home/jovyan/run_tests.sh'
+  entrypoint:	/run_tests.sh
