@@ -1,0 +1,45 @@
+name: Build documentation and update gh-pages branch
+
+on: [push]
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7]
+
+    steps:
+      
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install sphinx
+        pip install sphinx_rtd_theme
+        
+    - name: Build documentation
+      run: |
+        cd docs
+        make github
+    
+    - name: Create .nojekyll
+      run: |
+       touch docs/build/html/.nojekyll
+       
+    - name: Deploy
+      uses: MounBen/git-publish-subdir-action@master
+      env:
+        REPO: self
+        BRANCH: gh-pages
+        FOLDER: docs/build/html
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        
