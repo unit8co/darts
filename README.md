@@ -1,4 +1,4 @@
-## Install: 
+## macOS install: 
 
 The install happens with `pip`. For `conda` users, do the following first:
 ```
@@ -6,10 +6,31 @@ conda install gcc
 conda install -c conda-forge fbprophet
 ```
 
-And then:
+Also, for the installation to be successful, numpy has to be already installed.
+
+Next, from the root of u8timeseries:
 ```
 pip install .
 ```
+
+If Fortran is not installed on the device, the following error message might be printed during the installation:
+
+```
+error: library dfftpack has Fortran sources but no Fortran compiler found
+```
+This can be solved by installing gcc using Homebrew:
+```
+brew install gcc
+```
+
+## docker install
+
+Build and run the docker using the following two commands:
+```
+./build_docker.sh
+./run_docker.sh
+```
+Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.
 
 ## Usage
 For now the best documentation is examples.
