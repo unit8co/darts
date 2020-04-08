@@ -1,11 +1,6 @@
 name: ci_workflow
 
-on:
-  push:
-    branches:
-      - github_action_CI
-      - master
-
+on: push
 
 jobs:
 
