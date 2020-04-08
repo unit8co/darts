@@ -1,0 +1,277 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>u8timeseries.backtesting.backtesting_udf &mdash; u8timeseries  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> u8timeseries
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Getting Started</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentation.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devguide.html">Developer’s Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">u8timeseries</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>u8timeseries.backtesting.backtesting_udf</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for u8timeseries.backtesting.backtesting_udf</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.timeseries</span> <span class="k">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.models.autoregressive_model</span> <span class="k">import</span> <span class="n">AutoRegressiveModel</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="sd">&quot;&quot;&quot; This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)</span>
+<span class="sd">    on some validation sets, sliding over time.</span>
+<span class="sd">    The functionality is here for AutoRegressiveModel, not yet for regressive models.</span>
+<span class="sd">    </span>
+<span class="sd">    These functions will probably rarely be useful, compared to the ones in &quot;forecasting_simulation.py&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">get_train_val_series</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">nr_points_val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">nr_steps_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a list of (training_set, validation_set) pairs for backtesting.</span>
+
+<span class="sd">    .. todo: this is expanding training window, implement optional sliding window</span>
+
+<span class="sd">    :param series: The full time series needs to be split</span>
+<span class="sd">    :param start: the start time of the earliest validation set</span>
+<span class="sd">    :param nr_points_val: the number of points in the validation sets</span>
+<span class="sd">    :param nr_steps_iter: the number of time steps to iterate between the successive validation sets</span>
+<span class="sd">    :return: a list of (training_set, validation_set) pairs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span>
+    <span class="c1"># TODO: maybe also check that valset_duration &gt;= series frequency</span>
+
+    <span class="n">curr_val_start</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">start</span>
+
+    <span class="k">def</span> <span class="nf">_get_train_val_and_increase_pointer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="k">nonlocal</span> <span class="n">curr_val_start</span>
+
+        <span class="n">train_series</span><span class="p">,</span> <span class="n">val_series_all</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">curr_val_start</span><span class="p">)</span>
+        <span class="n">val_series</span> <span class="o">=</span> <span class="n">val_series_all</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">val_series_all</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">nr_points_val</span><span class="p">)</span>
+
+        <span class="n">curr_val_start</span> <span class="o">=</span> <span class="n">curr_val_start</span> <span class="o">+</span> <span class="n">nr_steps_iter</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">val_series</span>
+
+    <span class="n">series_pairs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">curr_train_series</span><span class="p">,</span> <span class="n">curr_val_series</span> <span class="o">=</span> <span class="n">_get_train_val_and_increase_pointer</span><span class="p">()</span>
+
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">curr_val_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">nr_points_val</span><span class="p">:</span>
+        <span class="n">series_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">curr_train_series</span><span class="p">,</span> <span class="n">curr_val_series</span><span class="p">))</span>
+        <span class="n">curr_train_series</span><span class="p">,</span> <span class="n">curr_val_series</span> <span class="o">=</span> <span class="n">_get_train_val_and_increase_pointer</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">series_pairs</span>
+
+
+<div class="viewcode-block" id="backtest_autoregressive_model"><a class="viewcode-back" href="../../../api/u8timeseries.backtesting.html#u8timeseries.backtesting.backtest_autoregressive_model">[docs]</a><span class="k">def</span> <span class="nf">backtest_autoregressive_model</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s1">&#39;AutoRegressiveModel&#39;</span><span class="p">,</span>
+                                  <span class="n">train_val_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">]],</span>
+                                  <span class="n">eval_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides a back-testing environment.</span>
+
+<span class="sd">    Going through the list &#39;train_val_series`, this function successively trains a chosen auto-regressive model `model`</span>
+<span class="sd">    on the training TimeSeries provided, compares the prediction with the validation TimeSeries provided using</span>
+<span class="sd">    `eval_fn`.</span>
+
+<span class="sd">    The results are stored in a list, returned to the user.</span>
+
+<span class="sd">    .. todo: option for point-prediction</span>
+
+<span class="sd">    :param train_val_series: A list of tuples (train, val) to be passed to the model `model`.</span>
+<span class="sd">    :param model: The chosen model to use.</span>
+<span class="sd">    :param eval_fn: The evaluation criteria.</span>
+<span class="sd">    :return: A list of results obtain via the process described above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">train_val_series</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eval_fn</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">pred</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">results</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, unit8
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

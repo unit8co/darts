@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>u8timeseries.backtesting.forecasting_simulation &mdash; u8timeseries  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> u8timeseries
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Getting Started</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentation.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devguide.html">Developer’s Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">u8timeseries</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>u8timeseries.backtesting.forecasting_simulation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for u8timeseries.backtesting.forecasting_simulation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">IPython</span> <span class="k">import</span> <span class="n">get_ipython</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="k">import</span> <span class="n">tqdm</span><span class="p">,</span> <span class="n">tqdm_notebook</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.timeseries</span> <span class="k">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.models.autoregressive_model</span> <span class="k">import</span> <span class="n">AutoRegressiveModel</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.models.regressive_model</span> <span class="k">import</span> <span class="n">RegressiveModel</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+
+
+<span class="k">def</span> <span class="nf">_build_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_isnotebook</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">shell</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;ZMQInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># Jupyter notebook or qtconsole</span>
+            <span class="k">elif</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;TerminalInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Terminal running IPython</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Other type (?)</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Probably standard Python interpreter</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_isnotebook</span><span class="p">():</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm_notebook</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">iterable</span>
+    <span class="k">return</span> <span class="n">iterator</span>
+
+
+<div class="viewcode-block" id="simulate_forecast_ar"><a class="viewcode-back" href="../../../api/u8timeseries.backtesting.html#u8timeseries.backtesting.simulate_forecast_ar">[docs]</a><span class="k">def</span> <span class="nf">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span>
+                         <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;AutoRegressiveModel&#39;</span><span class="p">,</span>
+                         <span class="n">start</span><span class="p">:</span> <span class="s1">&#39;pd.Timestamp&#39;</span><span class="p">,</span>
+                         <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">trim_to_series</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides an environment for forecasting future values of the TimeSeries &#39;series`.</span>
+
+<span class="sd">    This function predicts the `fcast_horizon_n` values for the TimeSeries `series` starting from the date `start`</span>
+<span class="sd">    according to the auto-regressive model `model`.</span>
+
+<span class="sd">    :param series: The TimeSeries to forecast.</span>
+<span class="sd">    :param model: The AutoRegressiveModel to use.</span>
+<span class="sd">    :param start: The first time at which a prediction is produced for a future time.</span>
+<span class="sd">    :param fcast_horizon_n: The number of future values to predict.</span>
+<span class="sd">    :param trim_to_series: Whether the predicted series has the end trimmed to match the end of the main series or not.</span>
+<span class="sd">    :param verbose: Whether to print progress or not.</span>
+<span class="sd">    :return: A TimeSeries containing the fore-casted values of `series` over the horizon with respect to the model \</span>
+<span class="sd">    `model`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span>
+
+    <span class="n">last_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
+    <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+    <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">last_pred_time</span><span class="p">:</span>
+        <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+    <span class="c1"># what we&#39;ll return</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">fcast_horizon_n</span><span class="p">)</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">simulate_forecast_regr</span><span class="p">(</span><span class="n">feature_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                           <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                           <span class="n">model</span><span class="p">:</span> <span class="n">RegressiveModel</span><span class="p">,</span>
+                           <span class="n">start</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span>
+                           <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">trim_to_series</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                           <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a TimeSeries containing the forecasts that would have been obtained from a given RegressiveModel,</span>
+<span class="sd">    on a given forecast time horizon.</span>
+
+<span class="sd">    .. todo: review and add to documentation.</span>
+<span class="sd">    .. todo: optionally also return weights, when those are available in model</span>
+<span class="sd">    .. todo: (getattr(model.model, &#39;coef_&#39;, None) is not None)</span>
+
+<span class="sd">    :param feature_series: the feature time series of the regressive model</span>
+<span class="sd">    :param target_series: the target time series of the regressive model (i.e., the series to predict)</span>
+<span class="sd">    :param model: the RegressiveModel to use</span>
+<span class="sd">    :param start: when the forecasts start (i.e., the first time at which a prediction is produced for a future time)</span>
+<span class="sd">    :param fcast_horizon_n: the forecast horizon</span>
+<span class="sd">    :param trim_to_series: whether the returned predicted series has the end trimmed to match the end of the main series</span>
+<span class="sd">    :param verbose: whether to print progress</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span> \
+                                                                             <span class="s1">&#39;have the same time index&#39;</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span>
+    <span class="k">assert</span> <span class="n">start</span> <span class="o">!=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span>
+
+    <span class="n">last_pred_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span> <span class="k">else</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
+    <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+    <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">last_pred_time</span><span class="p">:</span>
+        <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+    <span class="c1"># what we&#39;ll return</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># build train/val series</span>
+        <span class="n">train_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
+        <span class="n">train_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
+        <span class="n">val_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">pred_time</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="n">fcast_horizon_n</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_features</span><span class="p">,</span> <span class="n">train_target</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_features</span><span class="p">)</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, unit8
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
