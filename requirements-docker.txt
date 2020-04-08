@@ -11,5 +11,4 @@ tqdm
 joblib
 plotly
 fbprophet  # holydays==0.9.5 to exploit the last bug with dateutils
-ipywidgets
 # add jupyter notebook?

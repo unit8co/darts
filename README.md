@@ -1,4 +1,4 @@
-## Install: 
+## macOS install: 
 
 The install happens with `pip`. For `conda` users, do the following first:
 ```
@@ -22,6 +22,15 @@ This can be solved by installing gcc using Homebrew:
 ```
 brew install gcc
 ```
+
+## docker install
+
+Build and run the docker using the following two commands:
+```
+./build_docker.sh
+./run_docker.sh
+```
+Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.
 
 ## Usage
 For now the best documentation is examples.
