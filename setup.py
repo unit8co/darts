@@ -9,15 +9,16 @@ setup(name='u8timeseries',
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=[
+          'numpy>=1.15.4',
           'dateutils',
           'scipy<1.3',
           'statsmodels==0.9.0',
-          'pmdarima',
+          'pmdarima<1.3',
           'plotly',
           'fbprophet>=0.5',
           'scikit-learn>=0.21.2',
           'pandas>=0.23.1',
           'tqdm>=4.32.1',
-          'numpy>=1.15.4'
+          'ipywidgets'
       ],
       zip_safe=False)

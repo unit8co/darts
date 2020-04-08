@@ -19,9 +19,7 @@ USER $NB_USER
 
 # u8ts specific deps
 RUN pip install pystan
-COPY requirements-docker.txt /deps/requirements.txt
 WORKDIR /deps
-RUN pip install -r requirements.txt
 ADD . /home/jovyan/work
 WORKDIR /home/jovyan/work
 RUN pip install .
