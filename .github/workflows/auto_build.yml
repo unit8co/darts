@@ -25,6 +25,7 @@ jobs:
         pip install sphinx
         pip install sphinx_rtd_theme
         pip install sphinx-automodapi
+        pip install nbsphinx
         
     - name: Build documentation
       run: |
