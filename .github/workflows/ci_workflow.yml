@@ -21,4 +21,4 @@ jobs:
 
     - name: Build and execute container step
       id: tests
-      uses: ./
+      uses: ./.github/actions/test_action
