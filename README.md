@@ -45,3 +45,6 @@ this is likely because [Prophet deregisters the Pandas converters in its code](h
 ```
 pd.plotting.register_matplotlib_converters()
 ```
+
+## unit test status
+![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg?branch=github_action_CI)
