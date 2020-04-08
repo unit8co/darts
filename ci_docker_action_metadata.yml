@@ -2,5 +2,5 @@ name: 'CI_action'
 description: 'Runs unit tests upon push.'
 runs:
   using: 	'docker'
-  image: 	'Dockerfile_test'
+  image: 	'u8timeseries/tests/Dockerfile'
   entrypoint:	"run_tests.sh"
