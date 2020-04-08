@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.models.statistics &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>u8timeseries.models.statistics &mdash; u8timeseries  documentation</title>
   
 
   
@@ -178,14 +178,14 @@
 <span class="sd">    :param m: The seasonality period to check.</span>
 <span class="sd">    :param max_lag: The maximal lag allowed in the ACF.</span>
 <span class="sd">    :param alpha: The desired confidence level (default 5%).</span>
-<span class="sd">    :return: A tuple (season, m), where s is a boolean indicating whether the TimeSeries has seasonality or not</span>
+<span class="sd">    :return: A tuple (season, m), where season is a boolean indicating whether the TimeSeries has seasonality or not</span>
 <span class="sd">             and m is the seasonality period.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">m</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;m must be an integer greater than 1.&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="n">max_lag</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;max_lag must be greater or equal than m.&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;max_lag must be greater than or equal to m.&#39;</span><span class="p">)</span>
 
     <span class="n">n_unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -338,7 +338,7 @@
 <span class="sd">    :param alpha: The confidence interval.</span>
 <span class="sd">    :param fig_size: The size of the figure to be displayed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">acf</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">nlags</span><span class="o">=</span><span class="n">max_lag</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">acf</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">nlags</span><span class="o">=</span><span class="n">max_lag</span><span class="p">)</span>  <span class="c1"># , alpha=alpha) and confint as output too</span>
 
     <span class="c1"># Computes the confidence interval at level alpha for all lags.</span>
     <span class="n">stats</span> <span class="o">=</span> <span class="p">[]</span>

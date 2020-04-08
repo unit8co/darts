@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Metrics &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>Metrics &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Statistics" href="u8timeseries.statistics.html" />
-    <link rel="prev" title="Theta" href="u8timeseries.Theta.html" /> 
+    <link rel="prev" title="Models" href="u8timeseries.models.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -198,79 +198,6 @@
 <div class="section" id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h1>
 <p>This section contains the various ready-to-use metrics that have been implemented so far.</p>
-<span class="target" id="module-u8timeseries.metrics"></span><p class="rubric">Methods Summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.metrics.mape" title="u8timeseries.metrics.mape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.mape</span></code></a>(true_series, …)</p></td>
-<td><p>Computes the Mean Average Percentage Error (MAPE).</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.metrics.mase" title="u8timeseries.metrics.mase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.mase</span></code></a>(true_series, …)</p></td>
-<td><p>Computes the Mean Average Scaled Error (MASE).</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.metrics.overall_percentage_error" title="u8timeseries.metrics.overall_percentage_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.overall_percentage_error</span></code></a>(…)</p></td>
-<td><p>Computes the Overall Percentage Erroe (OPE):</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods Documentation</p>
-<dl class="function">
-<dt id="u8timeseries.metrics.mape">
-<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">true_series: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: u8timeseries.timeseries.TimeSeries</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.mape" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the Mean Average Percentage Error (MAPE).</p>
-<p>This function computes the MAPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
-<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A float, the MAPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.metrics.mase">
-<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">true_series: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: u8timeseries.timeseries.TimeSeries</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.mase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the Mean Average Scaled Error (MASE).</p>
-<p>This function computes the MASE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
-<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A float, the MASE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.metrics.overall_percentage_error">
-<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">overall_percentage_error</code><span class="sig-paren">(</span><em class="sig-param">true_series: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: u8timeseries.timeseries.TimeSeries</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#overall_percentage_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.overall_percentage_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the Overall Percentage Erroe (OPE):</p>
-<p>This function computes the OPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
-<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A float, the OPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 
 
@@ -284,7 +211,7 @@
         <a href="u8timeseries.statistics.html" class="btn btn-neutral float-right" title="Statistics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.Theta.html" class="btn btn-neutral float-left" title="Theta" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.models.html" class="btn btn-neutral float-left" title="Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

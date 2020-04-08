@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Statistics &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>Statistics &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -198,125 +198,6 @@
 <div class="section" id="statistics">
 <h1>Statistics<a class="headerlink" href="#statistics" title="Permalink to this headline">¶</a></h1>
 <p>This section contains statistical methods, mainly related to seasonality at the moment.</p>
-<span class="target" id="module-u8timeseries.models.statistics"></span><p class="rubric">Methods Summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.models.statistics.check_seasonality" title="u8timeseries.models.statistics.check_seasonality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.models.statistics.check_seasonality</span></code></a>(ts)</p></td>
-<td><p>Returns whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.models.statistics.extract_trend_and_seasonality" title="u8timeseries.models.statistics.extract_trend_and_seasonality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.models.statistics.extract_trend_and_seasonality</span></code></a>(ts)</p></td>
-<td><p>Extracts trend and seasonality from the TimeSeries <cite>ts</cite> using statsmodels.seasonal_decompose.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.models.statistics.plot_acf" title="u8timeseries.models.statistics.plot_acf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.models.statistics.plot_acf</span></code></a>(ts)</p></td>
-<td><p>Plots the ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.models.statistics.remove_seasonality" title="u8timeseries.models.statistics.remove_seasonality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.models.statistics.remove_seasonality</span></code></a>(ts)</p></td>
-<td><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.models.statistics.remove_trend" title="u8timeseries.models.statistics.remove_trend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.models.statistics.remove_trend</span></code></a>(ts)</p></td>
-<td><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods Documentation</p>
-<dl class="function">
-<dt id="u8timeseries.models.statistics.check_seasonality">
-<code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">check_seasonality</code><span class="sig-paren">(</span><em class="sig-param">ts: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">m: int = None</em>, <em class="sig-param">max_lag: int = 24</em>, <em class="sig-param">alpha: float = 0.05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#check_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p>
-<p>If [m] is None, we work under the assumption that there is a unique seasonality period, which is inferred
-from the Auto-correlation Function (ACF).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to check for seasonality.</p></li>
-<li><p><strong>m</strong> – The seasonality period to check.</p></li>
-<li><p><strong>max_lag</strong> – The maximal lag allowed in the ACF.</p></li>
-<li><p><strong>alpha</strong> – The desired confidence level (default 5%).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple (season, m), where s is a boolean indicating whether the TimeSeries has seasonality or not
-and m is the seasonality period.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.models.statistics.extract_trend_and_seasonality">
-<code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">extract_trend_and_seasonality</code><span class="sig-paren">(</span><em class="sig-param">ts: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">freq: int = None</em>, <em class="sig-param">model: str = 'multiplicative'</em><span class="sig-paren">)</span> &#x2192; Tuple[u8timeseries.timeseries.TimeSeries, u8timeseries.timeseries.TimeSeries]<a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts trend and seasonality from the TimeSeries <cite>ts</cite> using statsmodels.seasonal_decompose.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to study.</p></li>
-<li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (‘additive’ or ‘multiplicative’).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple (trend, seasonal) of TimeSeries containing the trend and seasonality respectively.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.models.statistics.plot_acf">
-<code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">plot_acf</code><span class="sig-paren">(</span><em class="sig-param">ts: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">m: int = None</em>, <em class="sig-param">max_lag: int = 24</em>, <em class="sig-param">alpha: float = 0.05</em>, <em class="sig-param">fig_size: Tuple[int</em>, <em class="sig-param">int] = (10</em>, <em class="sig-param">5)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#plot_acf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> – The lag to highlight.</p></li>
-<li><p><strong>max_lag</strong> – The maximal lag order to consider.</p></li>
-<li><p><strong>alpha</strong> – The confidence interval.</p></li>
-<li><p><strong>fig_size</strong> – The size of the figure to be displayed.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.models.statistics.remove_seasonality">
-<code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">remove_seasonality</code><span class="sig-paren">(</span><em class="sig-param">ts: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">freq: int = None</em>, <em class="sig-param">model: str = 'multiplicative'</em><span class="sig-paren">)</span> &#x2192; u8timeseries.timeseries.TimeSeries<a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#remove_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
-<li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (additive or multiplicative).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple (new_ts, seasonality) of TimeSeries where new_ts is the adjusted original TimeSeries and
-seasonality is a TimeSeries containing the removed seasonality.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.models.statistics.remove_trend">
-<code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">remove_trend</code><span class="sig-paren">(</span><em class="sig-param">ts: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">model='multiplicative'</em><span class="sig-paren">)</span> &#x2192; u8timeseries.timeseries.TimeSeries<a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#remove_trend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (additive or multiplicative).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple (new_ts, trend) of TimeSeries where new_ts is the adjusted original TimeSeries and
-seasonality is a TimeSeries containing the removed trend.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 
 

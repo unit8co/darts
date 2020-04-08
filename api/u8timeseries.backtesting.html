@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Backtesting and Forecasting &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>Backtesting and Forecasting &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -198,67 +198,6 @@
 <div class="section" id="backtesting-and-forecasting">
 <h1>Backtesting and Forecasting<a class="headerlink" href="#backtesting-and-forecasting" title="Permalink to this headline">¶</a></h1>
 <p>This section contains backtesting methods, ready to be used to test the performances of your models.</p>
-<span class="target" id="module-u8timeseries.backtesting"></span><p class="rubric">Methods Summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.backtesting.backtesting_udf.backtest_autoregressive_model</span></code>(…)</p></td>
-<td><p>Provides a back-testing environment.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.backtesting.forecasting_simulation.simulate_forecast_ar</span></code>(…)</p></td>
-<td><p>Provides an environment for forecasting future values of the TimeSeries ‘series`.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods Documentation</p>
-<dl class="function">
-<dt id="u8timeseries.backtesting.backtest_autoregressive_model">
-<code class="sig-prename descclassname">u8timeseries.backtesting.</code><code class="sig-name descname">backtest_autoregressive_model</code><span class="sig-paren">(</span><em class="sig-param">model: u8timeseries.models.autoregressive_model.AutoRegressiveModel, train_val_series: List[Tuple[TimeSeries, TimeSeries]], eval_fn: Callable[[TimeSeries, TimeSeries], Any]</em><span class="sig-paren">)</span> &#x2192; List[Any]<a class="reference internal" href="../_modules/u8timeseries/backtesting/backtesting_udf.html#backtest_autoregressive_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.backtesting.backtest_autoregressive_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides a back-testing environment.</p>
-<p>Going through the list ‘train_val_series`, this function successively trains a chosen auto-regressive model <cite>model</cite>
-on the training TimeSeries provided, compares the prediction with the validation TimeSeries provided using
-<cite>eval_fn</cite>.</p>
-<p>The results are stored in a list, returned to the user.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>train_val_series</strong> – A list of tuples (train, val) to be passed to the model <cite>model</cite>.</p></li>
-<li><p><strong>model</strong> – The chosen model to use.</p></li>
-<li><p><strong>eval_fn</strong> – The evaluation criteria.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A list of results obtain via the process described above.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="u8timeseries.backtesting.simulate_forecast_ar">
-<code class="sig-prename descclassname">u8timeseries.backtesting.</code><code class="sig-name descname">simulate_forecast_ar</code><span class="sig-paren">(</span><em class="sig-param">series: u8timeseries.timeseries.TimeSeries</em>, <em class="sig-param">model: u8timeseries.models.autoregressive_model.AutoRegressiveModel</em>, <em class="sig-param">start: pandas._libs.tslibs.timestamps.Timestamp</em>, <em class="sig-param">fcast_horizon_n: int</em>, <em class="sig-param">trim_to_series: bool = True</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span> &#x2192; u8timeseries.timeseries.TimeSeries<a class="reference internal" href="../_modules/u8timeseries/backtesting/forecasting_simulation.html#simulate_forecast_ar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.backtesting.simulate_forecast_ar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides an environment for forecasting future values of the TimeSeries ‘series`.</p>
-<p>This function predicts the <cite>fcast_horizon_n</cite> values for the TimeSeries <cite>series</cite> starting from the date <cite>start</cite>
-according to the auto-regressive model <cite>model</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The TimeSeries to forecast.</p></li>
-<li><p><strong>model</strong> – The AutoRegressiveModel to use.</p></li>
-<li><p><strong>start</strong> – The first time at which a prediction is produced for a future time.</p></li>
-<li><p><strong>fcast_horizon_n</strong> – The number of future values to predict.</p></li>
-<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series or not.</p></li>
-<li><p><strong>verbose</strong> – Whether to print progress or not.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A TimeSeries containing the fore-casted values of <cite>series</cite> over the horizon with respect to the model     <cite>model</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 
 

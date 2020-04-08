@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Arima &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>Arima &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -36,9 +36,7 @@
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Auto-Regressive Model" href="u8timeseries.AutoRegressiveModel.html" />
-    <link rel="prev" title="Models" href="u8timeseries.models.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -85,27 +83,8 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Getting Started</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../documentation.html">Documentation</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../documentation.html#the-api">The API</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.TimeSeries.html">TimeSeries</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.models.html">Models</a><ul class="current">
-<li class="toctree-l4 current"><a class="current reference internal" href="#">Arima</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.AutoRegressiveModel.html">Auto-Regressive Model</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.ExponentialSmoothing.html">Simple Exponential Smoothing</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.KthValueAgoBaseline.html">Kth Value Baseline</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.Prophet.html">Prophet</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.Theta.html">Theta</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.statistics.html">Statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting and Forecasting</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../documentation.html#air-passenger-example">Air Passenger Example</a></li>
-</ul>
-</li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../documentation.html">Documentation</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
@@ -158,10 +137,6 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../documentation.html">Documentation</a> &raquo;</li>
-        
-          <li><a href="u8timeseries.models.html">Models</a> &raquo;</li>
-        
       <li>Arima</li>
     
     
@@ -207,59 +182,6 @@
 </style>
 <div class="section" id="arima">
 <h1>Arima<a class="headerlink" href="#arima" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="u8timeseries.Arima">
-<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">Arima</code><span class="sig-paren">(</span><em class="sig-param">p: int = 12</em>, <em class="sig-param">d: int = 1</em>, <em class="sig-param">q: int = 0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#Arima"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Arima" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
-<p>Implementation of an ARIMA model.</p>
-<p>Currently a wrapper around the statsmodel implementation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>p</strong> – An integer representing the lag order.</p></li>
-<li><p><strong>d</strong> – An integer for the order of differentiation.</p></li>
-<li><p><strong>q</strong> – An interger for the size of the moving average window.</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Methods Summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.Arima.fit" title="u8timeseries.Arima.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.Arima.predict" title="u8timeseries.Arima.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
-</dd>
-</dl>
-</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods Documentation</p>
-<dl class="method">
-<dt id="u8timeseries.Arima.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">series: u8timeseries.timeseries.TimeSeries</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#Arima.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Arima.fit" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="u8timeseries.Arima.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#Arima.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Arima.predict" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
@@ -267,15 +189,6 @@
            
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="u8timeseries.AutoRegressiveModel.html" class="btn btn-neutral float-right" title="Auto-Regressive Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="u8timeseries.models.html" class="btn btn-neutral float-left" title="Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
