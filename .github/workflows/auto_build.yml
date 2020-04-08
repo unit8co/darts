@@ -26,6 +26,7 @@ jobs:
         pip install sphinx_rtd_theme
         pip install sphinx-automodapi
         pip install nbsphinx
+        pip install pandoc
         
     - name: Build documentation
       run: |
