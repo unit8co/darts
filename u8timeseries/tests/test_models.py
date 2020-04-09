@@ -10,6 +10,10 @@ from u8timeseries.models.theta import Theta
 class ModelsTestCase(unittest.TestCase):
     __test__ = True
 
+    # general prediction / training parameters
+    forecasting_horizon = 5
+    regression_window = 5
+
     # dummy timeseries for autoregression forecasting and target for regression
     times = pd.date_range('20000101', '20000130')
     values = np.sin(range(len(times))) + np.array([2.0] * len(times))
@@ -31,18 +35,20 @@ class ModelsTestCase(unittest.TestCase):
 
         for model in models:
             model.fit(self.ts)
-            prediction = model.predict(5)
+            prediction = model.predict(self.forecasting_horizon)
+            self.assertTrue(len(prediction) == self.forecasting_horizon)
 
     
     def test_regressive_models_runnability(self):
         models = [
-            StandardRegressiveModel(5)
+            StandardRegressiveModel(self.regression_window)
         ]
 
         for model in models:
             # training and predicting on same features, since only runnability is tested
             model.fit([self.feature_ts], self.ts)
             prediction = model.predict([self.feature_ts])
+            self.assertTrue(len(prediction) == len(self.feature_ts))
 
 if __name__ == "__main__":
     unittest.main()
