@@ -6,7 +6,7 @@ from pandas.tseries.frequencies import to_offset
 from u8timeseries.timeseries import TimeSeries
 
 
-def generate_datetime_index(length: int, offset: DateOffset) -> pd.DatetimeIndex:
+def generate_datetime_index(length: int, offset: DateOffset, start_date) -> pd.DatetimeIndex:
     """
     Creates a pandas datetime index with the given start date 'start_date', 
     the given length 'length' and the given time delta 'offset' between two adjacent entries.
@@ -23,7 +23,7 @@ def generate_datetime_index(length: int, offset: DateOffset) -> pd.DatetimeIndex
 
 
 def constant_timeseries(value: float = 0, length: int = 10, offset : str = 'D',
-                        start_date : pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+                        start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
     """
     Creates a timeseries with a constant given value value, length, start date and offset.
 
@@ -33,3 +33,7 @@ def constant_timeseries(value: float = 0, length: int = 10, offset : str = 'D',
     :param start_date: The time index of the first entry in the returned TimeSeries.
     :return: A constant TimeSeries with value 'value'.
     """
+
+    index = generate_datetime_index(length, offset, start_date)
+
+    
