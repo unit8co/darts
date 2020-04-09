@@ -1,0 +1,6 @@
+name: 'unittest docker action'
+description: 'Creates docker cotainer and runs unittests upon push.'
+runs:
+  using: 	'docker'
+  image: 	'./../../../Dockerfile'
+  entrypoint:	"/home/jovyan/work/run_tests.sh"
