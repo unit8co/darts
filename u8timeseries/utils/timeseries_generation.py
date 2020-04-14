@@ -83,7 +83,7 @@ def white_noise_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     :param length: The length of the returned TimeSeries.
     :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
     :param start_date: The time index of the first entry in the returned TimeSeries.
-    :return: A random walk TimeSeries created as indicated above.
+    :return: A white noise TimeSeries created as indicated above.
     """
 
     times = pd.date_range(periods=length, freq=offset, start=start_date)
@@ -104,7 +104,7 @@ def random_walk_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     :param length: The length of the returned TimeSeries.
     :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
     :param start_date: The time index of the first entry in the returned TimeSeries.
-    :return: A random walk TimeSeries created as indicated above..
+    :return: A random walk TimeSeries created as indicated above.
     """
 
     times = pd.date_range(periods=length, freq=offset, start=start_date)
