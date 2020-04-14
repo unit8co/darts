@@ -7,7 +7,6 @@ from u8timeseries.models.statistics import check_seasonality
 
 
 class TimeSeriesTestCase(unittest.TestCase):
-    __test__ = True
 
     def test_check_seasonality(self):
         pd_series = pd.Series(range(50), index=pd.date_range('20130101', '20130219'))
@@ -17,6 +16,3 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual((True, 6), check_seasonality(series))
         self.assertEqual((False, 3), check_seasonality(series, m=3))
 
-
-if __name__ == '__main__':
-    unittest.main()

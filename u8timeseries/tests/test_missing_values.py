@@ -7,7 +7,6 @@ from u8timeseries.utils.missing_values import auto_fillna
 
 
 class MissingValuesTestCase(unittest.TestCase):
-    __test__ = True
 
     time = pd.date_range('20130101', '20130130')
     lin = [float(i) for i in range(len(time))]
@@ -64,6 +63,3 @@ class MissingValuesTestCase(unittest.TestCase):
         self.assertEqual(self.series5,
                          round(auto_fillna(seriesF, interpolate='quadratic', fill_value='extrapolate'), 2))
 
-
-if __name__ == "__main__":
-    unittest.main()

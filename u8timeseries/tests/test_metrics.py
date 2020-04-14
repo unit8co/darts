@@ -7,7 +7,6 @@ from u8timeseries.metrics import metrics
 
 
 class MetricsTestCase(unittest.TestCase):
-    __test__ = True
 
     pd_series1 = pd.Series(range(10), index=pd.date_range('20130101', '20130110'))
     pd_series2 = pd.Series(np.random.rand(10)*10, index=pd.date_range('20130101', '20130110'))
@@ -46,5 +45,3 @@ class MetricsTestCase(unittest.TestCase):
             metrics.mase(self.series3, self.series3 * 1.3, 8)
 
 
-if __name__ == '__main__':
-    unittest.main()

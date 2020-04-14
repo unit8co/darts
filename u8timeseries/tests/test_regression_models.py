@@ -6,7 +6,6 @@ from ..timeseries import TimeSeries
 from u8timeseries import StandardRegressiveModel
 
 class RegressionModelsTestCase(unittest.TestCase):
-    __test__ = True
 
     # number of data points used for training
     regression_window = 5
@@ -29,6 +28,3 @@ class RegressionModelsTestCase(unittest.TestCase):
             model.fit([self.feature_ts], self.target_ts)
             prediction = model.predict([self.feature_ts])
             self.assertTrue(len(prediction) == len(self.feature_ts))
-
-if __name__ == "__main__":
-    unittest.main()
