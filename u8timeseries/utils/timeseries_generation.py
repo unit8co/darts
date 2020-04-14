@@ -9,8 +9,8 @@ from u8timeseries.timeseries import TimeSeries
 
 
 
-def constant_timeseries(value: float = 0, length: int = 10, offset : str = 'D',
-                        start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+def constant_timeseries(value: float = 0, length: int = 10, offset: str = 'D',
+                        start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a constant TimeSeries with the given value, length, start date and offset.
 
@@ -28,8 +28,8 @@ def constant_timeseries(value: float = 0, length: int = 10, offset : str = 'D',
     return TimeSeries.from_times_and_values(times, values)
 
 
-def linear_timeseries(start_value: float = 0, value_delta: float = 1, length: int = 10, offset : str = 'D',
-                      start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+def linear_timeseries(start_value: float = 0, value_delta: float = 1, length: int = 10, offset: str = 'D',
+                      start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a TimeSeries with a starting value of 'start_value' that increases by 'value_delta' at each step.
     The last entry of the time series will be equal to 'start_value' + ('length' - 1) * 'value_delta'.
@@ -37,7 +37,7 @@ def linear_timeseries(start_value: float = 0, value_delta: float = 1, length: in
     :param start_value: The value of the first entry in the TimeSeries.
     :param value_delta: The difference in value between to adjacent entries in the TimeSeries.
     :param length: The length of the returned TimeSeries.
-    :param offset: The time differene between two adjacent entries in the returned TimeSeries.
+    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_date: The time index of the first entry in the returned TimeSeries.
     :return: A linear TimeSeries with gradient 'value_delta'.
     """
@@ -49,8 +49,8 @@ def linear_timeseries(start_value: float = 0, value_delta: float = 1, length: in
 
 
 def periodic_timeseries(frequency: float = 0.1, amplitude: float = 1, phase: float = 0, y_offset: float = 0,
-                        length: int = 10, offset : str = 'D',
-                        start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+                        length: int = 10, offset: str = 'D',
+                        start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a TimeSeries with a sinusoidal value progression with a given frequency, amplitude, phase and y offset.
 
@@ -59,7 +59,7 @@ def periodic_timeseries(frequency: float = 0.1, amplitude: float = 1, phase: flo
     :param phase: The relative position within one period of the first value of the returned TimeSeries (in radians).
     :param y_offset: The shift of the sine function along the y axis.
     :param length: The length of the returned TimeSeries.
-    :param offset: The time differene between two adjacent entries in the returned TimeSeries.
+    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_date: The time index of the first entry in the returned TimeSeries.
     :return: A sinusoidal TimeSeries parametrized as indicated above.
     """
@@ -72,8 +72,8 @@ def periodic_timeseries(frequency: float = 0.1, amplitude: float = 1, phase: flo
     return TimeSeries.from_times_and_values(times, values)
 
 
-def white_noise_timeseries(length: int = 10, offset : str = 'D', mean: float = 0, std: float = 1,
-                           start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+def white_noise_timeseries(length: int = 10, offset: str = 'D', mean: float = 0, std: float = 1,
+                           start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a white noise TimeSeries by sampling a gaussian distribution with mean 'mean' and 
     standard deviation 'std'. Each value represents an indipendent sample of the distribution.
@@ -81,7 +81,7 @@ def white_noise_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     :param mean: The mean of the gaussian distribution that is sampled at each step.
     :param std: The standard deviation of the gaussian distribution that is sampled at each step.
     :param length: The length of the returned TimeSeries.
-    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
+    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_date: The time index of the first entry in the returned TimeSeries.
     :return: A white noise TimeSeries created as indicated above.
     """
@@ -92,8 +92,8 @@ def white_noise_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     return TimeSeries.from_times_and_values(times, values)
 
 
-def random_walk_timeseries(length: int = 10, offset : str = 'D', mean: float = 0, std: float = 1,
-                           start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+def random_walk_timeseries(length: int = 10, offset: str = 'D', mean: float = 0, std: float = 1,
+                           start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a random walk TimeSeries by sampling a gaussian distribution with mean 'mean' and 
     standard deviation 'std'. The first value is one such random sample. Every subsequent value
@@ -102,7 +102,7 @@ def random_walk_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     :param mean: The mean of the gaussian distribution that is sampled at each step.
     :param std: The standard deviation of the gaussian distribution that is sampled at each step.
     :param length: The length of the returned TimeSeries.
-    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
+    :param offset: The time differene between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_date: The time index of the first entry in the returned TimeSeries.
     :return: A random walk TimeSeries created as indicated above.
     """
@@ -115,7 +115,7 @@ def random_walk_timeseries(length: int = 10, offset : str = 'D', mean: float = 0
     return TimeSeries.from_times_and_values(times, values)
 
 
-def us_holiday_timeseries(length: int = 10, start_date: pd.Timestamp = pd.Timestamp('20000101')) -> 'TimeSeries':
+def us_holiday_timeseries(length: int = 10, start_date: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
     Creates a binary TimeSeries that equals 1 at every index that corresponds to a US holiday, 
     and 0 otherwise. The frequency of the TimeSeries is daily.
