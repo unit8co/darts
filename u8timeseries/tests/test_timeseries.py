@@ -6,7 +6,6 @@ from ..timeseries import TimeSeries
 
 
 class TimeSeriesTestCase(unittest.TestCase):
-    __test__ = True
 
     times = pd.date_range('20130101', '20130110')
     pd_series1 = pd.Series(range(10), index=times)
@@ -404,5 +403,3 @@ class TimeSeriesTestCase(unittest.TestCase):
             self.series1[::-1]
 
 
-if __name__ == "__main__":
-    unittest.main()

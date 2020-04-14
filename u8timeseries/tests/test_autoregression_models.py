@@ -7,7 +7,6 @@ from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, Tim
 from u8timeseries.models.theta import Theta
 
 class ModelsTestCase(unittest.TestCase):
-    __test__ = True
 
     # forecasting horizon used in predictions
     forecasting_horizon = 5
@@ -32,6 +31,3 @@ class ModelsTestCase(unittest.TestCase):
             model.fit(self.ts)
             prediction = model.predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
-
-if __name__ == "__main__":
-    unittest.main()

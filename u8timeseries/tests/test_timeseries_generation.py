@@ -13,7 +13,6 @@ from u8timeseries.utils.timeseries_generation import (
 )
 
 class TimeSeriesGenerationTestCase(unittest.TestCase):
-    __test__ = True
 
     def test_constant_timeseries(self):
 
@@ -78,6 +77,3 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         us_holiday_ts = us_holiday_timeseries(length=length, start_date=start_date)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
-
-if __name__ == "__main__":
-    unittest.main()
