@@ -5,12 +5,9 @@ import pathlib
 
 
 main_logger = logging.getLogger('main_logger')
-file_handler = logging.FileHandler(str(pathlib.Path(__file__).parent.absolute()) + '/../logs/u8timeseries_log_' + str(datetime.now()) + '.log')
 stderr_handler = logging.StreamHandler()
 formatter = logging.Formatter('[%(asctime)s] %(name)s | %(levelname)s | %(message)s')
-file_handler.setFormatter(formatter)
 stderr_handler.setFormatter(formatter)
-main_logger.addHandler(file_handler)
 main_logger.addHandler(stderr_handler)
 
 def assert_log(boolean_value, message="", logger=logging.getLogger('main_logger')):
