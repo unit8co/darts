@@ -1,5 +1,6 @@
 from .regressive_model import RegressiveModel
 from ..timeseries import TimeSeries
+from ..custom_logging import assert_log
 from typing import List
 import numpy as np
 import pandas as pd
@@ -18,8 +19,8 @@ class StandardRegressiveModel(RegressiveModel):
         :param model: The actual regressive model. It must contain fit() and predict() methods.
         """
         super(StandardRegressiveModel, self).__init__()
-        assert callable(getattr(model, "fit", None)), 'Provided model object must have a fit() method'
-        assert callable(getattr(model, "predict", None)), 'Provided model object must have a predict() method'
+        assert_log(callable(getattr(model, "fit", None)), 'Provided model object must have a fit() method')
+        assert_log(callable(getattr(model, "predict", None)), 'Provided model object must have a predict() method')
 
         self.train_n_points = train_n_points
         self.model = model

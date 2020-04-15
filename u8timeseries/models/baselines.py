@@ -1,5 +1,7 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
+import logging
+from ..custom_logging import assert_log
 import numpy as np
 
 
@@ -23,7 +25,7 @@ class KthValueAgoBaseline(AutoRegressiveModel):
 
     def fit(self, series: 'TimeSeries'):
         super().fit(series)
-        assert len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K)
+        assert_log(len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K))
         self.last_k_vals = series.values()[-self.K:]
 
     def predict(self, n: int):
