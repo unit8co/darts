@@ -48,7 +48,7 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
 
     # Local maximum is indicated by signs_change == -2.
     if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
-        print('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
+        logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
 
     # Building a list of candidates for local maximum.
@@ -126,7 +126,7 @@ def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'Ti
     :return: A TimeSeries `new_ts`, defined by removing `other` from `ts`.
     """
     if (other.values() < 1e-6).any() and model == 'multiplicative':
-        print("WARNING indexes equal to zero, cannot remove for a multiplicative model.")
+        log.warning("Indexes equal to zero, cannot remove for a multiplicative model.")
         return ts
     else:
         if model == 'multiplicative':

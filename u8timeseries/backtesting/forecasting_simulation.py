@@ -72,8 +72,6 @@ def simulate_forecast_ar(series: 'TimeSeries',
     iterator = _build_iterator(pred_times, verbose)
 
     for pred_time in iterator:
-        if not verbose:
-            print('.', end='')
         train = series.drop_after(pred_time)  # build the training series
 
         model.fit(train)
@@ -127,8 +125,6 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     iterator = _build_iterator(pred_times, verbose)
 
     for pred_time in iterator:
-        if not verbose:
-            print('.', end='')
         # build train/val series
         train_features = [s.drop_after(pred_time) for s in feature_series]
         train_target = target_series.drop_after(pred_time)
