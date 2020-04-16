@@ -4,9 +4,9 @@ import math
 from pandas.tseries.offsets import DateOffset
 from pandas.tseries.frequencies import to_offset
 from pandas.tseries.holiday import USFederalHolidayCalendar
+from typing import Union
 
 from u8timeseries.timeseries import TimeSeries
-
 
 
 def constant_timeseries(value: float = 1, length: int = 10, freq: str = 'D',
@@ -74,20 +74,32 @@ def periodic_timeseries(value_frequency: float = 0.1, value_amplitude: float = 1
     return TimeSeries.from_times_and_values(times, values)
 
 
-def gaussian_timeseries(length: int = 10, freq: str = 'D', mean: float = 0, std: float = 1,
-                           start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
+def gaussian_timeseries(length: int = 10, freq: str = 'D', mean: Union[float, np.ndarray] = 0, 
+                        std: Union[float, np.ndarray] = 1, start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """
-    Creates a noise TimeSeries by sampling a gaussian distribution with mean 'mean' and 
-    standard deviation 'std'. Each value represents an independent sample of the distribution.
+    Creates a gaussian noise TimeSeries by sampling a gaussian distribution with mean 'mean' and 
+    standard deviation 'std'. Each value represents a sample of the distribution.
     When the mean is set to 0, it can be considered a white noise TimeSeries.
 
     :param mean: The mean of the gaussian distribution that is sampled at each step.
+                 If a float value is given, the same mean is used at every step.
+                 If a numpy.ndarray of floats with the same length as 'length' is
+                 given, a different mean is used at each step.
     :param std: The standard deviation of the gaussian distribution that is sampled at each step.
+                If a float value is given, the same standard deviation is used at every step.
+                If a 'length' x 'length' numpy.ndarray of floats with the right dimensions is given,
+                it will be used as covariance matrix for a multivariate gaussian distribution.
     :param length: The length of the returned TimeSeries.
     :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_ts: The time index of the first entry in the returned TimeSeries.
     :return: A white noise TimeSeries created as indicated above.
     """
+
+    if (type(mean) == np.ndarray):
+        assert mean.shape == (length,), 'If a vector of means is provided, it requires the same length as the TimeSeries.'
+    if (type(std) == np.ndarray):
+        assert std.shape == (length, length), 'If a matrix of standard deviations is provided,' \
+                                              ' its shape has to match the length of the TimeSeries.'
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.random.normal(mean, std, size=length)
