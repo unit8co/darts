@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
 
-from .custom_logging import assert_log, get_logger
+from .custom_logging import assert_log, raise_log, get_logger
 
 logger = get_logger(__name__)
 
@@ -144,7 +144,7 @@ class TimeSeries:
     def _raise_if_not_within(self, ts: pd.Timestamp):
 
         if (ts < self.start_time()) or (ts > self.end_time()):
-            raise ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time()))
+            raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(), self.end_time())), logger)
 
     def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
         """
@@ -339,8 +339,8 @@ class TimeSeries:
         try:
             self.time_index()[-1] + n * self.freq()
         except pd.errors.OutOfBoundsDatetime:
-            raise OverflowError("the add operation between {} and {} will overflow".format(n * self.freq(),
-                                                                                           self.time_index()[-1]))
+            raise_log(OverflowError("the add operation between {} and {} will overflow".format(n * self.freq(),
+                                                                                           self.time_index()[-1])), logger)
         new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
         new_series = self._series.copy()
         new_series.index = new_time_index
@@ -685,8 +685,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
         else:
-            raise TypeError('unsupported operand type(s) for + or add(): \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for + or add(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
 
     def __radd__(self, other):
         return self + other
@@ -700,8 +700,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
         else:
-            raise TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
 
     def __rsub__(self, other):
         return other + (-self)
@@ -715,8 +715,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
         else:
-            raise TypeError('unsupported operand type(s) for * or mul(): \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for * or mul(): \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
 
     def __rmul__(self, other):
         return self * other
@@ -731,8 +731,8 @@ class TimeSeries:
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** float(n))
             return TimeSeries(new_series, conf_lo, conf_hi)
         else:
-            raise TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.' \
-                            .format(type(self).__name__, type(n).__name__))
+            raise_log(TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.' \
+                            .format(type(self).__name__, type(n).__name__)), logger)
 
     def __truediv__(self, other):
         if isinstance(other, (int, float)):
@@ -748,8 +748,8 @@ class TimeSeries:
 
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 / s2)
         else:
-            raise TypeError('unsupported operand type(s) for / or truediv(): \'{}\' and \'{}\'.' \
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for / or truediv(): \'{}\' and \'{}\'.' \
+                            .format(type(self).__name__, type(other).__name__)), logger)
 
     def __rtruediv__(self, n):
         return n * (self ** (-1))
@@ -784,8 +784,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._series < other.pd_series()
         else:
-            raise TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
         return series  # TODO should we return only the ndarray, the pd series, or our timeseries?
 
     def __gt__(self, other):
@@ -794,8 +794,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._series > other.pd_series()
         else:
-            raise TypeError('unsupported operand type(s) for > : \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for > : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
         return series
 
     def __le__(self, other):
@@ -804,8 +804,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._series <= other.pd_series()
         else:
-            raise TypeError('unsupported operand type(s) for <= : \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for <= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
         return series
 
     def __ge__(self, other):
@@ -814,8 +814,8 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._series >= other.pd_series()
         else:
-            raise TypeError('unsupported operand type(s) for >= : \'{}\' and \'{}\'.'
-                            .format(type(self).__name__, type(other).__name__))
+            raise_log(TypeError('unsupported operand type(s) for >= : \'{}\' and \'{}\'.'
+                            .format(type(self).__name__, type(other).__name__)), logger)
         return series
 
     def __str__(self):
@@ -848,12 +848,12 @@ class TimeSeries:
                     item = slice(istart, istop, item.step)
                 # cannot reverse order
                 if item.indices(len(self))[-1] == -1:
-                    raise IndexError("Cannot have a backward TimeSeries")
+                    raise_log(IndexError("Cannot have a backward TimeSeries"), logger)
             # Verify that values in item are really in index to avoid the creation of NaN values
             if isinstance(item, (np.ndarray, pd.DatetimeIndex)):
                 check = np.array([elem in self.time_index() for elem in item])
                 if not np.all(check):
-                    raise IndexError("None of {} in the index".format(item[~check]))
+                    raise_log(IndexError("None of {} in the index".format(item[~check])), logger)
             try:
                 return TimeSeries(self._series[item],
                                   self._op_or_none(self._confidence_lo, lambda s: s[item]),
@@ -862,5 +862,5 @@ class TimeSeries:
                 # return only main series if nb of values < 3
                 return self._series[item]
         else:
-            raise IndexError("Input {} of class {} is not a possible key.\n"\
-                             "Please use integers, pd.DateTimeIndex, arrays or slice".format(item, item.__class__))
+            raise_log(IndexError("Input {} of class {} is not a possible key.\n"\
+                             "Please use integers, pd.DateTimeIndex, arrays or slice".format(item, item.__class__)), logger)

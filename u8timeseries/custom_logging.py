@@ -22,3 +22,14 @@ def assert_log(boolean_value, message="", logger=get_logger('main_logger')):
     except AssertionError:
         logger.error("AssertionError: " + message)
         raise
+
+def raise_log(exception, logger=get_logger('main_logger')):
+    """
+    Can be used to replace "raise" when throwing an exception to ensure the logging
+    of the exception. After logging it, the exception is raised.
+    """
+    exception_type = str(type(exception)).split("'")[1]
+    message = str(exception)
+    logger.error(exception_type + ": " + message)
+
+    raise exception

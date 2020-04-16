@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from u8timeseries.timeseries import TimeSeries
-from ..custom_logging import assert_log, get_logger
+from ..custom_logging import assert_log, raise_log, get_logger
 from warnings import warn
 
 logger = get_logger(__name__)
@@ -10,7 +10,7 @@ def _import_check_seasonality():
     try:
         from u8timeseries.models.statistics import check_seasonality as cs
     except ImportError as e:
-        raise ImportError('Cannot import check_seasonality. Choose a fixed period')
+        raise_log(ImportError('Cannot import check_seasonality. Choose a fixed period'), logger)
     return cs
 
 

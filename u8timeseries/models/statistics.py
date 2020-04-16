@@ -1,4 +1,5 @@
 from ..timeseries import TimeSeries
+from ..custom_logging import raise_log, get_logger
 import numpy as np
 from statsmodels.tsa.stattools import acf
 from scipy.stats import norm
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 from typing import Tuple
 import math
 
+logger = get_logger(__name__)
 
 def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05):
     """
@@ -25,10 +27,10 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
              and m is the seasonality period.
     """
     if m is not None and (m < 2 or not isinstance(m, int)):
-        raise ValueError('m must be an integer greater than 1.')
+        raise_log(ValueError('m must be an integer greater than 1.'), logger)
 
     if m is not None and m > max_lag:
-        raise ValueError('max_lag must be greater than or equal to m.')
+        raise_log(ValueError('max_lag must be greater than or equal to m.'), logger)
 
     n_unique = np.unique(ts.values()).shape[0]
 
