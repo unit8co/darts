@@ -1,6 +1,6 @@
 from .regressive_model import RegressiveModel
 from ..timeseries import TimeSeries
-from ..custom_logging import assert_log, get_logger
+from ..custom_logging import assert_log, time_log, get_logger
 from typing import List
 import numpy as np
 import pandas as pd
@@ -30,6 +30,7 @@ class StandardRegressiveModel(RegressiveModel):
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
 
+    @time_log(logger=logger)
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()

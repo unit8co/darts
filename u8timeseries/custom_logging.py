@@ -2,10 +2,13 @@ import sys
 import logging
 from datetime import datetime
 import pathlib
+import time
 
 def get_logger(name):
     logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
     stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.INFO)
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s | %(name)s | %(message)s')
     stderr_handler.setFormatter(formatter)
     logger.addHandler(stderr_handler)
@@ -33,3 +36,18 @@ def raise_log(exception, logger=get_logger('main_logger')):
     logger.error(exception_type + ": " + message)
 
     raise exception
+
+def time_log(logger = get_logger('main_logger')):
+    def time_log_helper(method):
+        def timed(*args):
+            start_time = time.time()
+            result = method(*args)
+            end_time = time.time()
+            duration = int((end_time - start_time) * 1000)
+
+            logger.info(method.__name__ + " function ran for {} milliseconds".format(duration))
+
+            
+        return timed
+
+    return time_log_helper

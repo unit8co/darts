@@ -1,6 +1,6 @@
 import statsmodels.tsa.holtwinters as hw
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, get_logger
+from ..custom_logging import raise_log, time_log, get_logger
 from .autoregressive_model import AutoRegressiveModel
 import numpy as np
 import math
@@ -37,6 +37,7 @@ class Theta(AutoRegressiveModel):
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
+    @time_log(logger=logger)
     def fit(self, ts, season_period: int = None):
         """
         Fits the Theta method to the TimeSeries `ts`.
