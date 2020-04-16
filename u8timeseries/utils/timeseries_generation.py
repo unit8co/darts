@@ -111,9 +111,7 @@ def random_walk_timeseries(length: int = 10, freq: str = 'D', mean: float = 0, s
     """
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = [np.random.normal(mean, std)]
-    while (len(values) < length):
-        values.append(values[-1] + np.random.normal(mean, std))
+    values = np.cumsum(np.random.normal(mean, std, size=length))
 
     return TimeSeries.from_times_and_values(times, values)
 
