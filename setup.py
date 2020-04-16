@@ -18,6 +18,7 @@ setup(name='u8timeseries',
           'scikit-learn>=0.21.2',
           'pandas>=0.23.1',
           'tqdm>=4.32.1',
-          'numpy>=1.15.4'
+          'numpy>=1.15.4',
+          'torch>=1.4.0'
       ],
       zip_safe=False)
