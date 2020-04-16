@@ -1,7 +1,10 @@
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from ..custom_logging import assert_log, get_logger
 from typing import Tuple, List, Callable, Any
+
+logger = get_logger(__name__)
 
 """ This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
     on some validation sets, sliding over time.
@@ -25,8 +28,8 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     :return: a list of (training_set, validation_set) pairs
     """
 
-    assert start in series, 'The provided start timestamp is not in the time series.'
-    assert start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series'
+    assert_log(start in series, 'The provided start timestamp is not in the time series.', logger)
+    assert_log(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
     # TODO: maybe also check that valset_duration >= series frequency
 
     curr_val_start: pd.Timestamp = start
