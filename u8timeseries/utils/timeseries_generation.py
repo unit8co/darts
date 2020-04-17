@@ -87,8 +87,8 @@ def gaussian_timeseries(length: int = 10, freq: str = 'D', mean: Union[float, np
                  given, a different mean is used at each step.
     :param std: The standard deviation of the gaussian distribution that is sampled at each step.
                 If a float value is given, the same standard deviation is used at every step.
-                If a 'length' x 'length' numpy.ndarray of floats with the right dimensions is given,
-                it will be used as covariance matrix for a multivariate gaussian distribution.
+                If a 'length' x 'length' numpy.ndarray of floats  is given, it will
+                be used as covariance matrix for a multivariate gaussian distribution.
     :param length: The length of the returned TimeSeries.
     :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     :param start_ts: The time index of the first entry in the returned TimeSeries.
