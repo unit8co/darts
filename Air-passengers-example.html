@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -97,11 +97,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#Simulate-historical-forecasting">Simulate historical forecasting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Backtest-the-models-on-the-data-using-a-user-defined-metric">Backtest the models on the data using a user-defined metric</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Plot-the-user-defined-backtesting-results">Plot the user-defined backtesting results</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Let's-make-an-actual-forecast!">Let’s make an actual forecast!</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Let’s-make-an-actual-forecast!">Let’s make an actual forecast!</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#Ensembling-several-predictions">Ensembling several predictions</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Let's-simulate-forecasts-done-by-an-ensemble-of-models">Let’s simulate forecasts done by an ensemble of models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Let’s-simulate-forecasts-done-by-an-ensemble-of-models">Let’s simulate forecasts done by an ensemble of models</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#Example-of-forecasting-using-a-regressive-model-and-extra-features">Example of forecasting using a regressive model and extra features</a></li>
@@ -249,8 +249,8 @@ div.nboutput.container div.prompt pre {
 div.nbinput.container div.prompt,
 div.nboutput.container div.prompt {
     min-width: 5ex;
-    padding-top: 0.3rem;
-    padding-right: 0.3rem;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
     text-align: right;
     flex: 0;
 }
@@ -274,6 +274,7 @@ div.nboutput.container div.prompt pre {
 /* input/output area */
 div.nbinput.container div.input_area,
 div.nboutput.container div.output_area {
+    padding: 0.4em;
     -webkit-flex: 1;
     flex: 1;
     overflow: auto;
@@ -347,27 +348,6 @@ div.nboutput.container div.output_area.stderr {
 .ansi-bold { font-weight: bold; }
 .ansi-underline { text-decoration: underline; }
 
-
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 0.3rem;
-}
-
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
 /* Some additional styling taken form the Jupyter notebook CSS */
 div.rendered_html table {
   border: none;
@@ -429,21 +409,21 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>%matplotlib inline
-import sys
-from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, TimeSeries, Arima, AutoArima
-from u8timeseries import StandardRegressiveModel
-from u8timeseries.models.theta import Theta
-from u8timeseries.metrics import mape, overall_percentage_error, mase
-from u8timeseries.backtesting import simulate_forecast_ar, simulate_forecast_regr, get_train_val_series, backtest_autoregressive_model
-from u8timeseries.models.statistics import check_seasonality, plot_acf
+<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="k">import</span> <span class="n">Prophet</span><span class="p">,</span> <span class="n">KthValueAgoBaseline</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Arima</span><span class="p">,</span> <span class="n">AutoArima</span>
+<span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="k">import</span> <span class="n">StandardRegressiveModel</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.models.theta</span> <span class="k">import</span> <span class="n">Theta</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.metrics</span> <span class="k">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">overall_percentage_error</span><span class="p">,</span> <span class="n">mase</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.backtesting</span> <span class="k">import</span> <span class="n">simulate_forecast_ar</span><span class="p">,</span> <span class="n">simulate_forecast_regr</span><span class="p">,</span> <span class="n">get_train_val_series</span><span class="p">,</span> <span class="n">backtest_autoregressive_model</span>
+<span class="kn">from</span> <span class="nn">u8timeseries.models.statistics</span> <span class="k">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
 
-import pandas as pd
-pd.__version__
-import numpy as np
-from datetime import datetime
-import time
-import matplotlib.pyplot as plt
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">__version__</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 </pre></div>
 </div>
 </div>
@@ -463,9 +443,9 @@ import matplotlib.pyplot as plt
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>df = pd.read_csv(&#39;AirPassengers.csv&#39;, delimiter=&quot;,&quot;)
-series = TimeSeries.from_dataframe(df, &#39;Month&#39;, &#39;#Passengers&#39;)
-series.plot(lw=3)
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -486,7 +466,7 @@ series.plot(lw=3)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>plot_acf(series, m = 12, alpha = .05)
+<span></span><span class="n">plot_acf</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="o">.</span><span class="mi">05</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -504,13 +484,13 @@ series.plot(lw=3)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>for i in range(2, 13):
-    season, period = check_seasonality(series, m = i, alpha = .05)
+<span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">13</span><span class="p">):</span>
+    <span class="n">season</span><span class="p">,</span> <span class="n">period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">i</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="o">.</span><span class="mi">05</span><span class="p">)</span>
 
-    if season:
-        print(&#39;There is seasonality of order {}.&#39;.format(period))
-    else:
-        print(&#39;There is no seasonality of order {}.&#39;.format(period))
+    <span class="k">if</span> <span class="n">season</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There is seasonality of order </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">period</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There is no seasonality of order </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">period</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -541,10 +521,10 @@ There is seasonality of order 12.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_es = ExponentialSmoothing()
-model_pr = Prophet()
-model_ar = Arima(2, 1, 5)
-model_bl = KthValueAgoBaseline(K=12)
+<span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<span class="n">model_pr</span> <span class="o">=</span> <span class="n">Prophet</span><span class="p">()</span>
+<span class="n">model_ar</span> <span class="o">=</span> <span class="n">Arima</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">model_bl</span> <span class="o">=</span> <span class="n">KthValueAgoBaseline</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -560,11 +540,11 @@ model_bl = KthValueAgoBaseline(K=12)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train, val = series.split_after(pd.Timestamp(&#39;19570101&#39;))
-model_es.fit(train)
-pred = model_es.predict(len(val))
+<span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">))</span>
+<span class="n">model_es</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-print(&#39;The MAPE is: {:.3f}&#39;.format(mape(pred, val)))
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -581,10 +561,10 @@ The MAPE is: 4.760
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train.plot(lw=2, label=&#39;train&#39;)
-val.plot(lw=2, label=&#39;true&#39;)
-pred.plot(lw=2, label=&#39;prediction&#39;)
-plt.legend()
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -614,14 +594,14 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># theta = 0 is the default parameter.
-model_theta_0 = Theta()
+<span></span><span class="c1"># theta = 0 is the default parameter.</span>
+<span class="n">model_theta_0</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">()</span>
 
-# We know that there is a yearly seasonality, so we include the parameter season_period.
-model_theta_0.fit(train, season_period = 12)
-pred_theta_0 = model_theta_0.predict(len(val))
+<span class="c1"># We know that there is a yearly seasonality, so we include the parameter season_period.</span>
+<span class="n">model_theta_0</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">season_period</span> <span class="o">=</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">pred_theta_0</span> <span class="o">=</span> <span class="n">model_theta_0</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-print(&#39;The MAPE is: {:.3f}&#39;.format(mape(pred_theta_0, val)))
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_theta_0</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -646,10 +626,10 @@ The MAPE is: 11.265
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train.plot(lw=2, label=&#39;train&#39;)
-val.plot(lw=2, label=&#39;true&#39;)
-pred_theta_0.plot(lw=2, label=&#39;prediction&#39;)
-plt.legend()
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span>
+<span class="n">pred_theta_0</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -675,23 +655,23 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># Search for the best theta parameter.
-thetas = np.linspace(-10, 10, 200)
+<span></span><span class="c1"># Search for the best theta parameter.</span>
+<span class="n">thetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
 
-# The best configuration is, for now, the only one we know: with theta = 0, computed above.
-best_mape = 11
-best_theta = 0
+<span class="c1"># The best configuration is, for now, the only one we know: with theta = 0, computed above.</span>
+<span class="n">best_mape</span> <span class="o">=</span> <span class="mi">11</span>
+<span class="n">best_theta</span> <span class="o">=</span> <span class="mi">0</span>
 
-for theta in thetas:
-    model = Theta(theta)
-    model.fit(train, 12)
-    pred_theta = model.predict(len(val))
-    res = mape(pred_theta, val)
+<span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">thetas</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+    <span class="n">pred_theta</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_theta</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
-    if res &lt; best_mape:
-        best_mape = res
-        best_theta = theta
+    <span class="k">if</span> <span class="n">res</span> <span class="o">&lt;</span> <span class="n">best_mape</span><span class="p">:</span>
+        <span class="n">best_mape</span> <span class="o">=</span> <span class="n">res</span>
+        <span class="n">best_theta</span> <span class="o">=</span> <span class="n">theta</span>
 </pre></div>
 </div>
 </div>
@@ -700,11 +680,11 @@ for theta in thetas:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model = Theta(best_theta)
-model.fit(train, 12)
-pred_best_theta = model.predict(len(val))
+<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">pred_best_theta</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-print(&#39;The MAPE is: {:.3f}, with theta = {}.&#39;.format(mape(pred_best_theta, val), best_theta))
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">, with theta = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_best_theta</span><span class="p">,</span> <span class="n">val</span><span class="p">),</span> <span class="n">best_theta</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -721,11 +701,11 @@ The MAPE is: 4.407, with theta = 5.577889447236181.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train.plot(lw=2, label=&#39;train&#39;)
-pred.plot(lw=2, label=&#39;prediction&#39;)
-val.plot(lw=2, label=&#39;true&#39;)
-plt.legend()
-plt.show()
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -747,7 +727,7 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>historical_fcast = simulate_forecast_ar(series, model_es, pd.Timestamp(&#39;19570101&#39;), fcast_horizon_n=6, verbose=True)
+<span></span><span class="n">historical_fcast</span> <span class="o">=</span> <span class="n">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">model_es</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -771,10 +751,10 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>plt.figure(figsize=(8,6))
-series.plot(label=&#39;data&#39;)
-historical_fcast.plot(lw=3, label=&#39;backtest 6-months ahead forecast&#39;)
-plt.legend()
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">historical_fcast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;backtest 6-months ahead forecast&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -803,13 +783,13 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>def backtest_model(model):
-    tic = time.time()
-    train_val_series = get_train_val_series(series, start=pd.Timestamp(&#39;19550101&#39;), nr_points_val=12)
-    res = backtest_autoregressive_model(model, train_val_series, mape)
-    tac = time.time()
-    print(&#39;Backtest done in %.2f s.&#39; % (tac-tic))
-    return res
+<span></span><span class="k">def</span> <span class="nf">backtest_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">train_val_series</span> <span class="o">=</span> <span class="n">get_train_val_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">nr_points_val</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">backtest_autoregressive_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_val_series</span><span class="p">,</span> <span class="n">mape</span><span class="p">)</span>
+    <span class="n">tac</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Backtest done in </span><span class="si">%.2f</span><span class="s1"> s.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tac</span><span class="o">-</span><span class="n">tic</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">res</span>
 </pre></div>
 </div>
 </div>
@@ -818,9 +798,9 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>res_es = backtest_model(model_es)
-res_pr = backtest_model(model_pr)
-res_bl = backtest_model(model_bl)
+<span></span><span class="n">res_es</span> <span class="o">=</span> <span class="n">backtest_model</span><span class="p">(</span><span class="n">model_es</span><span class="p">)</span>
+<span class="n">res_pr</span> <span class="o">=</span> <span class="n">backtest_model</span><span class="p">(</span><span class="n">model_pr</span><span class="p">)</span>
+<span class="n">res_bl</span> <span class="o">=</span> <span class="n">backtest_model</span><span class="p">(</span><span class="n">model_bl</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -841,16 +821,16 @@ Backtest done in 0.31 s.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>plt.hist(res_es, bins=50, cumulative=True, histtype=&#39;step&#39;,
-         lw=2, label=&#39;Exponential Smoothing&#39;);
-plt.hist(res_pr, bins=50, cumulative=True, histtype=&#39;step&#39;,
-         lw=2, label=&#39;Prophet&#39;);
-plt.hist(res_bl, bins=50, cumulative=True, histtype=&#39;step&#39;,
-         lw=2, label=&#39;Baseline&#39;);
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">res_es</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">cumulative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span>
+         <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Exponential Smoothing&#39;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">res_pr</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">cumulative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span>
+         <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Prophet&#39;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">res_bl</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">cumulative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span>
+         <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Baseline&#39;</span><span class="p">);</span>
 
-plt.xlabel(&#39;Mean absolute percentage error (%)&#39;)
-plt.ylabel(&#39;CDF&#39;)
-plt.legend(loc=4)
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Mean absolute percentage error (%)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;CDF&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -871,20 +851,20 @@ plt.legend(loc=4)
 </div>
 </div>
 </div>
-<div class="section" id="Let's-make-an-actual-forecast!">
-<h2>Let’s make an actual forecast!<a class="headerlink" href="#Let's-make-an-actual-forecast!" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Let’s-make-an-actual-forecast!">
+<h2>Let’s make an actual forecast!<a class="headerlink" href="#Let’s-make-an-actual-forecast!" title="Permalink to this headline">¶</a></h2>
 <p>Since Exponential Smoothing is better in backtests, let’s use this one.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_es.fit(series)
-pred = model_es.predict(n = 50)
+<span></span><span class="n">model_es</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span>
 
-series.plot(label=&#39;data&#39;, lw=2)
-pred.plot(label=&#39;forecast&#39;, lw=2)
-plt.legend()
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -908,19 +888,19 @@ plt.legend()
 </div>
 <div class="section" id="Ensembling-several-predictions">
 <h1>Ensembling several predictions<a class="headerlink" href="#Ensembling-several-predictions" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Let's-simulate-forecasts-done-by-an-ensemble-of-models">
-<h2>Let’s simulate forecasts done by an ensemble of models<a class="headerlink" href="#Let's-simulate-forecasts-done-by-an-ensemble-of-models" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Let’s-simulate-forecasts-done-by-an-ensemble-of-models">
+<h2>Let’s simulate forecasts done by an ensemble of models<a class="headerlink" href="#Let’s-simulate-forecasts-done-by-an-ensemble-of-models" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>&quot;&quot;&quot; New way - backtest over time
-&quot;&quot;&quot;
-models = [ExponentialSmoothing(), Prophet()]
+<span></span><span class="sd">&quot;&quot;&quot; New way - backtest over time</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">ExponentialSmoothing</span><span class="p">(),</span> <span class="n">Prophet</span><span class="p">()]</span>
 
-historical_ar_preds = [simulate_forecast_ar(series, m, pd.Timestamp(&#39;19570101&#39;), fcast_horizon_n=6, verbose=True)
-                       for m in models]
+<span class="n">historical_ar_preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                       <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -957,14 +937,14 @@ historical_ar_preds = [simulate_forecast_ar(series, m, pd.Timestamp(&#39;1957010
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>&quot;&quot;&quot; Combine the individual simulated predicitons
-&quot;&quot;&quot;
-regrModel = StandardRegressiveModel(train_n_points=12)
+<span></span><span class="sd">&quot;&quot;&quot; Combine the individual simulated predicitons</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">regrModel</span> <span class="o">=</span> <span class="n">StandardRegressiveModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 
-series_val = series.intersect(historical_ar_preds[0])
+<span class="n">series_val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_ar_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-historical_pred = simulate_forecast_regr(historical_ar_preds, series_val, regrModel,
-                                         pd.Timestamp(&#39;19580101&#39;), fcast_horizon_n=6)
+<span class="n">historical_pred</span> <span class="o">=</span> <span class="n">simulate_forecast_regr</span><span class="p">(</span><span class="n">historical_ar_preds</span><span class="p">,</span> <span class="n">series_val</span><span class="p">,</span> <span class="n">regrModel</span><span class="p">,</span>
+                                         <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -981,25 +961,25 @@ historical_pred = simulate_forecast_regr(historical_ar_preds, series_val, regrMo
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>&quot;&quot;&quot; Compute errors and plot
-&quot;&quot;&quot;
-plt.figure(figsize=(8,5))
+<span></span><span class="sd">&quot;&quot;&quot; Compute errors and plot</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
 
-series.plot()
-for i, m in enumerate(models):
-    historical_ar_preds[i].plot(label=str(m))
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
+    <span class="n">historical_ar_preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
 
-    # intersect last part, to compare everything with ensemble
-    ar_pred = historical_ar_preds[i].intersect(historical_pred)
+    <span class="c1"># intersect last part, to compare everything with ensemble</span>
+    <span class="n">ar_pred</span> <span class="o">=</span> <span class="n">historical_ar_preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">)</span>
 
-    mape_er = mape(series.intersect(historical_pred), ar_pred)
-    print(&#39;MAPE Error {}: {}&#39;.format(m, mape_er))
+    <span class="n">mape_er</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">),</span> <span class="n">ar_pred</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error </span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">mape_er</span><span class="p">))</span>
 
-print(&#39;MAPE Error ensemble: {}&#39;.format(mape(series.intersect(historical_pred), historical_pred)))
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error ensemble: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">),</span> <span class="n">historical_pred</span><span class="p">)))</span>
 
-historical_pred.plot(label=&#39;Ensemble&#39;)
+<span class="n">historical_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble&#39;</span><span class="p">)</span>
 
-plt.legend()
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
