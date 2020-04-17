@@ -104,7 +104,7 @@ def auto_fillna(ts: 'TimeSeries', first: float = None, last: float = None,
         ts_temp[arr[-1]+1:] = last
 
     # pandas interpolate wrapper, with chosen `method`
-    ts_temp.interpolate(method=interpolate, inplace=True, limit_direction='both', limit=5, **kwargs)
+    ts_temp.interpolate(method=interpolate, inplace=True, limit_direction='both', limit=len(ts_temp), **kwargs)
 
     return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values)
 

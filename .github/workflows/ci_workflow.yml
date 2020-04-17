@@ -1,0 +1,19 @@
+name: ci_workflow
+
+on: push
+
+jobs:
+
+  run_tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Checkout step
+      uses: actions/checkout@v2
+
+    - name: Build and execute container step
+      id: tests
+      uses: ./.github/actions/unittest_docker_action
