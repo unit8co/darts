@@ -3,20 +3,25 @@ import numpy as np
 from sklearn.base import TransformerMixin
 import torch
 
-from typing import List
+from typing import List, Union
 
 
 class TimeSeriesDataset1D(torch.utils.data.Dataset):
-    def __init__(self, series: List[TimeSeries],  # or a timeseries containing all data?
-                 train_window: int = 1, label_window: int = 1,
-                 full: bool = False, scaler: TransformerMixin = None):
+    def __init__(self,
+                 series: Union[TimeSeries, List[TimeSeries]],
+                 data_length: int = 1,
+                 target_length: int = 1,
+                 full: bool = False,
+                 scaler: TransformerMixin = None):
         """
-        Construct a dataset for pytorch.
-        Will split the different time series in mini-sequences using sliding-window method.
+        Constructs a PyTorch Dataset from a univariate TimeSeries, or from a list of univariate TimeSeries.
+        The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
+        where `data` is a 1-D sub-sequence of length [data_length] and target is the 1-D sub-sequence of length
+        [target_length] following it in the time series.
 
-        :param series: A List of independant TimeSeries to be included in the dataset.
-        :param train_window: The sequence length of the mini-sequences.
-        :param label_window: The sequence length of the target sequence, starting at the end of the train sequence.
+        :param series: Either a TimeSeries or a list of TimeSeries to be included in the dataset.
+        :param data_length: The length of the training sub-sequences.
+        :param target_length: The length of the target sub-sequences, starting at the end of the training sub-sequence.
         :param full: If True, the target sequence is the train sequence with a lag of 1. `label_window` is ignored.
         :param scaler: A (fitted) scaler from scikit-learn (optional).
         """
@@ -28,15 +33,15 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         self.scaler = scaler
         self._fit_called = False
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
-        self.tw = train_window
-        if self.tw is None:
-            self.tw = len(series[0]) - 1
-        self.lw = label_window
+        self.data_length = data_length
+        if self.data_length is None:
+            self.data_length = len(series[0]) - 1
+        self.target_length = target_length
         self.full = full
         if full:
-            self.lw = self.tw - 1
-        assert self.tw > 0, "The input sequence length must be non null. It is {}".format(self.tw)
-        assert self.lw > 0, "The output sequence length must be non null. It is {}".format(self.lw)
+            self.target_length = self.data_length - 1
+        assert self.data_length > 0, "The input sequence length must be non null. It is {}".format(self.data_length)
+        assert self.target_length > 0, "The output sequence length must be non null. It is {}".format(self.target_length)
 
     def fit_scaler(self, scaler: TransformerMixin):
         """
@@ -75,20 +80,20 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
 
     def __len__(self):
         if self.full:
-            return (self.len_series - self.tw) * self.nbr_series
+            return (self.len_series - self.data_length) * self.nbr_series
         else:
-            return (self.len_series - self.tw - self.lw + 1) * self.nbr_series
+            return (self.len_series - self.data_length - self.target_length + 1) * self.nbr_series
 
     def __getitem__(self, index):
         # todo: should we cast to torch before?
-        lw = 1 if self.full else self.lw
-        id_series = index // (self.len_series - self.tw - lw + 1)
-        idx = index % (self.len_series - self.tw - lw + 1)
-        sequence = self.series[id_series, idx:idx + self.tw]
+        lw = 1 if self.full else self.target_length
+        id_series = index // (self.len_series - self.data_length - lw + 1)
+        idx = index % (self.len_series - self.data_length - lw + 1)
+        sequence = self.series[id_series, idx:idx+self.data_length]
         if self.full:
-            target = self.series[id_series, idx + lw:idx + self.tw + lw]
+            target = self.series[id_series, idx + lw:idx + self.data_length + lw]
         else:
-            target = self.series[id_series, idx + self.tw:idx + self.tw + lw]
+            target = self.series[id_series, idx + self.data_length:idx + self.data_length + lw]
         sequence = torch.from_numpy(sequence).float()
         target = torch.from_numpy(target).float()
         return sequence.unsqueeze(1), target.unsqueeze(1)

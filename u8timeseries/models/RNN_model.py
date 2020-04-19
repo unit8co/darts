@@ -24,23 +24,24 @@ from typing import List, Optional, Dict
 # TODO add batch norm
 class RNN(nn.Module):
     def __init__(self,
-                 name,
-                 input_size,
-                 output_length,
-                 hidden_dim,
-                 n_layers,
-                 hidden_linear=None,
-                 dropout=0,
-                 many=False):
+                 name: str,
+                 input_size: int,
+                 hidden_dim: int,
+                 num_layers: int,
+                 output_length: int = 1,
+                 num_layers_out_fc: Optional[List] = None,
+                 dropout: float = 0.,
+                 many: bool = False):
         """
         PyTorch nn module implementing a simple RNN with the specified `name` layer.
 
-        :param name: The name of the specific PyTorch RNN layer.
-        :param input_size: The number of feature in th time series.
+        :param name: The name of the specific PyTorch RNN layer ('RNN', 'GRU' or 'LSTM').
+        :param input_size: The dimensionality of the time series.
         :param output_length: The number of steps to predict in the future.
-        :param hidden_dim: The dimension of the hidden layer.
-        :param n_layers: The number of RNN layers.
-        :param hidden_linear: A list containing the dimension of the hidden layers of the fully connected NN.
+        :param hidden_dim: The dimensionality (nr of neurons) of the hidden layer.
+        :param num_layers: The number of RNN layers.
+        :param num_layers_out_fc: A list containing the hidden dimensions of the layers of the fully connected NN.
+                                  This network connects the last hidden layer of the RNN module to the output.
         :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
         :param many: If True, will compare the output of all time-steps instead of only the last one.
         """
@@ -49,8 +50,8 @@ class RNN(nn.Module):
         self.device = torch.device("cpu")
         # Defining some parameters
         self.hidden_dim = hidden_dim
-        self.n_layers = n_layers
-        hidden_linear = [] if hidden_linear is None else hidden_linear
+        self.n_layers = num_layers
+        num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.out_len = output_length
         self.name = name
         self.many = many
@@ -61,11 +62,11 @@ class RNN(nn.Module):
         # Defining the layers
         # RNN Layer
         # TODO: should we implement different hiddensize for RNN?
-        self.rnn = getattr(nn, name)(input_size, hidden_dim, n_layers, batch_first=True, dropout=dropout)
+        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
         # Fully connected layer
         last = hidden_dim
         feats = []
-        for feature in hidden_linear + [output_length]:
+        for feature in num_layers_out_fc + [output_length]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_length)
@@ -159,9 +160,12 @@ class RNNModel(AutoRegressiveModel):
         """
         Implementation of different RNN for forecasting.
 
-        :param model: kind of RNN module, or custom pytorch module
-        :param input_size: number of features/channels in input (Must be identical to module in size)
-        :param output_length: number of steps to predict (Must be identical to module out size)
+        :param model: Either a string representing the kind of RNN module ('RNN' for vanilla RNN, 'GRU' or 'LSTM'),
+                      or custom PyTorch nn.Module instance.
+        :param input_size: The dimensionality of the time series.
+                           Must be consistent with the module input size if a nn.Module is specified.
+        :param output_length: Number of time steps to predict.
+                              Must be consistent with the module output length if a nn.Module is specified.
         :param input_length: number of previous time stamps taken into account
         :param hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
         :param n_rnn_layers: number of rnn layers (unnecessary if module given)
@@ -185,8 +189,9 @@ class RNNModel(AutoRegressiveModel):
 
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
-            self.model = RNN(name=model, input_size=input_size, output_length=output_length, hidden_dim=hidden_size,
-                             n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout, many=full)
+            self.model = RNN(name=model, input_size=input_size, hidden_dim=hidden_size,
+                             num_layers=n_rnn_layers, output_length=output_length,
+                             num_layers_out_fc=hidden_fc_size, dropout=dropout, many=full)
         elif isinstance(model, nn.Module):
             self.model = model
         else:
@@ -237,7 +242,7 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-    def fit(self, dataset: torch.utils.data.dataset):
+    def fit(self, dataset):
         # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
         # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
