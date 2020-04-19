@@ -43,7 +43,9 @@ class RNN(nn.Module):
         :param num_layers_out_fc: A list containing the hidden dimensions of the layers of the fully connected NN.
                                   This network connects the last hidden layer of the RNN module to the output.
         :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
+
         :param many: If True, will compare the output of all time-steps instead of only the last one.
+                     TODO: clarify
         """
         super(RNN, self).__init__()
 
@@ -152,7 +154,6 @@ class RNNModel(AutoRegressiveModel):
                  optimizer_kwargs: Dict = None,
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
-                 full: bool = False,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  exp_name: str = "RNN_run",
                  vis_tb: bool = False,
@@ -185,13 +186,12 @@ class RNNModel(AutoRegressiveModel):
         self.out_size = output_length
         self.seq_len = input_length
         self.vis_tb = vis_tb
-        self.full = full
 
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
             self.model = RNN(name=model, input_size=input_size, hidden_dim=hidden_size,
                              num_layers=n_rnn_layers, output_length=output_length,
-                             num_layers_out_fc=hidden_fc_size, dropout=dropout, many=full)
+                             num_layers_out_fc=hidden_fc_size, dropout=dropout)
         elif isinstance(model, nn.Module):
             self.model = model
         else:
@@ -305,8 +305,6 @@ class RNNModel(AutoRegressiveModel):
         self.model.eval()
         for i in range(n):
             out = self.model(pred_in)
-            if self.full:
-                out = out[:, -1, :]
             pred_in = pred_in.roll(-1, 1)
             pred_in[:, -1, :] = out[:, 0]
             test_out.append(out.cpu().detach().numpy()[0, 0])
@@ -316,14 +314,14 @@ class RNNModel(AutoRegressiveModel):
     def set_val_series(self, val_series: List[TimeSeries]):
         if type(val_series) is not list:
             val_series = [val_series]
-        self.val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.out_size, full=self.full)
+        self.val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.out_size)
 
     def set_train_dataset(self, train_series: List[TimeSeries]):
         # todo: can pass a dataset object too
         if type(train_series) is not list:
             train_series = [train_series]
         self.training_series = train_series[0]
-        self.dataset = TimeSeriesDataset1D(train_series, self.seq_len, self.out_size, full=self.full)
+        self.dataset = TimeSeriesDataset1D(train_series, self.seq_len, self.out_size)
         self.scaler = self.dataset.fit_scaler(self.scaler)
 
     def set_val_dataset(self, dataset: torch.utils.data.dataset):
@@ -378,7 +376,7 @@ class RNNModel(AutoRegressiveModel):
                 output = self.model(data)
                 # print(target.size(), output.size())
                 loss_mse = self.criterion(output, target)
-                if self.out_size == 1 and not self.full:
+                if self.out_size == 1:
                     loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
                 else:
                     loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
@@ -416,7 +414,7 @@ class RNNModel(AutoRegressiveModel):
             data, target = data.to(self.device), target.to(self.device)
             output = self.model(data)
             loss_mse = self.criterion(output, target)
-            if self.out_size == 1 and not self.full:
+            if self.out_size == 1:
                 loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
             else:
                 loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
@@ -443,7 +441,7 @@ class RNNModel(AutoRegressiveModel):
             return
         if type(tseries) is not list:
             tseries = [tseries]
-        test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, full=self.full, scaler=self.scaler)
+        test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, scaler=self.scaler)
         test_dataset.transform()
         self._plot_result(test_dataset)
 
@@ -461,24 +459,18 @@ class RNNModel(AutoRegressiveModel):
         targets = np.vstack(targets)
         predictions = np.vstack(predictions)
 
-        if self.full:
-            index_p = np.arange(dataset.tw)
-            true_labels_p = targets[:1, :, 0].T
-            predictions_p = predictions[:1, :, 0].T
-        else:
-            label_per_serie = dataset.len_series - dataset.tw - dataset.lw + 1
-            index_p = np.arange(label_per_serie)
-            # print(label_per_serie)
-            true_labels_p = targets[:label_per_serie, 0:1, 0]
-            predictions_p = predictions[:label_per_serie, 0:1, 0]
-        # if self.full:
-        #     targets = targets[:, -1, :]
-        #     predictions = predictions[:, -1, :]
+        # TODO: avoid accessing dataset properties here; these should be properties of the present model
+        label_per_serie = dataset.len_series - dataset.data_length - dataset.target_length + 1
+        index_p = np.arange(label_per_serie)
+        # print(label_per_serie)
+        true_labels_p = targets[:label_per_serie, 0:1, 0]
+        predictions_p = predictions[:label_per_serie, 0:1, 0]
+
         # index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
         # index_p = index_p.reshape(-1, self.out_size)
         true_labels_p = self.scaler.inverse_transform(true_labels_p)
         predictions_p = self.scaler.inverse_transform(predictions_p)
-        if self.out_size != 1 and not self.full:
+        if self.out_size != 1:
         #     index_p = index_p[:, 0]  # .T
             true_labels_p = true_labels_p[:, 0]  # .T
             predictions_p = predictions_p[:, 0]  # .T
