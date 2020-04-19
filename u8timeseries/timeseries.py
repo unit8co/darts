@@ -12,9 +12,6 @@ class TimeSeries:
         :param series: The actual time series, as a pandas Series with a proper time index.
         :param confidence_lo: Optionally, a Pandas Series representing lower confidence interval.
         :param confidence_hi: Optionally, a Pandas Series representing upper confidence interval.
-
-        Within this class, TimeSeries type annotations are 'TimeSeries'; see:
-        https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
     """
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
@@ -99,7 +96,7 @@ class TimeSeries:
 
         :return: A numpy array containing the values of the TimeSeries.
         """
-        return self._series.values
+        return np.copy(self._series.values)
 
     def time_index(self) -> pd.DatetimeIndex:
         """
