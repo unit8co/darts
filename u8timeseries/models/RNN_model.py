@@ -18,12 +18,19 @@ from sklearn.preprocessing import MinMaxScaler
 
 from tqdm.notebook import tqdm  # add check for different tqdm
 
-from typing import List
+from typing import List, Optional, Dict
 
 
 # TODO add batch norm
 class RNN(nn.Module):
-    def __init__(self, name, input_size, output_length, hidden_dim, n_layers, hidden_linear=[], dropout=0,
+    def __init__(self,
+                 name,
+                 input_size,
+                 output_length,
+                 hidden_dim,
+                 n_layers,
+                 hidden_linear=None,
+                 dropout=0,
                  many=False):
         """
         PyTorch nn module implementing a simple RNN with the specified `name` layer.
@@ -43,6 +50,7 @@ class RNN(nn.Module):
         # Defining some parameters
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
+        hidden_linear = [] if hidden_linear is None else hidden_linear
         self.out_len = output_length
         self.name = name
         self.many = many
@@ -127,11 +135,26 @@ class RNN(nn.Module):
 
 
 class RNNModel(AutoRegressiveModel):
-    def __init__(self, model: [str, nn.Module] = 'RNN', input_size: int = 1, output_length: int = 1,
-                 input_length: int = 12, hidden_size: int = 25, n_rnn_layers: int = 1,
-                 hidden_fc_size: list = [], dropout: float = 0., batch_size: int = None, n_epochs: int = 800,
-                 scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)), full: bool = False,
-                 loss: nn.modules.loss._Loss = nn.MSELoss(), exp_name: str = "RNN_run", vis_tb: bool = False,
+    def __init__(self,
+                 model: [str, nn.Module] = 'RNN',
+                 input_size: int = 1,
+                 output_length: int = 1,
+                 input_length: int = 12,
+                 hidden_size: int = 25,
+                 n_rnn_layers: int = 1,
+                 hidden_fc_size: List = None,
+                 dropout: float = 0.,
+                 batch_size: int = None,
+                 n_epochs: int = 800,
+                 scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)),
+                 optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
+                 optimizer_kwargs: Dict = None,
+                 lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
+                 lr_scheduler_kwargs: Optional[Dict] = None,
+                 full: bool = False,
+                 loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
+                 exp_name: str = "RNN_run",
+                 vis_tb: bool = False,
                  work_dir: str = './'):
         """
         Implementation of different RNN for forecasting.
@@ -161,20 +184,19 @@ class RNNModel(AutoRegressiveModel):
         self.full = full
 
         if model in ['RNN', 'LSTM', 'GRU']:
+            hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
             self.model = RNN(name=model, input_size=input_size, output_length=output_length, hidden_dim=hidden_size,
                              n_layers=n_rnn_layers, hidden_linear=hidden_fc_size, dropout=dropout, many=full)
-        elif model is 'Seq2Seq':
-            raise NotImplementedError("seq2seq is not yet implemented")
         elif isinstance(model, nn.Module):
             self.model = model
         else:
-            raise ValueError('{} is not a possible RNN model.\n Please choose' \
-                             ' between "RNN", "LSTM", "Seq2Seq" or give your own nn.Module'.
+            raise ValueError('{} is not a valid RNN model.\n Please specify' \
+                             ' "RNN", "LSTM", "GRU", or give your own PyTorch nn.Module'.
                              format(model.__class__.__name__))
         self.model = self.model.to(self.device)
         self.exp_name = exp_name
         self.cwd = work_dir
-        self.save_path = os.path.join(self.cwd, 'checkpoints', exp_name)
+        self.save_path = os.path.join(self.cwd, '.u8timeseries_checkpoints', exp_name)  # TODO in Config
         self.start_epoch = 0
         self.n_epochs = n_epochs
         self.bsize = batch_size
@@ -185,22 +207,41 @@ class RNNModel(AutoRegressiveModel):
         self.val_loader = None
         self.from_scratch = True  # do we train the model from scratch
 
-        # Define Loss, Optimizer
-        self.criterion = loss
-        self.optimizer = None
-        self.scheduler = None
-        self.writer = None
-        # self.set_optimizer()
-        # self.set_scheduler()
+        # Define the loss function
+        self.criterion = loss_fn
 
-        # self.load_from_checkpoint()
+        # The tensorboard writer
+        self.tb_writer = None
+
+        # A utility function to create optimizer and lr scheduler from desired classes
+        def _create_from_cls_and_kwargs(cls, kws):
+            try:
+                instance = cls(**kws)
+            except (TypeError, ValueError) as e:
+                raise ValueError('Error when building the optimizer or learning rate scheduler;'
+                                 'please check the provided class and arguments'
+                                 '\nclass: {}'
+                                 '\narguments (kwargs): {}'
+                                 '\nerror:\n{}'.format(cls, kws, e))
+            return instance
+
+        # Create the optimizer and (optionally) the learning rate scheduler
+        if optimizer_kwargs is None:
+            optimizer_kwargs = {'lr': 1e-3}  # we do not set this as a default argument to avoid mutable values
+        optimizer_kwargs['params'] = self.model.parameters()
+        self.optimizer = _create_from_cls_and_kwargs(optimizer_cls, optimizer_kwargs)
+
+        if lr_scheduler_cls is not None:
+            lr_scheduler_kwargs['optimizer'] = self.optimizer
+            self.lr_scheduler = _create_from_cls_and_kwargs(lr_scheduler_cls, lr_scheduler_kwargs)
+        else:
+            self.lr_scheduler = None  # We won't use a LR scheduler
 
     def fit(self, dataset: torch.utils.data.dataset):
         # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
         # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
-        if self.scheduler is None or self.optimizer is None:
-            raise AssertionError("optimizer and scheduler must be set to launch the training")
+
         if type(dataset) is TimeSeries or type(dataset) is list:
             self.set_train_dataset(dataset)
             dataset = self.dataset
@@ -221,11 +262,11 @@ class RNNModel(AutoRegressiveModel):
         if self.vis_tb:
             if self.from_scratch:
                 shutil.rmtree(self.cwd+'runs/{}/'.format(self.exp_name), ignore_errors=True)
-                self.writer = SummaryWriter(self.cwd+'runs/{}'.format(self.exp_name))
+                self.tb_writer = SummaryWriter(self.cwd + 'runs/{}'.format(self.exp_name))
                 dummy_input = torch.empty(self.bsize, self.seq_len, self.in_size).to(self.device)
-                self.writer.add_graph(self.model, dummy_input)
+                self.tb_writer.add_graph(self.model, dummy_input)
             else:
-                self.writer = SummaryWriter(self.cwd+'runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
+                self.tb_writer = SummaryWriter(self.cwd + 'runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
 
         if self.val_dataset is not None:
             self.val_dataset.transform(self.scaler)
@@ -235,8 +276,8 @@ class RNNModel(AutoRegressiveModel):
         self._train()
 
         if self.vis_tb:
-            self.writer.flush()
-            self.writer.close()
+            self.tb_writer.flush()
+            self.tb_writer.close()
 
     def predict(self, series: 'TimeSeries' = None, n: int = None, is_best: bool = False):
         # TODO: merge the different functions
@@ -283,36 +324,6 @@ class RNNModel(AutoRegressiveModel):
     def set_val_dataset(self, dataset: torch.utils.data.dataset):
         self.val_dataset = dataset
 
-    def set_optimizer(self, optimizer: torch.optim.Optimizer = torch.optim.Adam, learning_rate: float = 1e-2,
-                      swa: bool = False, **kwargs):
-        """
-        Set the optimizer from pytorch.
-
-        :param optimizer: optimizer from pytorch (default: torch.optim.Adam)
-        :param learning_rate: base learning rate value (default: 1e-2)
-        :param swa: If True, use Stochastic Weight Averaging
-        :param kwargs: Other parameters to pass to optimizer
-        """
-        self.optimizer = optimizer(self.model.parameters(), lr=learning_rate, **kwargs)
-        if swa:
-            from torchcontrib.optim import SWA
-            self.optimizer = SWA(self.optimizer, swa_start=10, swa_freq=5, swa_lr=learning_rate / 2)
-            # TODO change these values? to test
-
-    def set_scheduler(self, learning_rate: torch.optim.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR, **kwargs):
-        """
-        Set the learning rate scheduler from pytorch
-
-        :param learning_rate: scheduler from pytorch (default: ExponentialLR with gamma = 1)
-        :param kwargs: Other parameters to pass to scheduler
-        """
-        if self.optimizer is None:
-            raise AssertionError("The optimizer must be set before the scheduler")
-        # default scheduler is not decreasing
-        if learning_rate == torch.optim.lr_scheduler.ExponentialLR and 'gamma' not in kwargs.keys():
-            kwargs['gamma'] = 1.
-        self.scheduler = learning_rate(self.optimizer, **kwargs)
-
     def load_from_checkpoint(self, checkpoint: str = None, file: str = None, is_best: bool = True):
         """
         Load the model from the given checkpoint.
@@ -323,8 +334,9 @@ class RNNModel(AutoRegressiveModel):
         :param file: the name of the checkpoint file. If None, find the most recent one.
         :param is_best: if True, will retrieve the best model instead of the most recent one.
         """
-        if self.scheduler is None or self.optimizer is None:
-            raise AssertionError("optimizer and scheduler must be set to load the parameters")
+        if self.optimizer is None:
+            # TODO: do not require an existing model instance to load (persist everything needed)
+            raise AssertionError("optimizer must be set to load the parameters")
         self.from_scratch = False
         if checkpoint is None:
             checkpoint = self.save_path
@@ -371,14 +383,15 @@ class RNNModel(AutoRegressiveModel):
                 self.optimizer.step()
                 tot_loss_mse += loss_mse.item()
                 tot_loss_diff += loss_diff.item()
-            self.scheduler.step()
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
             if self.vis_tb:
                 for name, param in self.model.named_parameters():
-                    self.writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
-                self.writer.add_scalar("loss/training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training/training_loss", tot_loss_mse / (batch_idx + 1), epoch)
-                self.writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
+                    self.tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
+                self.tb_writer.add_scalar("loss/training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
+                self.tb_writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
+                self.tb_writer.add_scalar("training/training_loss", tot_loss_mse / (batch_idx + 1), epoch)
+                self.tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
             # print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
             self._save_model(False, self.save_path)
@@ -405,9 +418,9 @@ class RNNModel(AutoRegressiveModel):
             tot_loss_mse += loss_mse.item()
             tot_loss_diff += loss_diff.item()
         if self.vis_tb:
-            self.writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
-            self.writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
-            self.writer.add_scalar("validation/validation_loss", tot_loss_mse / (batch_idx + 1), self.epoch)
+            self.tb_writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
+            self.tb_writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
+            self.tb_writer.add_scalar("validation/validation_loss", tot_loss_mse / (batch_idx + 1), self.epoch)
         # print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
         #       end="\r")
 
@@ -483,16 +496,15 @@ class RNNModel(AutoRegressiveModel):
     def _save_model(self, is_best: bool, save_path: str):
         state = {
             'epoch': self.epoch + 1,  # state in the loop (why +1 ?)
-            'state_dict': self.model.state_dict(),  # model params state
-            'optimizer': self.optimizer.state_dict(),  # adam optimizer state
-            'scheduler': self.scheduler.state_dict(),  # learning rate state  ## state_dict?
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict(),
             #  maybe use multistepLR with milestones. Seems rather easy and what i search
             'scaler': self.scaler
         }
         checklist = glob(os.path.join(save_path, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
-        filename = 'checkpoint_{0}.pth.tar'
-        filename = filename.format(self.epoch)
+        filename = 'checkpoint_{0}.pth.tar'.format(self.epoch)
         os.makedirs(save_path, exist_ok=True)
         filename = os.path.join(save_path, filename)
         torch.save(state, filename)
@@ -515,7 +527,8 @@ class RNNModel(AutoRegressiveModel):
             checkpoint = torch.load(os.path.join(save_path, filename), map_location=self.device)
             self.start_epoch = checkpoint['epoch']
             self.scaler = checkpoint['scaler']
-            self.scheduler.load_state_dict(checkpoint['scheduler'])
+            if checkpoint['scheduler'] is not None:
+                self.lr_scheduler.load_state_dict(checkpoint['scheduler'])
             self.model.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
             print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
