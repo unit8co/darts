@@ -20,6 +20,9 @@ from tqdm.notebook import tqdm  # add check for different tqdm
 
 from typing import List, Optional, Dict
 
+CHECKPOINTS_FOLDER = os.path.join('.u8timeseries', 'checkpoints')
+RUNS_FOLDER = os.path.join('.u8timeseries', 'runs')
+
 
 # TODO add batch norm
 class RNN(nn.Module):
@@ -155,9 +158,9 @@ class RNNModel(AutoRegressiveModel):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 exp_name: str = "RNN_run",
+                 exp_name: str = "RNN_run",  # TODO uid
                  vis_tb: bool = False,
-                 work_dir: str = './'):
+                 work_dir: str = os.getcwd()):
         """
         Implementation of different RNN for forecasting.
 
@@ -178,6 +181,8 @@ class RNNModel(AutoRegressiveModel):
         :param exp_name: name of the checkpoint and tensorboard directory
         :param vis_tb: if True, use tensorboard to log the different parameters
         :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries.
+
+        # TODO: add init seed
         """
         super().__init__()
         self._torch_device()
@@ -201,7 +206,7 @@ class RNNModel(AutoRegressiveModel):
         self.model = self.model.to(self.device)
         self.exp_name = exp_name
         self.cwd = work_dir
-        self.save_path = os.path.join(self.cwd, '.u8timeseries_checkpoints', exp_name)  # TODO in Config
+
         self.start_epoch = 0
         self.n_epochs = n_epochs
         self.bsize = batch_size
@@ -217,6 +222,10 @@ class RNNModel(AutoRegressiveModel):
 
         # The tensorboard writer
         self.tb_writer = None
+
+        # where to save stuff
+        self.checkpoint_folder = os.path.join(self.cwd, CHECKPOINTS_FOLDER, self.exp_name)
+        self.runs_folder = os.path.join(self.cwd, RUNS_FOLDER, self.exp_name)
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -242,6 +251,12 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
+    # def _get_checkpoint_folder(self):
+    #     return os.path.join(self.cwd, CHECKPOINTS_FOLDER, self.exp_name)
+    #
+    # def _get_runs_folder(self):
+    #     return os.path.join(self.cwd, RUNS_FOLDER, self.exp_name)
+
     def fit(self, dataset):
         # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
@@ -254,7 +269,7 @@ class RNNModel(AutoRegressiveModel):
         self.dataset = dataset
         self.scaler = self.dataset.fit_scaler(self.scaler)
         if self.from_scratch:
-            shutil.rmtree(self.cwd+'checkpoints/{}/'.format(self.exp_name), ignore_errors=True)
+            shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
         #     if not hasattr(self.scaler, "scale_"):
         #         self.scaler.fit(series.values().reshape(-1, 1))
         # self.set_train_dataset(series)
@@ -266,12 +281,12 @@ class RNNModel(AutoRegressiveModel):
         # Tensorboard
         if self.vis_tb:
             if self.from_scratch:
-                shutil.rmtree(self.cwd+'runs/{}/'.format(self.exp_name), ignore_errors=True)
-                self.tb_writer = SummaryWriter(self.cwd + 'runs/{}'.format(self.exp_name))
+                shutil.rmtree(self.runs_folder, ignore_errors=True)
+                self.tb_writer = SummaryWriter(self.runs_folder)
                 dummy_input = torch.empty(self.bsize, self.seq_len, self.in_size).to(self.device)
                 self.tb_writer.add_graph(self.model, dummy_input)
             else:
-                self.tb_writer = SummaryWriter(self.cwd + 'runs/{}'.format(self.exp_name), purge_step=self.start_epoch)
+                self.tb_writer = SummaryWriter(self.runs_folder, purge_step=self.start_epoch)
 
         if self.val_dataset is not None:
             self.val_dataset.transform(self.scaler)
@@ -342,7 +357,7 @@ class RNNModel(AutoRegressiveModel):
             raise AssertionError("optimizer must be set to load the parameters")
         self.from_scratch = False
         if checkpoint is None:
-            checkpoint = self.save_path
+            checkpoint = self.checkpoint_folder
         # if filename is none, find most recent file in savepath that is a checkpoint
         if file is None:
             path = os.path.join(checkpoint, "model_best_*" if is_best else "checkpoint_*")
@@ -397,7 +412,7 @@ class RNNModel(AutoRegressiveModel):
                 self.tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
             # print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
-            self._save_model(False, self.save_path)
+            self._save_model(False, self.checkpoint_folder)
 
             if epoch % 10 == 0:
                 val_loss = self._val()
@@ -429,7 +444,7 @@ class RNNModel(AutoRegressiveModel):
 
         if (tot_loss_mse + tot_loss_diff) / (batch_idx + 1) < self.best_loss:
             self.best_loss = (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
-            self._save_model(True, self.save_path)
+            self._save_model(True, self.checkpoint_folder)
         return (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
 
     def plot_result_train(self):
@@ -496,7 +511,6 @@ class RNNModel(AutoRegressiveModel):
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict(),
-            #  maybe use multistepLR with milestones. Seems rather easy and what i search
             'scaler': self.scaler
         }
         checklist = glob(os.path.join(save_path, "checkpoint_*"))
