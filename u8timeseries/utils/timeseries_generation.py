@@ -50,7 +50,7 @@ def linear_timeseries(start_value: float = 0, end_value: float = 1, length: int 
     return TimeSeries.from_times_and_values(times, values)
 
 
-def periodic_timeseries(value_frequency: float = 0.1, value_amplitude: float = 1, value_phase: float = 0, 
+def sine_timeseries(value_frequency: float = 0.1, value_amplitude: float = 1, value_phase: float = 0, 
                         value_y_offset: float = 0, length: int = 10, freq: str = 'D',
                         start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> 'TimeSeries':
     """

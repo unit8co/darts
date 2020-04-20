@@ -6,7 +6,7 @@ from ..timeseries import TimeSeries
 from u8timeseries.utils.timeseries_generation import (
     constant_timeseries, 
     linear_timeseries, 
-    periodic_timeseries,
+    sine_timeseries,
     gaussian_timeseries, 
     random_walk_timeseries, 
     us_holiday_timeseries
@@ -38,7 +38,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         self.assertEqual(linear_ts.values()[-1], end_value)
         self.assertAlmostEqual(linear_ts.values()[-1] - linear_ts.values()[-2], (end_value - start_value) / (length - 1))
 
-    def test_periodic_timeseries(self):
+    def test_sine_timeseries(self):
 
         # testing parameters
         length = 100
@@ -46,9 +46,9 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         value_y_offset = -3
 
         # testing for correct value range
-        periodic_ts = periodic_timeseries(length=length, value_amplitude=value_amplitude, value_y_offset=value_y_offset)
-        self.assertTrue((periodic_ts <= value_y_offset + value_amplitude).all())
-        self.assertTrue((periodic_ts >= value_y_offset - value_amplitude).all())
+        sine_ts = sine_timeseries(length=length, value_amplitude=value_amplitude, value_y_offset=value_y_offset)
+        self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all())
+        self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all())
 
     def test_gaussian_timeseries(self):
 
