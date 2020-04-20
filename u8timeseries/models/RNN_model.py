@@ -53,6 +53,7 @@ class RNN(nn.Module):
         super(RNN, self).__init__()
 
         self.device = torch.device("cpu")
+
         # Defining some parameters
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers
@@ -60,15 +61,12 @@ class RNN(nn.Module):
         self.out_len = output_length
         self.name = name
         self.many = many
-        # self.teach_force = 0
-        # if teacher_forcing:
-        #     self.teach_force = self.out_len - 1
 
-        # Defining the layers
-        # RNN Layer
-        # TODO: should we implement different hiddensize for RNN?
+        # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
-        # Fully connected layer
+
+        # The RNN module is followed by a fully connected layer, which maps the last layer's hidden state
+        # to the output of desired length
         last = hidden_dim
         feats = []
         for feature in num_layers_out_fc + [output_length]:
@@ -97,30 +95,7 @@ class RNN(nn.Module):
             predictions = self.fc(predictions)
             predictions = predictions.view(batch_size, self.out_len, 1)
 
-        # initial_pred = predictions
-
-        # for i in range(self.teach_force):  # TODO: still buggy
-        #     future = x.roll(-1, 1)
-        #     if y is None:
-        #         break
-        #     if np.random.random() > epoch/600 * 0.5:
-        #         future[:, -1, :] = y[:, i].unsqueeze(1)
-        #     else:
-        #         future[:, -1, :] = initial_pred[:, i].unsqueeze(1)
-        #     out, hidden = self.rnn(future, hidden)
-        #
-        #     if self.many:
-        #         predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
-        #         predictions = predictions.view(batch_size, x.size(1), self.out_len)
-        #         initial_pred[:, :, i + 1] = predictions[:, :, i]
-        #     else:
-        #         if self.name == "LSTM":
-        #             hidden = hidden[0]
-        #         predictions = hidden[-1, :, :]
-        #         predictions = self.fc(predictions)
-        #         initial_pred[:, i+1] = predictions[:, 0]
-
-        # predictions is batch_size X output_length
+        # predictions is of size (batch_size, output_length)
         return predictions
 
     def init_hidden(self, batch_size):
@@ -160,7 +135,8 @@ class RNNModel(AutoRegressiveModel):
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  exp_name: str = "RNN_run",  # TODO uid
                  vis_tb: bool = False,
-                 work_dir: str = os.getcwd()):
+                 work_dir: str = os.getcwd(),
+                 torch_device_str: Optional[str] = None):
         """
         Implementation of different RNN for forecasting.
 
@@ -185,12 +161,17 @@ class RNNModel(AutoRegressiveModel):
         # TODO: add init seed
         """
         super().__init__()
-        self._torch_device()
+
+        if torch_device_str is None:
+            self.device = self._get_best_torch_device()
+        else:
+            self.device = torch.device(torch_device_str)
+
         self.scaler = scaler
         self.in_size = input_size
         self.out_size = output_length
         self.seq_len = input_length
-        self.vis_tb = vis_tb
+        self.vis_tb = vis_tb  # TODO: check if TB is installed here
 
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
@@ -251,12 +232,6 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-    # def _get_checkpoint_folder(self):
-    #     return os.path.join(self.cwd, CHECKPOINTS_FOLDER, self.exp_name)
-    #
-    # def _get_runs_folder(self):
-    #     return os.path.join(self.cwd, RUNS_FOLDER, self.exp_name)
-
     def fit(self, dataset):
         # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
@@ -270,9 +245,7 @@ class RNNModel(AutoRegressiveModel):
         self.scaler = self.dataset.fit_scaler(self.scaler)
         if self.from_scratch:
             shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
-        #     if not hasattr(self.scaler, "scale_"):
-        #         self.scaler.fit(series.values().reshape(-1, 1))
-        # self.set_train_dataset(series)
+
         if self.bsize is None:
             self.bsize = len(self.dataset)
         self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=True,
@@ -367,12 +340,12 @@ class RNNModel(AutoRegressiveModel):
         self._load_model(checkpoint, file)
         self._fit_called = True
 
-    def _torch_device(self):
+    def _get_best_torch_device(self):
         is_cuda = torch.cuda.is_available()
         if is_cuda:
-            self.device = torch.device("cuda:0")
+            return torch.device("cuda:0")
         else:
-            self.device = torch.device("cpu")
+            return torch.device("cpu")
 
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
