@@ -21,7 +21,7 @@ class KthValueAgoBaseline(AutoRegressiveModel):
     def __str__(self):
         return '{} value ago baseline'.format(self.K)
 
-    def fit(self, series: 'TimeSeries'):
+    def fit(self, series: TimeSeries):
         super().fit(series)
         assert len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K)
         self.last_k_vals = series.values()[-self.K:]
