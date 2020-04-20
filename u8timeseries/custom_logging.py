@@ -57,7 +57,7 @@ def time_log(logger: logging.Logger = get_logger('main_logger')):
     :param logger: The logger instance to log the runtime of the function.
     """
     def time_log_helper(method):
-        def timed(*args):
+        def timed(*args, **kwargs):
             start_time = time.time()
             result = method(*args)
             end_time = time.time()
