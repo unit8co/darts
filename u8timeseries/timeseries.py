@@ -477,7 +477,7 @@ class TimeSeries:
             index = pd.DatetimeIndex([self.end_time() + i * self.freq() for i in range(1, 1+len(values))])
         assert_log(isinstance(index, pd.DatetimeIndex), 'Values must be indexed with a DatetimeIndex.', logger)
         assert_log(len(index) == len(values), 'Values and index must have same length.', logger)
-        assert_log(self.time_index().intersection(index).empty, "Cannot add already present time index.")
+        assert_log(self.time_index().intersection(index).empty, "Cannot add already present time index.", logger)
         new_indices = index.argsort()
         index = index[new_indices]
         # TODO do we really want that?
