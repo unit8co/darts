@@ -12,9 +12,6 @@ import os
 import re
 from glob import glob
 import shutil
-import matplotlib.pyplot as plt
-from sklearn.base import TransformerMixin
-from sklearn.preprocessing import MinMaxScaler
 
 from tqdm.notebook import tqdm  # add check for different tqdm
 
@@ -137,7 +134,8 @@ class RNNModel(AutoRegressiveModel):
         :param loss: pytorch loss used during training (default: torch.nn.MSELoss()).
         :param exp_name: name of the checkpoint and tensorboard directory
         :param vis_tb: if True, use tensorboard to log the different parameters
-        :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries.
+        :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries
+        :param torch_device_str:
 
         # TODO: add init seed
         # TODO: if mean and/or stdev are wild, print a warning suggesting scaling
@@ -150,7 +148,7 @@ class RNNModel(AutoRegressiveModel):
             self.device = torch.device(torch_device_str)
 
         self.in_size = input_size
-        self.out_size = output_length
+        self.output_length = output_length
         self.seq_len = input_length
         self.vis_tb = vis_tb  # TODO: check if TB is installed here
 
@@ -169,14 +167,8 @@ class RNNModel(AutoRegressiveModel):
         self.exp_name = exp_name
         self.cwd = work_dir
 
-        self.start_epoch = 0
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.epoch = None
-        self.dataset = None
-        self.train_loader = None
-        self.val_dataset = None
-        self.val_loader = None
         self.from_scratch = True  # do we train the model from scratch
 
         # Define the loss function
@@ -213,41 +205,58 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-    def fit(self, series: TimeSeries):
+    def fit(self,
+            series: TimeSeries,
+            val_series: Optional[TimeSeries] = None) -> None:
+        """
+        :param series: The training time series
+        :param val_series: Optionally, a validation time series that will
+                           be used to compute validation loss throughout training
+        :return:
+
+        TODO: also specify number of epochs here?
+        """
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
         # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
 
         super().fit(series)
-
-        self.dataset = self.get_train_dataset(series)
 
         if self.from_scratch:
             shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
 
         if self.batch_size is None:
             self.batch_size = len(self.dataset)
-        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,
-                                       num_workers=0, pin_memory=True, drop_last=True)
+
+        # Prepare training data:
+        dataset = TimeSeriesDataset1D(series, self.seq_len, self.output_length)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
+                                  num_workers=0, pin_memory=True, drop_last=True)
+
+        # Prepare validation data:
+        if val_series is not None:
+            val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.output_length)
+            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                    num_workers=0, pin_memory=True, drop_last=False)
+        else:
+            val_loader = None
 
         # Tensorboard
         if self.vis_tb:
             if self.from_scratch:
                 shutil.rmtree(self.runs_folder, ignore_errors=True)
-                self.tb_writer = SummaryWriter(self.runs_folder)
+                tb_writer = SummaryWriter(self.runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.seq_len, self.in_size).to(self.device)
-                self.tb_writer.add_graph(self.model, dummy_input)
+                tb_writer.add_graph(self.model, dummy_input)
             else:
-                self.tb_writer = SummaryWriter(self.runs_folder, purge_step=self.start_epoch)
+                tb_writer = SummaryWriter(self.runs_folder, purge_step=self.start_epoch)
+        else:
+            tb_writer = None
 
-        if self.val_dataset is not None:
-            self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False,
-                                         num_workers=0, pin_memory=True, drop_last=False)
+        self._train(train_loader, val_loader, tb_writer)
 
-        self._train()
-
-        if self.vis_tb:
-            self.tb_writer.flush()
-            self.tb_writer.close()
+        if tb_writer is not None:
+            tb_writer.flush()
+            tb_writer.close()
 
     def predict(self, n: int, use_best: bool = False) -> TimeSeries:
         """
@@ -279,21 +288,7 @@ class RNNModel(AutoRegressiveModel):
 
         return self._build_forecast_series(test_out.squeeze())
 
-    def set_val_series(self, val_series: List[TimeSeries]):
-        if type(val_series) is not list:
-            val_series = [val_series]
-        self.val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.out_size)
-
-    def get_train_dataset(self, train_series: List[TimeSeries]):
-        # todo: can pass a dataset object too
-        if type(train_series) is not list:
-            train_series = [train_series]
-        self.training_series = train_series[0]
-        return TimeSeriesDataset1D(train_series, self.seq_len, self.out_size)
-
-    def set_val_dataset(self, dataset: torch.utils.data.dataset):
-        self.val_dataset = dataset
-
+    # TODO: make this a static method returning a model
     def load_from_checkpoint(self, checkpoint: str = None, file: str = None, is_best: bool = True):
         """
         Load the model from the given checkpoint.
@@ -330,85 +325,100 @@ class RNNModel(AutoRegressiveModel):
         for p in self.optimizer.param_groups:
             return p['lr']
 
-    def _train(self):
-        self.best_loss = np.inf
-        for epoch in tqdm(range(self.start_epoch, self.n_epochs)):
-            self.epoch = epoch
-            tot_loss_mse = 0
-            tot_loss_diff = 0
+    def _train(self,
+               train_loader: DataLoader,
+               val_loader: Optional[DataLoader],
+               tb_writer: Optional[SummaryWriter]) -> None:
+        """
+        Performs the actual training
+        :param train_loader: the training data loader feeding the training data and targets
+        :param val_loader: optionally, a validation set loader
+        :param tb_writer: optionally, a TensorBoard writer
+        :return:
+        """
 
-            for batch_idx, (data, target) in enumerate(self.train_loader):
+        best_loss = np.inf
+        for epoch in tqdm(range(self.n_epochs)):
+            epoch = epoch
+            total_loss = 0
+            total_loss_diff = 0
+
+            for batch_idx, (data, target) in enumerate(train_loader):
                 self.model.train()
-                data, target = data.to(self.device), target.to(self.device)
+                data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
                 output = self.model(data)
-                # print(target.size(), output.size())
-                loss_mse = self.criterion(output, target)
-                if self.out_size == 1:
-                    loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+                loss = self.criterion(output, target)
+                if self.output_length == 1:
+                    loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
                 else:
-                    loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
-                loss = loss_mse + loss_diff
+                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
+                loss = loss + loss_of_diff
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                tot_loss_mse += loss_mse.item()
-                tot_loss_diff += loss_diff.item()
+                total_loss += loss.item()
+                total_loss_diff += loss_of_diff.item()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-            if self.vis_tb:
-                for name, param in self.model.named_parameters():
-                    self.tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
-                self.tb_writer.add_scalar("loss/training_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), epoch)
-                self.tb_writer.add_scalar("training/training_loss_diff", tot_loss_diff / (batch_idx + 1), epoch)
-                self.tb_writer.add_scalar("training/training_loss", tot_loss_mse / (batch_idx + 1), epoch)
-                self.tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
-            # print("<Loss>: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)), end="\r")
 
-            self._save_model(False, self.checkpoint_folder)
+            # TODO: what are these values below?
+            # if tb_writer is not None:
+            #     for name, param in self.model.named_parameters():
+            #         tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
+            #     tb_writer.add_scalar("loss/training_loss", (total_loss + total_loss_diff) / (batch_idx + 1), epoch)
+            #     tb_writer.add_scalar("training/training_loss_diff", total_loss_diff / (batch_idx + 1), epoch)
+            #     tb_writer.add_scalar("training/training_loss", total_loss / (batch_idx + 1), epoch)
+            #     tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
+
+            self._save_model(False, self.checkpoint_folder, epoch)
 
             if epoch % 10 == 0:
-                val_loss = self._val()
+                training_loss = (total_loss + total_loss_diff) / (batch_idx + 1)  # TODO: do not use batch_idx
+                validation_loss = self._evaluate_validation_loss(val_loader, tb_writer)
                 print("Training loss: {:.4f}, validation loss: {:.4f}".
-                      format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1), val_loss), end="\r")
+                      format(training_loss, validation_loss), end="\r")
 
-    def _val(self):
-        if self.val_loader is None:
-            return np.nan
-        tot_loss_mse = 0
-        tot_loss_diff = 0
+                if validation_loss < best_loss:
+                    best_loss = validation_loss
+                    self._save_model(True, self.checkpoint_folder, epoch)
+
+    def _evaluate_validation_loss(self,
+                                  val_loader: DataLoader,
+                                  tb_writer: Optional[SummaryWriter]):
+        total_loss = 0
+        total_loss_of_diff = 0
         self.model.eval()
-        for batch_idx, (data, target) in enumerate(self.val_loader):
-            data, target = data.to(self.device), target.to(self.device)
-            output = self.model(data)
-            loss_mse = self.criterion(output, target)
-            if self.out_size == 1:
-                loss_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
-            else:
-                loss_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
-            tot_loss_mse += loss_mse.item()
-            tot_loss_diff += loss_diff.item()
-        if self.vis_tb:
-            self.tb_writer.add_scalar("loss/validation_loss", (tot_loss_mse + tot_loss_diff) / (batch_idx + 1), self.epoch)
-            self.tb_writer.add_scalar("validation/validation_loss_diff", tot_loss_diff / (batch_idx + 1), self.epoch)
-            self.tb_writer.add_scalar("validation/validation_loss", tot_loss_mse / (batch_idx + 1), self.epoch)
-        # print("               ,Validation Loss: {:.4f}".format((tot_loss_mse + tot_loss_diff) / (batch_idx + 1)),
-        #       end="\r")
+        with torch.no_grad():
+            for batch_idx, (data, target) in enumerate(val_loader):
+                data, target = data.to(self.device), target.to(self.device)  # TODO: needed?
+                output = self.model(data)
+                loss = self.criterion(output, target)
+                if self.output_length == 1:
+                    loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+                else:
+                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
+                total_loss += loss.item()
+                total_loss_of_diff += loss_of_diff.item()
 
-        if (tot_loss_mse + tot_loss_diff) / (batch_idx + 1) < self.best_loss:
-            self.best_loss = (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
-            self._save_model(True, self.checkpoint_folder)
-        return (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
+        # TODO: return this and print only in _train() method
+        # if tb_writer is not None:
+        #     self.tb_writer.add_scalar("loss/validation_loss", (total_loss + total_loss_of_diff) / (batch_idx + 1), self.epoch)
+        #     self.tb_writer.add_scalar("validation/validation_loss_diff", total_loss_of_diff / (batch_idx + 1), self.epoch)
+        #     self.tb_writer.add_scalar("validation/validation_loss", total_loss / (batch_idx + 1), self.epoch)
 
-    def _save_model(self, is_best: bool, save_path: str):
+        validation_loss = (total_loss + total_loss_of_diff) / (batch_idx + 1)
+        return validation_loss
+
+    def _save_model(self, is_best: bool, save_path: str, epoch: int):
         state = {
-            'epoch': self.epoch + 1,  # state in the loop (why +1 ?)
+            'epoch': epoch + 1,  # state in the loop (why +1 ?)
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict()
         }
         checklist = glob(os.path.join(save_path, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
-        filename = 'checkpoint_{0}.pth.tar'.format(self.epoch)
+        filename = 'checkpoint_{0}.pth.tar'.format(epoch)
         os.makedirs(save_path, exist_ok=True)
         filename = os.path.join(save_path, filename)
         torch.save(state, filename)
@@ -417,7 +427,7 @@ class RNNModel(AutoRegressiveModel):
             for chkpt in checklist[:-4]:
                 os.remove(chkpt)
         if is_best:
-            best_name = os.path.join(save_path, 'model_best_{0}.pth.tar'.format(self.epoch))
+            best_name = os.path.join(save_path, 'model_best_{0}.pth.tar'.format(epoch))
             shutil.copyfile(filename, best_name)
             checklist = glob(os.path.join(save_path, "model_best_*"))
             checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
