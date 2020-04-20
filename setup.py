@@ -20,7 +20,8 @@ setup(name='u8timeseries',
           'scikit-learn>=0.21.2',
           'pandas>=0.23.1',
           'tqdm>=4.32.1',
-          'ipywidgets'
+          'ipywidgets',
+          'testfixtures'
       ],
       zip_safe=False,
       python_requires='>=3.6'
