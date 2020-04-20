@@ -52,7 +52,7 @@ class RNN(nn.Module):
         """
         super(RNN, self).__init__()
 
-        self.device = torch.device("cpu")
+        # self.device = torch.device("cpu")
 
         # Defining some parameters
         self.hidden_dim = hidden_dim
@@ -78,11 +78,8 @@ class RNN(nn.Module):
         # data is batch_size X input_length X input_size
         batch_size = x.size(0)
 
-        # Initializing hidden state for first input using method defined below
-        hidden = self.init_hidden(batch_size)
-
         # Passing in the input and hidden state into the model and obtaining outputs
-        out, hidden = self.rnn(x, hidden)
+        out, hidden = self.rnn(x)
 
         # Reshaping the outputs such that it can be fit into the fully connected layer
         if self.many:
@@ -97,22 +94,6 @@ class RNN(nn.Module):
 
         # predictions is of size (batch_size, output_length)
         return predictions
-
-    def init_hidden(self, batch_size):
-        # This method generates the first hidden state of zeros which we'll use in the forward pass
-        # We'll send the tensor holding the hidden state to the device we specified earlier as well
-        if self.name == 'LSTM':
-            hidden = (torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device),
-                      torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device))
-        else:
-            hidden = torch.zeros(self.n_layers, batch_size, self.hidden_dim).to(self.device)
-        # self.register_buffer("hidden_zero", hidden)
-        return hidden
-
-    def to(self, *args, **kwargs):
-        self = super().to(*args, **kwargs)
-        self.device = args[0]
-        return self
 
 
 class RNNModel(AutoRegressiveModel):
