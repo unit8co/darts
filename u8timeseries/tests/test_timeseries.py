@@ -16,31 +16,31 @@ class TimeSeriesTestCase(unittest.TestCase):
     series3: TimeSeries = TimeSeries(pd_series2)
 
     def test_creation(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Index is dateTimeIndex
             TimeSeries(pd.Series(range(10), range(10)))
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Conf interval must be same length as main series
             pd_lo = pd.Series(range(5, 14), index=pd.date_range('20130101', '20130109'))
             TimeSeries(self.pd_series1, pd_lo)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Conf interval must have same time index as main series
             pd_lo = pd.Series(range(5, 15), index=pd.date_range('20130102', '20130111'))
             TimeSeries(self.pd_series1, pd_lo)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Conf interval must be same length as main series
             pd_hi = pd.Series(range(5, 14), index=pd.date_range('20130101', '20130109'))
             TimeSeries(self.pd_series1, None, pd_hi)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Conf interval must have same time index as main series
             pd_lo = pd.Series(range(5, 15), index=pd.date_range('20130102', '20130111'))
             TimeSeries(self.pd_series1, None, pd_lo)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Main series cannot have date holes
             range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
             TimeSeries(pd.Series(range(9), index=range_))
@@ -52,7 +52,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertTrue(series_test.conf_hi_pd_series().equals(self.pd_series3))
 
     def test_alt_creation(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             # Series cannot be lower than three
             index = pd.date_range('20130101', '20130102')
             TimeSeries.from_times_and_values(index, self.pd_series1.values[:2])
@@ -190,15 +190,15 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.series1.intersect(TimeSeries(pd.Series(range(6, 13),
                                                         index=pd.date_range('20130116', '20130122'))))
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.series1.intersect(TimeSeries(pd.Series(range(9, 13),
                                                         index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.series1.rescale_with_value(1)
 
         seriesA = self.series3.rescale_with_value(0)
@@ -242,12 +242,12 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # Creating a gap is not allowed
         seriesC = self.series1.drop_before(pd.Timestamp('20130107'))
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.append(seriesC)
 
         # Changing frequence is not allowed
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130107', '20130507', freq='30D'), range(5))
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.append(seriesM)
 
         # reconstruction with CI
@@ -277,15 +277,15 @@ class TimeSeriesTestCase(unittest.TestCase):
                          self.series1)
 
         # add non consecutive index
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()+seriesB.freq()), self.series1)
 
         # add existing indices
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()-3*seriesB.freq()), self.series1)
 
         # other frequency
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             self.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
                              self.series1)
 
@@ -296,22 +296,22 @@ class TimeSeriesTestCase(unittest.TestCase):
                                                                [15, 16, 1, 18, 4, 20, 6, 22, 8, 24])
         # change nothing
         seriesC = self.series1.copy()
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.update(self.times)
         seriesC.update(self.times, range(10))
         self.assertEqual(seriesC, self.series1)
 
         # different len
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.update(self.times, [], None, None)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.update(self.times, None, np.arange(3), None)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesA.update(self.times, None, None, np.arange(4))
 
         # change outside
         seriesC = seriesA.copy()
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             seriesC.update(self.times+100*seriesC.freq(), range(10))
         seriesC.update(self.times.append(pd.date_range('20140101', '20140110')), list(range(10))+[0]*10)
         self.assertEqual(seriesC, self.series1)
@@ -378,11 +378,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(self.series1 / 2, targetDiv)
         self.assertEqual(self.series1 ** 2, targetPow)
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ZeroDivisionError):
             # Cannot divide by a TimeSeries with a value 0.
             self.series1 / self.series1
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ZeroDivisionError):
             # Cannot divide by 0.
             self.series1 / 0
 

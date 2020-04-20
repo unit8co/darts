@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from ..timeseries import TimeSeries
-from ..custom_logging import assert_log, get_logger
+from ..custom_logging import get_logger
 from typing import Optional
 
 logger = get_logger(__name__)
@@ -33,7 +33,8 @@ class AutoRegressiveModel(ABC):
         """
         :return: A TimeSeries containing the `n` next points, starting after the end of the training time series.
         """
-        assert_log(self._fit_called, 'fit() must be called before predict()', logger)
+        if (not self._fit_called):
+            raise_log(Exception('fit() must be called before predict()'), logger)
 
     def _generate_new_dates(self, n: int):
         """

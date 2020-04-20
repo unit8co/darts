@@ -7,7 +7,7 @@ from testfixtures import LogCapture
 from ..timeseries import TimeSeries
 from u8timeseries.utils.timeseries_generation import linear_timeseries, constant_timeseries
 from u8timeseries.models.theta import Theta
-from ..custom_logging import assert_log, raise_log, time_log, get_logger
+from ..custom_logging import raise_log, check_value_log, time_log, get_logger
 
 
 class LoggingTestCase(unittest.TestCase):
@@ -29,19 +29,19 @@ class LoggingTestCase(unittest.TestCase):
         # checking whether exception was properly raised
         self.assertTrue(exception_was_raised)
 
-    def test_assert_log(self):
+    def test_check_value_log(self):
         exception_was_raised = False
         with LogCapture() as lc:
             logger = get_logger(__name__)
             try:
-                assert_log(True, "test", logger)
-                assert_log(False, "test", logger)
+                check_value_log(True, "test", logger)
+                check_value_log(False, "test", logger)
             except:
                 exception_was_raised = True
 
         # testing correct log message
         lc.check(
-            (__name__, 'ERROR', 'AssertionError: test')
+            (__name__, 'ERROR', 'ValueError: test')
         )
 
         # checking whether exception was properly raised
@@ -58,7 +58,7 @@ class LoggingTestCase(unittest.TestCase):
                 pass
             
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'AssertionError: Series must have at least three values.')
+            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must have at least three values.')
         )
 
     def test_timeseries_split_error_log(self):

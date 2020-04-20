@@ -22,21 +22,18 @@ def get_logger(name):
     logger.addHandler(stderr_handler)
     return logger
 
-def assert_log(boolean_value: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+def check_value_log(boolean_value: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
     """
-    Can be used to replace assert statements to make sure the error message is logged.
-    This method was chosen in favor of overriding sys.excepthook because sys.excepthook
-    cannot be overridden in Jupyter Notebook.
+    Checks provided boolean expression and raises a ValueError if it evaluates to False.
+    It logs the error to the provided logger before raising it.
 
-    :param boolean_value: The boolean expression (or value) of the assert statement.
-    :param message: The message of the assert statement.
-    :param logger: The logger instance to log the error message if the boolean_value is False.
+    :param boolean_value: The boolean expression (or value) to be checked.
+    :param message: The message of the ValueError.
+    :param logger: The logger instance to log the error message if 'boolean_value' is False.
     """
-    try:
-        assert boolean_value, message
-    except AssertionError:
-        logger.error("AssertionError: " + message)
-        raise
+    if (not boolean_value):
+        logger.error("ValueError: " + message)
+        raise ValueError(message)
 
 def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_logger')):
     """

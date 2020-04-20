@@ -126,7 +126,7 @@ def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'Ti
     :return: A TimeSeries `new_ts`, defined by removing `other` from `ts`.
     """
     if (other.values() < 1e-6).any() and model == 'multiplicative':
-        log.warning("Indexes equal to zero, cannot remove for a multiplicative model.")
+        logger.warning("Indexes equal to zero, cannot remove for a multiplicative model.")
         return ts
     else:
         if model == 'multiplicative':
