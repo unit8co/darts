@@ -5,7 +5,7 @@ This section treats the different models that have been implemented as of the la
 
 .. currentmodule:: u8timeseries
 
-.. automodule:: u8timeseries.models
+.. automodule:: u8timeseries
    
     .. rubric:: Models summary
     
