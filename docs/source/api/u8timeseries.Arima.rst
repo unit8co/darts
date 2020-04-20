@@ -1,7 +1,7 @@
 Arima
 -----
 
-.. currentmodule:: u8timeseries
+.. currentmodule:: u8timeseries.models
 
 .. autoclass:: Arima
    :show-inheritance:
