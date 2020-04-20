@@ -7,6 +7,7 @@ from u8timeseries.models.autoregressive_model import AutoRegressiveModel
 from u8timeseries.models.theta import Theta
 from u8timeseries.models.RNN_model import RNN, RNNModel
 from .timeseries import TimeSeries
+from u8timeseries.preprocessing.transformer import Transformer
 
 
 __version__ = '0.0.2'
