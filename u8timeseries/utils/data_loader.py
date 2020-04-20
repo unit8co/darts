@@ -23,6 +23,7 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         self.series_values = series.values()
 
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
+        self.len_series = len(series)
         self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
 
