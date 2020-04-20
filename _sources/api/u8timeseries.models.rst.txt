@@ -3,6 +3,8 @@ Models
 
 This section treats the different models that have been implemented as of the latest version.
 
+.. currentmodule:: u8timeseries
+
 .. automodule:: u8timeseries.models
    
     .. rubric:: Models summary
@@ -10,9 +12,11 @@ This section treats the different models that have been implemented as of the la
     .. autosummary::
        :toctree:
        
-       u8timeseries.Arima
-       u8timeseries.AutoRegressiveModel
-       u8timeseries.ExponentialSmoothing
-       u8timeseries.KthValueAgoBaseline
-       u8timeseries.Prophet
-       u8timeseries.Theta
+       api/u8timeseries.Arima
+       api/u8timeseries.AutoArima
+       api/u8timeseries.AutoRegressiveModel
+       api/u8timeseries.ExponentialSmoothing
+       api/u8timeseries.KthValueAgoBaseline
+       api/u8timeseries.Prophet
+       api/u8timeseries.StandardRegressiveModel
+       api/u8timeseries.Theta

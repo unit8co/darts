@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Models &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>Models &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Arima" href="u8timeseries.Arima.html" />
+    <link rel="next" title="Metrics" href="u8timeseries.metrics.html" />
     <link rel="prev" title="TimeSeries" href="u8timeseries.TimeSeries.html" /> 
 </head>
 
@@ -89,15 +89,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../documentation.html">Documentation</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../documentation.html#the-api">The API</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="u8timeseries.TimeSeries.html">TimeSeries</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Models</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.Arima.html">Arima</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.AutoRegressiveModel.html">Auto-Regressive Model</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.ExponentialSmoothing.html">Simple Exponential Smoothing</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.KthValueAgoBaseline.html">Kth Value Baseline</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.Prophet.html">Prophet</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.Theta.html">Theta</a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="u8timeseries.statistics.html">Statistics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting and Forecasting</a></li>
@@ -206,33 +198,6 @@
 <div class="section" id="models">
 <h1>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h1>
 <p>This section treats the different models that have been implemented as of the latest version.</p>
-<span class="target" id="module-u8timeseries.models"></span><p class="rubric">Models summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="u8timeseries.Arima.html#u8timeseries.Arima" title="u8timeseries.Arima"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.Arima</span></code></a>([p, d, q])</p></td>
-<td><p>Implementation of an ARIMA model.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="u8timeseries.AutoRegressiveModel.html#u8timeseries.AutoRegressiveModel" title="u8timeseries.AutoRegressiveModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.AutoRegressiveModel</span></code></a>()</p></td>
-<td><p>Base class for implementation of Auto-regressive models.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="u8timeseries.ExponentialSmoothing.html#u8timeseries.ExponentialSmoothing" title="u8timeseries.ExponentialSmoothing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.ExponentialSmoothing</span></code></a>([trend, …])</p></td>
-<td><p>Implementation of a Simple Exponential Smoothing.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="u8timeseries.KthValueAgoBaseline.html#u8timeseries.KthValueAgoBaseline" title="u8timeseries.KthValueAgoBaseline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.KthValueAgoBaseline</span></code></a>([k])</p></td>
-<td><p>A baseline model that always predict value of <cite>k</cite> time steps ago.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="u8timeseries.Prophet.html#u8timeseries.Prophet" title="u8timeseries.Prophet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.Prophet</span></code></a>([weekly_seasonality, …])</p></td>
-<td><p>Implementation of the Prophet model.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="u8timeseries.Theta.html#u8timeseries.Theta" title="u8timeseries.Theta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.Theta</span></code></a>([theta])</p></td>
-<td><p>An implementation of the Theta method with variable value of the <cite>theta</cite> parameter.</p></td>
-</tr>
-</tbody>
-</table>
 </div>
 
 
@@ -243,7 +208,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.Arima.html" class="btn btn-neutral float-right" title="Arima" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.metrics.html" class="btn btn-neutral float-right" title="Metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="u8timeseries.TimeSeries.html" class="btn btn-neutral float-left" title="TimeSeries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

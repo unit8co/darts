@@ -7,12 +7,6 @@
 Welcome to u8timeseries's documentation!
 ========================================
 
-.. image:: conepic.jpeg
-
-
-......................UNDER CONSTRUCTION (CONE)......................
-
-
 u8timeseries is a Python library for the manipulation and prediction of time series. The main goal is to provide easy access to various existing models and implementations in a single easy-to-use API.
 
 Currently, we propose access the following models:

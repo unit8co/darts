@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>AutoArima &mdash; u8timeseries v0.0.1 documentation</title>
+  <title>AutoArima &mdash; u8timeseries  documentation</title>
   
 
   
@@ -21,11 +21,11 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
@@ -182,48 +182,6 @@
 </style>
 <div class="section" id="autoarima">
 <h1>AutoArima<a class="headerlink" href="#autoarima" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="u8timeseries.AutoArima">
-<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">AutoArima</code><span class="sig-paren">(</span><em class="sig-param">start_p=1</em>, <em class="sig-param">max_p=12</em>, <em class="sig-param">start_q=0</em>, <em class="sig-param">max_q=12</em>, <em class="sig-param">max_P=2</em>, <em class="sig-param">max_Q=2</em>, <em class="sig-param">start_P=1</em>, <em class="sig-param">start_Q=1</em>, <em class="sig-param">start_d=0</em>, <em class="sig-param">max_d=2</em>, <em class="sig-param">max_D=1</em>, <em class="sig-param">max_order=30</em>, <em class="sig-param">seasonal=True</em>, <em class="sig-param">stepwise=True</em>, <em class="sig-param">approximation=False</em>, <em class="sig-param">error_action='ignore'</em>, <em class="sig-param">trace=False</em>, <em class="sig-param">suppress_warnings=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
-<p class="rubric">Methods Summary</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.AutoArima.fit" title="u8timeseries.AutoArima.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.AutoArima.predict" title="u8timeseries.AutoArima.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">return</dt>
-<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
-</dd>
-</dl>
-</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods Documentation</p>
-<dl class="method">
-<dt id="u8timeseries.AutoArima.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">series: u8timeseries.timeseries.TimeSeries</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima.fit" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="u8timeseries.AutoArima.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima.predict" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
