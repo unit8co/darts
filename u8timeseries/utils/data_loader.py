@@ -1,19 +1,16 @@
 from ..timeseries import TimeSeries
 import numpy as np
-from sklearn.base import TransformerMixin
 import torch
-
-from typing import List, Union
 
 
 class TimeSeriesDataset1D(torch.utils.data.Dataset):
 
     def __init__(self,
-                 series: Union[TimeSeries, List[TimeSeries]],
+                 series: TimeSeries,
                  data_length: int = 1,
                  target_length: int = 1):
         """
-        Constructs a PyTorch Dataset from a univariate TimeSeries, or from a list of univariate TimeSeries.
+        Constructs a PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
         where `data` is a 1-D sub-sequence of length [data_length] and target is the 1-D sub-sequence of length
         [target_length] following it in the time series.
@@ -23,42 +20,32 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         :param target_length: The length of the target sub-sequences, starting at the end of the training sub-sequence.
         :param scaler: A (fitted) scaler from scikit-learn (optional).
         """
-        if type(series) is TimeSeries:
-            series = [series]
-        self.series = [ts.values() for ts in series]
-        self.series = np.stack(self.series)
-        self.nbr_series, self.len_series = self.series.shape
+        self.series_values = series.values()
 
-        self._fit_called = False
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
-        self.data_length = data_length
-        if self.data_length is None:
-            self.data_length = len(series[0]) - 1
+        self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
 
-        assert self.data_length > 0, "The input sequence length must be non null. It is {}".format(self.data_length)
-        assert self.target_length > 0, "The output sequence length must be non null. It is {}".format(self.target_length)
+        assert self.data_length > 0, "The input sequence length must be positive. It is {}".format(self.data_length)
+        assert self.target_length > 0, "The output sequence length must be positive. It is {}".format(self.target_length)
 
     def __len__(self):
-        return (self.len_series - self.data_length - self.target_length + 1) * self.nbr_series
+        return self.len_series - self.data_length - self.target_length + 1
 
     def __getitem__(self, index):
         # TODO: Cast to PyTorch tensors on the right device in advance
-        id_series = index // (self.len_series - self.data_length - self.target_length + 1)
-        id_time = index % (self.len_series - self.data_length - self.target_length + 1)
-        data = self.series[id_series, id_time:id_time+self.data_length]
-        target = self.series[id_series, id_time+self.data_length:id_time+self.data_length+self.target_length]
-        data = torch.from_numpy(data).float()
-        target = torch.from_numpy(target).float()
-        return data.unsqueeze(1), target.unsqueeze(1)
+        idx = index % (self.len_series - self.data_length - self.target_length + 1)
+        data = self.series_values[idx:idx+self.data_length]
+        target = self.series_values[idx+self.data_length:idx+self.data_length+self.target_length]
+        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
 
-    @staticmethod
-    def _input_label_batch(series: TimeSeries, train_window: int = 1, label_window: int = 1) -> [np.ndarray,
-                                                                                                 np.ndarray]:
-        sequences = []
-        labels = []
-        length = len(series)
-        for i in range(length - train_window - label_window + 1):
-            sequences.append(series.values()[i:i + train_window])
-            labels.append(series.values()[i + train_window:i + train_window + label_window])
-        return np.array(sequences), np.array(labels)
+    # @staticmethod
+    # def _input_label_batch(series: TimeSeries, train_window: int = 1, label_window: int = 1) -> [np.ndarray,
+    #                                                                                              np.ndarray]:
+    #     sequences = []
+    #     labels = []
+    #     length = len(series)
+    #     for i in range(length - train_window - label_window + 1):
+    #         sequences.append(series.values()[i:i + train_window])
+    #         labels.append(series.values()[i + train_window:i + train_window + label_window])
+    #     return np.array(sequences), np.array(labels)
