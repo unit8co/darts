@@ -11,8 +11,7 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
     def __init__(self,
                  series: Union[TimeSeries, List[TimeSeries]],
                  data_length: int = 1,
-                 target_length: int = 1,
-                 scaler: TransformerMixin = None):
+                 target_length: int = 1):
         """
         Constructs a PyTorch Dataset from a univariate TimeSeries, or from a list of univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -29,7 +28,7 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         self.series = [ts.values() for ts in series]
         self.series = np.stack(self.series)
         self.nbr_series, self.len_series = self.series.shape
-        self.scaler = scaler
+
         self._fit_called = False
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
         self.data_length = data_length
@@ -39,41 +38,6 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
 
         assert self.data_length > 0, "The input sequence length must be non null. It is {}".format(self.data_length)
         assert self.target_length > 0, "The output sequence length must be non null. It is {}".format(self.target_length)
-
-    def fit_scaler(self, scaler: TransformerMixin):
-        """
-        Use a scaler from scikit-learn, fit it on the dataset data, and transform the data.
-
-        :param scaler: A scaler from scikit-learn.
-        :return: The scaler fitted.
-        """
-        if self._fit_called:
-            self.inverse_transform()
-        self.scaler = scaler.fit(self.series.reshape(-1, 1))
-        self.series = self.scaler.transform(self.series)
-        self._fit_called = True
-        return self.scaler
-
-    def transform(self, scaler=None):
-        """
-        Transform the data accordingly to the fitted scaler.
-
-        :param scaler: A fitted scaler from scikit-learn (optional)
-        """
-        if scaler is not None:
-            self.scaler = scaler
-        if self.scaler is None:
-            raise AssertionError("fit_scaler must be called before transform if no scaler is given")
-        self.series = self.scaler.transform(self.series)
-        self._fit_called = True
-
-    def inverse_transform(self):
-        """
-        Undo the transformation performed by the scaler.
-        """
-        if self.scaler is None:
-            raise AssertionError("fit_scaler must be called before inverse_transform if no scaler is given")
-        self.series = self.scaler.inverse_transform(self.series)
 
     def __len__(self):
         return (self.len_series - self.data_length - self.target_length + 1) * self.nbr_series

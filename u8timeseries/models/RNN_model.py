@@ -108,7 +108,6 @@ class RNNModel(AutoRegressiveModel):
                  dropout: float = 0.,
                  batch_size: int = None,
                  n_epochs: int = 800,
-                 scaler: TransformerMixin = MinMaxScaler(feature_range=(0, 1)),
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
@@ -119,7 +118,8 @@ class RNNModel(AutoRegressiveModel):
                  work_dir: str = os.getcwd(),
                  torch_device_str: Optional[str] = None):
         """
-        Implementation of different RNN for forecasting.
+        Implementation of different RNNs for forecasting. This model assumes that the time series has already
+        been properly scaled (e.g. by using a [u8timeseries.preprocessing.transformer.Transformer] beforehand.
 
         :param model: Either a string representing the kind of RNN module ('RNN' for vanilla RNN, 'GRU' or 'LSTM'),
                       or custom PyTorch nn.Module instance.
@@ -140,6 +140,7 @@ class RNNModel(AutoRegressiveModel):
         :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries.
 
         # TODO: add init seed
+        # TODO: if mean and/or stdev are wild, print a warning suggesting scaling
         """
         super().__init__()
 
@@ -148,7 +149,6 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.device = torch.device(torch_device_str)
 
-        self.scaler = scaler
         self.in_size = input_size
         self.out_size = output_length
         self.seq_len = input_length
@@ -171,7 +171,7 @@ class RNNModel(AutoRegressiveModel):
 
         self.start_epoch = 0
         self.n_epochs = n_epochs
-        self.bsize = batch_size
+        self.batch_size = batch_size
         self.epoch = None
         self.dataset = None
         self.train_loader = None
@@ -221,13 +221,12 @@ class RNNModel(AutoRegressiveModel):
 
         self.dataset = self.get_train_dataset(series)
 
-        self.scaler = self.dataset.fit_scaler(self.scaler)
         if self.from_scratch:
             shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
 
-        if self.bsize is None:
-            self.bsize = len(self.dataset)
-        self.train_loader = DataLoader(self.dataset, batch_size=self.bsize, shuffle=True,
+        if self.batch_size is None:
+            self.batch_size = len(self.dataset)
+        self.train_loader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True,
                                        num_workers=0, pin_memory=True, drop_last=True)
 
         # Tensorboard
@@ -235,14 +234,13 @@ class RNNModel(AutoRegressiveModel):
             if self.from_scratch:
                 shutil.rmtree(self.runs_folder, ignore_errors=True)
                 self.tb_writer = SummaryWriter(self.runs_folder)
-                dummy_input = torch.empty(self.bsize, self.seq_len, self.in_size).to(self.device)
+                dummy_input = torch.empty(self.batch_size, self.seq_len, self.in_size).to(self.device)
                 self.tb_writer.add_graph(self.model, dummy_input)
             else:
                 self.tb_writer = SummaryWriter(self.runs_folder, purge_step=self.start_epoch)
 
         if self.val_dataset is not None:
-            self.val_dataset.transform(self.scaler)
-            self.val_loader = DataLoader(self.val_dataset, batch_size=self.bsize, shuffle=False,
+            self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False,
                                          num_workers=0, pin_memory=True, drop_last=False)
 
         self._train()
@@ -251,18 +249,20 @@ class RNNModel(AutoRegressiveModel):
             self.tb_writer.flush()
             self.tb_writer.close()
 
-    def predict(self, series: TimeSeries = None, n: int = None, is_best: bool = False):
-        # TODO: merge the different functions
-        if n is None:
-            return self.true_predict(series, is_best)
-        self.load_from_checkpoint(is_best=is_best)
-        if series is None:
-            series = self.training_series
-        else:
-            self.training_series = series
+    def predict(self, n: int, use_best: bool = False) -> TimeSeries:
+        """
+        Produces predictions for n time stamps after the end of the training series
+        :param n:
+        :param use_best: whether to use the best checkpointed model during training
+                        (otherwise will use last checkpoint)
+        :return:
+        """
+
+        self.load_from_checkpoint(is_best=use_best)
+
         super().predict(n)
 
-        scaled_series = self.scaler.transform(series.values()[-self.seq_len:].reshape(-1, 1))
+        scaled_series = self.training_series.values()[-self.seq_len:]
         pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
         # try:
         #     pred_in = self.dataset[len(self.dataset)-1+self.out_size][0].unsqueeze(0).to(self.device)
@@ -275,7 +275,8 @@ class RNNModel(AutoRegressiveModel):
             pred_in = pred_in.roll(-1, 1)
             pred_in[:, -1, :] = out[:, 0]
             test_out.append(out.cpu().detach().numpy()[0, 0])
-        test_out = self.scaler.inverse_transform(np.stack(test_out).reshape(-1, 1))
+        test_out = np.stack(test_out)
+
         return self._build_forecast_series(test_out.squeeze())
 
     def set_val_series(self, val_series: List[TimeSeries]):
@@ -398,71 +399,12 @@ class RNNModel(AutoRegressiveModel):
             self._save_model(True, self.checkpoint_folder)
         return (tot_loss_mse + tot_loss_diff) / (batch_idx + 1)
 
-    def plot_result_train(self):
-        self._plot_result(self.dataset)
-
-    def test_series(self, tseries: TimeSeries):
-        if issubclass(type(tseries), torch.utils.data.Dataset):
-            self._plot_result(tseries)
-            return
-        if type(tseries) is not list:
-            tseries = [tseries]
-        test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, scaler=self.scaler)
-        test_dataset.transform()
-        self._plot_result(test_dataset)
-
-    def _plot_result(self, dataset):
-        targets = []
-        predictions = []
-        data_loader = DataLoader(dataset, batch_size=self.bsize, shuffle=False,
-                                 num_workers=0, pin_memory=True, drop_last=False)
-        for batch_idx, (data, target) in enumerate(data_loader):
-            self.model.eval()
-            data, target = data.to(self.device), target.to(self.device)
-            output = self.model(data)
-            targets.append(target.cpu().numpy())
-            predictions.append(output.cpu().detach().numpy())
-        targets = np.vstack(targets)
-        predictions = np.vstack(predictions)
-
-        # TODO: avoid accessing dataset properties here; these should be properties of the present model
-        label_per_serie = dataset.len_series - dataset.data_length - dataset.target_length + 1
-        index_p = np.arange(label_per_serie)
-        # print(label_per_serie)
-        true_labels_p = targets[:label_per_serie, 0:1, 0]
-        predictions_p = predictions[:label_per_serie, 0:1, 0]
-
-        # index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
-        # index_p = index_p.reshape(-1, self.out_size)
-        true_labels_p = self.scaler.inverse_transform(true_labels_p)
-        predictions_p = self.scaler.inverse_transform(predictions_p)
-        if self.out_size != 1:
-        #     index_p = index_p[:, 0]  # .T
-            true_labels_p = true_labels_p[:, 0]  # .T
-            predictions_p = predictions_p[:, 0]  # .T
-
-        plt.plot(index_p, true_labels_p, label="true labels")
-        # if self.out_size != 1:
-        #     plt.figure()
-        plt.plot(index_p, predictions_p, label="predictions")
-        # if self.out_size == 1:
-        plt.legend()
-        plt.show()
-        pshape = predictions.shape
-        tshape = targets.shape
-        print("Loss: {:.6f}".format(self.criterion
-                                    (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))
-                                                      .reshape(pshape)),
-                                     torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1))
-                                                      .reshape(tshape))).item()))
-
     def _save_model(self, is_best: bool, save_path: str):
         state = {
             'epoch': self.epoch + 1,  # state in the loop (why +1 ?)
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
-            'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict(),
-            'scaler': self.scaler
+            'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict()
         }
         checklist = glob(os.path.join(save_path, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
@@ -488,7 +430,6 @@ class RNNModel(AutoRegressiveModel):
         if os.path.isfile(os.path.join(save_path, filename)):
             checkpoint = torch.load(os.path.join(save_path, filename), map_location=self.device)
             self.start_epoch = checkpoint['epoch']
-            self.scaler = checkpoint['scaler']
             if checkpoint['scheduler'] is not None:
                 self.lr_scheduler.load_state_dict(checkpoint['scheduler'])
             self.model.load_state_dict(checkpoint['state_dict'])
@@ -497,20 +438,63 @@ class RNNModel(AutoRegressiveModel):
         else:
             print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
 
-    def true_predict(self, series: 'TimeSeries', is_best: bool = False):
-        # TODO: future deprecation
-        self.load_from_checkpoint(is_best=is_best)
-        n = self.out_size
-        super().predict(n)
-        self.training_series = series
+    # def plot_result_train(self):
+    #     self._plot_result(self.dataset)
+    #
+    # def test_series(self, tseries: TimeSeries):
+    #     if issubclass(type(tseries), torch.utils.data.Dataset):
+    #         self._plot_result(tseries)
+    #         return
+    #     if type(tseries) is not list:
+    #         tseries = [tseries]
+    #     test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, scaler=self.scaler)
+    #     test_dataset.transform()
+    #     self._plot_result(test_dataset)
 
-        scaled_serie = self.scaler.transform(series.values()[-self.seq_len:].reshape(-1, 1))
-        pred_in = torch.from_numpy(scaled_serie).float().view(1, -1, 1).to(self.device)
-        # try:
-        #     pred_in = self.dataset[len(self.dataset)-self.out_size][0].unsqueeze(0).to(self.device)
-        # except TypeError:
-        #     raise AssertionError("Must call set_train_dataset before predict if the model is loaded from checkpoint")
-        out = self.model(pred_in)
-        out = out.cpu().detach().numpy()[0, :, :]
-        test_out = self.scaler.inverse_transform(out)
-        return self._build_forecast_series(test_out.squeeze())
+    # def _plot_result(self, dataset):
+    #     # TODO: this is in fact a mix of backtesting (on dataset) an plotting
+    #     # TODO: this functionality should be written somewhere else
+    #
+    #     targets = []
+    #     predictions = []
+    #     data_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False,
+    #                              num_workers=0, pin_memory=True, drop_last=False)
+    #     for batch_idx, (data, target) in enumerate(data_loader):
+    #         self.model.eval()
+    #         data, target = data.to(self.device), target.to(self.device)
+    #         output = self.model(data)
+    #         targets.append(target.cpu().numpy())
+    #         predictions.append(output.cpu().detach().numpy())
+    #     targets = np.vstack(targets)
+    #     predictions = np.vstack(predictions)
+    #
+    #     # TODO: avoid accessing dataset properties here; these should be properties of the present model
+    #     label_per_serie = dataset.len_series - dataset.data_length - dataset.target_length + 1
+    #     index_p = np.arange(label_per_serie)
+    #     # print(label_per_serie)
+    #     true_labels_p = targets[:label_per_serie, 0:1, 0]
+    #     predictions_p = predictions[:label_per_serie, 0:1, 0]
+    #
+    #     # index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
+    #     # index_p = index_p.reshape(-1, self.out_size)
+    #     true_labels_p = self.scaler.inverse_transform(true_labels_p)
+    #     predictions_p = self.scaler.inverse_transform(predictions_p)
+    #     if self.out_size != 1:
+    #     #     index_p = index_p[:, 0]  # .T
+    #         true_labels_p = true_labels_p[:, 0]  # .T
+    #         predictions_p = predictions_p[:, 0]  # .T
+    #
+    #     plt.plot(index_p, true_labels_p, label="true labels")
+    #     # if self.out_size != 1:
+    #     #     plt.figure()
+    #     plt.plot(index_p, predictions_p, label="predictions")
+    #     # if self.out_size == 1:
+    #     plt.legend()
+    #     plt.show()
+    #     pshape = predictions.shape
+    #     tshape = targets.shape
+    #     print("Loss: {:.6f}".format(self.criterion
+    #                                 (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))
+    #                                                   .reshape(pshape)),
+    #                                  torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1))
+    #                                                   .reshape(tshape))).item()))
