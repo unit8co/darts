@@ -65,7 +65,7 @@ class RNN(nn.Module):
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
-        # The RNN module is followed by a fully connected layer, which maps the last layer's hidden state
+        # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
         last = hidden_dim
         feats = []
@@ -213,16 +213,14 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-    def fit(self, dataset):
-        # TODO: cannot pass only one timeseries. be better to pass a dataset, and and can transform to dataloader
+    def fit(self, series: TimeSeries):
         # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
         # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
 
-        if type(dataset) is TimeSeries or type(dataset) is list:
-            self.set_train_dataset(dataset)
-            dataset = self.dataset
-        super().fit(dataset.series[0])
-        self.dataset = dataset
+        super().fit(series)
+
+        self.dataset = self.get_train_dataset(series)
+
         self.scaler = self.dataset.fit_scaler(self.scaler)
         if self.from_scratch:
             shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
@@ -253,7 +251,7 @@ class RNNModel(AutoRegressiveModel):
             self.tb_writer.flush()
             self.tb_writer.close()
 
-    def predict(self, series: 'TimeSeries' = None, n: int = None, is_best: bool = False):
+    def predict(self, series: TimeSeries = None, n: int = None, is_best: bool = False):
         # TODO: merge the different functions
         if n is None:
             return self.true_predict(series, is_best)
@@ -285,13 +283,12 @@ class RNNModel(AutoRegressiveModel):
             val_series = [val_series]
         self.val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.out_size)
 
-    def set_train_dataset(self, train_series: List[TimeSeries]):
+    def get_train_dataset(self, train_series: List[TimeSeries]):
         # todo: can pass a dataset object too
         if type(train_series) is not list:
             train_series = [train_series]
         self.training_series = train_series[0]
-        self.dataset = TimeSeriesDataset1D(train_series, self.seq_len, self.out_size)
-        self.scaler = self.dataset.fit_scaler(self.scaler)
+        return TimeSeriesDataset1D(train_series, self.seq_len, self.out_size)
 
     def set_val_dataset(self, dataset: torch.utils.data.dataset):
         self.val_dataset = dataset
