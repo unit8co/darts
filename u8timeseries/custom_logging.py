@@ -22,7 +22,7 @@ def get_logger(name):
     logger.addHandler(stderr_handler)
     return logger
 
-def check_value_log(boolean_value: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+def raise_if_not(boolean_value: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
     """
     Checks provided boolean expression and raises a ValueError if it evaluates to False.
     It logs the error to the provided logger before raising it.

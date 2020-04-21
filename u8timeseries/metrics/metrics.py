@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from u8timeseries.timeseries import TimeSeries
-from ..custom_logging import check_value_log, raise_log, get_logger
+from ..custom_logging import raise_if_not, raise_log, get_logger
 from warnings import warn
 
 logger = get_logger(__name__)
@@ -18,7 +18,7 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
     """
     Returns the numpy values of two time series, launching an Exception if time series cannot be compared
     """
-    check_value_log(series_a.has_same_time_as(series_b), 'The two time series must have same time index.' \
+    raise_if_not(series_a.has_same_time_as(series_b), 'The two time series must have same time index.' \
                                                 '\nFirst series: {}\nSecond series: {}'.format(
                                                 series_a.time_index(), series_b.time_index()), logger)
     return series_a.values(), series_b.values()
@@ -158,7 +158,7 @@ def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1, time_diff
     errors = np.sum(np.abs(y_true - y_pred))
     t = y_true.size
     scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
-    check_value_log(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
+    raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
     return errors / scale
 
 

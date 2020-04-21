@@ -7,7 +7,7 @@ from testfixtures import LogCapture
 from ..timeseries import TimeSeries
 from u8timeseries.utils.timeseries_generation import linear_timeseries, constant_timeseries
 from u8timeseries.models.theta import Theta
-from ..custom_logging import raise_log, check_value_log, time_log, get_logger
+from ..custom_logging import raise_log, raise_if_not, time_log, get_logger
 
 
 class LoggingTestCase(unittest.TestCase):
@@ -29,13 +29,13 @@ class LoggingTestCase(unittest.TestCase):
         # checking whether exception was properly raised
         self.assertTrue(exception_was_raised)
 
-    def test_check_value_log(self):
+    def test_raise_if_not(self):
         exception_was_raised = False
         with LogCapture() as lc:
             logger = get_logger(__name__)
             try:
-                check_value_log(True, "test", logger)
-                check_value_log(False, "test", logger)
+                raise_if_not(True, "test", logger)
+                raise_if_not(False, "test", logger)
             except:
                 exception_was_raised = True
 

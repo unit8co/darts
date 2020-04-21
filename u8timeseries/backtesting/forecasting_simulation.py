@@ -5,7 +5,7 @@ from tqdm import tqdm, tqdm_notebook
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
 from u8timeseries.models.regressive_model import RegressiveModel
-from ..custom_logging import check_value_log, get_logger
+from ..custom_logging import raise_if_not, get_logger
 from typing import List
 
 logger = get_logger(__name__)
@@ -55,8 +55,8 @@ def simulate_forecast_ar(series: 'TimeSeries',
     `model`.
 
     """
-    check_value_log(start in series, 'The provided start timestamp is not in the time series.', logger)
-    check_value_log(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
+    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
 
     last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
 
@@ -106,10 +106,10 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     :param verbose: whether to print progress
     :return:
     """
-    check_value_log(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must ' \
+    raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must ' \
                                                                              'have the same time index', logger)
-    check_value_log(start in target_series, 'The provided start timestamp is not in the time series.', logger)
-    check_value_log(start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
+    raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
 
     last_pred_time = target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series else target_series.time_index()[-2]
 
