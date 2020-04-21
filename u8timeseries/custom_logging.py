@@ -22,16 +22,16 @@ def get_logger(name):
     logger.addHandler(stderr_handler)
     return logger
 
-def raise_if_not(boolean_value: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
     """
-    Checks provided boolean expression and raises a ValueError if it evaluates to False.
+    Checks provided boolean condition and raises a ValueError if it evaluates to False.
     It logs the error to the provided logger before raising it.
 
-    :param boolean_value: The boolean expression (or value) to be checked.
+    :param condition: The boolean condition to be checked.
     :param message: The message of the ValueError.
-    :param logger: The logger instance to log the error message if 'boolean_value' is False.
+    :param logger: The logger instance to log the error message if 'condition' is False.
     """
-    if (not boolean_value):
+    if (not condition):
         logger.error("ValueError: " + message)
         raise ValueError(message)
 
