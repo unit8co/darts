@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 import os
-exec(open(str(os.path.abspath(os.path.dirname(__file__))) + '/u8timeseries/version.py').read())
+exec(open(str(os.environ.get("PWD")) + '/u8timeseries/version.py').read())
 setup(name='u8timeseries',
       version=__version__,
       description='A collection of easy-to-use timeseries forecasting models',
