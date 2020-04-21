@@ -27,6 +27,7 @@ jobs:
         pip install sphinx-automodapi
         pip install nbsphinx
         sudo apt-get install pandoc
+        python setup.py install
         
     - name: Build documentation
       run: |
