@@ -2,7 +2,9 @@ from .autoregressive_model import AutoRegressiveModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pmdarima import auto_arima
 from ..timeseries import TimeSeries
+from ..custom_logging import time_log, get_logger
 
+logger = get_logger(__name__)
 
 class Arima(AutoRegressiveModel):
     """
@@ -25,6 +27,7 @@ class Arima(AutoRegressiveModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
+    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
 

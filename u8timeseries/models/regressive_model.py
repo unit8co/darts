@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from ..timeseries import TimeSeries
+from ..custom_logging import raise_if_not, get_logger
 from typing import List
 
+logger = get_logger(__name__)
 
 class RegressiveModel(ABC):
     """
@@ -24,9 +26,9 @@ class RegressiveModel(ABC):
 
     @abstractmethod
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries) -> None:
-        assert len(train_features) > 0, 'Need at least one feature series'
-        assert all([s.has_same_time_as(train_target) for s in train_features]), 'All provided time series must ' \
-                                                                                'have the same time index'
+        raise_if_not(len(train_features) > 0, 'Need at least one feature series', logger)
+        raise_if_not(all([s.has_same_time_as(train_target) for s in train_features]), 'All provided time series must ' \
+                                                                                'have the same time index', logger)
         self.train_features = train_features
         self.train_target = train_target
         self._fit_called = True
@@ -36,17 +38,19 @@ class RegressiveModel(ABC):
         """
         :return: A TimeSeries containing the prediction obtained from [features], of same length as [features]
         """
-        assert self._fit_called, 'fit() must be called before predict()'
-        assert len(features) == len(self.train_features), 'Provided features must have same dimensionality as ' \
+        if (not self._fit_called):
+            raise_log(Exception('fit() must be called before predict()'), logger)
+        raise_if_not(len(features) == len(self.train_features), 'Provided features must have same dimensionality as ' \
                                                           'training features. There were {} training features and ' \
                                                           'the function has been called with {} features' \
-                                                          .format(len(self.train_features), len(features))
+                                                          .format(len(self.train_features), len(features)), logger)
 
     def residuals(self) -> TimeSeries:
         """
         :return: a time series of residuals (absolute errors of the model on the training set)
         """
-        assert self._fit_called, 'fit() must be called before residuals()'
+        if (not self._fit_called):
+            raise_log(Exception('fit() must be called before predict()'), logger)
 
         train_pred = self.predict(self.train_features)
         return abs(train_pred - self.train_target)

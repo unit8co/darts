@@ -1,6 +1,10 @@
 from .regressive_model import RegressiveModel
 from ..timeseries import TimeSeries
+from ..custom_logging import time_log, get_logger
+
 from typing import List
+
+logger = get_logger(__name__)
 
 
 class SequentialAggregation(RegressiveModel):
@@ -15,6 +19,7 @@ class SequentialAggregation(RegressiveModel):
     def __init__(self):
         super().__init__()
 
+    @time_log(logger=logger)
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
         super().fit(train_features, train_target)
 

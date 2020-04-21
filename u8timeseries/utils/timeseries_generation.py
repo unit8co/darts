@@ -7,6 +7,9 @@ from pandas.tseries.holiday import USFederalHolidayCalendar
 from typing import Union
 
 from u8timeseries.timeseries import TimeSeries
+from ..custom_logging import raise_if_not, get_logger
+
+logger = get_logger(__name__)
 
 
 def constant_timeseries(value: float = 1, length: int = 10, freq: str = 'D',
@@ -96,10 +99,10 @@ def gaussian_timeseries(length: int = 10, freq: str = 'D', mean: Union[float, np
     """
 
     if (type(mean) == np.ndarray):
-        assert mean.shape == (length,), 'If a vector of means is provided, it requires the same length as the TimeSeries.'
+        raise_if_not(mean.shape == (length,), 'If a vector of means is provided, it requires the same length as the TimeSeries.', logger)
     if (type(std) == np.ndarray):
-        assert std.shape == (length, length), 'If a matrix of standard deviations is provided,' \
-                                              ' its shape has to match the length of the TimeSeries.'
+        raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided,' \
+                                              ' its shape has to match the length of the TimeSeries.', logger)
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.random.normal(mean, std, size=length)
