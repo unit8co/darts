@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 import os
-exec(open(str(os.path.dirname(__file__)) + '/u8timeseries/version.py').read())
+exec(open(str(os.path.abspath(os.path.dirname(__file__))) + '/u8timeseries/version.py').read())
 setup(name='u8timeseries',
-      version='0.0.2',
+      version=__version__,
       description='A collection of easy-to-use timeseries forecasting models',
       url='http://github.com/unit8co/u8timeseries',
       author='Unit8 SA',
