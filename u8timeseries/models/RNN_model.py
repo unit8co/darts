@@ -1,5 +1,5 @@
 from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset1D
+from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
 from .. import AutoRegressiveModel
 
 import torch
@@ -207,7 +207,8 @@ class RNNModel(AutoRegressiveModel):
 
     def fit(self,
             series: TimeSeries,
-            val_series: Optional[TimeSeries] = None) -> None:
+            val_series: Optional[TimeSeries] = None,
+            verbose: bool = False) -> None:
         """
         :param series: The training time series
         :param val_series: Optionally, a validation time series that will
@@ -252,7 +253,7 @@ class RNNModel(AutoRegressiveModel):
         else:
             tb_writer = None
 
-        self._train(train_loader, val_loader, tb_writer)
+        self._train(train_loader, val_loader, tb_writer, verbose)
 
         if tb_writer is not None:
             tb_writer.flush()
@@ -267,7 +268,9 @@ class RNNModel(AutoRegressiveModel):
         :return:
         """
 
-        self.load_from_checkpoint(is_best=use_best)
+
+        # TODO: remove this - it's not the right place to instanciate a model
+        # self.load_from_checkpoint(is_best=use_best)
 
         super().predict(n)
 
@@ -288,8 +291,13 @@ class RNNModel(AutoRegressiveModel):
 
         return self._build_forecast_series(test_out.squeeze())
 
-    # TODO: make this a static method returning a model
-    def load_from_checkpoint(self, checkpoint: str = None, file: str = None, is_best: bool = True):
+    # TODO: make this a static method returning a new model instance
+    # TODO: user-facing: it's up to the user to choose which model to use (best, last, or other)
+    @staticmethod
+    def load_from_checkpoint(self,
+                             checkpoint: str = None,
+                             file: str = None,
+                             use_best: bool = True) -> RNNModel:
         """
         Load the model from the given checkpoint.
         Warning: all hyper-parameters must be the same
@@ -297,7 +305,7 @@ class RNNModel(AutoRegressiveModel):
 
         :param checkpoint: path where the checkpoints are stored.
         :param file: the name of the checkpoint file. If None, find the most recent one.
-        :param is_best: if True, will retrieve the best model instead of the most recent one.
+        :param use_best: if True, will retrieve the best model instead of the most recent one.
         """
         if self.optimizer is None:
             # TODO: do not require an existing model instance to load (persist everything needed)
@@ -307,7 +315,7 @@ class RNNModel(AutoRegressiveModel):
             checkpoint = self.checkpoint_folder
         # if filename is none, find most recent file in savepath that is a checkpoint
         if file is None:
-            path = os.path.join(checkpoint, "model_best_*" if is_best else "checkpoint_*")
+            path = os.path.join(checkpoint, "model_best_*" if use_best else "checkpoint_*")
             checklist = glob(path)
             file = max(checklist, key=os.path.getctime)  # latest file
             file = os.path.basename(file)
@@ -328,7 +336,8 @@ class RNNModel(AutoRegressiveModel):
     def _train(self,
                train_loader: DataLoader,
                val_loader: Optional[DataLoader],
-               tb_writer: Optional[SummaryWriter]) -> None:
+               tb_writer: Optional[SummaryWriter],
+               verbose: bool) -> None:
         """
         Performs the actual training
         :param train_loader: the training data loader feeding the training data and targets
@@ -338,7 +347,9 @@ class RNNModel(AutoRegressiveModel):
         """
 
         best_loss = np.inf
-        for epoch in tqdm(range(self.n_epochs)):
+
+        iterator = build_tqdm_iterator(range(self.n_epochs), verbose)
+        for epoch in iterator:
             epoch = epoch
             total_loss = 0
             total_loss_diff = 0
@@ -374,13 +385,15 @@ class RNNModel(AutoRegressiveModel):
 
             if epoch % 10 == 0:
                 training_loss = (total_loss + total_loss_diff) / (batch_idx + 1)  # TODO: do not use batch_idx
-                validation_loss = self._evaluate_validation_loss(val_loader, tb_writer)
-                print("Training loss: {:.4f}, validation loss: {:.4f}".
-                      format(training_loss, validation_loss), end="\r")
-
-                if validation_loss < best_loss:
-                    best_loss = validation_loss
-                    self._save_model(True, self.checkpoint_folder, epoch)
+                if val_loader is not None:
+                    validation_loss = self._evaluate_validation_loss(val_loader, tb_writer)
+                    if validation_loss < best_loss:
+                        best_loss = validation_loss
+                        self._save_model(True, self.checkpoint_folder, epoch)
+                    print("Training loss: {:.4f}, validation loss: {:.4f}".
+                          format(training_loss, validation_loss), end="\r")
+                else:
+                    print("Training loss: {:.4f}".format(training_loss), end="\r")
 
     def _evaluate_validation_loss(self,
                                   val_loader: DataLoader,

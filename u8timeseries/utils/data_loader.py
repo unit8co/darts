@@ -1,5 +1,4 @@
 from ..timeseries import TimeSeries
-import numpy as np
 import torch
 
 

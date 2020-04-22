@@ -280,17 +280,29 @@ class TimeSeries:
         start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
         return self.slice(start_ts, end_ts)
 
-    def intersect(self, other: 'TimeSeries') -> 'TimeSeries':
+    def intersect(self, other: 'TimeSeries'):
         """
-        Returns a slice containing the intersection of this TimeSeries and the one provided in argument.
+        Returns a time index slice containing the intersection of this TimeSeries' index
+        and the one provided in argument.
 
         This slice can be used with the `__getitem__` method.
 
         :param other: A second TimeSeries.
         :return: A pd.DateTimeIndex containing the dates in the intersection of the two TimeSeries.
-        """
 
+        TODO: rename to make it more explicit this one considers only time?
+        """
         return self.time_index().intersection(other.time_index())
+
+    def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Returns a TimeSeries slice of this time series, where the time index has been intersected with the one
+        provided in argument
+        :param other:
+        :return:
+        """
+        return self.__getitem__(self.intersect(other))
+
 
     # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
@@ -856,7 +868,7 @@ class TimeSeries:
                                   self._op_or_none(self._confidence_hi, lambda s: s[item]))
             except AssertionError:
                 # return only main series if nb of values < 3
-                return self._series[item]
+                return TimeSeries(self._series[item])
         elif isinstance(item, str):
             return self._series[[pd.Timestamp(item)]]
         else:
