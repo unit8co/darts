@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 import os
-exec(open(str(os.environ.get("PWD")) + '/u8timeseries/version.py').read())
+
 setup(name='u8timeseries',
-      version=__version__,
+      version=open("u8timeseries/VERSION", "r").read(),
       description='A collection of easy-to-use timeseries forecasting models',
       url='http://github.com/unit8co/u8timeseries',
       author='Unit8 SA',
@@ -25,5 +25,6 @@ setup(name='u8timeseries',
           'testfixtures'
       ],
       zip_safe=False,
-      python_requires='>=3.6'
+      python_requires='>=3.6',
+      package_data={'u8timeseries': ['VERSION']}
       )
