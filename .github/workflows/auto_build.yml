@@ -27,8 +27,7 @@ jobs:
         pip install sphinx-automodapi
         pip install nbsphinx
         sudo apt-get install pandoc
-        pip install numpy
-        python -m setup.py install
+        pip install u8timeseries
         
     - name: Build documentation
       run: |
