@@ -12,11 +12,11 @@ This section treats the different models that have been implemented as of the la
     .. autosummary::
        :toctree:
        
-       api/u8timeseries.Arima
-       api/u8timeseries.AutoArima
-       api/u8timeseries.AutoRegressiveModel
-       api/u8timeseries.ExponentialSmoothing
-       api/u8timeseries.KthValueAgoBaseline
-       api/u8timeseries.Prophet
-       api/u8timeseries.StandardRegressiveModel
-       api/u8timeseries.Theta
+       u8timeseries.Arima
+       u8timeseries.AutoArima
+       u8timeseries.AutoRegressiveModel
+       u8timeseries.ExponentialSmoothing
+       u8timeseries.KthValueAgoBaseline
+       u8timeseries.Prophet
+       u8timeseries.StandardRegressiveModel
+       u8timeseries.Theta
