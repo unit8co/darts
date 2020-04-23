@@ -162,8 +162,10 @@
 <span class="kn">from</span> <span class="nn">u8timeseries.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">u8timeseries.models.autoregressive_model</span> <span class="kn">import</span> <span class="n">AutoRegressiveModel</span>
 <span class="kn">from</span> <span class="nn">u8timeseries.models.regressive_model</span> <span class="kn">import</span> <span class="n">RegressiveModel</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">_build_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_isnotebook</span><span class="p">():</span>
@@ -210,8 +212,8 @@
 <span class="sd">    `model`.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span>
-    <span class="k">assert</span> <span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="n">last_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
 
@@ -227,8 +229,6 @@
     <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
 
         <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
@@ -263,10 +263,10 @@
 <span class="sd">    :param verbose: whether to print progress</span>
 <span class="sd">    :return:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span> \
-                                                                             <span class="s1">&#39;have the same time index&#39;</span>
-    <span class="k">assert</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span>
-    <span class="k">assert</span> <span class="n">start</span> <span class="o">!=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span> \
+                                                                             <span class="s1">&#39;have the same time index&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">!=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="n">last_pred_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span> <span class="k">else</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
 
@@ -282,8 +282,6 @@
     <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="c1"># build train/val series</span>
         <span class="n">train_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
         <span class="n">train_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>

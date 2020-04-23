@@ -157,11 +157,13 @@
   <h1>Source code for u8timeseries.models.theta</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">time_log</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">.autoregressive_model</span> <span class="kn">import</span> <span class="n">AutoRegressiveModel</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">from</span> <span class="nn">.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">extract_trend_and_seasonality</span><span class="p">,</span> <span class="n">remove_seasonality</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Theta"><a class="viewcode-back" href="../../../api/u8timeseries.Theta.html#u8timeseries.Theta">[docs]</a><span class="k">class</span> <span class="nc">Theta</span><span class="p">(</span><span class="n">AutoRegressiveModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -190,9 +192,10 @@
         <span class="c1"># - if theta = 2, the formula for self.coef below fails, hence it is forbidden.</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The parameter theta cannot be equal to 2.&#39;</span><span class="p">)</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The parameter theta cannot be equal to 2.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Theta.fit"><a class="viewcode-back" href="../../../api/u8timeseries.Theta.html#u8timeseries.Theta.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">season_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="nd">@time_log</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">season_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fits the Theta method to the TimeSeries `ts`.</span>
 
@@ -227,7 +230,7 @@
         <span class="c1"># Normalization of the coefficient b_theta.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">=</span> <span class="n">b_theta</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;smoothing_level&quot;</span><span class="p">]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;smoothing_level&quot;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../api/u8timeseries.Theta.html#u8timeseries.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>

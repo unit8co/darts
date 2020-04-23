@@ -157,8 +157,10 @@
   <h1>Source code for u8timeseries.models.exponential_smoothing</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">.autoregressive_model</span> <span class="kn">import</span> <span class="n">AutoRegressiveModel</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">time_log</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ExponentialSmoothing"><a class="viewcode-back" href="../../../api/u8timeseries.ExponentialSmoothing.html#u8timeseries.ExponentialSmoothing">[docs]</a><span class="k">class</span> <span class="nc">ExponentialSmoothing</span><span class="p">(</span><span class="n">AutoRegressiveModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -181,12 +183,13 @@
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;Exponential smoothing&#39;</span>
 
-<div class="viewcode-block" id="ExponentialSmoothing.fit"><a class="viewcode-back" href="../../../api/u8timeseries.ExponentialSmoothing.html#u8timeseries.ExponentialSmoothing.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+    <span class="nd">@time_log</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
                                              <span class="n">trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">,</span>
                                              <span class="n">seasonal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span><span class="p">,</span>
-                                             <span class="n">seasonal_periods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span></div>
+                                             <span class="n">seasonal_periods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
 
 <div class="viewcode-block" id="ExponentialSmoothing.predict"><a class="viewcode-back" href="../../../api/u8timeseries.ExponentialSmoothing.html#u8timeseries.ExponentialSmoothing.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>

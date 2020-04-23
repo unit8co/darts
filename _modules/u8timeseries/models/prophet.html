@@ -157,9 +157,11 @@
   <h1>Source code for u8timeseries.models.prophet</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">u8timeseries.models.autoregressive_model</span> <span class="kn">import</span> <span class="n">AutoRegressiveModel</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">time_log</span><span class="p">,</span> <span class="n">get_logger</span>
 
 <span class="kn">import</span> <span class="nn">fbprophet</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Prophet"><a class="viewcode-back" href="../../../api/u8timeseries.Prophet.html#u8timeseries.Prophet">[docs]</a><span class="k">class</span> <span class="nc">Prophet</span><span class="p">(</span><span class="n">AutoRegressiveModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -191,7 +193,8 @@
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;Prophet&#39;</span>
 
-<div class="viewcode-block" id="Prophet.fit"><a class="viewcode-back" href="../../../api/u8timeseries.Prophet.html#u8timeseries.Prophet.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+    <span class="nd">@time_log</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
         <span class="n">in_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span>
@@ -207,7 +210,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">add_country_holidays</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">in_df</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">in_df</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Prophet.predict"><a class="viewcode-back" href="../../../api/u8timeseries.Prophet.html#u8timeseries.Prophet.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>

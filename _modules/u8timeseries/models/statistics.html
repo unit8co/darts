@@ -156,6 +156,7 @@
             
   <h1>Source code for u8timeseries.models.statistics</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
@@ -164,6 +165,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
 <span class="kn">import</span> <span class="nn">math</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="check_seasonality"><a class="viewcode-back" href="../../../api/u8timeseries.statistics.html#u8timeseries.models.statistics.check_seasonality">[docs]</a><span class="k">def</span> <span class="nf">check_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -182,10 +184,10 @@
 <span class="sd">             and m is the seasonality period.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">m</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;m must be an integer greater than 1.&#39;</span><span class="p">)</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;m must be an integer greater than 1.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="n">max_lag</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;max_lag must be greater than or equal to m.&#39;</span><span class="p">)</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;max_lag must be greater than or equal to m.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="n">n_unique</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -203,7 +205,7 @@
 
     <span class="c1"># Local maximum is indicated by signs_change == -2.</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">((</span><span class="n">gradient_signs_changes</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The ACF has no local maximum for m &lt; max_lag = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_lag</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;The ACF has no local maximum for m &lt; max_lag = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_lag</span><span class="p">))</span>
         <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span>
 
     <span class="c1"># Building a list of candidates for local maximum.</span>
@@ -281,7 +283,7 @@
 <span class="sd">    :return: A TimeSeries `new_ts`, defined by removing `other` from `ts`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">and</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING indexes equal to zero, cannot remove for a multiplicative model.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Indexes equal to zero, cannot remove for a multiplicative model.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ts</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">:</span>
