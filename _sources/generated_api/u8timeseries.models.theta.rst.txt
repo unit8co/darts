@@ -1,0 +1,7 @@
+u8timeseries.models.theta module
+================================
+
+.. automodule:: u8timeseries.models.theta
+   :members:
+   :undoc-members:
+   :show-inheritance:

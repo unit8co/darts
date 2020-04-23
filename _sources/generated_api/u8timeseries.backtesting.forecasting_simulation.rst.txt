@@ -1,0 +1,7 @@
+u8timeseries.backtesting.forecasting\_simulation module
+=======================================================
+
+.. automodule:: u8timeseries.backtesting.forecasting_simulation
+   :members:
+   :undoc-members:
+   :show-inheritance:

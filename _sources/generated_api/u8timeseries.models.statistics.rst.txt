@@ -1,0 +1,7 @@
+u8timeseries.models.statistics module
+=====================================
+
+.. automodule:: u8timeseries.models.statistics
+   :members:
+   :undoc-members:
+   :show-inheritance:

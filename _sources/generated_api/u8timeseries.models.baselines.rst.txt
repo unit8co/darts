@@ -1,0 +1,7 @@
+u8timeseries.models.baselines module
+====================================
+
+.. automodule:: u8timeseries.models.baselines
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+u8timeseries.models.sequential\_aggregation module
+==================================================
+
+.. automodule:: u8timeseries.models.sequential_aggregation
+   :members:
+   :undoc-members:
+   :show-inheritance:

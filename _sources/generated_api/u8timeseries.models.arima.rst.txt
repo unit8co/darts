@@ -1,0 +1,7 @@
+u8timeseries.models.arima module
+================================
+
+.. automodule:: u8timeseries.models.arima
+   :members:
+   :undoc-members:
+   :show-inheritance:

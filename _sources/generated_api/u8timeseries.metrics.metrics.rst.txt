@@ -1,0 +1,7 @@
+u8timeseries.metrics.metrics module
+===================================
+
+.. automodule:: u8timeseries.metrics.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

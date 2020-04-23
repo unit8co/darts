@@ -161,7 +161,7 @@
 <span class="kn">import</span> <span class="nn">pathlib</span>
 <span class="kn">import</span> <span class="nn">time</span>
 
-<span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="get_logger"><a class="viewcode-back" href="../../generated_api/u8timeseries.custom_logging.html#u8timeseries.custom_logging.get_logger">[docs]</a><span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Internally calls the logging.getLogger function with the &#39;name&#39; argument to create or </span>
 <span class="sd">    retrieve a logger object. It is recommended to pass __name__ as argument when calling </span>
@@ -177,9 +177,9 @@
     <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s1">&#39;[</span><span class="si">%(asctime)s</span><span class="s1">] </span><span class="si">%(levelname)s</span><span class="s1"> | </span><span class="si">%(name)s</span><span class="s1"> | </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">stderr_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">stderr_handler</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">logger</span>
+    <span class="k">return</span> <span class="n">logger</span></div>
 
-<span class="k">def</span> <span class="nf">raise_if_not</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
+<div class="viewcode-block" id="raise_if_not"><a class="viewcode-back" href="../../generated_api/u8timeseries.custom_logging.html#u8timeseries.custom_logging.raise_if_not">[docs]</a><span class="k">def</span> <span class="nf">raise_if_not</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Checks provided boolean condition and raises a ValueError if it evaluates to False.</span>
 <span class="sd">    It logs the error to the provided logger before raising it.</span>
@@ -190,9 +190,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">condition</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;ValueError: &quot;</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
 
-<span class="k">def</span> <span class="nf">raise_log</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
+<div class="viewcode-block" id="raise_log"><a class="viewcode-back" href="../../generated_api/u8timeseries.custom_logging.html#u8timeseries.custom_logging.raise_log">[docs]</a><span class="k">def</span> <span class="nf">raise_log</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Can be used to replace &quot;raise&quot; when throwing an exception to ensure the logging</span>
 <span class="sd">    of the exception. After logging it, the exception is raised.</span>
@@ -204,14 +204,13 @@
     <span class="n">message</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">exception_type</span> <span class="o">+</span> <span class="s2">&quot;: &quot;</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
 
-    <span class="k">raise</span> <span class="n">exception</span>
+    <span class="k">raise</span> <span class="n">exception</span></div>
 
-<span class="k">def</span> <span class="nf">time_log</span><span class="p">(</span><span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
+<div class="viewcode-block" id="time_log"><a class="viewcode-back" href="../../generated_api/u8timeseries.custom_logging.html#u8timeseries.custom_logging.time_log">[docs]</a><span class="k">def</span> <span class="nf">time_log</span><span class="p">(</span><span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s1">&#39;main_logger&#39;</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A decorator function that logs the runtime of the function it is decorating</span>
 <span class="sd">    to the logger object that is taken as an argument.</span>
-<span class="sd">    Inspired by: https://medium.com/pythonhive/python-decorator-to-measure-the-execution-time-of-methods-fa04cb6bb36d</span>
-<span class="sd">    </span>
+
 <span class="sd">    :param logger: The logger instance to log the runtime of the function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">time_log_helper</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
@@ -226,7 +225,7 @@
             
         <span class="k">return</span> <span class="n">timed</span>
 
-    <span class="k">return</span> <span class="n">time_log_helper</span>
+    <span class="k">return</span> <span class="n">time_log_helper</span></div>
 </pre></div>
 
            </div>

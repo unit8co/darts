@@ -1,0 +1,27 @@
+u8timeseries.models package
+===========================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   u8timeseries.models.arima
+   u8timeseries.models.autoregressive_model
+   u8timeseries.models.baselines
+   u8timeseries.models.exponential_smoothing
+   u8timeseries.models.prophet
+   u8timeseries.models.regressive_model
+   u8timeseries.models.sequential_aggregation
+   u8timeseries.models.standard_regressive_model
+   u8timeseries.models.statistics
+   u8timeseries.models.theta
+
+Module contents
+---------------
+
+.. automodule:: u8timeseries.models
+   :members:
+   :undoc-members:
+   :show-inheritance:

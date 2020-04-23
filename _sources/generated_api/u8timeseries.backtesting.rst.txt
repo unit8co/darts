@@ -1,0 +1,19 @@
+u8timeseries.backtesting package
+================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   u8timeseries.backtesting.backtesting_udf
+   u8timeseries.backtesting.forecasting_simulation
+
+Module contents
+---------------
+
+.. automodule:: u8timeseries.backtesting
+   :members:
+   :undoc-members:
+   :show-inheritance:

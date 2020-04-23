@@ -1,0 +1,7 @@
+u8timeseries
+============
+
+.. toctree::
+   :maxdepth: 4
+
+   u8timeseries

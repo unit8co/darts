@@ -1,0 +1,7 @@
+u8timeseries.models.autoregressive\_model module
+================================================
+
+.. automodule:: u8timeseries.models.autoregressive_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

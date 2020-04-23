@@ -1,0 +1,604 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>u8timeseries.tests.test_timeseries &mdash; u8timeseries  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> u8timeseries
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Getting Started</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentation.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devguide.html">Developer’s Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">u8timeseries</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>u8timeseries.tests.test_timeseries</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for u8timeseries.tests.test_timeseries</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+
+
+<div class="viewcode-block" id="TimeSeriesTestCase"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130110&#39;</span><span class="p">)</span>
+    <span class="n">pd_series1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+    <span class="n">pd_series2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+    <span class="n">pd_series3</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+    <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd_series1</span><span class="p">)</span>
+    <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd_series1</span><span class="p">,</span> <span class="n">pd_series2</span><span class="p">,</span> <span class="n">pd_series3</span><span class="p">)</span>
+    <span class="n">series3</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd_series2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_creation"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_creation">[docs]</a>    <span class="k">def</span> <span class="nf">test_creation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Index is dateTimeIndex</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)))</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Conf interval must be same length as main series</span>
+            <span class="n">pd_lo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130109&#39;</span><span class="p">))</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="n">pd_lo</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Conf interval must have same time index as main series</span>
+            <span class="n">pd_lo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">,</span> <span class="s1">&#39;20130111&#39;</span><span class="p">))</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="n">pd_lo</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Conf interval must be same length as main series</span>
+            <span class="n">pd_hi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130109&#39;</span><span class="p">))</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pd_hi</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Conf interval must have same time index as main series</span>
+            <span class="n">pd_lo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">,</span> <span class="s1">&#39;20130111&#39;</span><span class="p">))</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pd_lo</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Main series cannot have date holes</span>
+            <span class="n">range_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130104&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">,</span> <span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+            <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">range_</span><span class="p">))</span>
+
+        <span class="n">series_test</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_alt_creation"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_alt_creation">[docs]</a>    <span class="k">def</span> <span class="nf">test_alt_creation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Series cannot be lower than three</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130102&#39;</span><span class="p">)</span>
+            <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># all array must have same length</span>
+            <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># test if reordering is correct</span>
+        <span class="n">rand_perm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">))</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">([</span><span class="s1">&#39;201301</span><span class="si">{:02d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">rand_perm</span><span class="p">])</span>
+        <span class="n">series_test</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">rand_perm</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">[</span><span class="n">rand_perm</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">[</span><span class="n">rand_perm</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">series_test</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span></div>
+
+    <span class="c1"># TODO test over to_dataframe when multiple features choice is decided</span>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_eq"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_eq">[docs]</a>    <span class="k">def</span> <span class="nf">test_eq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">==</span> <span class="n">seriesA</span><span class="p">)</span>
+
+        <span class="c1"># with a defined CI</span>
+        <span class="n">seriesB</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span>
+                                         <span class="n">confidence_hi</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+                                                                 <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130110&#39;</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">==</span> <span class="n">seriesB</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">!=</span> <span class="n">seriesB</span><span class="p">)</span>
+
+        <span class="c1"># with different dates</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">,</span> <span class="s1">&#39;20130111&#39;</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">==</span> <span class="n">seriesC</span><span class="p">)</span>
+
+        <span class="c1"># compare with both CI</span>
+        <span class="n">seriesD</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">)</span>
+        <span class="n">seriesE</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_series2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series2</span> <span class="o">==</span> <span class="n">seriesD</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series2</span> <span class="o">==</span> <span class="n">seriesE</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_dates"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_dates">[docs]</a>    <span class="k">def</span> <span class="nf">test_dates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">duration</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">9</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_slice"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_slice">[docs]</a>    <span class="k">def</span> <span class="nf">test_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># base case</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+
+        <span class="c1"># time stamp not in series</span>
+        <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104 12:00:00&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+
+        <span class="c1"># end timestamp after series</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130108&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130201&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130108&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+
+        <span class="c1"># n points, base case</span>
+        <span class="n">seriesD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+
+        <span class="n">seriesE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107 12:00:10&#39;</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesE</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130108&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesE</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+
+        <span class="n">seriesF</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice_n_points_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesF</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seriesF</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesF</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130103&#39;</span><span class="p">))</span>
+
+        <span class="n">seriesG</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">slice_n_points_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107 12:00:10&#39;</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesG</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesG</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+
+        <span class="c1"># with CI</span>
+        <span class="n">seriesH</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesH</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesH</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesH</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesH</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_split"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_split">[docs]</a>    <span class="k">def</span> <span class="nf">test_split</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span><span class="p">,</span> <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">))</span>
+
+        <span class="n">seriesC</span><span class="p">,</span> <span class="n">seriesD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130103&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130104&#39;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">seriesA</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">seriesC</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_drop"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_drop">[docs]</a>    <span class="k">def</span> <span class="nf">test_drop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">)))</span>
+
+        <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">drop_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">seriesA</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_intersect"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_intersect">[docs]</a>    <span class="k">def</span> <span class="nf">test_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">,</span> <span class="s1">&#39;20130107&#39;</span><span class="p">)))</span>
+
+        <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">seriesA</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+
+        <span class="c1"># The same, with CI</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">seriesA</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130102&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+
+        <span class="c1"># Outside of range</span>
+        <span class="n">seriesD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">),</span>
+                                                              <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">,</span> <span class="s1">&#39;20130112&#39;</span><span class="p">))))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span>
+
+        <span class="c1"># No intersect or too small intersect</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">13</span><span class="p">),</span>
+                                                        <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130116&#39;</span><span class="p">,</span> <span class="s1">&#39;20130122&#39;</span><span class="p">))))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">),</span>
+                                                        <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130109&#39;</span><span class="p">,</span> <span class="s1">&#39;20130112&#39;</span><span class="p">))))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_rescale"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_rescale">[docs]</a>    <span class="k">def</span> <span class="nf">test_rescale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">rescale_with_value</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series3</span><span class="o">.</span><span class="n">rescale_with_value</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series3</span><span class="o">.</span><span class="n">rescale_with_value</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series3</span> <span class="o">*</span> <span class="o">-</span><span class="mf">1.</span> <span class="o">==</span> <span class="n">seriesB</span><span class="p">)</span>
+
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series3</span><span class="o">.</span><span class="n">rescale_with_value</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series3</span> <span class="o">*</span> <span class="mf">0.2</span> <span class="o">==</span> <span class="n">seriesC</span><span class="p">)</span>
+
+        <span class="n">seriesD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series3</span><span class="o">.</span><span class="n">rescale_with_value</span><span class="p">(</span><span class="mf">1e+20</span><span class="p">)</span>  <span class="c1"># TODO: test will fail if value &gt; 1e24 due to num imprecision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series3</span> <span class="o">*</span> <span class="mf">0.2e+20</span> <span class="o">==</span> <span class="n">seriesD</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_shift"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_shift">[docs]</a>    <span class="k">def</span> <span class="nf">test_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">seriesA</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                                                                              <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">()]))))</span>
+
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span>
+            <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">()])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">OverflowError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mf">1e+6</span><span class="p">)</span>
+
+        <span class="n">seriesM</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39;20130601&#39;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">OverflowError</span><span class="p">):</span>
+            <span class="n">seriesM</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mf">1e+4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_append"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_append">[docs]</a>    <span class="k">def</span> <span class="nf">test_append</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># reconstruct series</span>
+        <span class="n">seriesA</span><span class="p">,</span> <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesB</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesB</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+        <span class="c1"># Creating a gap is not allowed</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">drop_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesC</span><span class="p">)</span>
+
+        <span class="c1"># Changing frequence is not allowed</span>
+        <span class="n">seriesM</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">,</span> <span class="s1">&#39;20130507&#39;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s1">&#39;30D&#39;</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesM</span><span class="p">)</span>
+
+        <span class="c1"># reconstruction with CI</span>
+        <span class="n">seriesD</span><span class="p">,</span> <span class="n">seriesE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesE</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesE</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_append_values"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_append_values">[docs]</a>    <span class="k">def</span> <span class="nf">test_append_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># reconstruct series</span>
+        <span class="n">seriesA</span><span class="p">,</span> <span class="n">seriesB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># same with CI</span>
+        <span class="n">seriesC</span><span class="p">,</span> <span class="n">seriesD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130106&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesD</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">seriesD</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span>
+                                     <span class="n">seriesD</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                                     <span class="n">seriesD</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="p">)</span>
+
+        <span class="c1"># add only few element</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130110&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">append_values</span><span class="p">([</span><span class="mi">9</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">([]),</span> <span class="n">seriesA</span><span class="p">)</span>
+
+        <span class="c1"># randomize order</span>
+        <span class="n">rd_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="n">rd_order</span><span class="p">],</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="n">rd_order</span><span class="p">]),</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># add non consecutive index</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">+</span><span class="n">seriesB</span><span class="o">.</span><span class="n">freq</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># add existing indices</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">seriesB</span><span class="o">.</span><span class="n">freq</span><span class="p">()),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># other frequency</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">,</span> <span class="s1">&#39;20130113&#39;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s1">&#39;2d&#39;</span><span class="p">)),</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_update"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_update">[docs]</a>    <span class="k">def</span> <span class="nf">test_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">seriesB</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+                                                               <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">],</span>
+                                                               <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">24</span><span class="p">])</span>
+        <span class="c1"># change nothing</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">)</span>
+        <span class="n">seriesC</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># different len</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="p">[],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+
+        <span class="c1"># change outside</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="n">seriesA</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">seriesC</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="o">+</span><span class="mi">100</span><span class="o">*</span><span class="n">seriesC</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+        <span class="n">seriesC</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20140101&#39;</span><span class="p">,</span> <span class="s1">&#39;20140110&#39;</span><span class="p">)),</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span><span class="o">+</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># change random</span>
+        <span class="n">seriesC</span> <span class="o">=</span> <span class="n">seriesA</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">seriesC</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">([</span><span class="s1">&#39;20130108&#39;</span><span class="p">,</span> <span class="s1">&#39;20130110&#39;</span><span class="p">,</span> <span class="s1">&#39;20130103&#39;</span><span class="p">]),</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="c1"># change one of each series</span>
+        <span class="n">seriesD</span> <span class="o">=</span> <span class="n">seriesB</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">seriesD</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">seriesA</span><span class="o">.</span><span class="n">pd_series</span><span class="p">())</span>
+        <span class="n">seriesA</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">([</span><span class="s1">&#39;20130103&#39;</span><span class="p">,</span> <span class="s1">&#39;20130108&#39;</span><span class="p">,</span> <span class="s1">&#39;20130110&#39;</span><span class="p">]),</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+        <span class="n">seriesB</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span> <span class="n">conf_hi</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">seriesB</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertNotEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="p">)</span>
+        <span class="n">seriesB</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span> <span class="n">conf_lo</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesB</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="p">)</span>
+
+        <span class="c1"># use nan to update all series altogether</span>
+        <span class="n">new_series</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">new_series</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">new_series</span><span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+        <span class="n">new_lo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">new_lo</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">new_lo</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">new_hi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">new_hi</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">new_hi</span><span class="p">[::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">seriesD</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">new_series</span><span class="p">,</span> <span class="n">new_lo</span><span class="p">,</span> <span class="n">new_hi</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesD</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="p">)</span>
+
+        <span class="c1"># raise error when update missing CI</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">conf_lo</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">15</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_drop_values"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_drop_values">[docs]</a>    <span class="k">def</span> <span class="nf">test_drop_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">append_values</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="o">.</span><span class="n">drop_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130111&#39;</span><span class="p">),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+        <span class="n">seriesA</span><span class="o">.</span><span class="n">drop_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130111&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">seriesA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+            <span class="n">seriesA</span><span class="o">.</span><span class="n">drop_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130112&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_ops"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_ops">[docs]</a>    <span class="k">def</span> <span class="nf">test_ops</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">2</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">targetAdd</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">targetSub</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">targetMul</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">targetDiv</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">i</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">targetPow</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pd_series1</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">+</span> <span class="n">seriesA</span><span class="p">,</span> <span class="n">targetAdd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetAdd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">,</span> <span class="n">targetAdd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">-</span> <span class="n">seriesA</span><span class="p">,</span> <span class="n">targetSub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetSub</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">*</span> <span class="n">seriesA</span><span class="p">,</span> <span class="n">targetMul</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetMul</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">,</span> <span class="n">targetMul</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">/</span> <span class="n">seriesA</span><span class="p">,</span> <span class="n">targetDiv</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetDiv</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targetPow</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">):</span>
+            <span class="c1"># Cannot divide by a TimeSeries with a value 0.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">):</span>
+            <span class="c1"># Cannot divide by 0.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span> <span class="o">/</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="TimeSeriesTestCase.test_getitem"><a class="viewcode-back" href="../../../generated_api/u8timeseries.tests.test_timeseries.html#u8timeseries.tests.test_timeseries.TimeSeriesTestCase.test_getitem">[docs]</a>    <span class="k">def</span> <span class="nf">test_getitem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">seriesA</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20130105&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">,</span> <span class="s1">&#39; 20130104&#39;</span><span class="p">)],</span> <span class="n">seriesA</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[:</span><span class="mi">4</span><span class="p">],</span> <span class="n">seriesA</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">)]</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()[:</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130101&#39;</span><span class="p">):</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130105&#39;</span><span class="p">)],</span> <span class="n">seriesA</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IndexError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s1">&#39;19990101&#39;</span><span class="p">,</span> <span class="s1">&#39;19990201&#39;</span><span class="p">)]</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IndexError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[</span><span class="s1">&#39;19990101&#39;</span><span class="p">]</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IndexError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, unit8
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

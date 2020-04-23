@@ -1,0 +1,7 @@
+u8timeseries.tests.test\_metrics module
+=======================================
+
+.. automodule:: u8timeseries.tests.test_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+u8timeseries.models.standard\_regressive\_model module
+======================================================
+
+.. automodule:: u8timeseries.models.standard_regressive_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

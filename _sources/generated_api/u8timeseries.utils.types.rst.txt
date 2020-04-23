@@ -1,0 +1,7 @@
+u8timeseries.utils.types module
+===============================
+
+.. automodule:: u8timeseries.utils.types
+   :members:
+   :undoc-members:
+   :show-inheritance:

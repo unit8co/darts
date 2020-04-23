@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>u8timeseries.utils.timeseries_generation &mdash; u8timeseries  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> u8timeseries
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Getting Started</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../documentation.html">Documentation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devguide.html">Developer’s Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">u8timeseries</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>u8timeseries.utils.timeseries_generation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for u8timeseries.utils.timeseries_generation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">pandas.tseries.offsets</span> <span class="kn">import</span> <span class="n">DateOffset</span>
+<span class="kn">from</span> <span class="nn">pandas.tseries.frequencies</span> <span class="kn">import</span> <span class="n">to_offset</span>
+<span class="kn">from</span> <span class="nn">pandas.tseries.holiday</span> <span class="kn">import</span> <span class="n">USFederalHolidayCalendar</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">u8timeseries.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="constant_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.constant_timeseries">[docs]</a><span class="k">def</span> <span class="nf">constant_timeseries</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span>
+                        <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a constant TimeSeries with the given value, length, start date and frequency.</span>
+
+<span class="sd">    :param value: The constant value that the TimeSeries object will assume at every index.</span>
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;</span>
+<span class="sd">                   see: https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: A constant TimeSeries with value &#39;value&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="linear_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.linear_timeseries">[docs]</a><span class="k">def</span> <span class="nf">linear_timeseries</span><span class="p">(</span><span class="n">start_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">end_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span>
+                      <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a TimeSeries with a starting value of &#39;start_value&#39; that increases linearly such that</span>
+<span class="sd">    it takes on the value &#39;end_value&#39; at the last entry of the TimeSeries. This means that</span>
+<span class="sd">    the difference between two adjacent entries will be equal to </span>
+<span class="sd">    (&#39;end_value&#39; - &#39;start_value&#39;) / (&#39;length&#39; - 1).</span>
+
+<span class="sd">    :param start_value: The value of the first entry in the TimeSeries.</span>
+<span class="sd">    :param end_value: The value of the last entry in the TimeSeries.</span>
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: A linear TimeSeries created as indicated above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start_value</span><span class="p">,</span> <span class="n">end_value</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="sine_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.sine_timeseries">[docs]</a><span class="k">def</span> <span class="nf">sine_timeseries</span><span class="p">(</span><span class="n">value_frequency</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">value_amplitude</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">value_phase</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+                        <span class="n">value_y_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span>
+                        <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a TimeSeries with a sinusoidal value progression with a given frequency, amplitude, phase and y offset.</span>
+
+<span class="sd">    :param value_frequency: The number of periods that take place within one time unit given in &#39;freq&#39;.</span>
+<span class="sd">    :param value_amplitude: The maximum  difference between any value of the returned TimeSeries and &#39;y_offset&#39;.</span>
+<span class="sd">    :param value_phase: The relative position within one period of the first value of the returned TimeSeries (in radians).</span>
+<span class="sd">    :param value_y_offset: The shift of the sine function along the y axis.</span>
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: A sinusoidal TimeSeries parametrized as indicated above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">value_amplitude</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">value_frequency</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">value_phase</span><span class="p">)</span> <span class="o">+</span> <span class="n">value_y_offset</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="gaussian_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.gaussian_timeseries">[docs]</a><span class="k">def</span> <span class="nf">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+                        <span class="n">std</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a gaussian noise TimeSeries by sampling a gaussian distribution with mean &#39;mean&#39; and </span>
+<span class="sd">    standard deviation &#39;std&#39;. Each value represents a sample of the distribution.</span>
+<span class="sd">    When the mean is set to 0, it can be considered a white noise TimeSeries.</span>
+
+<span class="sd">    :param mean: The mean of the gaussian distribution that is sampled at each step.</span>
+<span class="sd">                 If a float value is given, the same mean is used at every step.</span>
+<span class="sd">                 If a numpy.ndarray of floats with the same length as &#39;length&#39; is</span>
+<span class="sd">                 given, a different mean is used at each step.</span>
+<span class="sd">    :param std: The standard deviation of the gaussian distribution that is sampled at each step.</span>
+<span class="sd">                If a float value is given, the same standard deviation is used at every step.</span>
+<span class="sd">                If a &#39;length&#39; x &#39;length&#39; numpy.ndarray of floats  is given, it will</span>
+<span class="sd">                be used as covariance matrix for a multivariate gaussian distribution.</span>
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: A white noise TimeSeries created as indicated above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">length</span><span class="p">,),</span> <span class="s1">&#39;If a vector of means is provided, it requires the same length as the TimeSeries.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">std</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">std</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">length</span><span class="p">),</span> <span class="s1">&#39;If a matrix of standard deviations is provided,&#39;</span> \
+                                              <span class="s1">&#39; its shape has to match the length of the TimeSeries.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="random_walk_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.random_walk_timeseries">[docs]</a><span class="k">def</span> <span class="nf">random_walk_timeseries</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="n">mean</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                           <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a random walk TimeSeries by sampling a gaussian distribution with mean &#39;mean&#39; and </span>
+<span class="sd">    standard deviation &#39;std&#39;. The first value is one such random sample. Every subsequent value</span>
+<span class="sd">    is equal to the previous value plus a random sample.</span>
+
+<span class="sd">    :param mean: The mean of the gaussian distribution that is sampled at each step.</span>
+<span class="sd">    :param std: The standard deviation of the gaussian distribution that is sampled at each step.</span>
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param freq: The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: A random walk TimeSeries created as indicated above.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">length</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="us_holiday_timeseries"><a class="viewcode-back" href="../../../generated_api/u8timeseries.utils.timeseries_generation.html#u8timeseries.utils.timeseries_generation.us_holiday_timeseries">[docs]</a><span class="k">def</span> <span class="nf">us_holiday_timeseries</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2000-01-01&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a binary TimeSeries that equals 1 at every index that corresponds to a US holiday, </span>
+<span class="sd">    and 0 otherwise. The frequency of the TimeSeries is daily.</span>
+
+<span class="sd">    :param length: The length of the returned TimeSeries.</span>
+<span class="sd">    :param start_ts: The time index of the first entry in the returned TimeSeries.</span>
+<span class="sd">    :return: Binary TimeSeries for US holidays.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">)</span>
+    <span class="n">us_holidays</span> <span class="o">=</span> <span class="n">USFederalHolidayCalendar</span><span class="p">()</span><span class="o">.</span><span class="n">holidays</span><span class="p">()</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">times</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">us_holidays</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+
+
+
+    
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, unit8
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

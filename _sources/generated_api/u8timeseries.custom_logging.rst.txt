@@ -1,0 +1,7 @@
+u8timeseries.custom\_logging module
+===================================
+
+.. automodule:: u8timeseries.custom_logging
+   :members:
+   :undoc-members:
+   :show-inheritance:

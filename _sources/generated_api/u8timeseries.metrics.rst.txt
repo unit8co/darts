@@ -1,0 +1,18 @@
+u8timeseries.metrics package
+============================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   u8timeseries.metrics.metrics
+
+Module contents
+---------------
+
+.. automodule:: u8timeseries.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

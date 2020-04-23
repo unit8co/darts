@@ -1,0 +1,7 @@
+u8timeseries.models.exponential\_smoothing module
+=================================================
+
+.. automodule:: u8timeseries.models.exponential_smoothing
+   :members:
+   :undoc-members:
+   :show-inheritance:
