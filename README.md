@@ -46,3 +46,20 @@ pd.plotting.register_matplotlib_converters()
 
 ## unit test status
 ![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
+
+## version bumping
+To bump the current version of u8timeseries, please execute the version bumping script from the root:
+```
+python version_bump.py
+```
+The user will then be prompted to enter the desired bump settings.
+Alternatively, the settings can also be passed as arguments when calling the script:
+```
+python version_bump.py -b BUMP -r RELEASE
+```
+BUMP should be an integer between 0 and 3 indicating the type of version bump.
+(0 for no version increment, 1 for Major, 2 for Minor, 3 for Patch)
+RELEASE is expected to be 'y' or 'n', indicating whether or not the SNAPSHOT suffix should be added.
+If either of the arguments is missing, or if an invalid value is given, the user will be prompted
+to enter them again.
+The versioning of u8timeseries follows the semantic versioning specification (https://semver.org).
