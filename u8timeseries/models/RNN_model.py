@@ -1,24 +1,29 @@
-from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
-from .. import AutoRegressiveModel
-
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-
 import numpy as np
 import os
 import re
 from glob import glob
 import shutil
-
-from tqdm.notebook import tqdm  # add check for different tqdm
-
+import pickle
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from typing import List, Optional, Dict
+
+from ..timeseries import TimeSeries
+from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
+from .. import AutoRegressiveModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8timeseries', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8timeseries', 'runs')
+
+
+def _get_checkpoint_folder(work_dir, model_name):
+    return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
+
+
+def _get_runs_folder(work_dir, model_name):
+    return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
 # TODO add batch norm
@@ -110,7 +115,7 @@ class RNNModel(AutoRegressiveModel):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 exp_name: str = "RNN_run",  # TODO uid
+                 model_name: str = "RNN_run",  # TODO uid
                  vis_tb: bool = False,
                  work_dir: str = os.getcwd(),
                  torch_device_str: Optional[str] = None):
@@ -132,7 +137,7 @@ class RNNModel(AutoRegressiveModel):
         :param batch_size: number of time series used in each training pass
         :param n_epochs: number of epochs to train the model
         :param loss: pytorch loss used during training (default: torch.nn.MSELoss()).
-        :param exp_name: name of the checkpoint and tensorboard directory
+        :param model_name: name of the checkpoint and tensorboard directory
         :param vis_tb: if True, use tensorboard to log the different parameters
         :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries
         :param torch_device_str:
@@ -164,8 +169,8 @@ class RNNModel(AutoRegressiveModel):
                              ' "RNN", "LSTM", "GRU", or give your own PyTorch nn.Module'.
                              format(model.__class__.__name__))
         self.model = self.model.to(self.device)
-        self.exp_name = exp_name
-        self.cwd = work_dir
+        self.model_name = model_name
+        self.work_dir = work_dir
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
@@ -176,10 +181,6 @@ class RNNModel(AutoRegressiveModel):
 
         # The tensorboard writer
         self.tb_writer = None
-
-        # where to save stuff
-        self.checkpoint_folder = os.path.join(self.cwd, CHECKPOINTS_FOLDER, self.exp_name)
-        self.runs_folder = os.path.join(self.cwd, RUNS_FOLDER, self.exp_name)
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -214,16 +215,12 @@ class RNNModel(AutoRegressiveModel):
         :param val_series: Optionally, a validation time series that will
                            be used to compute validation loss throughout training
         :return:
-
-        TODO: also specify number of epochs here?
         """
-        # TODO: is it better to have a function to construct a dataset from timeseries? it is, in fact, the class
-        # TODO: how to incorporate the scaler? add transform function inside dataset? may be a good idea
 
         super().fit(series)
 
         if self.from_scratch:
-            shutil.rmtree(self.checkpoint_folder, ignore_errors=True)
+            shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         if self.batch_size is None:
             self.batch_size = len(self.dataset)
@@ -242,14 +239,15 @@ class RNNModel(AutoRegressiveModel):
             val_loader = None
 
         # Tensorboard
+        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.vis_tb:
             if self.from_scratch:
-                shutil.rmtree(self.runs_folder, ignore_errors=True)
-                tb_writer = SummaryWriter(self.runs_folder)
+                shutil.rmtree(runs_folder, ignore_errors=True)
+                tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.seq_len, self.in_size).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
-                tb_writer = SummaryWriter(self.runs_folder, purge_step=self.start_epoch)
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
         else:
             tb_writer = None
 
@@ -267,10 +265,6 @@ class RNNModel(AutoRegressiveModel):
                         (otherwise will use last checkpoint)
         :return:
         """
-
-
-        # TODO: remove this - it's not the right place to instanciate a model
-        # self.load_from_checkpoint(is_best=use_best)
 
         super().predict(n)
 
@@ -290,48 +284,6 @@ class RNNModel(AutoRegressiveModel):
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
-
-    # TODO: make this a static method returning a new model instance
-    # TODO: user-facing: it's up to the user to choose which model to use (best, last, or other)
-    @staticmethod
-    def load_from_checkpoint(self,
-                             checkpoint: str = None,
-                             file: str = None,
-                             use_best: bool = True) -> RNNModel:
-        """
-        Load the model from the given checkpoint.
-        Warning: all hyper-parameters must be the same
-        if file is not given, will try to restore the most recent checkpoint
-
-        :param checkpoint: path where the checkpoints are stored.
-        :param file: the name of the checkpoint file. If None, find the most recent one.
-        :param use_best: if True, will retrieve the best model instead of the most recent one.
-        """
-        if self.optimizer is None:
-            # TODO: do not require an existing model instance to load (persist everything needed)
-            raise AssertionError("optimizer must be set to load the parameters")
-        self.from_scratch = False
-        if checkpoint is None:
-            checkpoint = self.checkpoint_folder
-        # if filename is none, find most recent file in savepath that is a checkpoint
-        if file is None:
-            path = os.path.join(checkpoint, "model_best_*" if use_best else "checkpoint_*")
-            checklist = glob(path)
-            file = max(checklist, key=os.path.getctime)  # latest file
-            file = os.path.basename(file)
-        self._load_model(checkpoint, file)
-        self._fit_called = True
-
-    def _get_best_torch_device(self):
-        is_cuda = torch.cuda.is_available()
-        if is_cuda:
-            return torch.device("cuda:0")
-        else:
-            return torch.device("cpu")
-
-    def _get_learning_rate(self):
-        for p in self.optimizer.param_groups:
-            return p['lr']
 
     def _train(self,
                train_loader: DataLoader,
@@ -381,7 +333,7 @@ class RNNModel(AutoRegressiveModel):
             #     tb_writer.add_scalar("training/training_loss", total_loss / (batch_idx + 1), epoch)
             #     tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
-            self._save_model(False, self.checkpoint_folder, epoch)
+            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % 10 == 0:
                 training_loss = (total_loss + total_loss_diff) / (batch_idx + 1)  # TODO: do not use batch_idx
@@ -389,7 +341,9 @@ class RNNModel(AutoRegressiveModel):
                     validation_loss = self._evaluate_validation_loss(val_loader, tb_writer)
                     if validation_loss < best_loss:
                         best_loss = validation_loss
-                        self._save_model(True, self.checkpoint_folder, epoch)
+                        self._save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+
+                    # TODO: this print is nice, but it doesn't work well with backtesting
                     print("Training loss: {:.4f}, validation loss: {:.4f}".
                           format(training_loss, validation_loss), end="\r")
                 else:
@@ -422,102 +376,80 @@ class RNNModel(AutoRegressiveModel):
         validation_loss = (total_loss + total_loss_of_diff) / (batch_idx + 1)
         return validation_loss
 
-    def _save_model(self, is_best: bool, save_path: str, epoch: int):
-        state = {
-            'epoch': epoch + 1,  # state in the loop (why +1 ?)
-            'state_dict': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'scheduler': None if self.lr_scheduler is None else self.lr_scheduler.state_dict()
-        }
-        checklist = glob(os.path.join(save_path, "checkpoint_*"))
+    def _save_model(self,
+                    is_best: bool,
+                    folder: str,
+                    epoch: int):
+        """
+        Saves the whole RNNModel object to a file
+        TODO: shall we try to optimize going through torch.save, which uses uses zip?
+
+        :param is_best: whether the model we're currently saving is the best (on validation set)
+        :param folder:
+        :param epoch:
+        :return:
+        """
+
+        checklist = glob(os.path.join(folder, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
         filename = 'checkpoint_{0}.pth.tar'.format(epoch)
-        os.makedirs(save_path, exist_ok=True)
-        filename = os.path.join(save_path, filename)
-        torch.save(state, filename)
+        os.makedirs(folder, exist_ok=True)
+        filename = os.path.join(folder, filename)
+
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+
         if len(checklist) >= 5:
             # remove older files
             for chkpt in checklist[:-4]:
                 os.remove(chkpt)
         if is_best:
-            best_name = os.path.join(save_path, 'model_best_{0}.pth.tar'.format(epoch))
+            best_name = os.path.join(folder, 'model_best_{0}.pth.tar'.format(epoch))
             shutil.copyfile(filename, best_name)
-            checklist = glob(os.path.join(save_path, "model_best_*"))
+            checklist = glob(os.path.join(folder, "model_best_*"))
             checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
             if len(checklist) >= 2:
                 # remove older files
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _load_model(self, save_path: str, filename: str):
-        if os.path.isfile(os.path.join(save_path, filename)):
-            checkpoint = torch.load(os.path.join(save_path, filename), map_location=self.device)
-            self.start_epoch = checkpoint['epoch']
-            if checkpoint['scheduler'] is not None:
-                self.lr_scheduler.load_state_dict(checkpoint['scheduler'])
-            self.model.load_state_dict(checkpoint['state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded checkpoint (epoch {})".format(checkpoint['epoch']))
+    @staticmethod
+    def load_from_checkpoint(model_name: str,
+                             work_dir: str = os.getcwd(),
+                             filename: str = None,
+                             use_best: bool = True) -> 'RNNModel':
+        """
+        Load the model from the given checkpoint.
+        if file is not given, will try to restore the most recent checkpoint.
+
+        :param model_name: the name of the model (used to retrieve the checkpoints folder's name)
+        :param work_dir: working directory (containing the checkpoints folder). Defaults to CWD.
+        :param filename: the name of the checkpoint file. If None, use the most recent one.
+        :param use_best: if True, will retrieve the best model instead of the most recent one.
+        """
+
+        checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
+
+        # if filename is none, find most recent file in savepath that is a checkpoint
+        if filename is None:
+            path = os.path.join(checkpoint_dir, "model_best_*" if use_best else "checkpoint_*")
+            checklist = glob(path)
+            filename = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
+            filename = os.path.basename(filename)
+
+        full_fname = os.path.join(checkpoint_dir, filename)
+        print('loading {}'.format(full_fname))
+        with open(full_fname, 'rb') as f:
+            model = pickle.load(f)
+        return model
+
+    def _get_best_torch_device(self):
+        is_cuda = torch.cuda.is_available()
+        if is_cuda:
+            return torch.device("cuda:0")
         else:
-            print("=> no checkpoint found at '{}'".format(os.path.join(save_path, filename)))
+            return torch.device("cpu")
 
-    # def plot_result_train(self):
-    #     self._plot_result(self.dataset)
-    #
-    # def test_series(self, tseries: TimeSeries):
-    #     if issubclass(type(tseries), torch.utils.data.Dataset):
-    #         self._plot_result(tseries)
-    #         return
-    #     if type(tseries) is not list:
-    #         tseries = [tseries]
-    #     test_dataset = TimeSeriesDataset1D(tseries, self.seq_len, self.out_size, scaler=self.scaler)
-    #     test_dataset.transform()
-    #     self._plot_result(test_dataset)
-
-    # def _plot_result(self, dataset):
-    #     # TODO: this is in fact a mix of backtesting (on dataset) an plotting
-    #     # TODO: this functionality should be written somewhere else
-    #
-    #     targets = []
-    #     predictions = []
-    #     data_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False,
-    #                              num_workers=0, pin_memory=True, drop_last=False)
-    #     for batch_idx, (data, target) in enumerate(data_loader):
-    #         self.model.eval()
-    #         data, target = data.to(self.device), target.to(self.device)
-    #         output = self.model(data)
-    #         targets.append(target.cpu().numpy())
-    #         predictions.append(output.cpu().detach().numpy())
-    #     targets = np.vstack(targets)
-    #     predictions = np.vstack(predictions)
-    #
-    #     # TODO: avoid accessing dataset properties here; these should be properties of the present model
-    #     label_per_serie = dataset.len_series - dataset.data_length - dataset.target_length + 1
-    #     index_p = np.arange(label_per_serie)
-    #     # print(label_per_serie)
-    #     true_labels_p = targets[:label_per_serie, 0:1, 0]
-    #     predictions_p = predictions[:label_per_serie, 0:1, 0]
-    #
-    #     # index_p = np.stack([np.arange(self.out_size) + i for i in range(dataset.__len__())])
-    #     # index_p = index_p.reshape(-1, self.out_size)
-    #     true_labels_p = self.scaler.inverse_transform(true_labels_p)
-    #     predictions_p = self.scaler.inverse_transform(predictions_p)
-    #     if self.out_size != 1:
-    #     #     index_p = index_p[:, 0]  # .T
-    #         true_labels_p = true_labels_p[:, 0]  # .T
-    #         predictions_p = predictions_p[:, 0]  # .T
-    #
-    #     plt.plot(index_p, true_labels_p, label="true labels")
-    #     # if self.out_size != 1:
-    #     #     plt.figure()
-    #     plt.plot(index_p, predictions_p, label="predictions")
-    #     # if self.out_size == 1:
-    #     plt.legend()
-    #     plt.show()
-    #     pshape = predictions.shape
-    #     tshape = targets.shape
-    #     print("Loss: {:.6f}".format(self.criterion
-    #                                 (torch.from_numpy(self.scaler.inverse_transform(predictions.reshape(-1, 1))
-    #                                                   .reshape(pshape)),
-    #                                  torch.from_numpy(self.scaler.inverse_transform(targets.reshape(-1, 1))
-    #                                                   .reshape(tshape))).item()))
+    def _get_learning_rate(self):
+        for p in self.optimizer.param_groups:
+            return p['lr']
