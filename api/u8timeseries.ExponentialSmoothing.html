@@ -182,6 +182,59 @@
 </style>
 <div class="section" id="simple-exponential-smoothing">
 <h1>Simple Exponential Smoothing<a class="headerlink" href="#simple-exponential-smoothing" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.ExponentialSmoothing">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">ExponentialSmoothing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trend</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'additive'</span></em>, <em class="sig-param"><span class="n">seasonal</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'additive'</span></em>, <em class="sig-param"><span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
+<p>Implementation of a Simple Exponential Smoothing.</p>
+<p>Currently just a wrapper around the statsmodels holtwinter implementation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trend</strong> – A string for the type of trend to consider: either <cite>additive</cite> (default) or <cite>multiplicative</cite>.</p></li>
+<li><p><strong>seasonal</strong> – A string for the type of seasonality to consider: either <cite>additive</cite> (default) or <cite>multiplicative</cite>.</p></li>
+<li><p><strong>seasonal_periods</strong> – An integer, the order of seasonality to consider.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.ExponentialSmoothing.fit" title="u8timeseries.ExponentialSmoothing.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.ExponentialSmoothing.predict" title="u8timeseries.ExponentialSmoothing.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.ExponentialSmoothing.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/exponential_smoothing.html#ExponentialSmoothing.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.ExponentialSmoothing.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.ExponentialSmoothing.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/exponential_smoothing.html#ExponentialSmoothing.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.ExponentialSmoothing.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

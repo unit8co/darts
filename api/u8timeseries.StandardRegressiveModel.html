@@ -182,6 +182,48 @@
 </style>
 <div class="section" id="standardregressivemodel">
 <h1>StandardRegressiveModel<a class="headerlink" href="#standardregressivemodel" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.StandardRegressiveModel">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">StandardRegressiveModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_n_points</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">LinearRegression(copy_X=True, fit_intercept=False, n_jobs=- 1, normalize=False)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/standard_regressive_model.html#StandardRegressiveModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.StandardRegressiveModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.regressive_model.RegressiveModel</span></code></p>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.StandardRegressiveModel.fit" title="u8timeseries.StandardRegressiveModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(train_features, train_target)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.StandardRegressiveModel.predict" title="u8timeseries.StandardRegressiveModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(features)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the prediction obtained from [features], of same length as [features]</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.StandardRegressiveModel.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/standard_regressive_model.html#StandardRegressiveModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.StandardRegressiveModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.StandardRegressiveModel.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/standard_regressive_model.html#StandardRegressiveModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.StandardRegressiveModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the prediction obtained from [features], of same length as [features]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

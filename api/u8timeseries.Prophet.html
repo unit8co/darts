@@ -182,6 +182,65 @@
 </style>
 <div class="section" id="prophet">
 <h1>Prophet<a class="headerlink" href="#prophet" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.Prophet">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">Prophet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">weekly_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">daily_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">country_holidays</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/prophet.html#Prophet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Prophet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
+<p>Implementation of the Prophet model.</p>
+<p>Currently just a wrapper around the fbprophet implementation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>country_holidays</strong> – <p>An optional country code, for which holidays can be taken into account by Prophet.</p>
+<p>See: <a class="reference external" href="https://github.com/dr-prodigy/python-holidays">https://github.com/dr-prodigy/python-holidays</a></p>
+<p>In addition to those countries, Prophet includes holidays for these
+countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
+Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
+Egypt (EG), China (CN), and Russian (RU).</p>
+</p></li>
+<li><p><strong>weekly_seasonality</strong> – </p></li>
+<li><p><strong>daily_seasonality</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.Prophet.fit" title="u8timeseries.Prophet.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.Prophet.predict" title="u8timeseries.Prophet.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.Prophet.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/prophet.html#Prophet.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Prophet.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.Prophet.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/prophet.html#Prophet.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.Prophet.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

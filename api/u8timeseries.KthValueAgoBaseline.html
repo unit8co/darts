@@ -182,6 +182,55 @@
 </style>
 <div class="section" id="kth-value-baseline">
 <h1>Kth Value Baseline<a class="headerlink" href="#kth-value-baseline" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.KthValueAgoBaseline">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">KthValueAgoBaseline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">k</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/baselines.html#KthValueAgoBaseline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.KthValueAgoBaseline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
+<p>A baseline model that always predict value of <cite>k</cite> time steps ago.</p>
+<p>More precisely, at last know time value t, the prediction for t + i is given by the value at time t - k + i.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>k</strong> – An integer, determines how far to fetch the prediction value.</p>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.KthValueAgoBaseline.fit" title="u8timeseries.KthValueAgoBaseline.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.KthValueAgoBaseline.predict" title="u8timeseries.KthValueAgoBaseline.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.KthValueAgoBaseline.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/baselines.html#KthValueAgoBaseline.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.KthValueAgoBaseline.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.KthValueAgoBaseline.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/baselines.html#KthValueAgoBaseline.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.KthValueAgoBaseline.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

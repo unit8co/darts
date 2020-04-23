@@ -182,6 +182,51 @@
 </style>
 <div class="section" id="auto-regressive-model">
 <h1>Auto-Regressive Model<a class="headerlink" href="#auto-regressive-model" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.AutoRegressiveModel">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">AutoRegressiveModel</code><a class="reference internal" href="../_modules/u8timeseries/models/autoregressive_model.html#AutoRegressiveModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoRegressiveModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Base class for implementation of Auto-regressive models.</p>
+<p>This is a base class for various implementation of uni-variate time series forecasting models.
+These models predict future values of one time series using no other data.</p>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.AutoRegressiveModel.fit" title="u8timeseries.AutoRegressiveModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.AutoRegressiveModel.predict" title="u8timeseries.AutoRegressiveModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.AutoRegressiveModel.fit">
+<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/u8timeseries/models/autoregressive_model.html#AutoRegressiveModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoRegressiveModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.AutoRegressiveModel.predict">
+<em class="property">abstract </em><code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/models/autoregressive_model.html#AutoRegressiveModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoRegressiveModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

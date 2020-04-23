@@ -198,6 +198,90 @@
 <div class="section" id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h1>
 <p>This section contains the various ready-to-use metrics that have been implemented so far.</p>
+<span class="target" id="module-u8timeseries.metrics"></span><p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.metrics.mape" title="u8timeseries.metrics.mape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.mape</span></code></a>(true_series, …)</p></td>
+<td><p>Computes the Mean Absolute Percentage Error (MAPE).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.metrics.mase" title="u8timeseries.metrics.mase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.mase</span></code></a>(true_series, …)</p></td>
+<td><p>Computes the Mean Absolute Scaled Error (MASE).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.metrics.overall_percentage_error" title="u8timeseries.metrics.overall_percentage_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">u8timeseries.metrics.overall_percentage_error</span></code></a>(…)</p></td>
+<td><p>Computes the Overall Percentage Erroe (OPE):</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py function">
+<dt id="u8timeseries.metrics.mape">
+<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">true_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">pred_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">time_diff</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.mape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Mean Absolute Percentage Error (MAPE).</p>
+<p>This function computes the MAPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.
+Use <cite>time_diff=True</cite> when the time series has a strong auto-correlation to have a more accurate analysis.
+Use <cite>time_diff</cite> mainly when the time series are monotonic.
+Otherwise, it will be difficult to analyze the results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
+<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
+<li><p><strong>time_diff</strong> – If True, analyze the time differentiated series, instead of the index one.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A float, the MAPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="u8timeseries.metrics.mase">
+<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">true_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">pred_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">m</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">time_diff</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.mase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Mean Absolute Scaled Error (MASE).</p>
+<p>This function computes the MASE of <cite>pred_series</cite> with respect to <cite>true_series</cite> and the seasonal period m.
+Use <cite>time_diff=True</cite> when the time series has a strong auto-correlation to have a more accurate analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
+<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
+<li><p><strong>m</strong> – A int, the seasonality period to take into account. If None, try to infer one from ACF</p></li>
+<li><p><strong>time_diff</strong> – If True, analyze the time differentiated series, instead of the index one.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A float, the MASE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="u8timeseries.metrics.overall_percentage_error">
+<code class="sig-prename descclassname">u8timeseries.metrics.</code><code class="sig-name descname">overall_percentage_error</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">true_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">pred_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">time_diff</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/u8timeseries/metrics/metrics.html#overall_percentage_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.metrics.overall_percentage_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Overall Percentage Erroe (OPE):</p>
+<p>This function computes the OPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.
+Use <cite>time_diff=True</cite> when the time series has a strong auto-correlation to have a more accurate analysis.
+Use <cite>time_diff</cite> mainly when the time series are monotonic.
+Otherwise, it will be difficult to analyze the results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>true_series</strong> – A TimeSeries.</p></li>
+<li><p><strong>pred_series</strong> – A TimeSeries to be compared with <cite>true_series</cite>.</p></li>
+<li><p><strong>time_diff</strong> – If True, analyze the time differentiated series, instead of the index one.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A float, the OPE of <cite>pred_series</cite> with respect to <cite>true_series</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 

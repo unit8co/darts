@@ -182,6 +182,48 @@
 </style>
 <div class="section" id="autoarima">
 <h1>AutoArima<a class="headerlink" href="#autoarima" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="u8timeseries.AutoArima">
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.</code><code class="sig-name descname">AutoArima</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_p</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_p</span><span class="o">=</span><span class="default_value">12</span></em>, <em class="sig-param"><span class="n">start_q</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">max_q</span><span class="o">=</span><span class="default_value">12</span></em>, <em class="sig-param"><span class="n">max_P</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">max_Q</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">start_P</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start_Q</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start_d</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">max_d</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">max_D</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_order</span><span class="o">=</span><span class="default_value">30</span></em>, <em class="sig-param"><span class="n">seasonal</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">stepwise</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">approximation</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">error_action</span><span class="o">=</span><span class="default_value">'ignore'</span></em>, <em class="sig-param"><span class="n">trace</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">suppress_warnings</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></p>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#u8timeseries.AutoArima.fit" title="u8timeseries.AutoArima.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#u8timeseries.AutoArima.predict" title="u8timeseries.AutoArima.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">return</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="u8timeseries.AutoArima.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.TimeSeries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.AutoArima.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/arima.html#AutoArima.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.AutoArima.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A TimeSeries containing the <cite>n</cite> next points, starting after the end of the training time series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
