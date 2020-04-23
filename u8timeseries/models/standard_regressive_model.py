@@ -1,10 +1,12 @@
 from .regressive_model import RegressiveModel
 from ..timeseries import TimeSeries
+from ..custom_logging import time_log, get_logger
 from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
+logger = get_logger(__name__)
 
 class StandardRegressiveModel(RegressiveModel):
 
@@ -18,8 +20,10 @@ class StandardRegressiveModel(RegressiveModel):
         :param model: The actual regressive model. It must contain fit() and predict() methods.
         """
         super(StandardRegressiveModel, self).__init__()
-        assert callable(getattr(model, "fit", None)), 'Provided model object must have a fit() method'
-        assert callable(getattr(model, "predict", None)), 'Provided model object must have a predict() method'
+        if (not callable(getattr(model, "fit", None))):
+            raise_log(Exception('Provided model object must have a fit() method', logger))
+        if (not callable(getattr(model, "predict", None))):
+            raise_log(Exception('Provided model object must have a predict() method', logger))
 
         self.train_n_points = train_n_points
         self.model = model
@@ -28,6 +32,7 @@ class StandardRegressiveModel(RegressiveModel):
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
 
+    @time_log(logger=logger)
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()

@@ -1,6 +1,8 @@
 from ..timeseries import TimeSeries
+from ..custom_logging import raise_log, get_logger
 from typing import List
 
+logger = get_logger(__name__)
 
 def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     """
@@ -16,6 +18,6 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     first_last = min(map(lambda s: s.end_time(), series))
 
     if last_first >= first_last:
-        raise ValueError('The provided time series must have nonzero overlap')
+        raise_log(ValueError('The provided time series must have nonzero overlap'), logger)
 
     return list(map(lambda s: s.slice(last_first, first_last), series))

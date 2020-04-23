@@ -1,10 +1,12 @@
 import statsmodels.tsa.holtwinters as hw
 from ..timeseries import TimeSeries
+from ..custom_logging import raise_log, time_log, get_logger
 from .autoregressive_model import AutoRegressiveModel
 import numpy as np
 import math
 from .statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
+logger = get_logger(__name__)
 
 class Theta(AutoRegressiveModel):
     """
@@ -33,8 +35,9 @@ class Theta(AutoRegressiveModel):
         # - if theta = 2, the formula for self.coef below fails, hence it is forbidden.
 
         if self.theta == 2:
-            raise ValueError('The parameter theta cannot be equal to 2.')
+            raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
+    @time_log(logger=logger)
     def fit(self, ts, season_period: int = None):
         """
         Fits the Theta method to the TimeSeries `ts`.
