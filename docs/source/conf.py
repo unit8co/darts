@@ -12,14 +12,21 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
+import mock
+
+# MOCK_MODULES = ['numpy', 'fbprophet', 'statsmodels.tsa.arima_model', 'statsmodels.tsa.holtwinters', 'pmdarima', 'statsmodels', 'statsmodels.tsa', 'pandas', 'matplotlib', 'matplotlib.pyplot', 'pandas.tseries', 'pandas.tseries.frequencies']
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
+
+print(os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'u8timeseries'
 copyright = '2020, unit8'
-author = 'unit8'
+author = 'Unit8'
 
 
 # -- General configuration ---------------------------------------------------
@@ -29,6 +36,7 @@ author = 'unit8'
 # ones.
 extensions = [
     'sphinx.ext.autosummary',
+    'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx_automodapi.automodapi',

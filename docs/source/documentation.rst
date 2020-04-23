@@ -9,7 +9,7 @@ Here you will find all the information you need to use the API, as well as some 
 
 
 The API
-========
+=======
 
 
 
@@ -17,12 +17,8 @@ The API
    :maxdepth: 3
 
 
-   api/u8timeseries.TimeSeries
-   api/u8timeseries.models
-   api/u8timeseries.metrics
-   api/u8timeseries.statistics
-   api/u8timeseries.backtesting
-   
+   generated_api/u8timeseries
+
 
 
 Air Passenger Example
