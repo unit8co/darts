@@ -8,9 +8,7 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-
+    
     steps:
     - uses: actions/checkout@v1
 
