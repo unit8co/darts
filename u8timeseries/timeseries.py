@@ -8,9 +8,6 @@ from .custom_logging import raise_log, raise_if_not, get_logger
 
 logger = get_logger(__name__)
 
-fig = None
-ax = None
-
 class TimeSeries:
     """
         A TimeSeries is an immutable object defined by the following three components.
@@ -401,7 +398,7 @@ class TimeSeries:
 
         return TimeSeries(series, series_lo, series_hi)
 
-    def plot(self, *args, plot_ci=True, new_plot=True, **kwargs):
+    def plot(self, *args, plot_ci=True, new_plot=False, **kwargs):
         """
         Currently this is just a wrapper around pd.Series.plot()
         """
@@ -409,11 +406,11 @@ class TimeSeries:
         # errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,
         #                                lambda x, y: np.vstack([x.values, y.values]))
         # self._series.plot(yerr=errors, *args, **kwargs)
-        global fig, ax
-        if (fig is None or ax is None or new_plot):
+        if new_plot:
             fig, ax = plt.subplots()
-        ax.plot_date(self.time_index(), self.values(), marker='', linestyle='-', *args, **kwargs)
-        fig.autofmt_xdate()
+        else:
+            fig, ax = plt.gcf(), plt.gca()
+        self._series.plot()
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
