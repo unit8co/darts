@@ -20,7 +20,7 @@
 
 import argparse
 
-VERSION_FILE= "u8timeseries/VERSION"
+VERSION_FILE = "u8timeseries/VERSION"
 
 # set up arguments
 parser = argparse.ArgumentParser(prog="version bump")
