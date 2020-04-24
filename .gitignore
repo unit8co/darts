@@ -1,6 +1,8 @@
 .idea
 *.pyc
 docs/build
+docs/source/examples
+docs/source/generated_api
 u8timeseries.egg-info/
 examples/.ipynb_checkpoints/
 runs/

@@ -29,5 +29,16 @@ You will find below an example Jupyter notebook containing an analysis of the we
 .. toctree::
    :maxdepth: 1
 
-   Air-passengers-example.ipynb
+   examples/Air-passengers-example.ipynb
+
+
+u8timeseries intro
+=======================
+
+You will find below an example Jupyter notebook containing an intro to usage of u8timeseries.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/u8timeseries-intro.ipynb
 

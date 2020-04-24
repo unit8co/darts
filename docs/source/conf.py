@@ -12,13 +12,7 @@
 #
 import os
 import sys
-import mock
 
-# MOCK_MODULES = ['numpy', 'fbprophet', 'statsmodels.tsa.arima_model', 'statsmodels.tsa.holtwinters', 'pmdarima', 'statsmodels', 'statsmodels.tsa', 'pandas', 'matplotlib', 'matplotlib.pyplot', 'pandas.tseries', 'pandas.tseries.frequencies']
-# for mod_name in MOCK_MODULES:
-#     sys.modules[mod_name] = mock.Mock()
-
-print(os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 
@@ -59,7 +53,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**/modules.rst']
 
 
 # -- Options for HTML output -------------------------------------------------

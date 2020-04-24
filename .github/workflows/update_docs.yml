@@ -1,9 +1,9 @@
 name: Build documentation and update gh-pages branch
 
-on:
-  push:
-    branches:
-      - master
+on: [push]
+#  push:
+#    branches:
+#      - master
 
 jobs:
   test:
@@ -19,17 +19,22 @@ jobs:
         
     - name: Install dependencies
       run: |
+        apt-get isntall -y pandoc
         python -m pip install --upgrade pip
+        pip install .
         pip install -r docs_requirements.txt
+
+    - name: Copy examples
+      run: |
+        make --directory ./docs copy-examples
 
     - name: Generate documentation
       run: |
-        sphinx-apidoc -e -f -t docs/templates -o docs/source/generated_api u8timeseries
+        make --directory ./docs generate
         
     - name: Build documentation
       run: |
-        cd docs
-        make html
+        make --directory ./docs html
        
     - name: Push
       uses: s0/git-publish-subdir-action@v2.2.0

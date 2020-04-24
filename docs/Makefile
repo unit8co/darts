@@ -14,6 +14,12 @@ help:
 
 .PHONY: help Makefile
 
+generate:
+	@sphinx-apidoc -e -f -t templates -o source/generated_api ../u8timeseries
+
+copy-examples:
+	@cp -r ../examples source
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
