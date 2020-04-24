@@ -34,8 +34,8 @@ jobs:
         make --directory ./docs html
        
     - name: Publish documentation
-      if: contains(github.ref, "master")
       uses: s0/git-publish-subdir-action@v2.2.0
+      if: contains(github.ref, 'master')
       env:
         REPO: self
         BRANCH: gh-pages
