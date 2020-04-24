@@ -3,59 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-========================================
-Welcome to u8timeseries's documentation!
-========================================
-
-u8timeseries is a Python library for the manipulation and prediction of time series. The main goal is to provide easy access to various existing models and implementations in a single easy-to-use API.
-
-Currently, we propose access the following models:
-
-* ARIMA
-* AUTO-ARIMA
-* Prophet
-* Simple Exponential Smoothing
-* Theta
-
-Code is hosted at `GitHub <http://github.com/unit8co/u8timeseries/>`_ under the Apache License 2.0. Please post issues or report there.
+.. mdinclude:: ../../README.md
 
 
-
-Getting Started
-===============
-
-.. toctree::
-   :maxdepth: 2
-
-   install
-
-
-Documentation
-=============
-
-.. toctree::
-   :maxdepth: 3
-   
-   documentation
-
-Development
-===========
-
-.. toctree::
-   :maxdepth: 2
-
-   changelog
-   devguide
-
-
-Legal
-=====
+===
+API
+===
 
 .. toctree::
    :maxdepth: 1
 
-   legal
+   generated_api/u8timeseries
 
+
+========
+Examples
+========
+
+.. toctree::
+   :maxdepth: 1
+
+   examples
 
 
 Indices and tables

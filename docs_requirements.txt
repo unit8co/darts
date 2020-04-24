@@ -1,4 +1,0 @@
-Sphinx==3.0.2
-sphinx-automodapi==0.12
-nbsphinx==0.6.1
-sphinx-rtd-theme==0.4.3

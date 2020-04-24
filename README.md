@@ -1,4 +1,6 @@
-## macOS install: 
+# u8timeseries
+
+## macOS install:
 
 The install happens with `pip`. For `conda` users, do the following first:
 ```
