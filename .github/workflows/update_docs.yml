@@ -22,7 +22,6 @@ jobs:
     - uses: actions/cache@v1
       id: cache
       with:
-        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('docs_requirements.txt', 'setup.py') }}
         restore-keys: |
           ${{ runner.os }}-pip-
