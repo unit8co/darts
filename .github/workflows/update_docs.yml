@@ -1,9 +1,9 @@
 name: Build documentation and update gh-pages branch
 
-on: [push]
-#  push:
-#    branches:
-#      - master
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   test:
