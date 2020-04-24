@@ -41,7 +41,7 @@ jobs:
       run: |
         make --directory ./docs generate
         
-    - name: Build documentation
+    - name: Build documentation website
       run: |
         make --directory ./docs html
        
