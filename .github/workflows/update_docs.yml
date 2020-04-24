@@ -1,9 +1,6 @@
 name: Build documentation and update gh-pages branch
 
-on:
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   test:
@@ -44,8 +41,9 @@ jobs:
       run: |
         make --directory ./docs html
        
-    - name: Push
+    - name: Publish documentation
       uses: s0/git-publish-subdir-action@v2.2.0
+      if: contains(github.ref, 'master')
       env:
         REPO: self
         BRANCH: gh-pages
