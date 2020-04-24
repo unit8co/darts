@@ -28,6 +28,7 @@ def compare_seasonality(ts_1, ts_2, required_matches):
 
 def crop_to_match_seasons(series: 'TimeSeries', required_matches={'day', 'month'}):
     
+    
     first_ts = series._series.index[0]
     freq = first_ts.freq
     pred_ts = series._series.index[-1] + freq
@@ -45,8 +46,9 @@ def crop_to_match_seasons(series: 'TimeSeries', required_matches={'day', 'month'
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, percentile=80):
-        self.freq_percentile = percentile
+    def __init__(self, filter_percentile=0, required_matches={}):
+        self.filter_percentile = filter_percentile
+        self.required_matches = required_matches
 
     def __str__(self):
         return 'FFT'
@@ -61,10 +63,10 @@ class FFT(AutoRegressiveModel):
     def fit(self, series: 'TimeSeries'):
         super().fit(series)
 
-        self.cropped_series = crop_to_match_seasons(series)
+        self.cropped_series = crop_to_match_seasons(series, required_matches=self.required_matches)
 
         self.fft_values = np.fft.fft(self.cropped_series.values())
-        threshold = np.percentile(abs(self.fft_values), self.freq_percentile)
+        threshold = np.percentile(abs(self.fft_values), self.filter_percentile)
 
         def filter_amplitude(x):
             if (abs(x) < threshold):
