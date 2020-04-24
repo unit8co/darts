@@ -28,7 +28,6 @@ jobs:
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         pip install .
         pip install -r docs_requirements.txt
