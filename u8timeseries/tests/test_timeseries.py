@@ -77,8 +77,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertTrue(series_test.conf_hi_pd_series().equals(self.pd_series3))
         self.assertTrue(series_test.freq() == self.series1.freq())
 
-    # TODO test over to_dataframe when multiple features choice is decided
-
     def test_eq(self):
         seriesA: TimeSeries = TimeSeries(self.pd_series1)
         self.assertTrue(self.series1 == seriesA)
