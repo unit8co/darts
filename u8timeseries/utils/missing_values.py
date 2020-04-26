@@ -1,9 +1,7 @@
 from u8timeseries.timeseries import TimeSeries
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from typing import Tuple, List
-from scipy.interpolate import interp1d
 
 
 def na_ratio(ts: 'TimeSeries') -> float:
@@ -107,14 +105,3 @@ def auto_fillna(ts: 'TimeSeries', first: float = None, last: float = None,
     ts_temp.interpolate(method=interpolate, inplace=True, limit_direction='both', limit=len(ts_temp), **kwargs)
 
     return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values)
-
-
-def fill_missing_dates(series: pd.Series):
-    for i in range(len(series)-5):
-        freq = series.index[i:i+5].inferred_freq
-        if freq is not None:
-            break
-    assert freq is not None, "Too many missing dates to infer frequency"
-    missing_dates = pd.date_range(start=series.index[0], end=series.index[-1], freq=freq).difference(series.index)
-    series = series[series.index.append(missing_dates)]
-    return series.sort_index()
