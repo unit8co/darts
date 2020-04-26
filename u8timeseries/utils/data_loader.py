@@ -38,14 +38,3 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         data = self.series_values[idx:idx+self.data_length]
         target = self.series_values[idx+self.data_length:idx+self.data_length+self.target_length]
         return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
-
-    # @staticmethod
-    # def _input_label_batch(series: TimeSeries, train_window: int = 1, label_window: int = 1) -> [np.ndarray,
-    #                                                                                              np.ndarray]:
-    #     sequences = []
-    #     labels = []
-    #     length = len(series)
-    #     for i in range(length - train_window - label_window + 1):
-    #         sequences.append(series.values()[i:i + train_window])
-    #         labels.append(series.values()[i + train_window:i + train_window + label_window])
-    #     return np.array(sequences), np.array(labels)

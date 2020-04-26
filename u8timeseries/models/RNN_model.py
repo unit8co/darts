@@ -52,6 +52,7 @@ class RNN(nn.Module):
 
         :param name: The name of the specific PyTorch RNN module ('RNN', 'GRU' or 'LSTM').
         :param input_size: The dimensionality of the input time series.
+                           Currently only set to 1 for univariate time series.
         :param output_length: The number of steps to predict in the future.
         :param hidden_dim: The number of features in the hidden state h of the RNN module.
         :param num_layers: The number of recurrent layers.
@@ -111,7 +112,6 @@ class RNN(nn.Module):
 class RNNModel(AutoRegressiveModel):
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
-                 input_size: int = 1,
                  output_length: int = 1,
                  input_length: int = 12,
                  hidden_size: int = 25,
@@ -126,35 +126,44 @@ class RNNModel(AutoRegressiveModel):
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  model_name: str = "RNN_run",  # TODO uid
-                 vis_tb: bool = False,
-                 nr_epochs_val_period: int = 10,
                  work_dir: str = os.getcwd(),
+                 log_tensorboard: bool = False,
+                 nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
         """
-        Implementation of different RNNs for forecasting. This model assumes that the time series has already
-        been properly scaled (e.g. by using a [u8timeseries.preprocessing.transformer.Transformer] beforehand.
+        Implementation of different RNNs for forecasting. It is recommended to scale the time series
+        (e.g. by using a [u8timeseries.preprocessing.transformer.Transformer] beforehand.
 
         :param model: Either a string representing the kind of RNN module ('RNN' for vanilla RNN, 'GRU' or 'LSTM'),
-                      or custom PyTorch nn.Module instance.
-        :param input_size: The dimensionality of the time series.
-                           Must be consistent with the module input size if a nn.Module is specified.
+                      or custom PyTorch nn.Module instance, with same inputs/outputs as
+                      [u8timeseries.models.RNN_models.RNN].
         :param output_length: Number of time steps to predict.
                               Must be consistent with the module output length if a nn.Module is specified.
-        :param input_length: number of previous time stamps taken into account
+        :param input_length: number of previous time stamps taken into account by the model.
         :param hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
-        :param n_rnn_layers: number of rnn layers (unnecessary if module given)
+        :param n_rnn_layers: number of RNN layers (unnecessary if module given)
         :param hidden_fc_size: size of hidden layers for the fully connected part (unnecessary if module given)
         :param dropout: percent of neuron dropped in RNN hidden layers (unnecessary if module given)
-        :param batch_size: number of time series used in each training pass
+        :param batch_size: number of time series (input and output sequences) used in each training pass
         :param n_epochs: number of epochs to train the model
-        :param loss: pytorch loss used during training (default: torch.nn.MSELoss()).
-        :param model_name: name of the checkpoint and tensorboard directory
-        :param vis_tb: if True, use tensorboard to log the different parameters
-        :param work_dir: Path of the current working directory, where to save checkpoints and tensorboard summaries
-        :param torch_device_str:
+        :param optimizer_cls: the type of the PyTorch optimizer (default: torch.optim.Adam)
+        :param optimizer_kwargs: keyword arguments for the PyTorch optimizer.
+        :param lr_scheduler_cls: optionally, the type of the PyTorch learning rate scheduler (default: None).
+        :param lr_scheduler_kwargs: keyword arguments for the PyTorch learning rate scheduler.
+        :param loss_fn: PyTorch loss function used for training (default: torch.nn.MSELoss()).
+        :param model_name: name of the model. Used for creating/using the checkpoints and tensorboard directories.
+        :param work_dir: Path of the working directory, where to save checkpoints and Tensorboard summaries.
+                         (default: current working directory).
+        :param log_tensorboard: if True, use Tensorboard to log the different parameters. The logs will be located in:
+                       `[work_dir]/.u8timeseries/runs/`.
+        :param nr_epochs_val_period: Number of epochs to wait before evaluating the validation loss (if a validation
+                                     TimeSeries is passed to the fit() method).
+        :param torch_device_str: Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+                                 is available, otherwise "cpu").
 
         # TODO: add init seed
-        # TODO: if mean and/or stdev are wild, print a warning suggesting scaling
+        # TODO: add is_stochastic & reset methods
+        # TODO: transparent support for multivariate time series
         """
         super().__init__()
 
@@ -163,15 +172,15 @@ class RNNModel(AutoRegressiveModel):
         else:
             self.device = torch.device(torch_device_str)
 
-        self.in_size = input_size
+        self.input_size = 1  # We support only univariate time series currently
         self.output_length = output_length
         self.seq_len = input_length
-        self.vis_tb = vis_tb
+        self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
-            self.model = RNN(name=model, input_size=input_size, hidden_dim=hidden_size,
+            self.model = RNN(name=model, input_size=self.input_size, hidden_dim=hidden_size,
                              num_layers=n_rnn_layers, output_length=output_length,
                              num_layers_out_fc=hidden_fc_size, dropout=dropout)
         elif isinstance(model, nn.Module):
@@ -226,7 +235,6 @@ class RNNModel(AutoRegressiveModel):
         :param series: The training time series
         :param val_series: Optionally, a validation time series that will
                            be used to compute validation loss throughout training
-        :return:
         """
 
         super().fit(series)
@@ -252,11 +260,11 @@ class RNNModel(AutoRegressiveModel):
 
         # Tensorboard
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
-        if self.vis_tb:
+        if self.log_tensorboard:
             if self.from_scratch:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.seq_len, self.in_size).to(self.device)
+                dummy_input = torch.empty(self.batch_size, self.seq_len, self.input_size).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
@@ -269,13 +277,9 @@ class RNNModel(AutoRegressiveModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int, use_best: bool = False) -> TimeSeries:
+    def predict(self, n: int) -> TimeSeries:
         """
-        Produces predictions for n time stamps after the end of the training series
-        :param n:
-        :param use_best: whether to use the best checkpointed model during training
-                        (otherwise will use last checkpoint)
-        :return:
+        :return: A TimeSeries containing the `n` next points, starting after the end of the training time series.
         """
 
         super().predict(n)
@@ -418,7 +422,7 @@ class RNNModel(AutoRegressiveModel):
     def load_from_checkpoint(model_name: str,
                              work_dir: str = os.getcwd(),
                              filename: str = None,
-                             use_best: bool = True) -> 'RNNModel':
+                             best: bool = True) -> 'RNNModel':
         """
         Load the model from the given checkpoint.
         if file is not given, will try to restore the most recent checkpoint.
@@ -426,20 +430,20 @@ class RNNModel(AutoRegressiveModel):
         :param model_name: the name of the model (used to retrieve the checkpoints folder's name)
         :param work_dir: working directory (containing the checkpoints folder). Defaults to CWD.
         :param filename: the name of the checkpoint file. If None, use the most recent one.
-        :param use_best: if True, will retrieve the best model instead of the most recent one.
+        :param best: if True, will retrieve the best model instead of the most recent one.
         """
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
 
         # if filename is none, find most recent file in savepath that is a checkpoint
         if filename is None:
-            path = os.path.join(checkpoint_dir, "model_best_*" if use_best else "checkpoint_*")
+            path = os.path.join(checkpoint_dir, "model_best_*" if best else "checkpoint_*")
             checklist = glob(path)
             filename = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
             filename = os.path.basename(filename)
 
         full_fname = os.path.join(checkpoint_dir, filename)
-        print('loading {}'.format(full_fname))
+        print('loading {}'.format(filename))
         with open(full_fname, 'rb') as f:
             model = pickle.load(f)
         return model
