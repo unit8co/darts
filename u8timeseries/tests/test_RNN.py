@@ -45,7 +45,3 @@ class RNNModelTestCase(unittest.TestCase):
         self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
 
         shutil.rmtree('.u8ts')
-
-
-if __name__ == '__main__':
-    unittest.main()
