@@ -14,8 +14,8 @@ from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
 from .. import AutoRegressiveModel
 
-CHECKPOINTS_FOLDER = os.path.join('.u8timeseries', 'checkpoints')
-RUNS_FOLDER = os.path.join('.u8timeseries', 'runs')
+CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
+RUNS_FOLDER = os.path.join('.u8ts', 'runs')
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -27,7 +27,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 # TODO add batch norm
-class RNN(nn.Module):
+class RNNModule(nn.Module):
     def __init__(self,
                  name: str,
                  input_size: int,
@@ -61,7 +61,7 @@ class RNN(nn.Module):
         :param dropout: The percentage of neurons that are dropped in the non-last RNN layers. Default: 0.
         """
 
-        super(RNN, self).__init__()
+        super(RNNModule, self).__init__()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
@@ -180,9 +180,9 @@ class RNNModel(AutoRegressiveModel):
 
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
-            self.model = RNN(name=model, input_size=self.input_size, hidden_dim=hidden_size,
-                             num_layers=n_rnn_layers, output_length=output_length,
-                             num_layers_out_fc=hidden_fc_size, dropout=dropout)
+            self.model = RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
+                                   num_layers=n_rnn_layers, output_length=output_length,
+                                   num_layers_out_fc=hidden_fc_size, dropout=dropout)
         elif isinstance(model, nn.Module):
             self.model = model
         else:
@@ -243,12 +243,15 @@ class RNNModel(AutoRegressiveModel):
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         if self.batch_size is None:
-            self.batch_size = len(self.dataset)
+            self.batch_size = len(series) // 10
+            print('No batch size set. Using: {}'.format(self.batch_size))
 
         # Prepare training data:
         dataset = TimeSeriesDataset1D(series, self.seq_len, self.output_length)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
+        if len(train_loader) == 0:
+            raise ValueError('The provided training time series is too short for obtaining even one training point.')
 
         # Prepare validation data:
         if val_series is not None:
@@ -256,7 +259,7 @@ class RNNModel(AutoRegressiveModel):
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
             if len(val_dataset) == 0 or len(val_loader) == 0:
-                raise ValueError('The provided validation time series is too short for this model output length')
+                raise ValueError('The provided validation time series is too short for this model output length.')
         else:
             val_loader = None
 
@@ -441,6 +444,10 @@ class RNNModel(AutoRegressiveModel):
         if filename is None:
             path = os.path.join(checkpoint_dir, "model_best_*" if best else "checkpoint_*")
             checklist = glob(path)
+            if len(checklist) == 0:
+                raise FileNotFoundError('There is no file matching prefix {} in {}'.format(
+                    "model_best_*" if best else "checkpoint_*", checkpoint_dir
+                ))
             filename = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
             filename = os.path.basename(filename)
 
