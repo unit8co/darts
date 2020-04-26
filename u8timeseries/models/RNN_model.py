@@ -255,6 +255,8 @@ class RNNModel(AutoRegressiveModel):
             val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.output_length)
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
+            if len(val_dataset) == 0 or len(val_loader) == 0:
+                raise ValueError('The provided validation time series is too short for this model output length')
         else:
             val_loader = None
 
