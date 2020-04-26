@@ -18,7 +18,7 @@ class TransformerTestCase(unittest.TestCase):
         series_tr2 = transformer2.fit_transform(self.series)
 
         # should comply with scaling constraints
-        self.assertEqual(min(series_tr1.values()), 0.)
-        self.assertEqual(max(series_tr1.values()), 2.)
+        self.assertAlmostEqual(min(series_tr1.values()), 0.)
+        self.assertAlmostEqual(max(series_tr1.values()), 2.)
         self.assertAlmostEqual(np.mean(series_tr2.values()), 0.)
         self.assertAlmostEqual(np.std(series_tr2.values()), 1.)
