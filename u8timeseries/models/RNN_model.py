@@ -35,34 +35,39 @@ class RNN(nn.Module):
                  num_layers: int,
                  output_length: int = 1,
                  num_layers_out_fc: Optional[List] = None,
-                 dropout: float = 0.,
-                 many: bool = False):
+                 dropout: float = 0.):
         """
-        PyTorch nn module implementing a simple RNN with the specified `name` layer.
+        PyTorch `nn.Module` implementing a simple RNN with the specified `name` layer.
+        This module combines a PyTorch RNN module, together with a fully connected network, which maps the
+        last hidden layers to output of the desired size `output_length`.
 
-        :param name: The name of the specific PyTorch RNN layer ('RNN', 'GRU' or 'LSTM').
-        :param input_size: The dimensionality of the time series.
+        Inputs:
+        -------
+        * x of shape (batch_size, input_length, input_size): tensor containing the features of the input sequence
+
+        Outputs:
+        --------
+        * y of shape (batch_size, out_len, 1): tensor containing the (point) prediction at the last time step of the
+                                               sequence.
+
+        :param name: The name of the specific PyTorch RNN module ('RNN', 'GRU' or 'LSTM').
+        :param input_size: The dimensionality of the input time series.
         :param output_length: The number of steps to predict in the future.
-        :param hidden_dim: The dimensionality (nr of neurons) of the hidden layer.
-        :param num_layers: The number of RNN layers.
+        :param hidden_dim: The number of features in the hidden state h of the RNN module.
+        :param num_layers: The number of recurrent layers.
         :param num_layers_out_fc: A list containing the hidden dimensions of the layers of the fully connected NN.
-                                  This network connects the last hidden layer of the RNN module to the output.
-        :param dropout: The percentage of neurons that are dropped in the non-last RNN layers.
-
-        :param many: If True, will compare the output of all time-steps instead of only the last one.
-                     TODO: clarify
+                                  This network connects the last hidden layer of the PyTorch RNN module to the output.
+        :param dropout: The percentage of neurons that are dropped in the non-last RNN layers. Default: 0.
         """
+
         super(RNN, self).__init__()
 
-        # self.device = torch.device("cpu")
-
-        # Defining some parameters
+        # Defining parameters
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.out_len = output_length
         self.name = name
-        self.many = many
 
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
@@ -74,27 +79,32 @@ class RNN(nn.Module):
         for feature in num_layers_out_fc + [output_length]:
             feats.append(nn.Linear(last, feature))
             last = feature
-        self.fc = nn.Sequential(*feats)  # nn.Linear(hidden_dim, output_length)
+        self.fc = nn.Sequential(*feats)
 
-    def forward(self, x, y=None, epoch=0):
-        # data is batch_size X input_length X input_size
+    def forward(self, x):
+        # data is of size (batch_size, input_length, input_size)
         batch_size = x.size(0)
 
-        # Passing in the input and hidden state into the model and obtaining outputs
         out, hidden = self.rnn(x)
 
         # Reshaping the outputs such that it can be fit into the fully connected layer
-        if self.many:
-            predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
-            predictions = predictions.view(batch_size, x.size(1), self.out_len)
-        else:
-            if self.name == "LSTM":
-                hidden = hidden[0]
-            predictions = hidden[-1, :, :]
-            predictions = self.fc(predictions)
-            predictions = predictions.view(batch_size, self.out_len, 1)
+        # TODO: we need to test this
+        # if self.many:
+        #     """ Here, we apply the FC network on all the outputs of the network (at all time steps of the sequence)
+        #     """
+        #     predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
+        #     predictions = predictions.view(batch_size, x.size(1), self.out_len)
+        # else:
 
-        # predictions is of size (batch_size, output_length)
+        """ Here, we apply the FC network only on the last output point (at the last time step)
+        """
+        if self.name == "LSTM":
+            hidden = hidden[0]
+        predictions = hidden[-1, :, :]
+        predictions = self.fc(predictions)
+        predictions = predictions.view(batch_size, self.out_len, 1)
+
+        # predictions is of size (batch_size, output_length, 1)
         return predictions
 
 
