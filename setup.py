@@ -21,7 +21,7 @@ setup(name='u8timeseries',
           'pandas>=0.23.1',
           'tqdm>=4.32.1',
           'torch>=1.4.0',
-          'tensorboard>=2.2.1'
+          'tensorboard>=2.2.1',
           'ipywidgets>=7.5.1'
       ],
       zip_safe=False,
