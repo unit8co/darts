@@ -1,3 +1,4 @@
+import os
 from setuptools import setup, find_packages
 from pathlib import Path
 
@@ -8,7 +9,7 @@ for extra in ["docs", "main"]:
     ]
 
 setup(name='u8timeseries',
-      version='0.0.2',
+      version=open("u8timeseries/VERSION", "r").read(),
       description='A collection of easy-to-use timeseries forecasting models',
       url='http://github.com/unit8co/u8timeseries',
       author='Unit8 SA',
@@ -18,5 +19,6 @@ setup(name='u8timeseries',
       install_requires=requirements["main"],
       extras_require={"docs": requirements["docs"]},
       zip_safe=False,
-      python_requires='>=3.6'
+      python_requires='>=3.6',
+      package_data={'u8timeseries': ['VERSION']}
       )

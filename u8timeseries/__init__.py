@@ -7,5 +7,7 @@ from u8timeseries.models.autoregressive_model import AutoRegressiveModel
 from u8timeseries.models.theta import Theta
 from .timeseries import TimeSeries
 
+import os
 
-__version__ = '0.0.2'
+path = os.path.join(os.path.dirname(__file__), 'VERSION')
+__version__ = open(path, "r").read()

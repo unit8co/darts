@@ -13,11 +13,23 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
-        
-    - name: Install dependencies
+
+    - name: Prepare machine
       run: |
         sudo apt-get install -y pandoc
         python -m pip install --upgrade pip
+
+    - uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('docs_requirements.txt', 'setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        pip install .
         pip install -e .[docs]
 
     - name: Copy examples
@@ -28,7 +40,7 @@ jobs:
       run: |
         make --directory ./docs generate
         
-    - name: Build documentation
+    - name: Build documentation website
       run: |
         make --directory ./docs html
        
