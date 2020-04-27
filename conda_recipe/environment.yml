@@ -1,0 +1,5 @@
+name: u8timeseries-dev
+dependencies:
+  - python>=3.5
+  - conda-build
+  - conda-verify
