@@ -19,7 +19,7 @@ requirements:
     - fbprophet >=0.5
     - ipywidgets
     - matplotlib >=3.2.1
-    - numpy >=1.18.2
+    - numpy >=1.18.1
     - pandas >=0.23.1
     - pip
     - plotly >=4.6.0
@@ -34,7 +34,7 @@ requirements:
     - fbprophet >=0.5
     - ipywidgets
     - matplotlib >=3.2.1
-    - numpy >=1.18.2
+    - numpy >=1.18.1
     - pandas >=0.23.1
     - plotly >=4.6.0
     - pmdarima >=1.5.3
