@@ -1,13 +1,44 @@
-name: Build documentation and update gh-pages branch
+name: u8timeseries workflow
 
 on: [push]
 
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.6
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: Prepare machine
+        run: |
+          python -m pip install --upgrade pip
+
+      - uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install .
+
+      - name: Run tests
+        run: |
+          python -m unittest
+
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
 
     - name: Set up Python 3.6
       uses: actions/setup-python@v1
@@ -23,7 +54,7 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('docs_requirements.txt', 'setup.py') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/docs.txt', 'requirements/main.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
