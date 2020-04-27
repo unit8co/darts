@@ -41,7 +41,7 @@ class MetricsTestCase(unittest.TestCase):
                                metrics.marre(self.series1+100, self.series2+100))
 
     def test_season(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             metrics.mase(self.series3, self.series3 * 1.3, 8)
 
 

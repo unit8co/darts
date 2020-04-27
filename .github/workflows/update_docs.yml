@@ -1,0 +1,56 @@
+name: Build documentation and update gh-pages branch
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Prepare machine
+      run: |
+        sudo apt-get install -y pandoc
+        python -m pip install --upgrade pip
+
+    - uses: actions/cache@v1
+      id: cache
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('docs_requirements.txt', 'setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        pip install .
+        pip install -e .[docs]
+
+    - name: Copy examples
+      run: |
+        make --directory ./docs copy-examples
+
+    - name: Generate documentation
+      run: |
+        make --directory ./docs generate
+        
+    - name: Build documentation website
+      run: |
+        make --directory ./docs html
+       
+    - name: Publish documentation
+      uses: s0/git-publish-subdir-action@v2.2.0
+      if: contains(github.ref, 'master')
+      env:
+        REPO: self
+        BRANCH: gh-pages
+        FOLDER: docs/build/html
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        

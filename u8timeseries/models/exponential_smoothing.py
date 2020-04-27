@@ -1,7 +1,9 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
+from ..custom_logging import time_log, get_logger
 import statsmodels.tsa.holtwinters as hw
 
+logger = get_logger(__name__)
 
 class ExponentialSmoothing(AutoRegressiveModel):
     """
@@ -24,6 +26,7 @@ class ExponentialSmoothing(AutoRegressiveModel):
     def __str__(self):
         return 'Exponential smoothing'
 
+    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
         self.model = hw.ExponentialSmoothing(series.values(),

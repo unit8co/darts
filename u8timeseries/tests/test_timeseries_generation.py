@@ -6,8 +6,8 @@ from ..timeseries import TimeSeries
 from u8timeseries.utils.timeseries_generation import (
     constant_timeseries, 
     linear_timeseries, 
-    periodic_timeseries,
-    white_noise_timeseries, 
+    sine_timeseries,
+    gaussian_timeseries, 
     random_walk_timeseries, 
     us_holiday_timeseries
 )
@@ -30,33 +30,34 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         # testing parameters
         length = 100
         start_value = 5
-        value_delta = 3
+        end_value = 12
 
-        # testing for correct start and end values
-        linear_ts = linear_timeseries(start_value=start_value, value_delta=value_delta, length=length)
+        # testing for start value, end value and delta between two adjacent entries
+        linear_ts = linear_timeseries(start_value=start_value, end_value=end_value, length=length)
         self.assertEqual(linear_ts.values()[0], start_value)
-        self.assertEqual(linear_ts.values()[-1], start_value + (length - 1) * value_delta)
+        self.assertEqual(linear_ts.values()[-1], end_value)
+        self.assertAlmostEqual(linear_ts.values()[-1] - linear_ts.values()[-2], (end_value - start_value) / (length - 1))
 
-    def test_periodic_timeseries(self):
+    def test_sine_timeseries(self):
 
         # testing parameters
         length = 100
-        amplitude = 5
-        y_offset = -3
+        value_amplitude = 5
+        value_y_offset = -3
 
         # testing for correct value range
-        periodic_ts = periodic_timeseries(length=length, amplitude=amplitude, y_offset=y_offset)
-        self.assertTrue((periodic_ts <= y_offset + amplitude).all())
-        self.assertTrue((periodic_ts >= y_offset - amplitude).all())
+        sine_ts = sine_timeseries(length=length, value_amplitude=value_amplitude, value_y_offset=value_y_offset)
+        self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all())
+        self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all())
 
-    def test_white_noise_timeseries(self):
+    def test_gaussian_timeseries(self):
 
         # testing parameters
         length = 100
 
         # testing for correct length
-        white_noise_ts = white_noise_timeseries(length=length)
-        self.assertEqual(len(white_noise_ts), length)
+        gaussian_ts = gaussian_timeseries(length=length)
+        self.assertEqual(len(gaussian_ts), length)
 
     def test_random_walk_timeseries(self):
 
@@ -71,9 +72,9 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing parameters
         length = 30
-        start_date = pd.Timestamp('20201201')
+        start_ts = pd.Timestamp('20201201')
 
         # testing for christmas and non-holiday
-        us_holiday_ts = us_holiday_timeseries(length=length, start_date=start_date)
+        us_holiday_ts = us_holiday_timeseries(length=length, start_ts=start_ts)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
