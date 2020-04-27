@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install -r docs_requirements.txt
+        pip install -e .[docs]
 
     - name: Copy examples
       run: |

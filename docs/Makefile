@@ -15,7 +15,7 @@ help:
 .PHONY: help Makefile
 
 generate:
-	@sphinx-apidoc -e -f -t templates -o source/generated_api ../u8timeseries
+	@sphinx-apidoc -e -f --templatedir templates -o source/generated_api ../u8timeseries
 
 copy-examples:
 	@cp -r ../examples source

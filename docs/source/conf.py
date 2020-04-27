@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'u8timeseries'
 copyright = '2020, unit8'
 author = 'Unit8'
+version = '0.0.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -37,7 +38,8 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
-    'nbsphinx'
+    'nbsphinx',
+    'm2r'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
