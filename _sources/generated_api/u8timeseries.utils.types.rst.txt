@@ -1,5 +1,5 @@
-u8timeseries.utils.types module
-===============================
+u8timeseries.utils.types 
+=========================
 
 .. automodule:: u8timeseries.utils.types
    :members:

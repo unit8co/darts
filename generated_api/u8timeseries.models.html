@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.models package &mdash; u8timeseries  documentation</title>
+  <title>u8timeseries.models &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="u8timeseries.models.arima module" href="u8timeseries.models.arima.html" />
-    <link rel="prev" title="u8timeseries.metrics.metrics module" href="u8timeseries.metrics.metrics.html" /> 
+    <link rel="next" title="u8timeseries.models.arima" href="u8timeseries.models.arima.html" />
+    <link rel="prev" title="u8timeseries.metrics.metrics" href="u8timeseries.metrics.metrics.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -61,6 +61,10 @@
           
             
             
+              <div class="version">
+                0.0.2
+              </div>
+            
           
 
           
@@ -82,31 +86,25 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Getting Started</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../documentation.html">Documentation</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../documentation.html#the-api">The API</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.html">u8timeseries package</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.html#module-u8timeseries">Module contents</a></li>
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.html">u8timeseries.backtesting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">u8timeseries.metrics</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">u8timeseries.models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.tests.html">u8timeseries.tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.utils.html">u8timeseries.utils</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../documentation.html#air-passenger-example">Air Passenger Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../documentation.html#u8timeseries-intro">u8timeseries intro</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
 </ul>
 </li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../devguide.html">Developer’s Guide</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../legal.html">Legal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
 </ul>
 
             
@@ -152,11 +150,9 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../documentation.html">Documentation</a> &raquo;</li>
+          <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-          <li><a href="u8timeseries.html">u8timeseries package</a> &raquo;</li>
-        
-      <li>u8timeseries.models package</li>
+      <li>u8timeseries.models</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -199,27 +195,24 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="u8timeseries-models-package">
-<h1>u8timeseries.models package<a class="headerlink" href="#u8timeseries-models-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="u8timeseries-models">
+<h1>u8timeseries.models<a class="headerlink" href="#u8timeseries-models" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.arima.html">u8timeseries.models.arima module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">u8timeseries.models.autoregressive_model module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.baselines.html">u8timeseries.models.baselines module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">u8timeseries.models.exponential_smoothing module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.prophet.html">u8timeseries.models.prophet module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.regressive_model.html">u8timeseries.models.regressive_model module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">u8timeseries.models.sequential_aggregation module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">u8timeseries.models.standard_regressive_model module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.statistics.html">u8timeseries.models.statistics module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.theta.html">u8timeseries.models.theta module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.arima.html">u8timeseries.models.arima</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">u8timeseries.models.autoregressive_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.baselines.html">u8timeseries.models.baselines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">u8timeseries.models.exponential_smoothing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.prophet.html">u8timeseries.models.prophet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.regressive_model.html">u8timeseries.models.regressive_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">u8timeseries.models.sequential_aggregation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">u8timeseries.models.standard_regressive_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.statistics.html">u8timeseries.models.statistics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.theta.html">u8timeseries.models.theta</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="module-u8timeseries.models">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-u8timeseries.models" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -231,10 +224,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.models.arima.html" class="btn btn-neutral float-right" title="u8timeseries.models.arima module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.models.arima.html" class="btn btn-neutral float-right" title="u8timeseries.models.arima" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.metrics.metrics.html" class="btn btn-neutral float-left" title="u8timeseries.metrics.metrics module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.metrics.metrics.html" class="btn btn-neutral float-left" title="u8timeseries.metrics.metrics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

@@ -1,5 +1,5 @@
-u8timeseries.custom\_logging module
-===================================
+u8timeseries.custom\_logging 
+=============================
 
 .. automodule:: u8timeseries.custom_logging
    :members:

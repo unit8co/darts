@@ -1,5 +1,5 @@
-u8timeseries.tests.test\_autoregression\_models module
-======================================================
+u8timeseries.tests.test\_autoregression\_models 
+================================================
 
 .. automodule:: u8timeseries.tests.test_autoregression_models
    :members:

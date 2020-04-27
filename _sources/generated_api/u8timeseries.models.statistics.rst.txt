@@ -1,5 +1,5 @@
-u8timeseries.models.statistics module
-=====================================
+u8timeseries.models.statistics 
+===============================
 
 .. automodule:: u8timeseries.models.statistics
    :members:

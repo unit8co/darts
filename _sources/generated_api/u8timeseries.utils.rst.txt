@@ -1,21 +1,13 @@
-u8timeseries.utils package
-==========================
+u8timeseries.utils 
+===================
 
 Submodules
 ----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    u8timeseries.utils.missing_values
    u8timeseries.utils.timeseries_generation
    u8timeseries.utils.types
    u8timeseries.utils.utils
-
-Module contents
----------------
-
-.. automodule:: u8timeseries.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,11 +1,11 @@
-u8timeseries.tests package
-==========================
+u8timeseries.tests 
+===================
 
 Submodules
 ----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    u8timeseries.tests.test_autoregression_models
    u8timeseries.tests.test_logging
@@ -15,11 +15,3 @@ Submodules
    u8timeseries.tests.test_statistics
    u8timeseries.tests.test_timeseries
    u8timeseries.tests.test_timeseries_generation
-
-Module contents
----------------
-
-.. automodule:: u8timeseries.tests
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to u8timeseries’s documentation! &mdash; u8timeseries  documentation</title>
+  <title>u8timeseries &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="install.html" /> 
+    <link rel="next" title="u8timeseries" href="generated_api/u8timeseries.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -59,6 +59,10 @@
 
           
             
+            
+              <div class="version">
+                0.0.2
+              </div>
             
           
 
@@ -82,17 +86,10 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
-<li class="toctree-l1"><a class="reference internal" href="devguide.html">Developer’s Guide</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
 
             
@@ -138,7 +135,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to u8timeseries’s documentation!</li>
+      <li>u8timeseries</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -181,86 +178,81 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="welcome-to-u8timeseries-s-documentation">
-<h1>Welcome to u8timeseries’s documentation!<a class="headerlink" href="#welcome-to-u8timeseries-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>u8timeseries is a Python library for the manipulation and prediction of time series. The main goal is to provide easy access to various existing models and implementations in a single easy-to-use API.</p>
-<p>Currently, we propose access the following models:</p>
-<ul class="simple">
-<li><p>ARIMA</p></li>
-<li><p>AUTO-ARIMA</p></li>
-<li><p>Prophet</p></li>
-<li><p>Simple Exponential Smoothing</p></li>
-<li><p>Theta</p></li>
-</ul>
-<p>Code is hosted at <a class="reference external" href="http://github.com/unit8co/u8timeseries/">GitHub</a> under the Apache License 2.0. Please post issues or report there.</p>
-<div class="section" id="getting-started">
-<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="u8timeseries">
+<h1>u8timeseries<a class="headerlink" href="#u8timeseries" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="macos-install">
+<h2>macOS install:<a class="headerlink" href="#macos-install" title="Permalink to this headline">¶</a></h2>
+<p>The install happens with <code class="docutils literal notranslate"><span class="pre">pip</span></code>. For <code class="docutils literal notranslate"><span class="pre">conda</span></code> users, do the following first:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">gcc</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">fbprophet</span>
+</pre></div>
+</div>
+<p>Next, from the root of u8timeseries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>If Fortran is not installed on the device, the following error message might be printed during the installation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">error</span><span class="p">:</span> <span class="n">library</span> <span class="n">dfftpack</span> <span class="n">has</span> <span class="n">Fortran</span> <span class="n">sources</span> <span class="n">but</span> <span class="n">no</span> <span class="n">Fortran</span> <span class="n">compiler</span> <span class="n">found</span>
+</pre></div>
+</div>
+<p>This can be solved by installing gcc using Homebrew:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brew</span> <span class="n">install</span> <span class="n">gcc</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="docker-install">
+<h2>docker install<a class="headerlink" href="#docker-install" title="Permalink to this headline">¶</a></h2>
+<p>Build and run the docker using the following two commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span>
+<span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>For now the best documentation is examples.
+See: <a class="reference external" href="https://github.com/unit8co/u8timeseries/blob/master/examples/Air-passengers-example.ipynb">https://github.com/unit8co/u8timeseries/blob/master/examples/Air-passengers-example.ipynb</a></p>
+</div>
+<div class="section" id="issue-with-prophet-and-pandas">
+<h2>Issue with Prophet and Pandas<a class="headerlink" href="#issue-with-prophet-and-pandas" title="Permalink to this headline">¶</a></h2>
+<p>If you encounter the following error when trying to plot a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">float</span><span class="p">()</span> <span class="n">argument</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="n">string</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">number</span><span class="p">,</span> <span class="ow">not</span> <span class="s1">&#39;Period</span>
+</pre></div>
+</div>
+<p>this is likely because <a class="reference external" href="https://darektidwell.com/typeerror-float-argument-must-be-a-string-or-a-number-not-period-facebook-prophet-and-pandas/">Prophet deregisters the Pandas converters in its code</a>. To fix it, just call</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">register_matplotlib_converters</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="unit-test-status">
+<h2>unit test status<a class="headerlink" href="#unit-test-status" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg"><img alt="ci_workflow" src="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg" /></a>
+<div class="section" id="api">
+<h3>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install.html#faq">FAQ</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries</a></li>
 </ul>
 </div>
 </div>
-<div class="section" id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="documentation.html#the-api">The API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries package</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="documentation.html#air-passenger-example">Air Passenger Example</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html">Read data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Exploration">Exploration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Build-three-models">Build three models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Try-one-of-the-models">Try one of the models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#The-Theta-method">The Theta method</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Simulate-historical-forecasting">Simulate historical forecasting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Backtest-the-models-on-the-data-using-a-user-defined-metric">Backtest the models on the data using a user-defined metric</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Ensembling-several-predictions">Ensembling several predictions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Example-of-forecasting-using-a-regressive-model-and-extra-features">Example of forecasting using a regressive model and extra features</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="documentation.html#u8timeseries-intro">u8timeseries intro</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="examples/u8timeseries-intro.html"><code class="docutils literal notranslate"><span class="pre">u8timeseries</span></code> Intro</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/u8timeseries-intro.html#Auto-regressive-Models">Auto-regressive Models</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
 </div>
 </div>
-<div class="section" id="development">
-<h2>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
-<li class="toctree-l1"><a class="reference internal" href="devguide.html">Developer’s Guide</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="legal">
-<h2>Legal<a class="headerlink" href="#legal" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal</a></li>
-</ul>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
 </div>
 
 
@@ -271,7 +263,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="generated_api/u8timeseries.html" class="btn btn-neutral float-right" title="u8timeseries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

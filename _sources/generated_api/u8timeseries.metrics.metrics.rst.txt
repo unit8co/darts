@@ -1,5 +1,5 @@
-u8timeseries.metrics.metrics module
-===================================
+u8timeseries.metrics.metrics 
+=============================
 
 .. automodule:: u8timeseries.metrics.metrics
    :members:

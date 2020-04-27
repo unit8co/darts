@@ -1,5 +1,5 @@
-u8timeseries.models.exponential\_smoothing module
-=================================================
+u8timeseries.models.exponential\_smoothing 
+===========================================
 
 .. automodule:: u8timeseries.models.exponential_smoothing
    :members:

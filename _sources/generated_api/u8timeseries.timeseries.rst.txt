@@ -1,5 +1,5 @@
-u8timeseries.timeseries module
-==============================
+u8timeseries.timeseries 
+========================
 
 .. automodule:: u8timeseries.timeseries
    :members:

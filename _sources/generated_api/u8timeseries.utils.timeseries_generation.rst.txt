@@ -1,5 +1,5 @@
-u8timeseries.utils.timeseries\_generation module
-================================================
+u8timeseries.utils.timeseries\_generation 
+==========================================
 
 .. automodule:: u8timeseries.utils.timeseries_generation
    :members:

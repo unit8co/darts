@@ -1,5 +1,5 @@
-u8timeseries.models.sequential\_aggregation module
-==================================================
+u8timeseries.models.sequential\_aggregation 
+============================================
 
 .. automodule:: u8timeseries.models.sequential_aggregation
    :members:

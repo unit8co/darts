@@ -1,5 +1,5 @@
-u8timeseries.tests.test\_timeseries module
-==========================================
+u8timeseries.tests.test\_timeseries 
+====================================
 
 .. automodule:: u8timeseries.tests.test_timeseries
    :members:

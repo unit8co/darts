@@ -1,5 +1,5 @@
-u8timeseries.models.standard\_regressive\_model module
-======================================================
+u8timeseries.models.standard\_regressive\_model 
+================================================
 
 .. automodule:: u8timeseries.models.standard_regressive_model
    :members:

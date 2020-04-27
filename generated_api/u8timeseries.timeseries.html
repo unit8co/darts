@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.timeseries module &mdash; u8timeseries  documentation</title>
+  <title>u8timeseries.timeseries &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Read data" href="../examples/Air-passengers-example.html" />
-    <link rel="prev" title="u8timeseries.custom_logging module" href="u8timeseries.custom_logging.html" /> 
+    <link rel="next" title="Examples" href="../examples.html" />
+    <link rel="prev" title="u8timeseries.custom_logging" href="u8timeseries.custom_logging.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -61,6 +61,10 @@
           
             
             
+              <div class="version">
+                0.0.2
+              </div>
+            
           
 
           
@@ -82,31 +86,19 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Getting Started</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../documentation.html">Documentation</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../documentation.html#the-api">The API</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.html">u8timeseries package</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a></li>
-<li class="toctree-l4 current"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="u8timeseries.html#module-u8timeseries">Module contents</a></li>
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.custom_logging.html">u8timeseries.custom_logging</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">u8timeseries.timeseries</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../documentation.html#air-passenger-example">Air Passenger Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../documentation.html#u8timeseries-intro">u8timeseries intro</a></li>
 </ul>
 </li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../devguide.html">Developer’s Guide</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../legal.html">Legal</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
 </ul>
 
             
@@ -152,11 +144,9 @@
     
       <li><a href="../index.html">Docs</a> &raquo;</li>
         
-          <li><a href="../documentation.html">Documentation</a> &raquo;</li>
+          <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-          <li><a href="u8timeseries.html">u8timeseries package</a> &raquo;</li>
-        
-      <li>u8timeseries.timeseries module</li>
+      <li>u8timeseries.timeseries</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -200,7 +190,7 @@
 }
 </style>
 <div class="section" id="module-u8timeseries.timeseries">
-<span id="u8timeseries-timeseries-module"></span><h1>u8timeseries.timeseries module<a class="headerlink" href="#module-u8timeseries.timeseries" title="Permalink to this headline">¶</a></h1>
+<span id="u8timeseries-timeseries"></span><h1>u8timeseries.timeseries<a class="headerlink" href="#module-u8timeseries.timeseries" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="u8timeseries.timeseries.TimeSeries">
 <em class="property">class </em><code class="sig-prename descclassname">u8timeseries.timeseries.</code><code class="sig-name descname">TimeSeries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">confidence_lo</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">confidence_hi</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
@@ -706,10 +696,10 @@ Use np.nan to ignore a specific index in a series.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../examples/Air-passengers-example.html" class="btn btn-neutral float-right" title="Read data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.custom_logging.html" class="btn btn-neutral float-left" title="u8timeseries.custom_logging module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.custom_logging.html" class="btn btn-neutral float-left" title="u8timeseries.custom_logging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
