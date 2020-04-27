@@ -26,8 +26,8 @@ VERSION_FILE = "u8timeseries/VERSION"
 parser = argparse.ArgumentParser(prog="version bump")
 parser.add_argument('-b', '--bump', help="BUMP should be an integer between 0 and 3" \
                                          " indicating the type of version bump.")
-parser.add_argument('-r', '--release', help="RELEASE is expected to be 'y' or 'n', indicating" \
-                                            " whether or not the SNAPSHOT suffix should be added.")
+parser.add_argument('-r', '--release', help="RELEASE is expected to be 'y' or 'n'." \
+                                            " If set to 'n' the SNAPSHOT suffix will be added.")
 parser.add_argument('-p', '--path', help="PATH is expected to be the path to the VERSION file.")
 args = parser.parse_args()
 
