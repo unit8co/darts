@@ -1,13 +1,14 @@
 {% set name = "u8timeseries" %}
 {% set version = "0.0.2" %}
+# TODO: version above needs to injected like in setup.py
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 3fb3728570622d0eed6b532a884cf445b57eb11d863212c2513a7e9b139a0705
+  # root folder, not the package
+  path: "../../../u8timeseries"
 
 build:
   number: 0
@@ -15,53 +16,31 @@ build:
 
 requirements:
   host:
-    - dateutils >=0.6.8
-    - fbprophet >=0.5
-    - ipywidgets
-    - matplotlib >=3.2.1
-    - numpy >=1.18.1
-    - pandas >=0.23.1
-    - pip
-    - plotly >=4.6.0
-    - pmdarima >=1.5.3
     - python
-    - scikit-learn >=0.21.2
-    - scipy >=1.4.1
-    - statsmodels >=0.11.1
-    - tqdm >=4.32.1
   run:
-    - dateutils >=0.6.8
-    - fbprophet >=0.5
-    - ipywidgets
-    - matplotlib >=3.2.1
-    - numpy >=1.18.1
-    - pandas >=0.23.1
-    - plotly >=4.6.0
-    - pmdarima >=1.5.3
     - python
-    - scikit-learn >=0.21.2
+    - numpy >=1.18.1
     - scipy >=1.4.1
     - statsmodels >=0.11.1
+    - pmdarima >=1.5.3
+    - matplotlib >=3.2.1
+    - fbprophet >=0.5
+    - pandas >=0.23.1
     - tqdm >=4.32.1
 
-test:
-  imports:
-    - u8timeseries
-    - u8timeseries.backtesting
-    - u8timeseries.metrics
-    - u8timeseries.models
-    - u8timeseries.tests
-    - u8timeseries.utils
+# test:
+  # here could add imports and tests execution; note that imports seems to be buggy
 
 about:
   home: "http://github.com/unit8co/u8timeseries"
   license: Apache 2.0
   license_family: APACHE
-  license_file: 
+  license_file: LICENSE
   summary: "A collection of easy-to-use timeseries forecasting models"
   doc_url: 
   dev_url: 
 
 extra:
   recipe-maintainers:
+    # TODO
     - your-github-id-here

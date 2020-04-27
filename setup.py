@@ -22,18 +22,13 @@ setup(name='u8timeseries',
 =======
       install_requires=[
           'numpy>=1.18.1',
-          'dateutils>=0.6.8',
           'scipy>=1.4.1',
           'statsmodels>=0.11.1',
           'pmdarima>=1.5.3',
-          'plotly>=4.6.0',
           'matplotlib>=3.2.1',
           'fbprophet>=0.5',
-          'scikit-learn>=0.21.2',
           'pandas>=0.23.1',
-          'tqdm>=4.32.1',
-          'ipywidgets',
-          'testfixtures'
+          'tqdm>=4.32.1'
       ],
 >>>>>>> conda currently has numpy up to 1.18.1
       zip_safe=False,
