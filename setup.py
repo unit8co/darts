@@ -1,12 +1,18 @@
 import os
-from setuptools import setup, find_packages
-from pathlib import Path
 
-requirements = {}
-for extra in ["docs", "main"]:
-    requirements[extra] = [
-        r for r in Path(f"requirements/{extra}.txt").read_text().splitlines()
-    ]
+import yaml
+from setuptools import setup, find_packages
+
+
+def read_requirements_from_conda():
+    path = os.path.join('conda_recipe', 'u8timeseries', 'meta.yaml')
+    with open(path, 'r') as stream:
+        requirements = yaml.safe_load(stream)['requirements']['run']
+        # remove the first python requirement
+        requirements = requirements[1:]
+
+        return requirements
+
 
 setup(name='u8timeseries',
       version=open("u8timeseries/VERSION", "r").read(),
@@ -16,21 +22,7 @@ setup(name='u8timeseries',
       author_email='info@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
-<<<<<<< HEAD
-      install_requires=requirements["main"],
-      extras_require={"docs": requirements["docs"]},
-=======
-      install_requires=[
-          'numpy>=1.18.1',
-          'scipy>=1.4.1',
-          'statsmodels>=0.11.1',
-          'pmdarima>=1.5.3',
-          'matplotlib>=3.2.1',
-          'fbprophet>=0.5',
-          'pandas>=0.23.1',
-          'tqdm>=4.32.1'
-      ],
->>>>>>> conda currently has numpy up to 1.18.1
+      install_requires=read_requirements_from_conda(),
       zip_safe=False,
       python_requires='>=3.6',
       package_data={'u8timeseries': ['VERSION']}
