@@ -54,14 +54,14 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/docs.txt', 'requirements/main.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         pip install .
-        pip install -e .[docs]
+        pip install .[docs]
 
     - name: Copy examples
       run: |
@@ -83,5 +83,3 @@ jobs:
         BRANCH: gh-pages
         FOLDER: docs/build/html
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-        
