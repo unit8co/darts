@@ -54,7 +54,7 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/*') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
