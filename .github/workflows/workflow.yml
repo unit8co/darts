@@ -22,13 +22,14 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/tests.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           pip install .
+          pip install .[tests]
 
       - name: Run tests
         run: |
@@ -54,7 +55,7 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/*') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/docs.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
