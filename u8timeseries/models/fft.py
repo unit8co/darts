@@ -10,42 +10,65 @@ logger = get_logger(__name__)
 
 ### helper functions that might have to be relocated ###
 
-def compare_seasonality(ts_1, ts_2, required_matches):
+def compare_seasonality(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set):
+    """
+    Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
+    It returns true if and only if the two timestamps are matching in all given attributes.
+
+    :param ts_1: First timestamp that will be compared.
+    :param ts_2: Second timestamp that will be compared.
+    :required_matches: A set of pd.Timestamp attributes which ts_1 and ts_2 will be checked on.
+    :return: True if and only if 'ts_1' and 'ts_2' match in all attributes given in 'required_matches'.
+    """
     is_matching = True
-    if 'month' in required_matches:
-        is_matching = is_matching and (ts_1.month == ts_2.month)
-    if 'day' in required_matches:
-        is_matching = is_matching and (ts_1.day == ts_2.day)
-    if 'weekday' in required_matches:
-        is_matching = is_matching and (ts_1.weekday() == ts_2.weekday())
-    if 'hour' in required_matches:
-        is_matching = is_matching and (ts_1.hour == ts_2.hour)
-    if 'minute' in required_matches:
-        is_matching = is_matching and (ts_1.minute == ts_2.minute)
-    if 'second' in required_matches:
-        is_matching = is_matching and (ts_1.second == ts_2.second)
+    for required_match in required_matches:
+        is_matching = is_matching and (getattr(ts_1, required_match) == getattr(ts_2, required_match))
     return is_matching
 
+def crop_to_match_seasons(series: 'TimeSeries', required_matches: set):
+    """
+    Crops a given TimeSeries 'series' that will be used as a training set in such
+    a way that its first entry has a timestamp that matches the first timestamp
+    right after the end of 'series' in all attributes given in 'required_matches'.
+    If no such timestamp can be found, the original TimeSeries instance is returned.
 
-
-def crop_to_match_seasons(series: 'TimeSeries', required_matches={'day', 'month'}):
+    :param series: TimeSeries instance to be cropped.
+    :param ts_2: Second timestamp that will be compared.
+    :required_matches: A set of pd.Timestamp attributes which will be used to choose the cropping point.
+    :return: New TimeSeries instance that is cropped as described above.
+    """
     first_ts = series._series.index[0]
     freq = first_ts.freq
     pred_ts = series._series.index[-1] + freq
 
+    # start at first timestamp of given series and move forward until a matching timestamp is found
     curr_ts = first_ts
-    while (curr_ts < pred_ts - 3 * freq):
+    while (curr_ts < pred_ts - 4 * freq):
         curr_ts += freq
         if compare_seasonality(pred_ts, curr_ts, required_matches):
             new_series = series.drop_before(curr_ts)
             return new_series
     
-    logger.warning("No matching time stamp could be found, returning original TimeSeries.")
+    logger.warning("No matching timestamp could be found, returning original TimeSeries.")
     return series
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, filter_first_n=-1, required_matches={}, detrend=False, detrend_poly_degree=3):
+    def __init__(self, filter_first_n: int = -1, required_matches: set = {}, detrend: bool = False, detrend_poly_degree: int = 3):
+        """
+        Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
+        with subsequent selection of the most significant frequencies to remove noise from the prediction.
+
+        :param filter_first_n: The total number of frequencies that will be used for forecasting.
+        :param required_matches: The attributes of pd.Timestamp that will be used to create a training
+                                 sequence that is cropped at the beginning such that the first timestamp 
+                                 of the training sequence and the first prediction point have matching 'phases'.
+                                 If the series has a yearly seasonality, include 'month', if it has a monthly 
+                                 seasonality, include 'day', etc.
+        :param detrend: Boolean value indicating whether or not detrending will be applied before performing DFT.
+        :detrend_poly_degree: The degree of the polynomial that will be used for detrending.
+
+        """
         self.filter_first_n = filter_first_n
         self.required_matches = required_matches
         self.detrend = detrend
@@ -55,6 +78,9 @@ class FFT(AutoRegressiveModel):
         return 'FFT'
 
     def chosen_frequencies(self):
+        """
+        Returns the most significant frequencies that were chosen when training the model.
+        """
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before chosen_frequencies()'), logger)
         frequencies = np.fft.fftfreq(len(self.fft_values))
