@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'u8timeseries'
-copyright = '2020, unit8'
+copyright = '2020, Unit8'
 author = 'Unit8'
 version = '0.0.2'
 
