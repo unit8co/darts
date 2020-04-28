@@ -22,9 +22,9 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt') }}
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            tests-${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -54,9 +54,9 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/docs.txt', 'requirements/main.txt') }}
+        key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/docs.txt', 'requirements/main.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          docs-${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
@@ -83,7 +83,7 @@ jobs:
   deploy-docs:
     needs: [tests, docs]
     runs-on: ubuntu-latest
-    if: contains(github.ref, 'master')
+#    if: contains(github.ref, 'master')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v1
@@ -105,15 +105,16 @@ jobs:
       - uses: actions/checkout@v2
       - name: Login to gcloud registry
         id: gcloud
-        uses: elgohr/gcloud-login-action@master
+        uses: elgohr/gcloud-login-action@0.2
         with:
           account_key: ${{ secrets.GCLOUD_KEY }}
       - name: Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@master
+        uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
           name: eu.gcr.io/unit8-product/u8timeseries
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
           registry: eu.gcr.io
+          cache: true
 
         
