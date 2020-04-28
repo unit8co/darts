@@ -1,7 +1,8 @@
 ![u8timeseries](images/logo-72dpi.png "u8timeseries")
+![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
 
-**u8timeseries** is a python library for easily manipulating and forecasting time series in python.
-It contains a variety of models, from ARIMA to neural networks.
+**u8timeseries** is a python library for easy manipulation and forecasting time series in python.
+It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
@@ -12,7 +13,8 @@ Run the following in your favorite python environment:
 pip install u8timeseries
 ```
 
-##### Running the examples only without installing:
+**Running the examples only without installing:**
+
 To run the example notebooks without installing, using Docker, you can also run: 
 ```
 ./build_docker.sh && ./run_docker.sh
@@ -50,29 +52,29 @@ plt.xlabel('Year')
 We invite you to go over the example notebooks in the `examples` directory.
 
 ### Documentation
-The documentation of the API and models is available here:
-https://unit8co.github.io/u8timeseries/
+The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
 ### List of Features
 Currently, the library contains the following features: 
 
-* **Forecasting Models:** Exponential smoothing, ARIMA & auto-ARIMA, Facebook Prophet, Theta method, 
-Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).
+**Forecasting Models:** 
+* Exponential smoothing, 
+* ARIMA & auto-ARIMA,
+* Facebook Prophet,
+* Theta method, 
+* Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).
 
-* **Preprocessing:** Transformer tool for easily scaling / normalizing time series.
+**Preprocessing:** Transformer tool for easily scaling / normalizing time series.
 
-* **Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
+**Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
 from R2-scores to Mean Absolute Scaled Error.
 
-* **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
+**Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-* **Regressive Models:** Possibility to predict a time series from several other time series 
+**Regressive Models:** Possibility to predict a time series from several other time series 
 (e.g., external regressors), using arbitrary regressive models.
 
 
 ### Contribute
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.
-
-### Unit Tests Status
-![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
