@@ -89,6 +89,7 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
+          path: docs/build/html
       - name: Publish documentation
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
@@ -115,6 +116,7 @@ jobs:
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
           registry: eu.gcr.io
+          tags: "latest"
           cache: true
 
         
