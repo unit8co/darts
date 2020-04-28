@@ -1,7 +1,8 @@
+{% set data = load_setup_py_data() %}
+
 package:
   name: "u8timeseries"
-  # TODO: version above needs to injected like in setup.py
-  version: "0.0.2"
+  version: {{ data.get('version').split('-', 1)[0] }}
 
 source:
   # root folder, not the package
@@ -13,10 +14,10 @@ build:
 
 requirements:
   host:
-    - python
+    - python >=3.6,<3.8
   run:
   # only essential requirements to use this library ~ setup.py install_requires ~ requirements/main.txt
-    - python
+    - python >=3.6,<3.8
     - numpy >=1.18.1
     - scipy >=1.4.1
     - statsmodels >=0.11.1
@@ -26,8 +27,9 @@ requirements:
     - pandas >=0.23.1
     - tqdm >=4.32.1
 
-# test:
-  # here could add imports and tests execution; note that imports seems to be buggy
+test:
+  imports:
+    - u8timeseries
 
 about:
   home: "http://github.com/unit8co/u8timeseries"
