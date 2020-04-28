@@ -88,15 +88,6 @@ class RNNModule(nn.Module):
 
         out, hidden = self.rnn(x)
 
-        # Reshaping the outputs such that it can be fit into the fully connected layer
-        # TODO: we need to test this
-        # if self.many:
-        #     """ Here, we apply the FC network on all the outputs of the network (at all time steps of the sequence)
-        #     """
-        #     predictions = self.fc(out.contiguous().view(-1, self.hidden_dim))
-        #     predictions = predictions.view(batch_size, x.size(1), self.out_len)
-        # else:
-
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
         if self.name == "LSTM":
