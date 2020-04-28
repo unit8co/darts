@@ -1,5 +1,8 @@
 from ..timeseries import TimeSeries
+from ..custom_logging import raise_if_not, get_logger
 import torch
+
+logger = get_logger(__name__)
 
 
 class TimeSeriesDataset1D(torch.utils.data.Dataset):
@@ -26,8 +29,12 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
 
-        assert self.data_length > 0, "The input sequence length must be positive. It is {}".format(self.data_length)
-        assert self.target_length > 0, "The output sequence length must be positive. It is {}".format(self.target_length)
+        raise_if_not(self.data_length > 0,
+                     "The input sequence length must be positive. It is {}".format(self.data_length),
+                     logger)
+        raise_if_not(self.target_length > 0,
+                     "The output sequence length must be positive. It is {}".format(self.target_length),
+                     logger)
 
     def __len__(self):
         return self.len_series - self.data_length - self.target_length + 1

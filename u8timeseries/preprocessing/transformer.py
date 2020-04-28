@@ -1,5 +1,8 @@
 from ..timeseries import TimeSeries
+from ..custom_logging import get_logger, raise_log
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+logger = get_logger(__name__)
 
 
 class Transformer:
@@ -9,8 +12,10 @@ class Transformer:
 
     def __init__(self, transformer=MinMaxScaler(feature_range=(0, 1))):
         def _raise():
-            raise ValueError(
-                'The provided transformer object must have fit(), transform() and inverse_transform() methods')
+            raise_log(ValueError(
+                      'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
+                      logger)
+
         if (not callable(getattr(transformer, "fit", None)) or
             not callable(getattr(transformer, "transform", None)) or
             not callable(getattr(transformer, "inverse_transform", None))):
