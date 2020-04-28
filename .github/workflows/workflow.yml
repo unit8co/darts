@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .
-          pip install .[tests]
+          pip install -r requirements/tests.txt
 
       - name: Run tests
         run: |
@@ -62,7 +62,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install .[docs]
+        pip install -r requirements/docs.txt
 
     - name: Copy examples
       run: |

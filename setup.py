@@ -2,12 +2,9 @@ from pathlib import Path
 
 from setuptools import setup, find_packages
 
-requirements = {}
-for extra in ['docs', 'main', 'tests', 'publish']:
-    requirements[extra] = [
-        r for r in Path(f'requirements/{extra}.txt').read_text().splitlines()
-    ]
-main_requirements = requirements.pop('main')
+
+def read_main_requirements():
+    return list(Path(f'requirements/main.txt').read_text().splitlines())
 
 
 setup(
@@ -19,8 +16,7 @@ setup(
       author_email='info@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
-      install_requires=main_requirements,
-      extras_require=requirements,
+      install_requires=read_main_requirements(),
       zip_safe=False,
       python_requires='>=3.6',
       package_data={'u8timeseries': ['VERSION']}

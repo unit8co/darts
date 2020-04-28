@@ -17,7 +17,7 @@ This approach most likely requires other non-Python dependencies.
 
     pip install .
     # install any additional dev requirements, e.g.:
-    pip install .[docs]
+    pip install -r requirements/docs.txt
 
 If Fortran is not installed on the device, the following error message might be printed during the installation:
 
