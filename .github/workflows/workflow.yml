@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .
+          pip install -q .
 
       - name: Run tests
         run: |
@@ -60,8 +60,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install .
-        pip install -e .[docs]
+        pip install -q .
+        pip install -q -e .[docs]
 
     - name: Copy examples
       run: |
@@ -118,5 +118,6 @@ jobs:
           registry: eu.gcr.io
           tags: "latest"
           cache: true
+          buildoptions: "--compress -q"
 
         

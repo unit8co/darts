@@ -26,5 +26,5 @@ ADD setup.py /home/jovyan/work/setup.py
 
 WORKDIR /home/jovyan/work
 
-RUN pip install .
+RUN pip install -q .
 
