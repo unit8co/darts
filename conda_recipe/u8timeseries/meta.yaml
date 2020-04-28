@@ -15,7 +15,7 @@ requirements:
   host:
     - python
   run:
-  # only essential requirements to use this library ~ setup.py install_requires
+  # only essential requirements to use this library ~ setup.py install_requires ~ requirements/main.txt
     - python
     - numpy >=1.18.1
     - scipy >=1.4.1
