@@ -83,7 +83,7 @@ jobs:
   deploy-docs:
     needs: [tests, docs]
     runs-on: ubuntu-latest
-#    if: contains(github.ref, 'master')
+    if: contains(github.ref, 'master')
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v1
@@ -101,7 +101,7 @@ jobs:
   deploy-docker:
     needs: [tests, docs]
     runs-on: ubuntu-latest
-#    if: contains(github.ref, 'master')
+    if: contains(github.ref, 'master')
     steps:
       - uses: actions/checkout@v2
       - name: Login to gcloud registry
