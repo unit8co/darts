@@ -398,17 +398,12 @@ class TimeSeries:
 
         return TimeSeries(series, series_lo, series_hi)
 
-    def plot(self, *args, plot_ci=True, **kwargs):
+    def plot(self, *args, plot_ci=True, new_plot=False, **kwargs):
         """
         Currently this is just a wrapper around pd.Series.plot()
         """
-        # temporary work-around for the pandas.plot issue
-        # errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,
-        #                                lambda x, y: np.vstack([x.values, y.values]))
-        # self._series.plot(yerr=errors, *args, **kwargs)
-        fig, ax = plt.subplots()
-        ax.plot_date(self.time_index(), self.values(), marker='', linestyle='-', *args, **kwargs)
-        fig.autofmt_xdate()
+        fig = (plt.figure() if new_plot else plt.gcf())
+        self._series.plot(figure=fig)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
