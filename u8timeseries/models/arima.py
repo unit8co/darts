@@ -72,6 +72,7 @@ class AutoArima(AutoRegressiveModel):
     def __str__(self):
         return 'auto-ARIMA'
 
+    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
         self.model = auto_arima(series.values(),
