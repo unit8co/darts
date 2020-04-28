@@ -6,3 +6,4 @@ matplotlib>=3.2.1
 fbprophet>=0.5
 pandas>=0.23.1
 tqdm>=4.32.1
+ipywidgets
