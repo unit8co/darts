@@ -1,48 +1,78 @@
-## macOS install: 
+![u8timeseries](images/logo-72dpi.png "u8timeseries")
 
-The install happens with `pip`. For `conda` users, do the following first:
-```
-conda install gcc
-conda install -c conda-forge fbprophet
-```
+**u8timeseries** is a python library for easily manipulating and forecasting time series in python.
+It contains a variety of models, from ARIMA to neural networks.
+The models can all be used in the same way, using `fit()` and `predict()` functions,
+similar to scikit-learn. The library also makes it easy to backtest models,
+and combine the predictions of several models and external regressors.
 
-Next, from the root of u8timeseries:
+### Install
+Run the following in your favorite python environment:
 ```
-pip install .
-```
-
-If Fortran is not installed on the device, the following error message might be printed during the installation:
-
-```
-error: library dfftpack has Fortran sources but no Fortran compiler found
-```
-This can be solved by installing gcc using Homebrew:
-```
-brew install gcc
+pip install u8timeseries
 ```
 
-## docker install
+##### Running the examples only without installing:
+To run the example notebooks without installing, using Docker, you can also run: 
+```
+./build_docker.sh && ./run_docker.sh
+```
+Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
-Build and run the docker using the following two commands:
-```
-./build_docker.sh
-./run_docker.sh
-```
-Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.
+### Example Usage
+Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
+```python
+from u8timeseries import TimeSeries
 
-## Usage
-For now the best documentation is examples.
-See: https://github.com/unit8co/u8timeseries/blob/master/examples/Air-passengers-example.ipynb
-
-## Issue with Prophet and Pandas
-If you encounter the following error when trying to plot a `TimeSeries`:
-```
-float() argument must be a string or a number, not 'Period
-```
-this is likely because [Prophet deregisters the Pandas converters in its code](https://darektidwell.com/typeerror-float-argument-must-be-a-string-or-a-number-not-period-facebook-prophet-and-pandas/). To fix it, just call
-```
-pd.plotting.register_matplotlib_converters()
+df = pd.read_csv('AirPassengers.csv', delimiter=",")
+series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+train, val = series.split_after(pd.Timestamp('19590101'))
 ```
 
-## unit test status
+Fit an exponential smoothing model, and make a prediction over the validation series' duration:
+```python
+from u8timeseries import ExponentialSmoothing
+
+model = ExponentialSmoothing()
+model.fit(train)
+prediction = model.predict(len(val))
+```
+
+Plot:
+```python
+series.plot(label='actual', lw=3)
+prediction.plot(label='forecast', lw=3)
+plt.legend()
+plt.xlabel('Year')
+```
+![example](images/example.png "example")
+
+We invite you to go over the example notebooks in the `examples` directory.
+
+### Documentation
+The documentation of the API and models is available here:
+https://unit8co.github.io/u8timeseries/
+
+### List of Features
+Currently, the library contains the following features: 
+
+* **Forecasting Models:** Exponential smoothing, ARIMA & auto-ARIMA, Facebook Prophet, Theta method, 
+Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).
+
+* **Preprocessing:** Transformer tool for easily scaling / normalizing time series.
+
+* **Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
+from R2-scores to Mean Absolute Scaled Error.
+
+* **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
+
+* **Regressive Models:** Possibility to predict a time series from several other time series 
+(e.g., external regressors), using arbitrary regressive models.
+
+
+### Contribute
+The development is ongoing, and there are many new features that we want to add. 
+We welcome pull requests and issues on github.
+
+### Unit Tests Status
 ![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
