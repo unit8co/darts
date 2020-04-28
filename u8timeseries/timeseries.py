@@ -398,12 +398,13 @@ class TimeSeries:
 
         return TimeSeries(series, series_lo, series_hi)
 
-    def plot(self, *args, plot_ci=True, new_plot=False, **kwargs):
+    def plot(self, plot_ci=True, new_plot=False, *args, **kwargs):
         """
         Currently this is just a wrapper around pd.Series.plot()
         """
-        fig = (plt.figure() if new_plot else plt.gcf())
-        self._series.plot(figure=fig)
+        fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
+        kwargs['figure'] = fig
+        self._series.plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
