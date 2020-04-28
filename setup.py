@@ -3,7 +3,7 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 requirements = {}
-for extra in ['docs', 'main', 'tests', 'examples']:
+for extra in ['docs', 'main', 'tests', 'examples', 'publish']:
     requirements[extra] = [
         r for r in Path(f'requirements/{extra}.txt').read_text().splitlines()
     ]
