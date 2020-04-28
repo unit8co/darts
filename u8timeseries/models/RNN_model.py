@@ -12,10 +12,13 @@ from typing import List, Optional, Dict, Union
 
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
+from ..custom_logging import raise_if_not, get_logger, raise_log
 from .. import AutoRegressiveModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
+
+logger = get_logger(__name__)
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -174,12 +177,12 @@ class RNNModel(AutoRegressiveModel):
             self.model = RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
                                    num_layers=n_rnn_layers, output_length=output_length,
                                    num_layers_out_fc=hidden_fc_size, dropout=dropout)
-        elif isinstance(model, nn.Module):
-            self.model = model
         else:
-            raise ValueError('{} is not a valid RNN model.\n Please specify' \
-                             ' "RNN", "LSTM", "GRU", or give your own PyTorch nn.Module'.
-                             format(model.__class__.__name__))
+            self.model = model
+        raise_if_not(isinstance(self.model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                     '"GRU", or give your own PyTorch nn.Module'.format(model.__class__.__name__),
+                     logger)
+
         self.model = self.model.to(self.device)
         self.model_name = model_name
         self.work_dir = work_dir
@@ -199,11 +202,12 @@ class RNNModel(AutoRegressiveModel):
             try:
                 instance = cls(**kws)
             except (TypeError, ValueError) as e:
-                raise ValueError('Error when building the optimizer or learning rate scheduler;'
+                raise_log(ValueError('Error when building the optimizer or learning rate scheduler;'
                                  'please check the provided class and arguments'
                                  '\nclass: {}'
                                  '\narguments (kwargs): {}'
-                                 '\nerror:\n{}'.format(cls, kws, e))
+                                 '\nerror:\n{}'.format(cls, kws, e)),
+                          logger)
             return instance
 
         # Create the optimizer and (optionally) the learning rate scheduler
@@ -241,16 +245,18 @@ class RNNModel(AutoRegressiveModel):
         dataset = TimeSeriesDataset1D(series, self.seq_len, self.output_length)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
-        if len(train_loader) == 0:
-            raise ValueError('The provided training time series is too short for obtaining even one training point.')
+        raise_if_not(len(train_loader) > 0,
+                     'The provided training time series is too short for obtaining even one training point.',
+                     logger)
 
         # Prepare validation data:
         if val_series is not None:
             val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.output_length)
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
-            if len(val_dataset) == 0 or len(val_loader) == 0:
-                raise ValueError('The provided validation time series is too short for this model output length.')
+            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                         'The provided validation time series is too short for this model output length.',
+                         logger)
         else:
             val_loader = None
 
@@ -436,9 +442,9 @@ class RNNModel(AutoRegressiveModel):
             path = os.path.join(checkpoint_dir, "model_best_*" if best else "checkpoint_*")
             checklist = glob(path)
             if len(checklist) == 0:
-                raise FileNotFoundError('There is no file matching prefix {} in {}'.format(
-                    "model_best_*" if best else "checkpoint_*", checkpoint_dir
-                ))
+                raise_log(FileNotFoundError('There is no file matching prefix {} in {}'.format(
+                          "model_best_*" if best else "checkpoint_*", checkpoint_dir)),
+                          logger)
             filename = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
             filename = os.path.basename(filename)
 
