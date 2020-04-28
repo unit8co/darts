@@ -403,7 +403,7 @@ class TimeSeries:
         Currently this is just a wrapper around pd.Series.plot()
         """
         fig = (plt.figure() if new_plot else plt.gcf())
-        self._series.plot(figure=fig)
+        self._series.plot(figure=fig, *args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
