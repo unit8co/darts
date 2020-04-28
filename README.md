@@ -1,4 +1,5 @@
 ![u8timeseries](images/logo-72dpi.png "u8timeseries")
+
 ![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
 
 **u8timeseries** is a python library for easy manipulation and forecasting time series in python.
