@@ -1,3 +1,14 @@
+"""
+Backtesting utilities
+---------------------
+
+This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
+on some validation sets, sliding over time.
+The functionality is here for AutoRegressiveModel, not yet for regressive models.
+
+These functions will probably rarely be useful, compared to the ones in "forecasting_simulation.py"
+"""
+
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
@@ -5,13 +16,6 @@ from ..custom_logging import raise_if_not, get_logger
 from typing import Tuple, List, Callable, Any
 
 logger = get_logger(__name__)
-
-""" This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
-    on some validation sets, sliding over time.
-    The functionality is here for AutoRegressiveModel, not yet for regressive models.
-    
-    These functions will probably rarely be useful, compared to the ones in "forecasting_simulation.py"
-"""
 
 
 def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val: int,
