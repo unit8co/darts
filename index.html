@@ -180,15 +180,26 @@
 </style>
 <div class="section" id="u8timeseries">
 <h1>u8timeseries<a class="headerlink" href="#u8timeseries" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="macos-install">
-<h2>macOS install:<a class="headerlink" href="#macos-install" title="Permalink to this headline">¶</a></h2>
-<p>The install happens with <code class="docutils literal notranslate"><span class="pre">pip</span></code>. For <code class="docutils literal notranslate"><span class="pre">conda</span></code> users, do the following first:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">gcc</span>
-<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">fbprophet</span>
+<div class="section" id="install">
+<h2>install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-conda">
+<h3>using conda<a class="headerlink" href="#using-conda" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">pmdarima</span></code> is currently not supported on conda which means we need to reinstall it through pip</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">conda_recipe</span><span class="o">/</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">alkaline</span><span class="o">-</span><span class="n">ml</span> <span class="o">--</span><span class="n">name</span> <span class="n">u8timeseries</span><span class="o">-</span><span class="n">dev</span> <span class="o">--</span><span class="n">file</span> <span class="n">requirements</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">txt</span>
+<span class="c1"># here install any additional dev requirements from the other requirements/*.txt files</span>
+<span class="n">source</span> <span class="n">activate</span> <span class="n">u8timeseries</span><span class="o">-</span><span class="n">dev</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;pmdarima&gt;=1.5.3&quot;</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">deps</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
 </pre></div>
 </div>
-<p>Next, from the root of u8timeseries:</p>
+</div>
+<div class="section" id="pure-pip">
+<h3>pure pip<a class="headerlink" href="#pure-pip" title="Permalink to this headline">¶</a></h3>
+<p>This approach most likely requires other non-Python dependencies.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
+<span class="c1"># install any additional dev requirements, e.g.:</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">/</span><span class="n">docs</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
 <p>If Fortran is not installed on the device, the following error message might be printed during the installation:</p>
@@ -200,14 +211,15 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="docker-install">
-<h2>docker install<a class="headerlink" href="#docker-install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="docker">
+<h3>docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h3>
 <p>Build and run the docker using the following two commands:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span>
 <span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
 </div>
 <p>Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.</p>
+</div>
 </div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
@@ -228,21 +240,15 @@ See: <a class="reference external" href="https://github.com/unit8co/u8timeseries
 <div class="section" id="unit-test-status">
 <h2>unit test status<a class="headerlink" href="#unit-test-status" title="Permalink to this headline">¶</a></h2>
 <a class="reference external image-reference" href="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg"><img alt="ci_workflow" src="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg" /></a>
-<div class="section" id="api">
-<h3>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
-</div>
 </div>
 </div>
 </div>
