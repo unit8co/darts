@@ -5,3 +5,4 @@ pmdarima>=1.5.3
 fbprophet>=0.5
 pandas>=0.23.1
 tqdm>=4.32.1
+ipython>=7.13.0
