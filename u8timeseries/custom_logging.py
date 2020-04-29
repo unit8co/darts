@@ -70,3 +70,11 @@ def time_log(logger: logging.Logger = get_logger('main_logger')):
         return timed
 
     return time_log_helper
+
+def try_import_matplotlib(logger: logging.Logger = get_logger('main_logger')):
+    try:
+        import matplotlib.pyplot as plt
+
+        return plt
+    except ImportError:
+        raise_log(ImportError('this method requires the optional package matplotlib to be installed'), logger)
