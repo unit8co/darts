@@ -1,7 +1,0 @@
-u8timeseries.tests.test\_regression\_models 
-============================================
-
-.. automodule:: u8timeseries.tests.test_regression_models
-   :members:
-   :undoc-members:
-   :show-inheritance:

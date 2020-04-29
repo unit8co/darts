@@ -1,5 +1,3 @@
-u8timeseries.models.autoregressive\_model 
-==========================================
 
 .. automodule:: u8timeseries.models.autoregressive_model
    :members:

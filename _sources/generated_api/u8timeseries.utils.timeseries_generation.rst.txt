@@ -1,7 +1,0 @@
-u8timeseries.utils.timeseries\_generation 
-==========================================
-
-.. automodule:: u8timeseries.utils.timeseries_generation
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,5 +1,3 @@
-u8timeseries.models.theta 
-==========================
 
 .. automodule:: u8timeseries.models.theta
    :members:

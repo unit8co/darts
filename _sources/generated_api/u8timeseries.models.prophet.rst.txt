@@ -1,5 +1,3 @@
-u8timeseries.models.prophet 
-============================
 
 .. automodule:: u8timeseries.models.prophet
    :members:

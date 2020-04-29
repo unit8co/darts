@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.backtesting.backtesting_udf &mdash; u8timeseries  documentation</title>
+  <title>Backtesting utilities &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="u8timeseries.backtesting.forecasting_simulation" href="u8timeseries.backtesting.forecasting_simulation.html" />
-    <link rel="prev" title="u8timeseries.backtesting" href="u8timeseries.backtesting.html" /> 
+    <link rel="next" title="Backtesting simulation" href="u8timeseries.backtesting.forecasting_simulation.html" />
+    <link rel="prev" title="Backtesting" href="u8timeseries.backtesting.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,18 +88,14 @@
             
               <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.backtesting.html">u8timeseries.backtesting</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="u8timeseries.backtesting.html#submodules">Submodules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Backtesting utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.forecasting_simulation.html">Backtesting simulation</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">u8timeseries.metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.html">u8timeseries.models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.tests.html">u8timeseries.tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.utils.html">u8timeseries.utils</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.timeseries.html">Timeseries</a></li>
 </ul>
 </li>
 </ul>
@@ -152,9 +148,9 @@
         
           <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-          <li><a href="u8timeseries.backtesting.html">u8timeseries.backtesting</a> &raquo;</li>
+          <li><a href="u8timeseries.backtesting.html">Backtesting</a> &raquo;</li>
         
-      <li>u8timeseries.backtesting.backtesting_udf</li>
+      <li>Backtesting utilities</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -197,8 +193,12 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-u8timeseries.backtesting.backtesting_udf">
-<span id="u8timeseries-backtesting-backtesting-udf"></span><h1>u8timeseries.backtesting.backtesting_udf<a class="headerlink" href="#module-u8timeseries.backtesting.backtesting_udf" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-u8timeseries.backtesting.backtesting_udf"></span><div class="section" id="backtesting-utilities">
+<h1>Backtesting utilities<a class="headerlink" href="#backtesting-utilities" title="Permalink to this headline">¶</a></h1>
+<p>This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
+on some validation sets, sliding over time.
+The functionality is here for AutoRegressiveModel, not yet for regressive models.</p>
+<p>These functions will probably rarely be useful, compared to the ones in “forecasting_simulation.py”</p>
 <dl class="py function">
 <dt id="u8timeseries.backtesting.backtesting_udf.backtest_autoregressive_model">
 <code class="sig-prename descclassname">u8timeseries.backtesting.backtesting_udf.</code><code class="sig-name descname">backtest_autoregressive_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html#u8timeseries.models.autoregressive_model.AutoRegressiveModel" title="u8timeseries.models.autoregressive_model.AutoRegressiveModel">u8timeseries.models.autoregressive_model.AutoRegressiveModel</a></span></em>, <em class="sig-param"><span class="n">train_val_series</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Tuple<span class="p">[</span>TimeSeries<span class="p">, </span>TimeSeries<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">eval_fn</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>TimeSeries<span class="p">, </span>TimeSeries<span class="p">]</span><span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span>Any<span class="p">]</span><a class="reference internal" href="../_modules/u8timeseries/backtesting/backtesting_udf.html#backtest_autoregressive_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.backtesting.backtesting_udf.backtest_autoregressive_model" title="Permalink to this definition">¶</a></dt>
@@ -240,15 +240,6 @@ on the training TimeSeries provided, compares the prediction with the validation
 </dl>
 </dd></dl>
 
-<dl class="py data">
-<dt id="u8timeseries.backtesting.backtesting_udf.logger">
-<code class="sig-prename descclassname">u8timeseries.backtesting.backtesting_udf.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger u8timeseries.backtesting.backtesting_udf (INFO)&gt;</em><a class="headerlink" href="#u8timeseries.backtesting.backtesting_udf.logger" title="Permalink to this definition">¶</a></dt>
-<dd><p>This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
-on some validation sets, sliding over time.
-The functionality is here for AutoRegressiveModel, not yet for regressive models.</p>
-<p>These functions will probably rarely be useful, compared to the ones in “forecasting_simulation.py”</p>
-</dd></dl>
-
 </div>
 
 
@@ -259,10 +250,10 @@ The functionality is here for AutoRegressiveModel, not yet for regressive models
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.backtesting.forecasting_simulation.html" class="btn btn-neutral float-right" title="u8timeseries.backtesting.forecasting_simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.backtesting.forecasting_simulation.html" class="btn btn-neutral float-right" title="Backtesting simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.backtesting.html" class="btn btn-neutral float-left" title="u8timeseries.backtesting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.backtesting.html" class="btn btn-neutral float-left" title="Backtesting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -271,7 +262,7 @@ The functionality is here for AutoRegressiveModel, not yet for regressive models
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, unit8
+        &copy; Copyright 2020, Unit8
 
     </p>
   </div>

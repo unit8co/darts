@@ -152,7 +152,12 @@
            <div itemprop="articleBody">
             
   <h1>Source code for u8timeseries.models.theta</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Implementation of an Theta model.</span>
+<span class="sd">---------------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">..custom_logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">time_log</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">.autoregressive_model</span> <span class="kn">import</span> <span class="n">AutoRegressiveModel</span>
@@ -267,7 +272,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, unit8
+        &copy; Copyright 2020, Unit8
 
     </p>
   </div>

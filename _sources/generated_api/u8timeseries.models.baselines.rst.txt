@@ -1,5 +1,3 @@
-u8timeseries.models.baselines 
-==============================
 
 .. automodule:: u8timeseries.models.baselines
    :members:

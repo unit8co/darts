@@ -1,7 +1,0 @@
-u8timeseries.tests.test\_statistics 
-====================================
-
-.. automodule:: u8timeseries.tests.test_statistics
-   :members:
-   :undoc-members:
-   :show-inheritance:

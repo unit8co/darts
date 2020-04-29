@@ -1,5 +1,3 @@
-u8timeseries.models.arima 
-==========================
 
 .. automodule:: u8timeseries.models.arima
    :members:

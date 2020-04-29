@@ -1,23 +1,18 @@
-u8timeseries 
-=============
 
-Subpackages
------------
 
-.. toctree::
-   :maxdepth: 1
+.. automodule:: u8timeseries
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   u8timeseries.backtesting
-   u8timeseries.metrics
-   u8timeseries.models
-   u8timeseries.tests
-   u8timeseries.utils
-
-Submodules
-----------
-
-.. toctree::
-   :maxdepth: 1
-
-   u8timeseries.custom_logging
-   u8timeseries.timeseries
+    .. toctree::
+        :maxdepth: 1
+        
+        u8timeseries.backtesting
+        u8timeseries.metrics
+        u8timeseries.models
+        u8timeseries.tests
+        u8timeseries.utils
+        
+        u8timeseries.custom_logging
+        u8timeseries.timeseries

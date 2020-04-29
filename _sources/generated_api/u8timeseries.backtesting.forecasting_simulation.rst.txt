@@ -1,5 +1,3 @@
-u8timeseries.backtesting.forecasting\_simulation 
-=================================================
 
 .. automodule:: u8timeseries.backtesting.forecasting_simulation
    :members:

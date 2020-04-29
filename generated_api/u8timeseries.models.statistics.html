@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.models.statistics &mdash; u8timeseries  documentation</title>
+  <title>List of statistics. &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="u8timeseries.models.theta" href="u8timeseries.models.theta.html" />
-    <link rel="prev" title="u8timeseries.models.standard_regressive_model" href="u8timeseries.models.standard_regressive_model.html" /> 
+    <link rel="next" title="Implementation of an Theta model." href="u8timeseries.models.theta.html" />
+    <link rel="prev" title="Implementation of an Standard Regressive model." href="u8timeseries.models.standard_regressive_model.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,18 +88,22 @@
             
               <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.html">u8timeseries.backtesting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">u8timeseries.metrics</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.models.html">u8timeseries.models</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="u8timeseries.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.models.html">Models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.arima.html">Implementation of an ARIMA model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">Implementation of an Auto-regressive model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.baselines.html">Implementation of baseline model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">Implementation of an Simple Exponential Smoothing model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.prophet.html">Implementation of an Prophet model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.regressive_model.html">Implementation of an Regressive model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">Implementation of an Simple Aggregation model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">Implementation of an Standard Regressive model.</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">List of statistics.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.theta.html">Implementation of an Theta model.</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.tests.html">u8timeseries.tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.utils.html">u8timeseries.utils</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.timeseries.html">Timeseries</a></li>
 </ul>
 </li>
 </ul>
@@ -152,9 +156,9 @@
         
           <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-          <li><a href="u8timeseries.models.html">u8timeseries.models</a> &raquo;</li>
+          <li><a href="u8timeseries.models.html">Models</a> &raquo;</li>
         
-      <li>u8timeseries.models.statistics</li>
+      <li>List of statistics.</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -197,8 +201,8 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-u8timeseries.models.statistics">
-<span id="u8timeseries-models-statistics"></span><h1>u8timeseries.models.statistics<a class="headerlink" href="#module-u8timeseries.models.statistics" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-u8timeseries.models.statistics"></span><div class="section" id="list-of-statistics">
+<h1>List of statistics.<a class="headerlink" href="#list-of-statistics" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="u8timeseries.models.statistics.check_seasonality">
 <code class="sig-prename descclassname">u8timeseries.models.statistics.</code><code class="sig-name descname">check_seasonality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">m</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_lag</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">24</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.05</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/statistics.html#check_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
@@ -321,10 +325,10 @@ seasonality is a TimeSeries containing the removed trend.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.models.theta.html" class="btn btn-neutral float-right" title="u8timeseries.models.theta" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.models.theta.html" class="btn btn-neutral float-right" title="Implementation of an Theta model." accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.models.standard_regressive_model.html" class="btn btn-neutral float-left" title="u8timeseries.models.standard_regressive_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.models.standard_regressive_model.html" class="btn btn-neutral float-left" title="Implementation of an Standard Regressive model." accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -333,7 +337,7 @@ seasonality is a TimeSeries containing the removed trend.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, unit8
+        &copy; Copyright 2020, Unit8
 
     </p>
   </div>

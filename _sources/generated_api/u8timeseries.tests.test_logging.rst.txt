@@ -1,7 +1,0 @@
-u8timeseries.tests.test\_logging 
-=================================
-
-.. automodule:: u8timeseries.tests.test_logging
-   :members:
-   :undoc-members:
-   :show-inheritance:

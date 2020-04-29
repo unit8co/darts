@@ -1,5 +1,3 @@
-u8timeseries.backtesting.backtesting\_udf 
-==========================================
 
 .. automodule:: u8timeseries.backtesting.backtesting_udf
    :members:

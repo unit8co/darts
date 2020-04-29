@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.models &mdash; u8timeseries  documentation</title>
+  <title>Models &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="u8timeseries.models.arima" href="u8timeseries.models.arima.html" />
-    <link rel="prev" title="u8timeseries.metrics.metrics" href="u8timeseries.metrics.metrics.html" /> 
+    <link rel="next" title="Implementation of an ARIMA model." href="u8timeseries.models.arima.html" />
+    <link rel="prev" title="List of metrics" href="u8timeseries.metrics.metrics.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,18 +88,22 @@
             
               <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.html">u8timeseries.backtesting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">u8timeseries.metrics</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">u8timeseries.models</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.arima.html">Implementation of an ARIMA model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">Implementation of an Auto-regressive model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.baselines.html">Implementation of baseline model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">Implementation of an Simple Exponential Smoothing model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.prophet.html">Implementation of an Prophet model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.regressive_model.html">Implementation of an Regressive model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">Implementation of an Simple Aggregation model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">Implementation of an Standard Regressive model.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.statistics.html">List of statistics.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.theta.html">Implementation of an Theta model.</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.tests.html">u8timeseries.tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.utils.html">u8timeseries.utils</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.timeseries.html">Timeseries</a></li>
 </ul>
 </li>
 </ul>
@@ -152,7 +156,7 @@
         
           <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-      <li>u8timeseries.models</li>
+      <li>Models</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -195,25 +199,24 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="u8timeseries-models">
-<h1>u8timeseries.models<a class="headerlink" href="#u8timeseries-models" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
+<span class="target" id="module-u8timeseries.models"></span><div class="section" id="models">
+<h1>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.arima.html">u8timeseries.models.arima</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">u8timeseries.models.autoregressive_model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.baselines.html">u8timeseries.models.baselines</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">u8timeseries.models.exponential_smoothing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.prophet.html">u8timeseries.models.prophet</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.regressive_model.html">u8timeseries.models.regressive_model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">u8timeseries.models.sequential_aggregation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">u8timeseries.models.standard_regressive_model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.statistics.html">u8timeseries.models.statistics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.theta.html">u8timeseries.models.theta</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.arima.html">Implementation of an ARIMA model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html">Implementation of an Auto-regressive model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.baselines.html">Implementation of baseline model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.exponential_smoothing.html">Implementation of an Simple Exponential Smoothing model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.prophet.html">Implementation of an Prophet model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.regressive_model.html">Implementation of an Regressive model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.sequential_aggregation.html">Implementation of an Simple Aggregation model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.standard_regressive_model.html">Implementation of an Standard Regressive model.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.statistics.html">List of statistics.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="u8timeseries.models.theta.html">Implementation of an Theta model.</a></li>
 </ul>
 </div>
-</div>
+</div></blockquote>
 </div>
 
 
@@ -224,10 +227,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.models.arima.html" class="btn btn-neutral float-right" title="u8timeseries.models.arima" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.models.arima.html" class="btn btn-neutral float-right" title="Implementation of an ARIMA model." accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.metrics.metrics.html" class="btn btn-neutral float-left" title="u8timeseries.metrics.metrics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.metrics.metrics.html" class="btn btn-neutral float-left" title="List of metrics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -236,7 +239,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, unit8
+        &copy; Copyright 2020, Unit8
 
     </p>
   </div>

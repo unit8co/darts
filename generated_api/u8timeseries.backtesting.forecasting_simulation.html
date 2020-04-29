@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries.backtesting.forecasting_simulation &mdash; u8timeseries  documentation</title>
+  <title>Backtesting simulation &mdash; u8timeseries  documentation</title>
   
 
   
@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="u8timeseries.metrics" href="u8timeseries.metrics.html" />
-    <link rel="prev" title="u8timeseries.backtesting.backtesting_udf" href="u8timeseries.backtesting.backtesting_udf.html" /> 
+    <link rel="next" title="Metrics" href="u8timeseries.metrics.html" />
+    <link rel="prev" title="Backtesting utilities" href="u8timeseries.backtesting.backtesting_udf.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,18 +88,14 @@
             
               <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="u8timeseries.html">u8timeseries</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="u8timeseries.backtesting.html">u8timeseries.backtesting</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="u8timeseries.backtesting.html#submodules">Submodules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="u8timeseries.backtesting.html">Backtesting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="u8timeseries.backtesting.backtesting_udf.html">Backtesting utilities</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Backtesting simulation</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.metrics.html">u8timeseries.metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.models.html">u8timeseries.models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.tests.html">u8timeseries.tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="u8timeseries.utils.html">u8timeseries.utils</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="u8timeseries.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.metrics.html">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="u8timeseries.timeseries.html">Timeseries</a></li>
 </ul>
 </li>
 </ul>
@@ -152,9 +148,9 @@
         
           <li><a href="u8timeseries.html">u8timeseries</a> &raquo;</li>
         
-          <li><a href="u8timeseries.backtesting.html">u8timeseries.backtesting</a> &raquo;</li>
+          <li><a href="u8timeseries.backtesting.html">Backtesting</a> &raquo;</li>
         
-      <li>u8timeseries.backtesting.forecasting_simulation</li>
+      <li>Backtesting simulation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -197,8 +193,8 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="module-u8timeseries.backtesting.forecasting_simulation">
-<span id="u8timeseries-backtesting-forecasting-simulation"></span><h1>u8timeseries.backtesting.forecasting_simulation<a class="headerlink" href="#module-u8timeseries.backtesting.forecasting_simulation" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-u8timeseries.backtesting.forecasting_simulation"></span><div class="section" id="backtesting-simulation">
+<h1>Backtesting simulation<a class="headerlink" href="#backtesting-simulation" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="u8timeseries.backtesting.forecasting_simulation.simulate_forecast_ar">
 <code class="sig-prename descclassname">u8timeseries.backtesting.forecasting_simulation.</code><code class="sig-name descname">simulate_forecast_ar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="u8timeseries.models.autoregressive_model.html#u8timeseries.models.autoregressive_model.AutoRegressiveModel" title="u8timeseries.models.autoregressive_model.AutoRegressiveModel">u8timeseries.models.autoregressive_model.AutoRegressiveModel</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em>, <em class="sig-param"><span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/backtesting/forecasting_simulation.html#simulate_forecast_ar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.backtesting.forecasting_simulation.simulate_forecast_ar" title="Permalink to this definition">¶</a></dt>
@@ -255,10 +251,10 @@ on a given forecast time horizon.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.metrics.html" class="btn btn-neutral float-right" title="u8timeseries.metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.metrics.html" class="btn btn-neutral float-right" title="Metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.backtesting.backtesting_udf.html" class="btn btn-neutral float-left" title="u8timeseries.backtesting.backtesting_udf" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.backtesting.backtesting_udf.html" class="btn btn-neutral float-left" title="Backtesting utilities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -267,7 +263,7 @@ on a given forecast time horizon.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, unit8
+        &copy; Copyright 2020, Unit8
 
     </p>
   </div>

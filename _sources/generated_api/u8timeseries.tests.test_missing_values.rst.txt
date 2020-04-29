@@ -1,7 +1,0 @@
-u8timeseries.tests.test\_missing\_values 
-=========================================
-
-.. automodule:: u8timeseries.tests.test_missing_values
-   :members:
-   :undoc-members:
-   :show-inheritance:
