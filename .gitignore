@@ -1,6 +1,12 @@
 .idea
 *.pyc
-docs/
+docs/build
+docs/source/examples
+docs/source/generated_api
 u8timeseries.egg-info/
+build/
+dist/
 examples/.ipynb_checkpoints/
 runs/
+
+docs_env

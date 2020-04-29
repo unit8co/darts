@@ -1,0 +1,26 @@
+{%- macro automodule(modname, options) -%}
+.. automodule:: {{ modname }}
+{%- for option in options %}
+   :{{ option }}:
+{%- endfor %}
+{%- endmacro %}
+
+{%- macro toctree(docnames, maxdepth) -%}
+    .. toctree::
+        :maxdepth: {{ maxdepth }}
+{% for docname in docnames %}
+        {{ docname }}
+{%- endfor %}
+{%- endmacro %}
+
+{{ automodule(pkgname, automodule_options) }}
+
+    .. toctree::
+        :maxdepth: 1
+        {% for docname in subpackages %}
+        {{ docname }}
+        {%- endfor %}
+        {% for docname in submodules %}
+        {{ docname }}
+        {%- endfor %}
+

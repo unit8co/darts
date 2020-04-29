@@ -1,3 +1,8 @@
+"""
+Implementation of an Simple Aggregation model.
+----------------------------------------------
+"""
+
 from .regressive_model import RegressiveModel
 from ..timeseries import TimeSeries
 from ..custom_logging import time_log, get_logger
