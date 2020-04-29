@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
+import logging
 
 from ..timeseries import TimeSeries
 
@@ -14,6 +15,10 @@ class TimeSeriesTestCase(unittest.TestCase):
     series1: TimeSeries = TimeSeries(pd_series1)
     series2: TimeSeries = TimeSeries(pd_series1, pd_series2, pd_series3)
     series3: TimeSeries = TimeSeries(pd_series2)
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_creation(self):
         with self.assertRaises(ValueError):
