@@ -1,3 +1,8 @@
+"""
+Implementation of baseline model.
+-------------------------------------------
+"""
+
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, time_log, get_logger

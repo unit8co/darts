@@ -1,3 +1,8 @@
+"""
+List of metrics
+---------------
+"""
+
 import numpy as np
 from typing import Tuple
 from u8timeseries.timeseries import TimeSeries
