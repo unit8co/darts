@@ -23,11 +23,12 @@ and combine the predictions of several models and external regressors.
 ### pure pip
 This approach most likely requires other non-Python dependencies.
 
-```
+    # if plotting tweaks provided by u8timeseries are required
+    pip install .[plots]
+    # otherwise just
     pip install .
     # install any additional dev requirements, e.g.:
     pip install -r requirements/docs.txt
-```
 
 **Running the examples only without installing:**
 
