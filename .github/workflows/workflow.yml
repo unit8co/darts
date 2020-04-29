@@ -22,14 +22,14 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            tests-${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
-          pip install .
-          pip install -r requirements/dev.txt
+          pip install -q .
+          pip install -q -r requirements/dev.txt
 
       - name: Run tests
         run: |
@@ -55,14 +55,14 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+        key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          docs-${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
-        pip install .
-        pip install -r requirements/dev.txt
+        pip install -q .
+        pip install -q -r requirements/dev.txt
 
     - name: Copy examples
       run: |
@@ -75,12 +75,48 @@ jobs:
     - name: Build documentation website
       run: |
         make --directory ./docs html
-       
-    - name: Publish documentation
-      uses: s0/git-publish-subdir-action@v2.2.0
-      if: contains(github.ref, 'master')
-      env:
-        REPO: self
-        BRANCH: gh-pages
-        FOLDER: docs/build/html
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docs
+        path: docs/build/html
+
+  deploy-docs:
+    needs: [tests, docs]
+    runs-on: ubuntu-latest
+    if: contains(github.ref, 'master')
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v1
+        with:
+          name: docs
+          path: docs/build/html
+      - name: Publish documentation
+        uses: s0/git-publish-subdir-action@v2.2.0
+        env:
+          REPO: self
+          BRANCH: gh-pages
+          FOLDER: docs/build/html
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-docker:
+    needs: [tests, docs]
+    runs-on: ubuntu-latest
+    if: contains(github.ref, 'master')
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to gcloud registry
+        id: gcloud
+        uses: elgohr/gcloud-login-action@0.2
+        with:
+          account_key: ${{ secrets.GCLOUD_KEY }}
+      - name: Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@2.14
+        with:
+          name: eu.gcr.io/unit8-product/u8timeseries
+          username: ${{ steps.gcloud.outputs.username }}
+          password: ${{ steps.gcloud.outputs.password }}
+          registry: eu.gcr.io
+          tags: "latest"
+          cache: true
+          buildoptions: "--compress -q"
