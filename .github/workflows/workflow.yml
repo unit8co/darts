@@ -55,7 +55,7 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/docs.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/docs.txt', 'requirements/docs.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
@@ -63,6 +63,7 @@ jobs:
       run: |
         pip install .
         pip install -r requirements/docs.txt
+        pip install -r requirements/tests.txt
 
     - name: Copy examples
       run: |
