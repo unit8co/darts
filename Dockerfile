@@ -19,8 +19,12 @@ USER $NB_USER
 
 # u8ts specific deps
 RUN pip install pystan
-WORKDIR /deps
-ADD . /home/jovyan/work
+ADD u8timeseries /home/jovyan/work/u8timeseries
+ADD requirements /home/jovyan/work/requirements
+ADD examples /home/jovyan/work/examples
+ADD setup.py /home/jovyan/work/setup.py
+
 WORKDIR /home/jovyan/work
-RUN pip install .
+
+RUN pip install -q .
 

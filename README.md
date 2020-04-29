@@ -1,17 +1,23 @@
 # u8timeseries
 
-## macOS install:
+## install
 
-The install happens with `pip`. For `conda` users, do the following first:
-```
-conda install gcc
-conda install -c conda-forge fbprophet
-```
+### using conda
+`pmdarima` is currently not supported on conda which means we need to reinstall it through pip
 
-Next, from the root of u8timeseries:
-```
-pip install .
-```
+    conda env create -f conda_recipe/environment.yml
+    conda install -c conda-forge -c alkaline-ml --name u8timeseries-dev --file requirements/main.txt
+    # here install any additional dev requirements from the other requirements/*.txt files
+    source activate u8timeseries-dev
+    pip install "pmdarima>=1.5.3"
+    pip install --no-deps -e .
+    
+### pure pip
+This approach most likely requires other non-Python dependencies.
+
+    pip install .
+    # install any additional dev requirements, e.g.:
+    pip install -r requirements/docs.txt
 
 If Fortran is not installed on the device, the following error message might be printed during the installation:
 
@@ -23,7 +29,7 @@ This can be solved by installing gcc using Homebrew:
 brew install gcc
 ```
 
-## docker install
+### docker
 
 Build and run the docker using the following two commands:
 ```
