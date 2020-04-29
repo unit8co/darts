@@ -22,13 +22,14 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt') }}
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           pip install -q .
+          pip install -q -r requirements/dev.txt
 
       - name: Run tests
         run: |
@@ -54,14 +55,14 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/docs.txt', 'requirements/main.txt') }}
+        key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
         restore-keys: |
           docs-${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         pip install -q .
-        pip install -q -e .[docs]
+        pip install q- -r requirements/dev.txt
 
     - name: Copy examples
       run: |
@@ -119,5 +120,3 @@ jobs:
           tags: "latest"
           cache: true
           buildoptions: "--compress -q"
-
-        

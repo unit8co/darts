@@ -1,0 +1,34 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "u8timeseries"
+  version: {{ data.get('version').split('-', 1)[0] }}
+
+source:
+  # root folder, not the package
+  path: "../../../u8timeseries"
+
+build:
+  number: 0
+  script: '{{ PYTHON }} -m pip install . --no-deps -vv'
+
+requirements:
+  host:
+    - python
+  run:
+  # note that pmdarima exists in the anaconda repo but is not supported so need to reinstall it through pip
+    - python
+  {% for req in data.get('install_requires', []) %}
+    - {{ req }}
+  {% endfor %}
+
+about:
+  home: {{ data.get('url') }}
+  license: {{ data.get('license') }}
+  license_family: APACHE
+  license_file: LICENSE
+  summary: {{ data.get('description') }}
+
+extra:
+  recipe-maintainers:
+    - {{ data.get('author') }}
