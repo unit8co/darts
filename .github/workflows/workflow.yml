@@ -62,7 +62,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -q .
-        pip install q- -r requirements/dev.txt
+        pip install -q -r requirements/dev.txt
 
     - name: Copy examples
       run: |
