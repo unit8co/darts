@@ -3,14 +3,11 @@ from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, time_log, get_logger
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from typing import List, Optional
 
 logger = get_logger(__name__)
 
-
-### helper functions that might have to be relocated ###
-
-def compare_seasonality(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set):
+def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """
     Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
     It returns true if and only if the two timestamps are matching in all given attributes.
@@ -20,12 +17,9 @@ def compare_seasonality(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches
     :required_matches: A set of pd.Timestamp attributes which ts_1 and ts_2 will be checked on.
     :return: True if and only if 'ts_1' and 'ts_2' match in all attributes given in 'required_matches'.
     """
-    is_matching = True
-    for required_match in required_matches:
-        is_matching = is_matching and (getattr(ts_1, required_match) == getattr(ts_2, required_match))
-    return is_matching
+    return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
 
-def crop_to_match_seasons(series: 'TimeSeries', required_matches: set):
+def crop_to_match_seasons(series: TimeSeries, required_matches: set) -> TimeSeries:
     """
     Crops a given TimeSeries 'series' that will be used as a training set in such
     a way that its first entry has a timestamp that matches the first timestamp
@@ -45,7 +39,7 @@ def crop_to_match_seasons(series: 'TimeSeries', required_matches: set):
     curr_ts = first_ts
     while (curr_ts < pred_ts - 4 * freq):
         curr_ts += freq
-        if compare_seasonality(pred_ts, curr_ts, required_matches):
+        if compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
             new_series = series.drop_before(curr_ts)
             return new_series
     
@@ -54,30 +48,30 @@ def crop_to_match_seasons(series: 'TimeSeries', required_matches: set):
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, filter_first_n: int = -1, required_matches: set = {}, detrend: bool = False, detrend_poly_degree: int = 3):
+    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: set = {}, trend: bool = False, trend_poly_degree: int = 3):
         """
         Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
         with subsequent selection of the most significant frequencies to remove noise from the prediction.
 
-        :param filter_first_n: The total number of frequencies that will be used for forecasting.
+        :param nr_freqs_to_keep: The total number of frequencies that will be used for forecasting.
         :param required_matches: The attributes of pd.Timestamp that will be used to create a training
                                  sequence that is cropped at the beginning such that the first timestamp 
                                  of the training sequence and the first prediction point have matching 'phases'.
                                  If the series has a yearly seasonality, include 'month', if it has a monthly 
                                  seasonality, include 'day', etc.
-        :param detrend: Boolean value indicating whether or not detrending will be applied before performing DFT.
-        :detrend_poly_degree: The degree of the polynomial that will be used for detrending.
+        :param trend: Boolean value indicating whether or not detrending will be applied before performing DFT.
+        :param trend_poly_degree: The degree of the polynomial that will be used for detrending.
 
         """
-        self.filter_first_n = filter_first_n
+        self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
-        self.detrend = detrend
-        self.detrend_poly_degree = detrend_poly_degree
+        self.trend = trend
+        self.trend_poly_degree = trend_poly_degree
 
     def __str__(self):
         return 'FFT'
 
-    def chosen_frequencies(self):
+    def chosen_frequencies(self) -> List[float]:
         """
         Returns the most significant frequencies that were chosen when training the model.
         """
@@ -88,12 +82,12 @@ class FFT(AutoRegressiveModel):
         return chosen_frequencies
 
     @time_log(logger=logger)
-    def fit(self, series: 'TimeSeries'):
+    def fit(self, series: TimeSeries):
         super().fit(series)
 
         # determine trend
-        if (self.detrend):
-            trend_coefficients = np.polyfit(range(len(self.training_series)), series.values(), 3)
+        if (self.trend):
+            trend_coefficients = np.polyfit(range(len(self.training_series)), series.values(), self.trend_poly_degree)
             self.trend = np.poly1d(trend_coefficients)
         else:
             self.trend = lambda x: 0
@@ -107,14 +101,16 @@ class FFT(AutoRegressiveModel):
         # perform dft
         self.fft_values = np.fft.fft(detrended_values)
 
-        # filter out low-amplitude frequencies
-        first_n = self.filter_first_n
-        if (first_n < 0 or first_n > len(self.fft_values)): first_n = len(self.fft_values)
+        # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
+        first_n = self.nr_freqs_to_keep
+        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
+
+        # set all other values in the frequency domain to 0
         self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex_)
         self.fft_values_filtered[self.filtered_indices] = self.fft_values[self.filtered_indices]
 
-        # precompute all possible predicted values
+        # precompute all possible predicted values using inverse dft
         self.predicted_values = np.fft.ifft(self.fft_values_filtered).real
 
 
