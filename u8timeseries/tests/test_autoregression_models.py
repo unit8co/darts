@@ -1,11 +1,12 @@
-import unittest
-import pandas as pd
-import numpy as np
 import logging
+import unittest
 
-from ..timeseries import TimeSeries
+import numpy as np
+import pandas as pd
+
 from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, TimeSeries, Arima, AutoArima
 from u8timeseries.models.theta import Theta
+
 
 class ModelsTestCase(unittest.TestCase):
 
@@ -23,7 +24,7 @@ class ModelsTestCase(unittest.TestCase):
 
     def test_autoregressive_models_runnability(self):
         models = [
-            ExponentialSmoothing(), 
+            ExponentialSmoothing(),
             Prophet(),
             Arima(1, 1, 1),
             AutoArima(),

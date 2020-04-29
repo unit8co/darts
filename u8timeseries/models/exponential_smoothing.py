@@ -3,12 +3,14 @@ Implementation of an Simple Exponential Smoothing model.
 --------------------------------------------------------
 """
 
-from .autoregressive_model import AutoRegressiveModel
-from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
 import statsmodels.tsa.holtwinters as hw
 
+from .autoregressive_model import AutoRegressiveModel
+from ..custom_logging import time_log, get_logger
+from ..timeseries import TimeSeries
+
 logger = get_logger(__name__)
+
 
 class ExponentialSmoothing(AutoRegressiveModel):
     """

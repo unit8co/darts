@@ -1,19 +1,20 @@
-import numpy as np
 import os
-import re
-from glob import glob
-import shutil
 import pickle
+import re
+import shutil
+from glob import glob
+from typing import List, Optional, Dict, Union
+
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from typing import List, Optional, Dict, Union
 
+from .. import AutoRegressiveModel
+from ..custom_logging import raise_if_not, get_logger, raise_log
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
-from ..custom_logging import raise_if_not, get_logger, raise_log
-from .. import AutoRegressiveModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')

@@ -1,6 +1,7 @@
-from ..timeseries import TimeSeries
+from sklearn.preprocessing import MinMaxScaler
+
 from ..custom_logging import get_logger, raise_log
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

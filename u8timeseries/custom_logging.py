@@ -1,13 +1,11 @@
-import sys
 import logging
-from datetime import datetime
-import pathlib
 import time
+
 
 def get_logger(name: str, handler=logging.StreamHandler()):
     """
-    Internally calls the logging.getLogger function with the 'name' argument to create or 
-    retrieve a logger object. It is recommended to pass __name__ as argument when calling 
+    Internally calls the logging.getLogger function with the 'name' argument to create or
+    retrieve a logger object. It is recommended to pass __name__ as argument when calling
     get_logger. The returned logger object logs to the standard error stream and formats
     the messages appropriately.
 
@@ -22,6 +20,7 @@ def get_logger(name: str, handler=logging.StreamHandler()):
     logger.addHandler(handler)
     return logger
 
+
 def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
     """
     Checks provided boolean condition and raises a ValueError if it evaluates to False.
@@ -31,9 +30,10 @@ def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = ge
     :param message: The message of the ValueError.
     :param logger: The logger instance to log the error message if 'condition' is False.
     """
-    if (not condition):
+    if not condition:
         logger.error("ValueError: " + message)
         raise ValueError(message)
+
 
 def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_logger')):
     """
@@ -49,24 +49,24 @@ def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_lo
 
     raise exception
 
+
 def time_log(logger: logging.Logger = get_logger('main_logger')):
     """
     A decorator function that logs the runtime of the function it is decorating
     to the logger object that is taken as an argument.
     Inspired by: https://medium.com/pythonhive/python-decorator-to-measure-the-execution-time-of-methods-fa04cb6bb36d
-    
+
     :param logger: The logger instance to log the runtime of the function.
     """
     def time_log_helper(method):
         def timed(*args, **kwargs):
             start_time = time.time()
-            result = method(*args)
+            _ = method(*args, **kwargs)
             end_time = time.time()
             duration = int((end_time - start_time) * 1000)
 
             logger.info(method.__name__ + " function ran for {} milliseconds".format(duration))
 
-            
         return timed
 
     return time_log_helper

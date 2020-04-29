@@ -1,7 +1,8 @@
-import unittest
-import pandas as pd
-import numpy as np
 import logging
+import unittest
+
+import numpy as np
+import pandas as pd
 
 from ..timeseries import TimeSeries
 
@@ -71,9 +72,10 @@ class TimeSeriesTestCase(unittest.TestCase):
         # test if reordering is correct
         rand_perm = np.random.permutation(range(1, 11))
         index = pd.to_datetime(['201301{:02d}'.format(i) for i in rand_perm])
-        series_test = TimeSeries.from_times_and_values(index, self.pd_series1.values[rand_perm-1],
-                                                       self.pd_series2[rand_perm-1],
-                                                       self.pd_series3[rand_perm-1].tolist())
+        series_test = TimeSeries.from_times_and_values(index,
+                                                       self.pd_series1.values[rand_perm - 1],
+                                                       self.pd_series2[rand_perm - 1],
+                                                       self.pd_series3[rand_perm - 1].tolist())
 
         self.assertTrue(series_test.start_time() == pd.to_datetime('20130101'))
         self.assertTrue(series_test.end_time() == pd.to_datetime('20130110'))
@@ -224,8 +226,9 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         seriesB = self.series1.shift(1)
         self.assertTrue(seriesB.time_index().equals(
-                        self.series1.time_index()[1:].append(pd.DatetimeIndex([self.series1.time_index()[-1] +
-                                                                              self.series1.freq()]))))
+                        self.series1.time_index()[1:].append(
+                            pd.DatetimeIndex([self.series1.time_index()[-1] + self.series1.freq()])
+                        )))
 
         seriesC = self.series1.shift(-1)
         self.assertTrue(seriesC.time_index().equals(
@@ -268,9 +271,15 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # same with CI
         seriesC, seriesD = self.series2.split_after(pd.Timestamp('20130106'))
-        self.assertEqual(seriesC.append_values(seriesD.values(), seriesD.time_index(),
-                                     seriesD.conf_lo_pd_series().values,
-                                     seriesD.conf_hi_pd_series().values), self.series2)
+        self.assertEqual(
+            seriesC.append_values(
+                seriesD.values(),
+                seriesD.time_index(),
+                seriesD.conf_lo_pd_series().values,
+                seriesD.conf_hi_pd_series().values
+            ),
+            self.series2
+        )
 
         # add only few element
         self.assertEqual(self.series1.drop_after(pd.Timestamp('20130110')).append_values([9]), self.series1)
@@ -283,11 +292,13 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # add non consecutive index
         with self.assertRaises(ValueError):
-            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()+seriesB.freq()), self.series1)
+            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() + seriesB.freq()),
+                             self.series1)
 
         # add existing indices
         with self.assertRaises(ValueError):
-            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()-3*seriesB.freq()), self.series1)
+            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() - 3 * seriesB.freq()),
+                             self.series1)
 
         # other frequency
         with self.assertRaises(ValueError):
@@ -317,8 +328,8 @@ class TimeSeriesTestCase(unittest.TestCase):
         # change outside
         seriesC = seriesA.copy()
         with self.assertRaises(ValueError):
-            seriesC.update(self.times+100*seriesC.freq(), range(10))
-        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')), list(range(10))+[0]*10)
+            seriesC.update(self.times + 100 * seriesC.freq(), range(10))
+        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')), list(range(10)) + [0] * 10)
         self.assertEqual(seriesC, self.series1)
 
         # change random
@@ -406,5 +417,3 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         with self.assertRaises(IndexError):
             self.series1[::-1]
-
-
