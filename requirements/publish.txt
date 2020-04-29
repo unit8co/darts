@@ -1,1 +1,1 @@
-twine
+twine>=3.0.0

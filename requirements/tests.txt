@@ -1,1 +1,1 @@
-testfixtures
+testfixtures>=6.14.0
