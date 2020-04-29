@@ -3,8 +3,8 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 
-def read_main_requirements():
-    return list(Path(f'requirements/main.txt').read_text().splitlines())
+def read_requirements(path):
+    return list(Path(path).read_text().splitlines())
 
 
 setup(
@@ -16,7 +16,7 @@ setup(
       author_email='info@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
-      install_requires=read_main_requirements(),
+      install_requires=read_requirements('requirements/main.txt'),
       zip_safe=False,
       python_requires='>=3.6',
       package_data={'u8timeseries': ['VERSION']}
