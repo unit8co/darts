@@ -17,6 +17,7 @@ setup(
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=read_requirements('requirements/main.txt'),
+      extras_require={'plots': read_requirements('requirements/plots.txt')},
       zip_safe=False,
       python_requires='>=3.6',
       package_data={'u8timeseries': ['VERSION']}

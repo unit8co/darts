@@ -4,12 +4,11 @@ List of statistics.
 """
 
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, get_logger
+from ..custom_logging import raise_log, get_logger, try_import_matplotlib
 import numpy as np
 from statsmodels.tsa.stattools import acf
 from scipy.stats import norm
 from statsmodels.tsa.seasonal import seasonal_decompose
-import matplotlib.pyplot as plt
 from typing import Tuple
 import math
 
@@ -194,6 +193,8 @@ def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 
     stats = []
     for i in range(1, max_lag+1):
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
+
+    plt = try_import_matplotlib(logger)
 
     plt.figure(figsize=fig_size)
 

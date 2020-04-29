@@ -1,8 +1,10 @@
+from u8timeseries.custom_logging import get_logger, try_import_matplotlib
 from u8timeseries.timeseries import TimeSeries
-import matplotlib.pyplot as plt
 import numpy as np
 from typing import Tuple, List
 from scipy.interpolate import interp1d
+
+logger = get_logger(__name__)
 
 
 def na_ratio(ts: 'TimeSeries') -> float:
@@ -41,6 +43,8 @@ def nan_structure_visual(ts: 'TimeSeries', plot: bool = True) -> np.ndarray:
     nans = np.isnan(ts.values())
 
     if plot: # TODO: find a better way to visualize NaN data
+        plt = try_import_matplotlib(logger)
+
         plt.scatter(np.arange(len(nans)), nans)
         plt.yticks([0, 1], ["Non-missing", "NaN"])
         plt.show()

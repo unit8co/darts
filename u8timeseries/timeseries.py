@@ -4,11 +4,10 @@ Timeseries
 """
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
 
-from .custom_logging import raise_log, raise_if_not, get_logger
+from .custom_logging import raise_log, raise_if_not, get_logger, try_import_matplotlib
 
 logger = get_logger(__name__)
 
@@ -410,6 +409,8 @@ class TimeSeries:
         # errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,
         #                                lambda x, y: np.vstack([x.values, y.values]))
         # self._series.plot(yerr=errors, *args, **kwargs)
+        plt = try_import_matplotlib(logger)
+
         fig, ax = plt.subplots()
         ax.plot_date(self.time_index(), self.values(), marker='', linestyle='-', *args, **kwargs)
         fig.autofmt_xdate()
