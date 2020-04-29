@@ -22,14 +22,14 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/tests.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           pip install .
-          pip install -r requirements/tests.txt
+          pip install -r requirements/dev.txt
 
       - name: Run tests
         run: |
@@ -55,14 +55,14 @@ jobs:
       id: cache
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/docs.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         pip install .
-        pip install -r requirements/docs.txt
+        pip install -r requirements/dev.txt
 
     - name: Copy examples
       run: |
