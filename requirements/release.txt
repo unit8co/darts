@@ -1,0 +1,11 @@
+# docs
+sphinx
+sphinx-automodapi
+nbsphinx
+sphinx-rtd-theme
+recommonmark
+# Do not change it due to https://github.com/sphinx-doc/sphinx/issues/7420
+m2r @ git+https://github.com/crossnox/m2r@dev#egg=m2r
+
+# publish
+twine>=3.0.0

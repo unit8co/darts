@@ -7,18 +7,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
 
-      - name: Set up Python 3.6
+      - name: "2. Set up Python 3.6"
         uses: actions/setup-python@v1
         with:
           python-version: 3.6
 
-      - name: Prepare machine
+      - name: "3. Update pip"
         run: |
           python -m pip install --upgrade pip
 
-      - uses: actions/cache@v1
+      - name: "4. Attache cache for pip"
+        uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
@@ -26,12 +28,12 @@ jobs:
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: "5. Install main and dev dependencies"
         run: |
           pip install -q .
           pip install -q -r requirements/dev.txt
 
-      - name: Run tests
+      - name: "5. Run tests"
         run: |
           python -m unittest
 
@@ -39,59 +41,126 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
 
-    - name: Set up Python 3.6
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.6
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
 
-    - name: Prepare machine
-      run: |
-        sudo apt-get install -y pandoc
-        python -m pip install --upgrade pip
+      - name: "3. Update pip and install pandoc"
+        run: |
+          sudo apt-get install -y pandoc
+          python -m pip install --upgrade pip
 
-    - uses: actions/cache@v1
-      id: cache
-      with:
-        path: ~/.cache/pip
-        key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
-        restore-keys: |
-          docs-${{ runner.os }}-pip-
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            docs-${{ runner.os }}-pip-
 
-    - name: Install dependencies
-      run: |
-        pip install -q .
-        pip install -q -r requirements/dev.txt
+      - name: "5. Install main and release dependencies"
+        run: |
+          pip install -q .
+          pip install -q -r requirements/release.txt
 
-    - name: Copy examples
-      run: |
-        make --directory ./docs copy-examples
+      - name: "6. Copy examples"
+        run: |
+          make --directory ./docs copy-examples
 
-    - name: Generate documentation
-      run: |
-        make --directory ./docs generate
-        
-    - name: Build documentation website
-      run: |
-        make --directory ./docs html
+      - name: "7. Generate API documentation"
+        run: |
+          make --directory ./docs generate
 
-    - uses: actions/upload-artifact@v1
-      with:
-        name: docs
-        path: docs/build/html
+      - name: "8. Build documentation"
+        run: |
+          make --directory ./docs html
 
-  deploy-docs:
+      - name: "9. Store documentation artifact"
+        uses: actions/upload-artifact@v1
+        with:
+          name: docs
+          path: docs/build/html
+
+  release:
     needs: [tests, docs]
     runs-on: ubuntu-latest
     if: contains(github.ref, 'master')
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v1
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: "3. Update pip and install pandoc"
+        run: |
+          sudo apt-get install -y pandoc
+          python -m pip install --upgrade pip
+
+      - name: "4. Install release dependencies"
+        run: |
+          pip install -q -r requirements/release.txt
+
+      - name: "5. Determine next version"
+        uses: endrjuskr/github-tag-action@master
+        id: bump_dry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INITIAL_VERSION: 0.0.2
+          DRY_RUN: true
+
+      - name: "6. Bump version"
+        run: |
+          bump2version --current-version ${{ steps.bump_dry.outputs.tag }} --new-version ${{ steps.bump_dry.outputs.new_tag }} patch setup.py
+
+      - name: "7. Commit new version"
+        uses: stefanzweifel/git-auto-commit-action@v4.1.6
+        with:
+          commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
+          branch: master
+          commit_user_name: Unit8 Bot
+          commit_user_email: info@unit8.co
+
+      - name: "8. Publish new tag"
+        uses: endrjuskr/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
+
+      - name: "9. Create new release draft"
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump_dry.outputs.new_tag }}
+          release_name: Release ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          draft: true
+
+  deploy-docs:
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: contains(github.ref, 'master')
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Download documentation artifact"
+        uses: actions/download-artifact@v1
         with:
           name: docs
           path: docs/build/html
-      - name: Publish documentation
+
+      - name: "3. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self
@@ -100,17 +169,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-docker:
-    needs: [tests, docs]
+    needs: [release]
     runs-on: ubuntu-latest
     if: contains(github.ref, 'master')
     steps:
-      - uses: actions/checkout@v2
-      - name: Login to gcloud registry
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Login to GCR"
         id: gcloud
         uses: elgohr/gcloud-login-action@0.2
         with:
           account_key: ${{ secrets.GCLOUD_KEY }}
-      - name: Publish to Registry
+
+      - name: "3. Build and publish docker to GCR"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
           name: eu.gcr.io/unit8-product/u8timeseries
