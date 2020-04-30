@@ -9,6 +9,44 @@ from typing import List, Optional
 
 logger = get_logger(__name__)
 
+def check_approximate_seasonality(series: TimeSeries, seasonality_period: int, 
+                                  period_error_margin: int, max_seasonality_order: int) -> bool:
+    """
+    Analyzes the given TimeSeries instance for seasonality of the given period
+    while taking into account potential noise of the autocorrelation function.
+    This is done by averaging all AC values that are within 'period_error_margin'
+    steps from the index 'period_error_margin' in the ACF domain.
+
+    :param series: The TimeSeries instance to be analyzed.
+    :param seasonality_period: The (approximate) period to be checked for seasonality.
+    :param period_error_margin: The radius around the 'seasonality_period' that is
+                                taken into consideration when computing the autocorrelation.
+    :param max_seasonality_order: The maximum number of lags (or inputs to the acf) that
+                                  can exceed the acf computed over the interval described above.
+    :return: Boolean value indicating whether the seasonality is significant given the parameters passed.
+    """
+    # fraction of seasonality_period that will skipped when looking at acf values due to high 
+    # autocorrelation for small lags
+    frac = 1 / 4 
+
+    # return False if there are not enough entries in the TimeSeries instance
+    if (len(series) < seasonality_period * (1 + frac)): return False
+
+    # compute relevant autocorrelation values
+    r = acf(series.values(), nlags=int(seasonality_period * (1 + frac)))
+    
+    # compute the approximate autocorrelation value for the given period
+    left_bound = seasonality_period - period_error_margin
+    right_bound = seasonality_period + period_error_margin
+    approximation_interval = range(left_bound, right_bound + 1)
+    approximated_period_ac = np.mean(r[approximation_interval])
+
+    # compute the number of ac values larger than the approximated ac value for the given period
+    indices = list(range(int(frac * seasonality_period), left_bound)) + list(range(right_bound + 1, len(r)))
+    order = sum(map(lambda ac_value: int(ac_value > approximated_period_ac), r[indices]))
+
+    return order <= max_seasonality_order
+
 def find_relevant_timestamp_attributes(series: TimeSeries):
     """
     Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes
@@ -22,14 +60,19 @@ def find_relevant_timestamp_attributes(series: TimeSeries):
     relevant_attributes = set()
     r = acf(series.values())
 
-    if (series.freq() == pd.tseries.offsets.Day):
-        if (len(series) > 450):
-            
+    if (type(series.freq()) == pd.tseries.offsets.Day):
+        # check for yearly seasonality
+        if (check_approximate_seasonality(series, 365, 5, 20)):
+            relevant_attributes.update({'month', 'day'})
+        # check for monthly seasonality
+        elif (check_approximate_seasonality(series, 30, 2, 2)):
+            relevant_attributes.add('day')
+    elif (type(series.freq()) == pd.tseries.offsets.Hour):
+        pass
+        # TODO: add other seasonality cases
 
-
-    # 365 seasonality -> month + day
-    # 30 day seasonality -> day
-    # 7 day seasonality -> weekday 
+    logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
+    return relevant_attributes
 
 def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """
@@ -75,7 +118,8 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, trend: bool = False, trend_poly_degree: int = 3):
+    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, 
+                 trend: bool = False, trend_poly_degree: int = 3, automatic_matching=False):
         """
         Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
         with subsequent selection of the most significant frequencies to remove noise from the prediction.
@@ -94,6 +138,7 @@ class FFT(AutoRegressiveModel):
         self.required_matches = required_matches
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
+        self.automatic_matching = automatic_matching
 
     def __str__(self):
         return 'FFT'
@@ -120,6 +165,7 @@ class FFT(AutoRegressiveModel):
             self.trend = lambda x: 0
 
         # crop training set to match the seasonality of the first prediction point
+        if (self.automatic_matching): self.required_matches = find_relevant_timestamp_attributes(series)
         self.cropped_series = crop_to_match_seasons(series, required_matches=self.required_matches)
 
         # subtract trend
@@ -140,7 +186,6 @@ class FFT(AutoRegressiveModel):
 
         # precompute all possible predicted values using inverse dft
         self.predicted_values = np.fft.ifft(self.fft_values_filtered).real
-
 
     def predict(self, n: int):
         super().predict(n)
