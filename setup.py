@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from setuptools import setup, find_packages
+import os
 
 
 def read_requirements(path):
