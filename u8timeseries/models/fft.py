@@ -19,18 +19,21 @@ def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, req
     """
     return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
 
-def crop_to_match_seasons(series: TimeSeries, required_matches: set) -> TimeSeries:
+def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
     """
     Crops a given TimeSeries 'series' that will be used as a training set in such
     a way that its first entry has a timestamp that matches the first timestamp
     right after the end of 'series' in all attributes given in 'required_matches'.
     If no such timestamp can be found, the original TimeSeries instance is returned.
+    If the value of 'required_matches' is 'None', the original TimeSeries instance is returned.
 
     :param series: TimeSeries instance to be cropped.
     :param ts_2: Second timestamp that will be compared.
     :required_matches: A set of pd.Timestamp attributes which will be used to choose the cropping point.
     :return: New TimeSeries instance that is cropped as described above.
     """
+    if (required_matches is None) return series
+
     first_ts = series._series.index[0]
     freq = first_ts.freq
     pred_ts = series._series.index[-1] + freq
@@ -48,7 +51,7 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: set) -> TimeSeri
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: set = {}, trend: bool = False, trend_poly_degree: int = 3):
+    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, trend: bool = False, trend_poly_degree: int = 3):
         """
         Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
         with subsequent selection of the most significant frequencies to remove noise from the prediction.
@@ -102,6 +105,7 @@ class FFT(AutoRegressiveModel):
         self.fft_values = np.fft.fft(detrended_values)
 
         # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
+        # by partitioning around the element with index -nr_freqs_to_keep instead of reduntantly sorting the whole array
         first_n = self.nr_freqs_to_keep
         if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
