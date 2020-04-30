@@ -412,8 +412,8 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="u8timeseries-Intro">
 <h1><code class="docutils literal notranslate"><span class="pre">u8timeseries</span></code> Intro<a class="headerlink" href="#u8timeseries-Intro" title="Permalink to this headline">¶</a></h1>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -423,8 +423,17 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -435,21 +444,12 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat\pandas.py:49: FutureWarning: The Panel class is removed from pandas. Accessing it from the top-level namespace will also be removed in the next version
-  data_klasses = (pandas.Series, pandas.DataFrame, pandas.Panel)
-</pre></div></div>
-</div>
 <div class="section" id="TimeSeries-Creation">
 <h2><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Creation<a class="headerlink" href="#TimeSeries-Creation" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="From-a-pd.Series:">
 <h3>From a <code class="docutils literal notranslate"><span class="pre">pd.Series</span></code>:<a class="headerlink" href="#From-a-pd.Series:" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -462,7 +462,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="section" id="From-a-pd.DataFrame:">
 <h3>From a <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code>:<a class="headerlink" href="#From-a-pd.DataFrame:" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -473,7 +473,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -530,7 +530,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 </div></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[69]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -542,7 +542,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="section" id="From-times-and-values-directly:">
 <h3>From times and values directly:<a class="headerlink" href="#From-times-and-values-directly:" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[70]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -551,18 +551,18 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 </div>
 </div>
 </div>
-</div>
-<div class="section" id="More-on-TimeSeries">
-<h2>More on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#More-on-TimeSeries" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="Plotting">
-<h3>Plotting<a class="headerlink" href="#Plotting" title="Permalink to this headline">¶</a></h3>
-<p>wrapper around <code class="docutils literal notranslate"><span class="pre">pd.Series.plot()</span></code></p>
+<div class="section" id="Using-pre-defined-TimeSeries-generators:">
+<h3>Using pre-defined <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> generators:<a class="headerlink" href="#Using-pre-defined-TimeSeries-generators:" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span><span class="kn">from</span> <span class="nn">u8timeseries.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
+
+<span class="n">tg</span><span class="o">.</span><span class="n">periodic_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">tg</span><span class="o">.</span><span class="n">us_holiday_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="p">(</span><span class="n">tg</span><span class="o">.</span><span class="n">linear_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">70</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -574,10 +574,33 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 </div>
 </div>
 </div>
+</div>
+<div class="section" id="More-on-TimeSeries">
+<h2>More on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#More-on-TimeSeries" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Plotting">
+<h3>Plotting<a class="headerlink" href="#Plotting" title="Permalink to this headline">¶</a></h3>
+<p>wrapper around <code class="docutils literal notranslate"><span class="pre">pd.Series.plot()</span></code></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_u8timeseries-intro_13_0.png" src="../_images/examples_u8timeseries-intro_13_0.png" />
+</div>
+</div>
+</div>
 <div class="section" id="Confidence-Intervals">
 <h3>Confidence Intervals<a class="headerlink" href="#Confidence-Intervals" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[75]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -594,14 +617,14 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_13_0.png" src="../_images/examples_u8timeseries-intro_13_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_15_0.png" src="../_images/examples_u8timeseries-intro_15_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="Drop,-Slice,-split">
 <h3>Drop, Slice, split<a class="headerlink" href="#Drop,-Slice,-split" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[76]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -616,18 +639,18 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_15_0.png" src="../_images/examples_u8timeseries-intro_15_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_17_0.png" src="../_images/examples_u8timeseries-intro_17_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[77]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Slice</span>
 <span class="n">subseries</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130107&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20130114&#39;</span><span class="p">))</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">subseries</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">subseries</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -635,11 +658,11 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_16_0.png" src="../_images/examples_u8timeseries-intro_16_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_18_0.png" src="../_images/examples_u8timeseries-intro_18_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -654,14 +677,14 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_17_0.png" src="../_images/examples_u8timeseries-intro_17_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_19_0.png" src="../_images/examples_u8timeseries-intro_19_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="Intersect-(in-time)">
 <h3>Intersect (in time)<a class="headerlink" href="#Intersect-(in-time)" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -671,7 +694,8 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <span class="n">series1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">series2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
-<span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">slice_series</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span>
+<span class="n">slice_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -679,18 +703,19 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_19_0.png" src="../_images/examples_u8timeseries-intro_19_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_21_0.png" src="../_images/examples_u8timeseries-intro_21_0.png" />
 </div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">TimeSeries.intersect()</span></code> returns a slice of the time index, which can then be used for indexing:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">series1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">series2</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
-<span class="n">series2</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">series2</span><span class="p">[</span><span class="n">series1</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">series2</span><span class="p">)]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -698,7 +723,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_20_0.png" src="../_images/examples_u8timeseries-intro_20_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_23_0.png" src="../_images/examples_u8timeseries-intro_23_0.png" />
 </div>
 </div>
 </div>
@@ -707,7 +732,7 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="section" id="Auto-regressive-Models">
 <h1>Auto-regressive Models<a class="headerlink" href="#Auto-regressive-Models" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[80]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -721,21 +746,26 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_22_0.png" src="../_images/examples_u8timeseries-intro_22_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_25_0.png" src="../_images/examples_u8timeseries-intro_25_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[82]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+<span></span><span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="kn">import</span> <span class="n">Theta</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span>
 
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">))</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span class="n">model_theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">model_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+
+<span class="n">model_theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">model_ets</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">pred_val_theta</span> <span class="o">=</span> <span class="n">model_theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span class="n">pred_val_ets</span> <span class="o">=</span> <span class="n">model_ets</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -744,31 +774,25 @@ C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\compat
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
 
-RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
-
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
-
-RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
-
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:294: FutureWarning:
-
-RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
-
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:296: FutureWarning:
-
-RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
+Optimization failed to converge. Check mle_retvals.
 
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[87]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span><span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="kn">import</span> <span class="n">KthValueAgoBaseline</span>
+
+<span class="n">model_kth</span> <span class="o">=</span> <span class="n">KthValueAgoBaseline</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">model_kth</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model_kth</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -776,17 +800,51 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_24_0.png" src="../_images/examples_u8timeseries-intro_24_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_27_0.png" src="../_images/examples_u8timeseries-intro_27_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[85]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">u8timeseries.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+<span class="n">pred_val_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Theta&#39;</span><span class="p">)</span>
+<span class="n">pred_val_ets</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;ETS&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE error Theta = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">pred_val_theta</span><span class="p">),</span> <span class="n">pred_val_theta</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE error ETS = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">pred_val_ets</span><span class="p">),</span> <span class="n">pred_val_ets</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE error Theta = 4.7788383704329
+MAPE error ETS = 4.925019687272154
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_u8timeseries-intro_28_1.png" src="../_images/examples_u8timeseries-intro_28_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[90]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">u8timeseries.backtesting</span> <span class="kn">import</span> <span class="n">simulate_forecast_ar</span>
 
-<span class="n">historical_fcast</span> <span class="o">=</span> <span class="n">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570601&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">historical_fcast</span> <span class="o">=</span> <span class="n">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">model_ets</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570601&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -794,32 +852,156 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fe92929297b54277bb21fc9c92c25e71", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1d079e3582d249cd9e5b7282bff03572", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
 
-RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
+Optimization failed to converge. Check mle_retvals.
 
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
 
-RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
+Optimization failed to converge. Check mle_retvals.
 
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:294: FutureWarning:
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
 
-RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
+Optimization failed to converge. Check mle_retvals.
 
-C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:296: FutureWarning:
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
 
-RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
 
 </pre></div></div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
@@ -827,8 +1009,19 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 
 </pre></div></div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/julien/anaconda3/envs/u8ts-test1/lib/python3.8/site-packages/statsmodels/tsa/holtwinters.py:743: ConvergenceWarning:
+
+Optimization failed to converge. Check mle_retvals.
+
+</pre></div></div>
+</div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[91]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -841,27 +1034,28 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_u8timeseries-intro_27_0.png" src="../_images/examples_u8timeseries-intro_27_0.png" />
+<img alt="../_images/examples_u8timeseries-intro_31_0.png" src="../_images/examples_u8timeseries-intro_31_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[92]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">u8timeseries.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">mase</span>
 
-<span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_fcast</span><span class="p">),</span> <span class="n">historical_fcast</span><span class="p">)</span>
+<span class="n">slice_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_fcast</span><span class="p">)</span>
+<span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">slice_series</span><span class="p">],</span> <span class="n">historical_fcast</span><span class="p">[</span><span class="n">slice_series</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[92]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-4.457910001033541
+4.457909803977122
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">

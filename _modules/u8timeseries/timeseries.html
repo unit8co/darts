@@ -158,6 +158,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">pandas.tseries.frequencies</span> <span class="kn">import</span> <span class="n">to_offset</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span>
@@ -167,8 +168,11 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="TimeSeries"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries">[docs]</a><span class="k">class</span> <span class="nc">TimeSeries</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A TimeSeries is an immutable object defined by the following three components.</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">confidence_lo</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">confidence_hi</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A TimeSeries is an immutable object, representing a univariate time series, and optional confidence intervals.</span>
+
+<span class="sd">        It is defined by the following three components:</span>
 
 <span class="sd">        :param series: The actual time series, as a pandas Series with a proper time index.</span>
 <span class="sd">        :param confidence_lo: Optionally, a Pandas Series representing lower confidence interval.</span>
@@ -176,12 +180,13 @@
 
 <span class="sd">        Within this class, TimeSeries type annotations are &#39;TimeSeries&#39;; see:</span>
 <span class="sd">        https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">confidence_lo</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">confidence_hi</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;Series must have at least three values.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>  <span class="c1"># cannot create a timeseries with n&lt;3 -&gt; can add less than 3 elements with add function</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">),</span> <span class="s1">&#39;Series must be indexed with a DatetimeIndex.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">),</span> <span class="s1">&#39;Series must contain numerical values.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>  <span class="c1"># Sort by time</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">inferred_freq</span>  <span class="c1"># Infer frequency</span>
@@ -254,7 +259,7 @@
 
 <span class="sd">        :return: A numpy array containing the values of the TimeSeries.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">values</span></div>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">values</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.time_index"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.time_index">[docs]</a>    <span class="k">def</span> <span class="nf">time_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -262,7 +267,7 @@
 
 <span class="sd">        :return: A DatetimeIndex containing the index of the TimeSeries.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span></div>
+        <span class="k">return</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.freq"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.freq">[docs]</a>    <span class="k">def</span> <span class="nf">freq</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -288,7 +293,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="TimeSeries.copy"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="TimeSeries.copy"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make a copy of this object time series</span>
 <span class="sd">        :param deep: Make a deep copy. If False, the Series will be the same</span>
@@ -300,7 +305,6 @@
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_raise_if_not_within</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
-
         <span class="k">if</span> <span class="p">(</span><span class="n">ts</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ts</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()):</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Timestamp must be between </span><span class="si">{}</span><span class="s1"> and </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">())),</span> <span class="n">logger</span><span class="p">)</span>
 
@@ -315,7 +319,6 @@
 <span class="sd">        :return: A tuple (s1, s2) of TimeSeries with indices smaller or equal to [ts]</span>
 <span class="sd">                 and greater than [ts] respectively.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_if_not_within</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
 
         <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">ts</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># closest index before ts (new ts)</span>
@@ -383,7 +386,6 @@
 <span class="sd">        :param end_ts: The timestamp that indicates the right cut-off.</span>
 <span class="sd">        :return: A new TimeSeries, which indices greater or equal than [start_ts] and smaller or equal than [end_ts].</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">end_ts</span> <span class="o">&gt;</span> <span class="n">start_ts</span><span class="p">,</span> <span class="s1">&#39;End timestamp must be strictly after start timestamp when slicing.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">end_ts</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="s1">&#39;End timestamp must be after the start of the time series when slicing.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start_ts</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;Start timestamp must be after the end of the time series when slicing.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -438,29 +440,16 @@
         <span class="n">start_ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">end_ts</span> <span class="o">-</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>  <span class="c1"># (n-1) because slice() is inclusive on both sides</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">start_ts</span><span class="p">,</span> <span class="n">end_ts</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.intersect"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.intersect">[docs]</a>    <span class="k">def</span> <span class="nf">intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.slice_intersect"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.slice_intersect">[docs]</a>    <span class="k">def</span> <span class="nf">slice_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a slice containing the intersection of this TimeSeries and the one provided in argument.</span>
-
-<span class="sd">        TODO: This function does not really behave as described. Not really an intersect</span>
-
-<span class="sd">        :param other: A second TimeSeries.</span>
-<span class="sd">        :return: A new TimeSeries, with values of this TimeSeries and indices the intersection of both</span>
-<span class="sd">                TimeSeries&#39; indices.</span>
+<span class="sd">        Returns a TimeSeries slice of this time series, where the time index has been intersected with the one</span>
+<span class="sd">        provided in argument. Note that this method is in general *not* symmetric.</span>
+<span class="sd">        :param other: the other TimeSeries</span>
+<span class="sd">        :return: a new TimeSeries, containing the values of this TimeSeries,</span>
+<span class="sd">                 over the time-span common to both time series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">def</span> <span class="nf">_intersect_not_none</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">new_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">())</span>
-
-                <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;The two series do not have enough common times.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-
-                <span class="k">return</span> <span class="n">s</span><span class="p">[</span><span class="n">new_index</span><span class="p">]</span>
-            <span class="k">return</span> <span class="kc">None</span>
-
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">_intersect_not_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">),</span>
-                          <span class="n">_intersect_not_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_lo</span><span class="p">),</span>
-                          <span class="n">_intersect_not_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">))</span></div>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span></div>
 
     <span class="c1"># TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function</span>
 <div class="viewcode-block" id="TimeSeries.rescale_with_value"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.rescale_with_value">[docs]</a>    <span class="k">def</span> <span class="nf">rescale_with_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value_at_first_step</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
@@ -470,10 +459,9 @@
 <span class="sd">        Numerical imprecisions appear with [value_at_first_step] &gt; 1e+24</span>
 
 <span class="sd">        :param value_at_first_step: The new value for the first entry of the TimeSeries.</span>
-<span class="sd">        :return: A new TimeSeries, whose first value was changed to [value_at_first_step] and whose others values</span>
-<span class="sd">                have been scaled accordingly.</span>
+<span class="sd">        :return: A new TimeSeries, where the first value is [value_at_first_step] and other values</span>
+<span class="sd">                 have been scaled accordingly.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">raise_if_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Cannot rescale with first value 0.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
         <span class="n">coef</span> <span class="o">=</span> <span class="n">value_at_first_step</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># TODO: should the new TimeSeries have the same dtype?</span>
@@ -493,7 +481,6 @@
 <span class="sd">        :param n: The signed number of time steps to shift by.</span>
 <span class="sd">        :return: A new TimeSeries, with a shifted index.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: no error raised if freq is different than day and overflow happens, so raise it ourselves</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>
         <span class="k">except</span> <span class="n">pd</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">OutOfBoundsDatetime</span><span class="p">:</span>
@@ -513,21 +500,23 @@
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_series</span><span class="p">,</span> <span class="n">new_conf_lo</span><span class="p">,</span> <span class="n">new_conf_hi</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_dataframe"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.from_dataframe">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">time_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">time_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">value_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                        <span class="n">conf_lo_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">conf_hi_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a TimeSeries built from some DataFrame columns (ignoring DataFrame index)</span>
+<span class="sd">        Returns a TimeSeries built from a DataFrame. One column (or the DataFrame index) has to represent the time,</span>
+<span class="sd">        and another column has to represent the values for this univariate time series.</span>
 
 <span class="sd">        :param df: The DataFrame</span>
-<span class="sd">        :param time_col: The time column name (mandatory).</span>
+<span class="sd">        :param time_col: The time column name (mandatory). If set to `None`, the DataFrame index will be used.</span>
 <span class="sd">        :param value_col: The value column name (mandatory).</span>
 <span class="sd">        :param conf_lo_col: The lower confidence interval column name (optional).</span>
 <span class="sd">        :param conf_hi_col: The upper confidence interval column name (optional).</span>
 <span class="sd">        :return: A TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: return a list, object, ... of TimeSeries if there are multiple features (value-col). To decide</span>
-
-        <span class="n">times</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">time_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">times</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">times</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">value_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
 
         <span class="n">conf_lo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">conf_lo_col</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span> <span class="k">if</span> <span class="n">conf_lo_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
@@ -549,24 +538,19 @@
 <span class="sd">        :param confidence_hi: The higher confidence interval values (optional).</span>
 <span class="sd">        :return: A TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
         <span class="n">series_lo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">confidence_lo</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span> <span class="k">if</span> <span class="n">confidence_lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">series_hi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">confidence_hi</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span> <span class="k">if</span> <span class="n">confidence_hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">series_lo</span><span class="p">,</span> <span class="n">series_hi</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.plot"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">plot_ci</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="TimeSeries.plot"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_ci</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">new_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Currently this is just a wrapper around pd.Series.plot()</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># temporary work-around for the pandas.plot issue</span>
-        <span class="c1"># errors = self._combine_or_none(self._confidence_lo, self._confidence_hi,</span>
-        <span class="c1">#                                lambda x, y: np.vstack([x.values, y.values]))</span>
-        <span class="c1"># self._series.plot(yerr=errors, *args, **kwargs)</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot_date</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">autofmt_xdate</span><span class="p">()</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span> <span class="k">if</span> <span class="n">new_plot</span> <span class="k">else</span> <span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;figure&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;figure&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()))</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;figure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">x_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">name</span>
         <span class="k">if</span> <span class="n">x_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">x_label</span><span class="p">)</span>
@@ -577,7 +561,6 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Some useful methods for TimeSeries combination:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
 <div class="viewcode-block" id="TimeSeries.has_same_time_as"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.has_same_time_as">[docs]</a>    <span class="k">def</span> <span class="nf">has_same_time_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks whether this TimeSeries and another one have the same index.</span>
@@ -590,8 +573,6 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">())</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
 
-    <span class="c1"># TODO: is union function useful too?</span>
-    <span class="c1"># TODO: should append only at the end of the series? or can we create holes and &quot;interpolate&quot; their values?</span>
 <div class="viewcode-block" id="TimeSeries.append"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Appends another TimeSeries to this TimeSeries.</span>
@@ -599,7 +580,6 @@
 <span class="sd">        :param other: A second TimeSeries.</span>
 <span class="sd">        :return: A new TimeSeries, obtained by appending the second TimeSeries to the first.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="s1">&#39;Appended TimeSeries must start one time step &#39;</span> \
                                                                     <span class="s1">&#39;after current one.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="c1"># TODO additional check?</span>
@@ -679,6 +659,8 @@
 <span class="sd">        :param conf_hi: The higher confidence interval values (optional).</span>
 <span class="sd">        :param inplace: If True, do operation inplace and return None, defaults to True.</span>
 <span class="sd">        :return: A TimeSeries with values updated</span>
+
+<span class="sd">        TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">conf_lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">conf_hi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">&quot;At least one parameter must be filled &quot;</span> \
                                                                              <span class="s2">&quot;other than index&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -726,6 +708,8 @@
 <span class="sd">        :param kwargs: Option to pass to pd.Series drop method</span>
 <span class="sd">        :param inplace: If True, do operation inplace and return None, defaults to True.</span>
 <span class="sd">        :return: A TimeSeries with values dropped</span>
+
+<span class="sd">        TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="n">inplace</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">conf_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op_or_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_lo</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="n">inplace</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
@@ -733,6 +717,10 @@
         <span class="k">if</span> <span class="n">inplace</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">conf_lo</span><span class="p">,</span> <span class="n">conf_hi</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.is_within_range"><a class="viewcode-back" href="../../generated_api/u8timeseries.timeseries.html#u8timeseries.timeseries.TimeSeries.is_within_range">[docs]</a>    <span class="k">def</span> <span class="nf">is_within_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">ts</span> <span class="o">&lt;=</span> <span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_combine_or_none</span><span class="p">(</span><span class="n">series_a</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">],</span>
@@ -814,13 +802,12 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Definition of some dunder methods</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()):</span>
                 <span class="k">return</span> <span class="kc">False</span>
             <span class="k">for</span> <span class="n">other_ci</span><span class="p">,</span> <span class="n">self_ci</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">other</span><span class="o">.</span><span class="n">conf_lo_pd_series</span><span class="p">(),</span> <span class="n">other</span><span class="o">.</span><span class="n">conf_hi_pd_series</span><span class="p">()],</span>
-                                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">]):</span>
+                                         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">]):</span>
                 <span class="k">if</span> <span class="p">(</span><span class="n">other_ci</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="n">self_ci</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
                     <span class="c1"># only one is None</span>
                     <span class="k">return</span> <span class="kc">False</span>
@@ -928,10 +915,8 @@
         <span class="n">conf_hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_op_or_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="o">-</span><span class="n">s</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">conf_lo</span><span class="p">,</span> <span class="n">conf_hi</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span>
-        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">index</span>
 
     <span class="k">def</span> <span class="fm">__round__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
@@ -994,7 +979,7 @@
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="n">deep</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memodict</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
@@ -1007,6 +992,10 @@
                 <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="n">stop</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
                     <span class="n">istart</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
                     <span class="n">istop</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+                    <span class="n">item</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">istart</span><span class="p">,</span> <span class="n">istop</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">step</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">==</span> <span class="nb">str</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="n">stop</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">==</span> <span class="nb">str</span><span class="p">:</span>
+                    <span class="n">istart</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">start</span><span class="p">))</span>
+                    <span class="n">istop</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">stop</span><span class="p">))</span>
                     <span class="n">item</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">istart</span><span class="p">,</span> <span class="n">istop</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">step</span><span class="p">)</span>
                 <span class="c1"># cannot reverse order</span>
                 <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
@@ -1022,7 +1011,9 @@
                                   <span class="bp">self</span><span class="o">.</span><span class="n">_op_or_none</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_confidence_hi</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="n">item</span><span class="p">]))</span>
             <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                 <span class="c1"># return only main series if nb of values &lt; 3</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">[</span><span class="n">item</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">[[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">item</span><span class="p">)]]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Input </span><span class="si">{}</span><span class="s2"> of class </span><span class="si">{}</span><span class="s2"> is not a possible key.</span><span class="se">\n</span><span class="s2">&quot;</span>\
                              <span class="s2">&quot;Please use integers, pd.DateTimeIndex, arrays or slice&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)),</span> <span class="n">logger</span><span class="p">)</span></div>

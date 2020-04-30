@@ -1,0 +1,12 @@
+
+
+.. automodule:: u8timeseries.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        u8timeseries.preprocessing.transformer

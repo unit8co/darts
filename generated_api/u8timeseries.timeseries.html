@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Examples" href="../examples.html" />
-    <link rel="prev" title="Implementation of an Theta model." href="u8timeseries.models.theta.html" /> 
+    <link rel="prev" title="&lt;no title&gt;" href="u8timeseries.preprocessing.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -193,18 +193,6 @@
 <dt id="u8timeseries.timeseries.TimeSeries">
 <em class="property">class </em><code class="sig-prename descclassname">u8timeseries.timeseries.</code><code class="sig-name descname">TimeSeries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">confidence_lo</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">confidence_hi</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A TimeSeries is an immutable object defined by the following three components.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The actual time series, as a pandas Series with a proper time index.</p></li>
-<li><p><strong>confidence_lo</strong> – Optionally, a Pandas Series representing lower confidence interval.</p></li>
-<li><p><strong>confidence_hi</strong> – Optionally, a Pandas Series representing upper confidence interval.</p></li>
-</ul>
-</dd>
-</dl>
-<p>Within this class, TimeSeries type annotations are ‘TimeSeries’; see:
-<a class="reference external" href="https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation">https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation</a></p>
 <dl class="py method">
 <dt id="u8timeseries.timeseries.TimeSeries.append">
 <code class="sig-name descname">append</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.append" title="Permalink to this definition">¶</a></dt>
@@ -270,7 +258,7 @@ Does not update value if already existing indices are provided.</p>
 
 <dl class="py method">
 <dt id="u8timeseries.timeseries.TimeSeries.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">deep</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.copy" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">deep</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make a copy of this object time series
 :param deep: Make a deep copy. If False, the Series will be the same
 :return: A copy of the TimeSeries</p>
@@ -327,6 +315,7 @@ Does not update value if already existing indices are provided.</p>
 <dd class="field-even"><p>A TimeSeries with values dropped</p>
 </dd>
 </dl>
+<p>TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -375,13 +364,14 @@ Does not update value if already existing indices are provided.</p>
 
 <dl class="py method">
 <dt id="u8timeseries.timeseries.TimeSeries.from_dataframe">
-<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">value_col</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">conf_lo_col</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">conf_hi_col</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a TimeSeries built from some DataFrame columns (ignoring DataFrame index)</p>
+<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">value_col</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">conf_lo_col</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">conf_hi_col</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a TimeSeries built from a DataFrame. One column (or the DataFrame index) has to represent the time,
+and another column has to represent the values for this univariate time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> – The DataFrame</p></li>
-<li><p><strong>time_col</strong> – The time column name (mandatory).</p></li>
+<li><p><strong>time_col</strong> – The time column name (mandatory). If set to <cite>None</cite>, the DataFrame index will be used.</p></li>
 <li><p><strong>value_col</strong> – The value column name (mandatory).</p></li>
 <li><p><strong>conf_lo_col</strong> – The lower confidence interval column name (optional).</p></li>
 <li><p><strong>conf_hi_col</strong> – The upper confidence interval column name (optional).</p></li>
@@ -427,20 +417,9 @@ Does not update value if already existing indices are provided.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="u8timeseries.timeseries.TimeSeries.intersect">
-<code class="sig-name descname">intersect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.intersect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.intersect" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a slice containing the intersection of this TimeSeries and the one provided in argument.</p>
-<p>TODO: This function does not really behave as described. Not really an intersect</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>other</strong> – A second TimeSeries.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new TimeSeries, with values of this TimeSeries and indices the intersection of both
-TimeSeries’ indices.</p>
-</dd>
-</dl>
-</dd></dl>
+<dt id="u8timeseries.timeseries.TimeSeries.is_within_range">
+<code class="sig-name descname">is_within_range</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em><span class="sig-paren">)</span> &#x2192; bool<a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.is_within_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.is_within_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt id="u8timeseries.timeseries.TimeSeries.kurtosis">
@@ -480,7 +459,7 @@ TimeSeries’ indices.</p>
 
 <dl class="py method">
 <dt id="u8timeseries.timeseries.TimeSeries.plot">
-<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="n">plot_ci</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">plot_ci</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">new_plot</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Currently this is just a wrapper around pd.Series.plot()</p>
 </dd></dl>
 
@@ -495,7 +474,7 @@ Numerical imprecisions appear with [value_at_first_step] &gt; 1e+24</p>
 <dd class="field-odd"><p><strong>value_at_first_step</strong> – The new value for the first entry of the TimeSeries.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new TimeSeries, whose first value was changed to [value_at_first_step] and whose others values
+<dd class="field-even"><p>A new TimeSeries, where the first value is [value_at_first_step] and other values
 have been scaled accordingly.</p>
 </dd>
 </dl>
@@ -538,6 +517,18 @@ have been scaled accordingly.</p>
 <dd class="field-even"><p>A new TimeSeries, which indices greater or equal than [start_ts] and smaller or equal than [end_ts].</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="u8timeseries.timeseries.TimeSeries.slice_intersect">
+<code class="sig-name descname">slice_intersect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#u8timeseries.timeseries.TimeSeries" title="u8timeseries.timeseries.TimeSeries">u8timeseries.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/u8timeseries/timeseries.html#TimeSeries.slice_intersect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.timeseries.TimeSeries.slice_intersect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a TimeSeries slice of this time series, where the time index has been intersected with the one
+provided in argument. Note that this method is in general <em>not</em> symmetric.
+:param other: the other TimeSeries
+:return: a new TimeSeries, containing the values of this TimeSeries,</p>
+<blockquote>
+<div><p>over the time-span common to both time series.</p>
+</div></blockquote>
 </dd></dl>
 
 <dl class="py method">
@@ -664,6 +655,7 @@ Use np.nan to ignore a specific index in a series.</p>
 <dd class="field-even"><p>A TimeSeries with values updated</p>
 </dd>
 </dl>
+<p>TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -697,7 +689,7 @@ Use np.nan to ignore a specific index in a series.</p>
         <a href="../examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="u8timeseries.models.theta.html" class="btn btn-neutral float-left" title="Implementation of an Theta model." accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="u8timeseries.preprocessing.html" class="btn btn-neutral float-left" title="&lt;no title&gt;" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

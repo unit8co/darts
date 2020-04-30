@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Timeseries" href="u8timeseries.timeseries.html" />
+    <link rel="next" title="&lt;no title&gt;" href="u8timeseries.preprocessing.html" />
     <link rel="prev" title="List of statistics." href="u8timeseries.models.statistics.html" /> 
 </head>
 
@@ -205,12 +205,15 @@
 <h1>Implementation of an Theta model.<a class="headerlink" href="#implementation-of-an-theta-model" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="u8timeseries.models.theta.Theta">
-<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.models.theta.</code><code class="sig-name descname">Theta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/theta.html#Theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.theta.Theta" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.models.theta.</code><code class="sig-name descname">Theta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">mode</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'multiplicative'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/theta.html#Theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.theta.Theta" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="u8timeseries.models.autoregressive_model.html#u8timeseries.models.autoregressive_model.AutoRegressiveModel" title="u8timeseries.models.autoregressive_model.AutoRegressiveModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></a></p>
 <p>An implementation of the Theta method with variable value of the <cite>theta</cite> parameter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>theta</strong> – User-defined value for the theta parameter. Default to 0.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> – User-defined value for the theta parameter. Default to 0.</p></li>
+<li><p><strong>mode</strong> – Type of seasonality. Either <cite>additive</cite> or <cite>multiplicative</cite>.</p></li>
+</ul>
 </dd>
 </dl>
 <dl class="py method">
@@ -244,7 +247,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="u8timeseries.timeseries.html" class="btn btn-neutral float-right" title="Timeseries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="u8timeseries.preprocessing.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="u8timeseries.models.statistics.html" class="btn btn-neutral float-left" title="List of statistics." accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -1,0 +1,5 @@
+
+.. automodule:: u8timeseries.models.RNN_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>u8timeseries &mdash; u8timeseries  documentation</title>
+  <title>install &mdash; u8timeseries  documentation</title>
   
 
   
@@ -135,7 +135,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>u8timeseries</li>
+      <li>install</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -178,12 +178,17 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="u8timeseries">
-<h1>u8timeseries<a class="headerlink" href="#u8timeseries" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="images/logo-72dpi.png"><img alt="u8timeseries" src="images/logo-72dpi.png" /></a>
+<a class="reference external image-reference" href="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg"><img alt="ci_workflow" src="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg" /></a>
+<p><strong>u8timeseries</strong> is a python library for easy manipulation and forecasting time series in python.
+It contains a variety of models, from classics such as ARIMA to neural networks.
+The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
+similar to scikit-learn. The library also makes it easy to backtest models,
+and combine the predictions of several models and external regressors.</p>
 <div class="section" id="install">
-<h2>install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<h1>install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="using-conda">
-<h3>using conda<a class="headerlink" href="#using-conda" title="Permalink to this headline">¶</a></h3>
+<h2>using conda<a class="headerlink" href="#using-conda" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">pmdarima</span></code> is currently not supported on conda which means we need to reinstall it through pip</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">conda_recipe</span><span class="o">/</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span>
 <span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">alkaline</span><span class="o">-</span><span class="n">ml</span> <span class="o">--</span><span class="n">name</span> <span class="n">u8timeseries</span><span class="o">-</span><span class="n">dev</span> <span class="o">--</span><span class="n">file</span> <span class="n">requirements</span><span class="o">/</span><span class="n">main</span><span class="o">.</span><span class="n">txt</span>
@@ -195,51 +200,78 @@
 </div>
 </div>
 <div class="section" id="pure-pip">
-<h3>pure pip<a class="headerlink" href="#pure-pip" title="Permalink to this headline">¶</a></h3>
+<h2>pure pip<a class="headerlink" href="#pure-pip" title="Permalink to this headline">¶</a></h2>
 <p>This approach most likely requires other non-Python dependencies.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
 <span class="c1"># install any additional dev requirements, e.g.:</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">requirements</span><span class="o">/</span><span class="n">docs</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
-<p>If Fortran is not installed on the device, the following error message might be printed during the installation:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">error</span><span class="p">:</span> <span class="n">library</span> <span class="n">dfftpack</span> <span class="n">has</span> <span class="n">Fortran</span> <span class="n">sources</span> <span class="n">but</span> <span class="n">no</span> <span class="n">Fortran</span> <span class="n">compiler</span> <span class="n">found</span>
+<p><strong>Running the examples only without installing:</strong></p>
+<p>To run the example notebooks without installing, using Docker, you can also run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span> <span class="o">&amp;&amp;</span> <span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
 </pre></div>
 </div>
-<p>This can be solved by installing gcc using Homebrew:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brew</span> <span class="n">install</span> <span class="n">gcc</span>
-</pre></div>
-</div>
+<p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
 </div>
 <div class="section" id="docker">
-<h3>docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h3>
-<p>Build and run the docker using the following two commands:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span>
-<span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
+<h2>docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="section" id="example-usage">
+<h1>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h1>
+<p>Create <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object from a Pandas DataFrame, and split in train/validation series:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>Then copy and paste the URL provided by the docker container into your browser to access jupyter notebook.</p>
-</div>
-</div>
-<div class="section" id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<p>For now the best documentation is examples.
-See: <a class="reference external" href="https://github.com/unit8co/u8timeseries/blob/master/examples/Air-passengers-example.ipynb">https://github.com/unit8co/u8timeseries/blob/master/examples/Air-passengers-example.ipynb</a></p>
-</div>
-<div class="section" id="issue-with-prophet-and-pandas">
-<h2>Issue with Prophet and Pandas<a class="headerlink" href="#issue-with-prophet-and-pandas" title="Permalink to this headline">¶</a></h2>
-<p>If you encounter the following error when trying to plot a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">float</span><span class="p">()</span> <span class="n">argument</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="n">string</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">number</span><span class="p">,</span> <span class="ow">not</span> <span class="s1">&#39;Period</span>
+<p>Fit an exponential smoothing model, and make a prediction over the validation series’ duration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">u8timeseries</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>this is likely because <a class="reference external" href="https://darektidwell.com/typeerror-float-argument-must-be-a-string-or-a-number-not-period-facebook-prophet-and-pandas/">Prophet deregisters the Pandas converters in its code</a>. To fix it, just call</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">register_matplotlib_converters</span><span class="p">()</span>
+<p>Plot:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<a class="reference external image-reference" href="images/example.png"><img alt="example" src="images/example.png" /></a>
+<p>We invite you to go over the example notebooks in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> directory.</p>
 </div>
-<div class="section" id="unit-test-status">
-<h2>unit test status<a class="headerlink" href="#unit-test-status" title="Permalink to this headline">¶</a></h2>
-<a class="reference external image-reference" href="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg"><img alt="ci_workflow" src="https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg" /></a>
+<div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p>The documentation of the API and models is available <a class="reference external" href="https://unit8co.github.io/u8timeseries/">here</a>.</p>
+</div>
+<div class="section" id="list-of-features">
+<h1>List of Features<a class="headerlink" href="#list-of-features" title="Permalink to this headline">¶</a></h1>
+<p>Currently, the library contains the following features:</p>
+<p><strong>Forecasting Models:</strong></p>
+<ul class="simple">
+<li><p>Exponential smoothing,</p></li>
+<li><p>ARIMA &amp; auto-ARIMA,</p></li>
+<li><p>Facebook Prophet,</p></li>
+<li><p>Theta method,</p></li>
+<li><p>Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).</p></li>
+</ul>
+<p><strong>Preprocessing:</strong> Transformer tool for easily scaling / normalizing time series.</p>
+<p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
+from R2-scores to Mean Absolute Scaled Error.</p>
+<p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
+<p><strong>Regressive Models:</strong> Possibility to predict a time series from several other time series
+(e.g., external regressors), using arbitrary regressive models.</p>
+</div>
+<div class="section" id="contribute">
+<h1>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h1>
+<p>The development is ongoing, and there are many new features that we want to add.
+We welcome pull requests and issues on github.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries</a><ul>
@@ -275,10 +307,6 @@ See: <a class="reference external" href="https://github.com/unit8co/u8timeseries
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
 </div>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>

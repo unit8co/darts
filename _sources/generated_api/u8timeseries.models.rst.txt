@@ -9,6 +9,7 @@
         :maxdepth: 1
         
         
+        u8timeseries.models.RNN_model
         u8timeseries.models.arima
         u8timeseries.models.autoregressive_model
         u8timeseries.models.baselines

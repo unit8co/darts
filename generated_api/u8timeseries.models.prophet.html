@@ -205,7 +205,7 @@
 <h1>Implementation of an Prophet model.<a class="headerlink" href="#implementation-of-an-prophet-model" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="u8timeseries.models.prophet.Prophet">
-<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.models.prophet.</code><code class="sig-name descname">Prophet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">weekly_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">daily_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">country_holidays</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/prophet.html#Prophet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.prophet.Prophet" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">u8timeseries.models.prophet.</code><code class="sig-name descname">Prophet</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frequency</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yearly_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">weekly_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">daily_seasonality</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">country_holidays</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'additive'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/u8timeseries/models/prophet.html#Prophet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#u8timeseries.models.prophet.Prophet" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="u8timeseries.models.autoregressive_model.html#u8timeseries.models.autoregressive_model.AutoRegressiveModel" title="u8timeseries.models.autoregressive_model.AutoRegressiveModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">u8timeseries.models.autoregressive_model.AutoRegressiveModel</span></code></a></p>
 <p>Implementation of the Prophet model.</p>
 <p>Currently just a wrapper around the fbprophet implementation.</p>
@@ -219,8 +219,10 @@ countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
 Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
 Egypt (EG), China (CN), and Russian (RU).</p>
 </p></li>
+<li><p><strong>yearly_seasonality</strong> – </p></li>
 <li><p><strong>weekly_seasonality</strong> – </p></li>
 <li><p><strong>daily_seasonality</strong> – </p></li>
+<li><p><strong>mode</strong> – The seasonality mode, either <cite>additive</cite> or <cite>multiplicative</cite>.</p></li>
 </ul>
 </dd>
 </dl>

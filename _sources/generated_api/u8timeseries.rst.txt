@@ -11,6 +11,7 @@
         u8timeseries.backtesting
         u8timeseries.metrics
         u8timeseries.models
+        u8timeseries.preprocessing
         u8timeseries.tests
         u8timeseries.utils
         

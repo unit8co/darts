@@ -541,7 +541,7 @@ There is seasonality of order 12.
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
-<span class="n">model_pr</span> <span class="o">=</span> <span class="n">Prophet</span><span class="p">()</span>
+<span class="n">model_pr</span> <span class="o">=</span> <span class="n">Prophet</span><span class="p">(</span><span class="n">yearly_seasonality</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">model_ar</span> <span class="o">=</span> <span class="n">Arima</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 <span class="n">model_bl</span> <span class="o">=</span> <span class="n">KthValueAgoBaseline</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 </pre></div>
@@ -563,7 +563,7 @@ There is seasonality of order 12.
 <span class="n">model_es</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -572,7 +572,7 @@ There is seasonality of order 12.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-The MAPE is: 4.760
+The MAPE is: 4.751
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -580,6 +580,22 @@ The MAPE is: 4.760
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
+C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
+
+RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
+
+C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
+
+RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
+
+C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:294: FutureWarning:
+
+RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
+
+C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:296: FutureWarning:
+
+RangeIndex._step is deprecated and will be removed in a future version. Use RangeIndex.step instead
+
 C:\ProgramData\Miniconda3\envs\u8timeseries\lib\site-packages\statsmodels\tsa\base\tsa_model.py:293: FutureWarning:
 
 RangeIndex._start is deprecated and will be removed in a future version. Use RangeIndex.start instead
@@ -616,7 +632,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091d7fc808&gt;
+&lt;matplotlib.legend.Legend at 0x27d5328ee88&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -643,7 +659,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <span class="n">model_theta_0</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">season_period</span> <span class="o">=</span> <span class="mi">12</span><span class="p">)</span>
 <span class="n">pred_theta_0</span> <span class="o">=</span> <span class="n">model_theta_0</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_theta_0</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">pred_theta_0</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -652,7 +668,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-The MAPE is: 11.265
+The MAPE is: 9.667
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -696,7 +712,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091d86ee08&gt;
+&lt;matplotlib.legend.Legend at 0x27d53207d48&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -724,7 +740,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
     <span class="n">model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
     <span class="n">pred_theta</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
-    <span class="n">res</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_theta</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">pred_theta</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">res</span> <span class="o">&lt;</span> <span class="n">best_mape</span><span class="p">:</span>
         <span class="n">best_mape</span> <span class="o">=</span> <span class="n">res</span>
@@ -764,7 +780,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
 <span class="n">pred_best_theta</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">, with theta = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_best_theta</span><span class="p">,</span> <span class="n">val</span><span class="p">),</span> <span class="n">best_theta</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The MAPE is: </span><span class="si">{:.3f}</span><span class="s1">, with theta = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">pred_best_theta</span><span class="p">),</span> <span class="n">best_theta</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -773,7 +789,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-The MAPE is: 4.407, with theta = 5.577889447236181.
+The MAPE is: 4.547, with theta = 5.678391959798995.
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -783,7 +799,7 @@ The MAPE is: 4.407, with theta = 5.577889447236181.
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span>
-<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
+<span class="n">pred_best_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -815,7 +831,7 @@ The MAPE is: 4.407, with theta = 5.577889447236181.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7a11b494b9004e0688e2abcd6329d9a4", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "415788a9ae6642cba29ebab9d8546b1b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -867,7 +883,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091d9c5b08&gt;
+&lt;matplotlib.legend.Legend at 0x27d530ae3c8&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -935,7 +951,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Backtest done in 68.15 s.
+Backtest done in 69.41 s.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -954,8 +970,8 @@ The pandas.datetime class is deprecated and will be removed from pandas in a fut
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Backtest done in 181.07 s.
-Backtest done in 0.38 s.
+Backtest done in 182.85 s.
+Backtest done in 0.34 s.
 </pre></div></div>
 </div>
 <div class="section" id="Plot-the-user-defined-backtesting-results">
@@ -984,7 +1000,7 @@ Backtest done in 0.38 s.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091da1f388&gt;
+&lt;matplotlib.legend.Legend at 0x27d530fe348&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1041,7 +1057,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091d92e888&gt;
+&lt;matplotlib.legend.Legend at 0x27d53626148&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1064,7 +1080,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; New way - backtest over time</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">ExponentialSmoothing</span><span class="p">(),</span> <span class="n">Prophet</span><span class="p">()]</span>
+<span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">ExponentialSmoothing</span><span class="p">(),</span> <span class="n">Prophet</span><span class="p">(</span><span class="n">yearly_seasonality</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
 
 <span class="n">historical_ar_preds</span> <span class="o">=</span> <span class="p">[</span><span class="n">simulate_forecast_ar</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
@@ -1075,7 +1091,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4265c107ea45428892f6d4295508471c", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "23a85be2e89e4e079adac1db367e2967", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1112,7 +1128,7 @@ RangeIndex._step is deprecated and will be removed in a future version. Use Rang
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3086e58af6fc4998987aaf1937c561f2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b03016b7c53c44118129e2f40b08f52f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1142,7 +1158,7 @@ The pandas.datetime class is deprecated and will be removed from pandas in a fut
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="n">regrModel</span> <span class="o">=</span> <span class="n">StandardRegressiveModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 
-<span class="n">series_val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_ar_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">series_val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_ar_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
 
 <span class="n">historical_pred</span> <span class="o">=</span> <span class="n">simulate_forecast_regr</span><span class="p">(</span><span class="n">historical_ar_preds</span><span class="p">,</span> <span class="n">series_val</span><span class="p">,</span> <span class="n">regrModel</span><span class="p">,</span>
                                          <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">fcast_horizon_n</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
@@ -1167,16 +1183,17 @@ The pandas.datetime class is deprecated and will be removed from pandas in a fut
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
 
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">hist_index</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
     <span class="n">historical_ar_preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
 
     <span class="c1"># intersect last part, to compare everything with ensemble</span>
-    <span class="n">ar_pred</span> <span class="o">=</span> <span class="n">historical_ar_preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">)</span>
+    <span class="n">ar_pred</span> <span class="o">=</span> <span class="n">historical_ar_preds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">hist_index</span><span class="p">]</span>
 
-    <span class="n">mape_er</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">),</span> <span class="n">ar_pred</span><span class="p">)</span>
+    <span class="n">mape_er</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">hist_index</span><span class="p">],</span> <span class="n">ar_pred</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error </span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">mape_er</span><span class="p">))</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error ensemble: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">historical_pred</span><span class="p">),</span> <span class="n">historical_pred</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error ensemble: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">hist_index</span><span class="p">],</span> <span class="n">historical_pred</span><span class="p">)))</span>
 
 <span class="n">historical_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble&#39;</span><span class="p">)</span>
 
@@ -1200,7 +1217,7 @@ MAPE Error ensemble: 5.860589208417881
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x2091dc84848&gt;
+&lt;matplotlib.legend.Legend at 0x27d53611448&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">

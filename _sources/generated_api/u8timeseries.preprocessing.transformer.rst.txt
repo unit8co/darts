@@ -1,0 +1,5 @@
+
+.. automodule:: u8timeseries.preprocessing.transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:
