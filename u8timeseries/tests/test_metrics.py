@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from u8timeseries.metrics import metrics
+from ..metrics import metrics
 
 
 class MetricsTestCase(unittest.TestCase):

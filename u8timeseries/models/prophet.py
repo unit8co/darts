@@ -1,4 +1,4 @@
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from .autoregressive_model import AutoRegressiveModel
 import pandas as pd
 from ..custom_logging import time_log, get_logger
 

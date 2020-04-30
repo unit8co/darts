@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from u8timeseries.timeseries import TimeSeries
+from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, raise_log, get_logger
 from warnings import warn
 

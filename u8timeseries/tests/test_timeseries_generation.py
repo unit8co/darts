@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries.utils.timeseries_generation import (
+from ..utils.timeseries_generation import (
     constant_timeseries, 
     linear_timeseries, 
     sine_timeseries,

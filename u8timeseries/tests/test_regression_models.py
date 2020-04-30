@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries import StandardRegressiveModel
+from ..models.standard_regressive_model import StandardRegressiveModel
 
 class RegressionModelsTestCase(unittest.TestCase):
 

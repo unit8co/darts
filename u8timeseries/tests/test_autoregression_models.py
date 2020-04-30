@@ -3,8 +3,11 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, TimeSeries, Arima, AutoArima
-from u8timeseries.models.theta import Theta
+from ..models.prophet import Prophet
+from ..models.baselines import KthValueAgoBaseline
+from ..models.exponential_smoothing import ExponentialSmoothing
+from ..models.arima import Arima, AutoArima
+from ..models.theta import Theta
 
 class ModelsTestCase(unittest.TestCase):
 

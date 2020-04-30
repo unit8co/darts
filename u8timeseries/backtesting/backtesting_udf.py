@@ -1,6 +1,6 @@
 import pandas as pd
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from ..timeseries import TimeSeries
+from ..models.autoregressive_model import AutoRegressiveModel
 from ..custom_logging import raise_if_not, get_logger
 from typing import Tuple, List, Callable, Any
 

@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from IPython import get_ipython
 from tqdm import tqdm, tqdm_notebook
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from u8timeseries.models.regressive_model import RegressiveModel
+from ..timeseries import TimeSeries
+from ..models.autoregressive_model import AutoRegressiveModel
+from ..models.regressive_model import RegressiveModel
 from ..custom_logging import raise_if_not, get_logger
 from typing import List
 

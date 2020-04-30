@@ -5,8 +5,8 @@ import re
 from testfixtures import LogCapture
 
 from ..timeseries import TimeSeries
-from u8timeseries.utils.timeseries_generation import linear_timeseries, constant_timeseries
-from u8timeseries.models.theta import Theta
+from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
+from ..models.theta import Theta
 from ..custom_logging import raise_log, raise_if_not, time_log, get_logger
 
 

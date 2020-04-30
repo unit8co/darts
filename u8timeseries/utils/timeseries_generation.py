@@ -6,7 +6,7 @@ from pandas.tseries.frequencies import to_offset
 from pandas.tseries.holiday import USFederalHolidayCalendar
 from typing import Union
 
-from u8timeseries.timeseries import TimeSeries
+from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, get_logger
 
 logger = get_logger(__name__)
