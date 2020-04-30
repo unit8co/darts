@@ -189,14 +189,20 @@ jobs:
         uses: elgohr/gcloud-login-action@0.2
         with:
           account_key: ${{ secrets.GCLOUD_KEY }}
+      - name: "3. Determine current version"
+        uses: endrjuskr/github-tag-action@master
+        id: bump_dry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: true
 
-      - name: "3. Build and publish docker to GCR"
+      - name: "4. Build and publish docker to GCR"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
           name: eu.gcr.io/unit8-product/u8timeseries
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
           registry: eu.gcr.io
-          tags: "latest"
+          tags: "latest,${{ steps.bump_dry.outputs.tag }}"
           cache: true
           buildoptions: "--compress -q"
