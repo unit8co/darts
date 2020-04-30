@@ -1,3 +1,8 @@
+"""
+Implementation of an ARIMA model.
+---------------------------------
+"""
+
 from .autoregressive_model import AutoRegressiveModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pmdarima import auto_arima

@@ -1,3 +1,8 @@
+"""
+Implementation of an Simple Exponential Smoothing model.
+--------------------------------------------------------
+"""
+
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
 from ..custom_logging import time_log, get_logger

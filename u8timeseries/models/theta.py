@@ -1,3 +1,8 @@
+"""
+Implementation of an Theta model.
+---------------------------------
+"""
+
 import statsmodels.tsa.holtwinters as hw
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_log, time_log, get_logger

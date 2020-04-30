@@ -11,7 +11,6 @@ API
 ===
 
 .. toctree::
-   :maxdepth: 1
 
    generated_api/u8timeseries
 

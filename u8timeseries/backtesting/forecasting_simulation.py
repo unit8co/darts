@@ -1,3 +1,8 @@
+"""
+Backtesting simulation
+----------------------
+"""
+
 import pandas as pd
 import numpy as np
 from u8timeseries.timeseries import TimeSeries

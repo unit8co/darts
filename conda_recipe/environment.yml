@@ -1,0 +1,6 @@
+# conda-specific dependencies for the dev environment
+name: u8timeseries-dev
+dependencies:
+  - python>=3.6
+  - conda-build
+  - conda-verify

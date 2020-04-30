@@ -1,3 +1,8 @@
+"""
+List of statistics.
+-------------------
+"""
+
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_log, get_logger
 import numpy as np
