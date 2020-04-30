@@ -1,11 +1,35 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, time_log, get_logger
+from ..models.statistics import check_seasonality
 import numpy as np
 import pandas as pd
+from statsmodels.tsa.stattools import acf
 from typing import List, Optional
 
 logger = get_logger(__name__)
+
+def find_relevant_timestamp_attributes(series: TimeSeries):
+    """
+    Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes
+    in terms of the autocorrelation of their length within the series with the 
+    goal of finding the periods of the seasonal trends present in the series.
+
+    :param series: The TimeSeries instance to be analyzed.
+    :return: A set of pd.Timestamp attributes with high autocorrelation within 'series'.
+    """
+    timestamp_attributes = ['month', 'day', 'weekday', 'hour', 'minute', 'second']
+    relevant_attributes = set()
+    r = acf(series.values())
+
+    if (series.freq() == pd.tseries.offsets.Day):
+        if (len(series) > 450):
+            
+
+
+    # 365 seasonality -> month + day
+    # 30 day seasonality -> day
+    # 7 day seasonality -> weekday 
 
 def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """
@@ -32,7 +56,7 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -
     :required_matches: A set of pd.Timestamp attributes which will be used to choose the cropping point.
     :return: New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None) return series
+    if (required_matches is None): return series
 
     first_ts = series._series.index[0]
     freq = first_ts.freq
@@ -105,7 +129,7 @@ class FFT(AutoRegressiveModel):
         self.fft_values = np.fft.fft(detrended_values)
 
         # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
-        # by partitioning around the element with index -nr_freqs_to_keep instead of reduntantly sorting the whole array
+        # by partitioning around the element with sorted index -nr_freqs_to_keep instead of reduntantly sorting the whole array
         first_n = self.nr_freqs_to_keep
         if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
