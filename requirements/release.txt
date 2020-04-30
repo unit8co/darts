@@ -9,3 +9,4 @@ m2r @ git+https://github.com/crossnox/m2r@dev#egg=m2r
 
 # publish
 twine>=3.0.0
+bump2version
