@@ -59,9 +59,9 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: docs-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
           restore-keys: |
-            docs-${{ runner.os }}-pip-
+            release-${{ runner.os }}-pip-
 
       - name: "5. Install main and release dependencies"
         run: |
@@ -101,16 +101,24 @@ jobs:
         with:
           python-version: 3.6
 
-      - name: "3. Update pip and install pandoc"
+      - name: "3. Update pip"
         run: |
-          sudo apt-get install -y pandoc
           python -m pip install --upgrade pip
 
-      - name: "4. Install release dependencies"
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            release-${{ runner.os }}-pip-
+
+      - name: "5. Install release dependencies"
         run: |
           pip install -q -r requirements/release.txt
 
-      - name: "5. Determine next version"
+      - name: "6. Determine next version"
         uses: endrjuskr/github-tag-action@master
         id: bump_dry
         env:
@@ -118,11 +126,11 @@ jobs:
           INITIAL_VERSION: 0.0.2
           DRY_RUN: true
 
-      - name: "6. Bump version"
+      - name: "7. Bump version"
         run: |
-          bump2version --current-version ${{ steps.bump_dry.outputs.tag }} --new-version ${{ steps.bump_dry.outputs.new_tag }} patch setup.py
+          bump2version --current-version dev --new-version ${{ steps.bump_dry.outputs.new_tag }} patch setup.py
 
-      - name: "7. Commit new version"
+      - name: "8. Commit new version"
         uses: stefanzweifel/git-auto-commit-action@v4.1.6
         with:
           commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
@@ -130,13 +138,13 @@ jobs:
           commit_user_name: Unit8 Bot
           commit_user_email: info@unit8.co
 
-      - name: "8. Publish new tag"
+      - name: "9. Publish new tag"
         uses: endrjuskr/github-tag-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
 
-      - name: "9. Create new release draft"
+      - name: ". Create new release draft"
         id: create_release
         uses: actions/create-release@latest
         env:
