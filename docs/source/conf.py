@@ -38,6 +38,7 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
+    'sphinx_autodoc_typehints',
     'nbsphinx',
     'm2r'
 ]
