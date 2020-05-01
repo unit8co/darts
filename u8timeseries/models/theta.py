@@ -6,14 +6,14 @@ Implementation of an Theta model.
 import statsmodels.tsa.holtwinters as hw
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_log, time_log, get_logger
-from .autoregressive_model import AutoRegressiveModel
+from .forecasting_model import ForecastingModel
 import numpy as np
 import math
 from .statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
 logger = get_logger(__name__)
 
-class Theta(AutoRegressiveModel):
+class Theta(ForecastingModel):
     """
     An implementation of the Theta method with variable value of the `theta` parameter.
 

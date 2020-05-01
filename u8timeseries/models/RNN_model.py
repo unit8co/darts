@@ -13,7 +13,7 @@ from typing import List, Optional, Dict, Union
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
 from ..custom_logging import raise_if_not, get_logger, raise_log
-from .. import AutoRegressiveModel
+from .. import ForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
@@ -103,7 +103,7 @@ class RNNModule(nn.Module):
         return predictions
 
 
-class RNNModel(AutoRegressiveModel):
+class RNNModel(ForecastingModel):
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  output_length: int = 1,

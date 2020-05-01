@@ -6,8 +6,8 @@ Backtesting simulation
 import pandas as pd
 import numpy as np
 from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from u8timeseries.models.regressive_model import RegressiveModel
+from u8timeseries.models.forecasting_model import ForecastingModel
+from u8timeseries.models.regressive_model import RegressionModel
 
 from u8timeseries.utils import build_tqdm_iterator
 from ..custom_logging import raise_if_not, get_logger
@@ -16,7 +16,7 @@ from typing import List
 logger = get_logger(__name__)
 
 def simulate_forecast_ar(series: 'TimeSeries',
-                         model: 'AutoRegressiveModel',
+                         model: 'ForecastingModel',
                          start: 'pd.Timestamp',
                          fcast_horizon_n: int,
                          trim_to_series: bool = True,
@@ -66,7 +66,7 @@ def simulate_forecast_ar(series: 'TimeSeries',
 
 def simulate_forecast_regr(feature_series: List[TimeSeries],
                            target_series: TimeSeries,
-                           model: RegressiveModel,
+                           model: RegressionModel,
                            start: pd.Timestamp,
                            fcast_horizon_n: int,
                            trim_to_series: bool = True,

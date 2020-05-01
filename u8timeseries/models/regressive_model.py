@@ -10,7 +10,7 @@ from typing import List
 
 logger = get_logger(__name__)
 
-class RegressiveModel(ABC):
+class RegressionModel(ABC):
     """
     This is a base class for various implementations of multi-variate models - models predicting time series
     from one or several time series. It also allows to do ensembling.

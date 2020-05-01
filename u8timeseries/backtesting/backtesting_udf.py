@@ -11,7 +11,7 @@ These functions will probably rarely be useful, compared to the ones in "forecas
 
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.models.forecasting_model import ForecastingModel
 from ..custom_logging import raise_if_not, get_logger
 from typing import Tuple, List, Callable, Any
 
@@ -57,7 +57,7 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     return series_pairs
 
 
-def backtest_autoregressive_model(model: 'AutoRegressiveModel',
+def backtest_autoregressive_model(model: 'ForecastingModel',
                                   train_val_series: List[Tuple['TimeSeries', 'TimeSeries']],
                                   eval_fn: Callable[['TimeSeries', 'TimeSeries'], Any]) -> List[Any]:
     """

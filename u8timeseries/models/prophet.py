@@ -3,7 +3,7 @@ Implementation of an Prophet model.
 -------------------------------------------------------
 """
 
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.models.forecasting_model import ForecastingModel
 import pandas as pd
 from ..custom_logging import time_log, get_logger
 
@@ -11,7 +11,7 @@ import fbprophet
 
 logger = get_logger(__name__)
 
-class Prophet(AutoRegressiveModel):
+class Prophet(ForecastingModel):
     """
     Implementation of the Prophet model.
 

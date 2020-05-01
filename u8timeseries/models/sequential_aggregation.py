@@ -3,7 +3,7 @@ Implementation of an Simple Aggregation model.
 ----------------------------------------------
 """
 
-from .regressive_model import RegressiveModel
+from .regressive_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..custom_logging import time_log, get_logger
 
@@ -12,7 +12,7 @@ from typing import List
 logger = get_logger(__name__)
 
 
-class SequentialAggregation(RegressiveModel):
+class SequentialAggregation(RegressionModel):
     """
     TODO
     https://s3.amazonaws.com/academia.edu.documents/45700981/Forecasting_electricity_consumption_by_a20160517-4457-1a8m354.pdf?AWSAccessKeyId=AKIAIWOWYYGZ2Y53UL3A&Expires=1552341840&Signature=x7vegA6suvqbvDuyLiaK%2BKCt23s%3D&response-content-disposition=inline%3B%20filename%3DForecasting_electricity_consumption_by_a.pdf

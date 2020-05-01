@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries import StandardRegressiveModel
+from u8timeseries import StandardRegressionModel
 
 class RegressionModelsTestCase(unittest.TestCase):
 
@@ -20,7 +20,7 @@ class RegressionModelsTestCase(unittest.TestCase):
     
     def test_regressive_models_runnability(self):
         models = [
-            StandardRegressiveModel(self.regression_window)
+            StandardRegressionModel(self.regression_window)
         ]
 
         for model in models:

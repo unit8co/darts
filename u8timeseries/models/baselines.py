@@ -3,14 +3,14 @@ Implementation of baseline model.
 -------------------------------------------
 """
 
-from .autoregressive_model import AutoRegressiveModel
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, time_log, get_logger
 import numpy as np
 
 logger = get_logger(__name__)
 
-class KthValueAgoBaseline(AutoRegressiveModel):
+class KthValueAgoBaseline(ForecastingModel):
     """
     A baseline model that always predict value of `k` time steps ago.
 

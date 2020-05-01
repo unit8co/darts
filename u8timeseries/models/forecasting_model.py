@@ -12,7 +12,7 @@ from typing import Optional
 
 logger = get_logger(__name__)
 
-class AutoRegressiveModel(ABC):
+class ForecastingModel(ABC):
     """
     Base class for implementation of Auto-regressive models.
 

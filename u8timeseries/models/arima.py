@@ -1,9 +1,9 @@
 """
-Implementation of an ARIMA model.
----------------------------------
+ARIMA
+-----
 """
 
-from .autoregressive_model import AutoRegressiveModel
+from .forecasting_model import ForecastingModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pmdarima import auto_arima
 from ..timeseries import TimeSeries
@@ -11,18 +11,19 @@ from ..custom_logging import time_log, get_logger
 
 logger = get_logger(__name__)
 
-class Arima(AutoRegressiveModel):
-    """
-    Implementation of an ARIMA model.
-
-    Currently a wrapper around the statsmodel implementation.
-
-    :param p: An integer representing the lag order.
-    :param d: An integer for the order of differentiation.
-    :param q: An interger for the size of the moving average window.
-    """
-
+class Arima(ForecastingModel):
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
+        """ ARIMA model
+
+        Parameters
+        ----------
+        p : int
+            The lag order.
+        d : int
+            The order of differentiation.
+        q : int
+            The size of the moving average window.
+        """
         super().__init__()
         self.p = p
         self.d = d
@@ -35,7 +36,6 @@ class Arima(AutoRegressiveModel):
     @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
-
         m = ARIMA(series.values(),
                   order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(series.values(), order=(self.p, self.q))
         self.model = m.fit(disp=0)
@@ -46,7 +46,7 @@ class Arima(AutoRegressiveModel):
         return self._build_forecast_series(forecast)
 
 
-class AutoArima(AutoRegressiveModel):
+class AutoArima(ForecastingModel):
 
     def __init__(self, start_p=1, max_p=12, start_q=0, max_q=12, max_P=2, max_Q=2, start_P=1, start_Q=1,
                  start_d=0, max_d=2, max_D=1, max_order=30, seasonal=True, stepwise=True, approximation=False,

@@ -3,7 +3,7 @@ Implementation of an Standard Regressive model.
 -----------------------------------------------
 """
 
-from .regressive_model import RegressiveModel
+from .regressive_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..custom_logging import time_log, get_logger
 from typing import List
@@ -13,7 +13,7 @@ from sklearn.linear_model import LinearRegression
 
 logger = get_logger(__name__)
 
-class StandardRegressiveModel(RegressiveModel):
+class StandardRegressionModel(RegressionModel):
 
     def __init__(self, train_n_points, model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
@@ -24,7 +24,7 @@ class StandardRegressiveModel(RegressiveModel):
                                contain fewer points, they will all be used for training.
         :param model: The actual regressive model. It must contain fit() and predict() methods.
         """
-        super(StandardRegressiveModel, self).__init__()
+        super(StandardRegressionModel, self).__init__()
         if (not callable(getattr(model, "fit", None))):
             raise_log(Exception('Provided model object must have a fit() method', logger))
         if (not callable(getattr(model, "predict", None))):
