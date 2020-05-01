@@ -1,6 +1,6 @@
 """
-Backtesting simulation
-----------------------
+Backtesting Functions
+---------------------
 """
 
 import pandas as pd
@@ -11,32 +11,55 @@ from u8timeseries.models.regressive_model import RegressionModel
 
 from u8timeseries.utils import build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
-from typing import List
+from typing import List, Iterable
 
 logger = get_logger(__name__)
 
-def backtest_forecasting(series: 'TimeSeries',
-                         model: 'ForecastingModel',
-                         start: 'pd.Timestamp',
+
+# TODO parameterize the moving window
+
+def backtest_forecasting(series: TimeSeries,
+                         model: ForecastingModel,
+                         start: pd.Timestamp,
                          fcast_horizon_n: int,
                          trim_to_series: bool = True,
-                         verbose=False) -> 'TimeSeries':
+                         verbose: bool = False) -> TimeSeries:
+    """ A function for backtesting `ForecastingModel`'s.
+
+    This function computes the time series of historical predictions
+    that would have been obtained, if `model` had been used to predict `series`
+    with a certain time horizon.
+
+    To this end, it repeatedly builds a training set from the beginning of `series`.
+    It trains `model` on the training set, emits a (point) prediction for a fixed
+    forecast horizon, and then moves the end of the training set forward by one
+    time step. The resulting predictions are then returned.
+
+    This always re-trains the models on the entire available history,
+    corresponding an expending window strategy.
+
+    Parameters
+    ----------
+    series
+        The time series on which to backtest
+    model
+        The forecasting model to be backtested
+    start
+        The first prediction time, at which a prediction is computed for a future time
+    fcast_horizon_n
+        The forecast horizon for the point predictions
+    trim_to_series
+        Whether the predicted series has the end trimmed to match the end of the main series
+    verbose
+        Whether to print progress
+
+    Returns
+    -------
+    TimeSeries
+        A time series containing the forecast values for `series`, when successively applying
+        the specified model with the specified forecast horizon.
     """
-    Provides an environment for forecasting future values of the TimeSeries 'series`.
 
-    This function predicts the `fcast_horizon_n` values for the TimeSeries `series` starting from the date `start`
-    according to the auto-regressive model `model`.
-
-    :param series: The TimeSeries to forecast.
-    :param model: The AutoRegressiveModel to use.
-    :param start: The first time at which a prediction is produced for a future time.
-    :param fcast_horizon_n: The number of future values to predict.
-    :param trim_to_series: Whether the predicted series has the end trimmed to match the end of the main series or not.
-    :param verbose: Whether to print progress or not.
-    :return: A TimeSeries containing the fore-casted values of `series` over the horizon with respect to the model \
-    `model`.
-
-    """
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
 
@@ -55,7 +78,6 @@ def backtest_forecasting(series: 'TimeSeries',
 
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
-
         model.fit(train)
         pred = model.predict(fcast_horizon_n)
         values.append(pred.values()[-1])  # store the N-th point
@@ -64,30 +86,52 @@ def backtest_forecasting(series: 'TimeSeries',
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
-def backtest_regression(feature_series: List[TimeSeries],
+def backtest_regression(feature_series: Iterable[TimeSeries],
                         target_series: TimeSeries,
                         model: RegressionModel,
                         start: pd.Timestamp,
                         fcast_horizon_n: int,
                         trim_to_series: bool = True,
                         verbose=False) -> TimeSeries:
-    """
-    Returns a TimeSeries containing the forecasts that would have been obtained from a given RegressiveModel,
-    on a given forecast time horizon.
+    """ A function for backtesting `RegressionModel`'s.
 
-    .. todo: review and add to documentation.
-    .. todo: optionally also return weights, when those are available in model
-    .. todo: (getattr(model.model, 'coef_', None) is not None)
+    This function computes the time series of historical predictions
+    that would have been obtained, if the `model` had been used to predict `series`
+    using the `feature_series`, with a certain time horizon.
 
-    :param feature_series: the feature time series of the regressive model
-    :param target_series: the target time series of the regressive model (i.e., the series to predict)
-    :param model: the RegressiveModel to use
-    :param start: when the forecasts start (i.e., the first time at which a prediction is produced for a future time)
-    :param fcast_horizon_n: the forecast horizon
-    :param trim_to_series: whether the returned predicted series has the end trimmed to match the end of the main series
-    :param verbose: whether to print progress
-    :return:
+    To this end, it repeatedly builds a training set composed of both features and targets,
+    from `feature_series` and `target_series`, respectively.
+    It trains `model` on the training set, emits a (point) prediction for a fixed
+    forecast horizon, and then moves the end of the training set forward by one
+    time step. The resulting predictions are then returned.
+
+    This always re-trains the models on the entire available history,
+    corresponding an expending window strategy.
+
+    Parameters
+    ----------
+    feature_series
+        A list of time series representing the features for the regression model (independent variables)
+    target_series
+        The target time series for the regression model (dependent variable)
+    model
+        The regression model to be backtested
+    start
+        The first prediction time, at which a prediction is computed for a future time
+    fcast_horizon_n
+        The forecast horizon for the point predictions
+    trim_to_series
+        Whether the predicted series has the end trimmed to match the end of the main series
+    verbose
+        Whether to print progress
+
+    Returns
+    -------
+    TimeSeries
+        A time series containing the forecast values when successively applying
+        the specified model with the specified forecast horizon.
     """
+
     raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must ' \
                                                                              'have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
