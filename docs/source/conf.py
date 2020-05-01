@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'u8timeseries'
-copyright = '2020, Unit8'
-author = 'Unit8'
+copyright = '2020, Unit8 SA'
+author = 'Unit8 SA'
 version = '0.0.2'
 
 
@@ -41,6 +41,9 @@ extensions = [
     'nbsphinx',
     'm2r'
 ]
+
+# In order to also have the docstrings of __init__() methods included
+autoclass_content = 'both'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
