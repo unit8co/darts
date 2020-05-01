@@ -15,7 +15,7 @@ from typing import List
 
 logger = get_logger(__name__)
 
-def simulate_forecast_ar(series: 'TimeSeries',
+def backtest_forecasting(series: 'TimeSeries',
                          model: 'ForecastingModel',
                          start: 'pd.Timestamp',
                          fcast_horizon_n: int,
@@ -64,13 +64,13 @@ def simulate_forecast_ar(series: 'TimeSeries',
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
-def simulate_forecast_regr(feature_series: List[TimeSeries],
-                           target_series: TimeSeries,
-                           model: RegressionModel,
-                           start: pd.Timestamp,
-                           fcast_horizon_n: int,
-                           trim_to_series: bool = True,
-                           verbose=False) -> TimeSeries:
+def backtest_regression(feature_series: List[TimeSeries],
+                        target_series: TimeSeries,
+                        model: RegressionModel,
+                        start: pd.Timestamp,
+                        fcast_horizon_n: int,
+                        trim_to_series: bool = True,
+                        verbose=False) -> TimeSeries:
     """
     Returns a TimeSeries containing the forecasts that would have been obtained from a given RegressiveModel,
     on a given forecast time horizon.
