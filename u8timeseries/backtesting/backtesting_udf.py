@@ -12,7 +12,7 @@ These functions will probably rarely be useful, compared to the ones in "forecas
 import pandas as pd
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.forecasting_model import ForecastingModel
-from ..custom_logging import raise_if_not, get_logger
+from ..logging import raise_if_not, get_logger
 from typing import Tuple, List, Callable, Any
 
 logger = get_logger(__name__)

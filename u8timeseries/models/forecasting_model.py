@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from ..timeseries import TimeSeries
-from ..custom_logging import get_logger
+from ..logging import get_logger
 from typing import Optional
 
 logger = get_logger(__name__)

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
 
-from .custom_logging import raise_log, raise_if_not, get_logger
+from .logging import raise_log, raise_if_not, get_logger
 
 logger = get_logger(__name__)
 

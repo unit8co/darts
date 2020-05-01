@@ -4,7 +4,7 @@ List of statistics.
 """
 
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, get_logger
+from ..logging import raise_log, get_logger
 import numpy as np
 from statsmodels.tsa.stattools import acf
 from scipy.stats import norm

@@ -5,7 +5,7 @@ Implementation of an Prophet model.
 
 from u8timeseries.models.forecasting_model import ForecastingModel
 import pandas as pd
-from ..custom_logging import time_log, get_logger
+from ..logging import time_log, get_logger
 
 import fbprophet
 

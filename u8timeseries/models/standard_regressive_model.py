@@ -5,7 +5,7 @@ Implementation of an Standard Regressive model.
 
 from .regressive_model import RegressionModel
 from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
+from ..logging import time_log, get_logger
 from typing import List
 import numpy as np
 import pandas as pd

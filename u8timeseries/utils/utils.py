@@ -1,5 +1,5 @@
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, get_logger
+from ..logging import raise_log, get_logger
 from typing import List
 from IPython import get_ipython
 from tqdm import tqdm, tqdm_notebook

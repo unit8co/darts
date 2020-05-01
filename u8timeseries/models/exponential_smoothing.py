@@ -5,7 +5,7 @@ Exponential Smoothing
 
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
+from ..logging import time_log, get_logger
 import statsmodels.tsa.holtwinters as hw
 
 logger = get_logger(__name__)

@@ -10,7 +10,7 @@ from u8timeseries.models.forecasting_model import ForecastingModel
 from u8timeseries.models.regressive_model import RegressionModel
 
 from u8timeseries.utils import build_tqdm_iterator
-from ..custom_logging import raise_if_not, get_logger
+from ..logging import raise_if_not, get_logger
 from typing import List
 
 logger = get_logger(__name__)

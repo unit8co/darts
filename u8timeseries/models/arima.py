@@ -7,7 +7,7 @@ from .forecasting_model import ForecastingModel
 from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pmdarima import auto_arima
 from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
+from ..logging import time_log, get_logger
 
 logger = get_logger(__name__)
 

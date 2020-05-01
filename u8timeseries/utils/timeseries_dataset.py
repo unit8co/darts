@@ -1,5 +1,5 @@
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, get_logger
+from ..logging import raise_if_not, get_logger
 import torch
 
 logger = get_logger(__name__)
