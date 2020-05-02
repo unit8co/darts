@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from ..timeseries import TimeSeries
-from ..logging import get_logger
+from ..logging import get_logger, raise_log
 from typing import Optional
 
 logger = get_logger(__name__)
