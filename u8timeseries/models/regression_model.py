@@ -1,6 +1,15 @@
 """
-Implementation of an Regressive model.
---------------------------------------
+Regression model
+----------------
+
+This is the base class for all regression models.
+
+A regression model predicts values for a time series :math:`Y_t` as a function
+of :math:`N` "features" time series :math:`X^i_t`:
+
+.. math:: Y_t = f(X^1_t, ..., X^N_t),
+
+where :math:`t` denotes the time step. Here, the function :math:`f()` is not necessarily linear.
 """
 
 from abc import ABC, abstractmethod

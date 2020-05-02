@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.forecasting_model import ForecastingModel
-from u8timeseries.models.regressive_model import RegressionModel
+from u8timeseries.models.regression_model import RegressionModel
 
 from u8timeseries.utils import build_tqdm_iterator
 from ..logging import raise_if_not, get_logger

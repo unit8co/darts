@@ -1,9 +1,9 @@
 """
-Implementation of an Simple Aggregation model.
-----------------------------------------------
+Sequential Aggregation
+----------------------
 """
 
-from .regressive_model import RegressionModel
+from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..logging import time_log, get_logger
 
@@ -23,6 +23,7 @@ class SequentialAggregation(RegressionModel):
     """
     def __init__(self):
         super().__init__()
+        raise NotImplementedError('This model is not yet implemented')
 
     @time_log(logger=logger)
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):

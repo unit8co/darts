@@ -9,7 +9,7 @@ from ..logging import raise_log, time_log, get_logger
 from .forecasting_model import ForecastingModel
 import numpy as np
 import math
-from .statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
+from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
 logger = get_logger(__name__)
 

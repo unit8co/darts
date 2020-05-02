@@ -3,7 +3,7 @@ Implementation of an Standard Regressive model.
 -----------------------------------------------
 """
 
-from .regressive_model import RegressionModel
+from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..logging import time_log, get_logger
 from typing import List

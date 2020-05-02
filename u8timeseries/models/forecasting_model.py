@@ -1,6 +1,14 @@
 """
-Implementation of an Auto-regressive model.
--------------------------------------------
+Forecasting Model
+-----------------
+
+This is the base class for all forecasting models.
+
+A forecasting model captures the future as a function of the past as follows:
+
+.. math:: Y_{t+1} = f(Y_t, Y_{t-1}, ...),
+
+where :math:`Y_t` represents the time series' value(s) at time :math:`t`.
 """
 
 from abc import ABC, abstractmethod
@@ -11,6 +19,7 @@ from ..logging import get_logger
 from typing import Optional
 
 logger = get_logger(__name__)
+
 
 class ForecastingModel(ABC):
     """

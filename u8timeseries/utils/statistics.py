@@ -3,8 +3,8 @@ List of statistics.
 -------------------
 """
 
-from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger
+from u8timeseries.timeseries import TimeSeries
+from u8timeseries.logging import raise_log, get_logger
 import numpy as np
 from statsmodels.tsa.stattools import acf
 from scipy.stats import norm
