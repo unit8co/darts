@@ -20,15 +20,15 @@ class MetricsTestCase(unittest.TestCase):
     def test_zero(self):
         self.assertTrue(np.isnan(metrics.mape(self.series1, self.series1)))
 
-        self.assertTrue(np.isnan(metrics.overall_percentage_error(self.series1-self.series1.mean(),
-                                                                  self.series1-self.series1.mean())))
+        self.assertTrue(np.isnan(metrics.ope(self.series1 - self.series1.mean(),
+                                             self.series1 - self.series1.mean())))
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1+1, self.series1+1), 0)
         self.assertEqual(metrics.mase(self.series1+1, self.series1+1, 1), 0)
         self.assertEqual(metrics.marre(self.series1+1, self.series1+1), 0)
         self.assertEqual(metrics.r2_score(self.series1+1, self.series1+1), 1)
-        self.assertEqual(metrics.overall_percentage_error(self.series1+1, self.series1+1), 0)
+        self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
 
     def test_r2(self):
         from sklearn.metrics import r2_score

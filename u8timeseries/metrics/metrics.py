@@ -2,7 +2,7 @@
 Metrics
 -------
 
-Some metrics that can be
+Some metrics to compare time series.
 """
 
 import numpy as np
@@ -11,6 +11,7 @@ from ..timeseries import TimeSeries
 from ..utils.statistics import check_seasonality
 from ..logging import raise_if_not, get_logger
 from warnings import warn
+from typing import Optional
 
 logger = get_logger(__name__)
 
@@ -25,199 +26,318 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
     return series_a.values(), series_b.values()
 
 
-def mae(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Compute the Mean Absolute Error (MAE).
+def mae(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+    """ Mean Absolute Error (MAE).
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the MAE of `pred_series` with respect to `true_series`.
+    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(|y^1_t - y^2_t|)}.
+
+    Parameters
+    ----------
+    series1
+        The first time series
+    series2
+        The second time series
+    difference
+         Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Mean Absolute Error (MAE)
     """
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
-        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
-    return np.mean(np.abs(y_true - y_pred))
+
+    y1, y2 = _get_values_or_raise(series1, series2)
+    if difference:
+        y1, y2 = np.diff(y1), np.diff(y2)
+    return np.mean(np.abs(y1 - y2))
 
 
-def mse(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Compute the Mean Squared Error (MSE).
+def mse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+    """ Mean Squared Error (MSE).
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the MSE of `pred_series` with respect to `true_series`.
+    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}.
+
+    Parameters
+    ----------
+    series1
+        The first time series
+    series2
+        The second time series
+    difference
+         Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Mean Squared Error (MSE)
     """
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
+
+    y_true, y_pred = _get_values_or_raise(series1, series2)
+    if difference:
         y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     return np.mean((y_true - y_pred)**2)
 
 
-def rmse(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
+def rmse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+    """ Root Mean Squared Error (RMSE).
+
+    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+
+    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}}.
+
+    Parameters
+    ----------
+    series1
+        The first time series
+    series2
+        The second time series
+    difference
+         Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Root Mean Squared Error (RMSE)
     """
-    Compute the Root Mean Squared Error (RMSE).
+    return np.sqrt(mse(series1, series2, difference))
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the RMSE of `pred_series` with respect to `true_series`.
+
+def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
+    """ Root Mean Squared Log Error (RMSLE).
+
+    For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
+
+    .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y^1_t + 1)} - \\log{(y^2_t + 1)}\\right)^2}},
+
+    using the natural logarithm.
+
+    Parameters
+    ----------
+    series1
+        The first time series
+    series2
+        The second time series
+
+    Returns
+    -------
+    float
+        The Root Mean Squared Log Error (RMSLE)
     """
-    return np.sqrt(mse(true_series, pred_series, time_diff))
+
+    y1, y2 = _get_values_or_raise(series1, series2)
+    y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
+    return np.sqrt(np.mean((y1 - y2)**2))
 
 
-def rmsle(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+    """ Coefficient of Variation (percentage).
+
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
+    it is a percentage value, computed as
+
+    .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y_t},
+
+    where :math:`\\text{RMSE}()` denotes the root mean squred error, and :math:`\\bar{y_t}` is the average of :math:`y_t`.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Coefficient of Variation
     """
-    Compute the Root Mean Squared Log Error (RMSLE).
 
-    Penalize more the under-estimate than the over-estimate.
+    return 100 * rmse(actual_series, pred_series, difference) / actual_series.mean()
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :return: A float, the RMSLE of `pred_series` with respect to `true_series`.
+
+def mape(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+    """ Mean Absolute Percentage Error (MAPE).
+
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+    both of length :math:`T`, it is a percentage value computed as
+
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}.
+
+    Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
+    the Mean Absolute Scaled Error (MASE) in these cases.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Raises
+    ------
+    ValueError
+        If the actual series contains some zeros.
+
+    Returns
+    -------
+    float
+        The Mean Absolute Percentage Error (MAPE)
     """
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
-    return np.sqrt(np.mean((y_true - y_pred)**2))
 
-
-def coefficient_variation(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Compute the Root Mean Squared Error (RMSE).
-
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the RMSE of `pred_series` with respect to `true_series`.
-    """
-    return 100 * rmse(true_series, pred_series, time_diff)/true_series.mean()
-
-
-def mape(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Computes the Mean Absolute Percentage Error (MAPE).
-
-    This function computes the MAPE of `pred_series` with respect to `true_series`.
-    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
-    Use `time_diff` mainly when the time series are monotonic.
-    Otherwise, it will be difficult to analyze the results.
-
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the MAPE of `pred_series` with respect to `true_series`.
-    """
-    # Mean absolute percentage error
-    y_true, y_hat = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    raise_if_not(all(y_true > 0), 'The actual series must be strictly positive to compute the MAPE.')
+    if difference:
         y_true, y_hat = np.diff(y_true), np.diff(y_hat)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
-def mase_old(true_series: TimeSeries, pred_series: TimeSeries) -> float:
+def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1, difference: bool = False) -> float:
+    """ Mean Absolute Scaled Error (MASE).
+
+    See `the Wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
+    for details about the MASE and how it is computed.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    m
+        Optionally, the seasonality to use for differencing.
+        `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
+        If `m=None`, it will be tentatively inferred
+        from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Mean Absolute Scaled Error (MASE)
     """
-    Computes the Mean Absolute Scaled Error (MASE).
 
-    This function computes the MASE of `pred_series` with respect to `true_series`.
-
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :return: A float, the MASE of `pred_series` with respect to `true_series`.
-    """
-    warn("This function does not take into account the seasonality of the time series. "
-         "Please use mase_seasonal to be accurate", FutureWarning)
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    errors = np.sum(np.abs(y_true - y_pred))
-    t = y_true.size
-    scale = t/(t-1) * np.sum(np.abs(np.diff(y_true)))
-    return errors / scale
-
-
-def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1, time_diff: bool = False) -> float:
-    """
-    Computes the Mean Absolute Scaled Error (MASE).
-
-    This function computes the MASE of `pred_series` with respect to `true_series` and the seasonal period m.
-    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
-
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param m: A int, the seasonality period to take into account. If None, try to infer one from ACF
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the MASE of `pred_series` with respect to `true_series`.
-    """
     if m is None:
-        test_season, m = check_seasonality(true_series)
+        test_season, m = check_seasonality(actual_series)
         if not test_season:
-            warn("No seasonality found. The period is fixed to 1.", UserWarning)
+            warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
-        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
-    errors = np.sum(np.abs(y_true - y_pred))
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    if difference:
+        y_true, y_hat = np.diff(y_true), np.diff(y_hat)
+    errors = np.sum(np.abs(y_true - y_hat))
     t = y_true.size
     scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
     raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
     return errors / scale
 
 
-def overall_percentage_error(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Computes the Overall Percentage Erroe (OPE):
+def ope(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+    """ Overall Percentage Error (OPE).
 
-    This function computes the OPE of `pred_series` with respect to `true_series`.
-    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
-    Use `time_diff` mainly when the time series are monotonic.
-    Otherwise, it will be difficult to analyze the results.
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+    both of length :math:`T`, it is a percentage value computed as
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the OPE of `pred_series` with respect to `true_series`.
+    .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t} - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Raises
+    ------
+    ValueError
+        If :math:`\\sum_{t=1}^{T}{y_t} = 0`.
+
+    Returns
+    -------
+    float
+        The Overall Percentage Error (OPE)
     """
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
+
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series)
+    if difference:
         y_true, y_pred = np.diff(y_true), np.diff(y_pred)
-    y_true_sum, y_pred_sum = np.sum(np.array(y_true)), np.sum(np.array(y_pred))
+    y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
+    raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.')
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
-def marre(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Computes the Mean Absolute Ranged Relative Error (MARRE).
+def marre(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+    """ Mean Absolute Ranged Relative Error (MARRE).
 
-    This function computes the MARRE of `pred_series` with respect to `true_series`.
-    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+    both of length :math:`T`, it is a percentage value computed as
 
-    :param true_series: A TimeSeries.
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the MARRE of `pred_series` with respect to `true_series`.
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|}
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Raises
+    ------
+    ValueError
+        If :math:`\\max_t{y_t} = \\min_t{y_t}`.
+
+    Returns
+    -------
+    float
+        The Mean Absolute Ranged Relative Error (MARRE)
     """
-    y_true, y_hat = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
+
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    if difference:
         y_true, y_hat= np.diff(y_true), np.diff(y_hat)
-    true_range = y_true.max() - y_true.min()
+    raise_if_not(max(y_true) > min(y_true), 'The difference between the max and min values must be strictly'
+                                             'positive to compute the MARRE.')
+    true_range = max(y_true) - min(y_true)
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
 
-def r2_score(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
-    """
-    Computes the coefficient of determination R2.
-    Use `time_diff=True` when the time series has a strong auto-correlation to have a more accurate analysis.
+def r2_score(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+    """ Coefficient of Determination :math:`R^2`.
 
-    This function computes the R2 score of `pred_series` with respect to `true_series`.
-    :param true_series: A TimeSeries
-    :param pred_series: A TimeSeries to be compared with `true_series`.
-    :param time_diff: If True, analyze the time differentiated series, instead of the index one.
-    :return: A float, the coefficient R2
+    See `the Wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
+    for details about the :math:`R^2` score and how it is computed.
+
+    Parameters
+    ----------
+    series1
+        The first time series
+    series2
+        The second time series
+    difference
+        Whether to consider the time differentiated series, instead of the original ones
+
+    Returns
+    -------
+    float
+        The Coefficient of Determination :math:`R^2`
     """
-    y_true, y_pred = _get_values_or_raise(true_series, pred_series)
-    if time_diff:
-        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
-    ss_errors = np.sum((y_true - y_pred)**2)
-    y_hat = y_true.mean()
-    ss_tot = np.sum((y_true-y_hat)**2)
+
+    y1, y2 = _get_values_or_raise(series1, series2)
+    if difference:
+        y1, y2 = np.diff(y1), np.diff(y2)
+    ss_errors = np.sum((y1 - y2)**2)
+    y_hat = y1.mean()
+    ss_tot = np.sum((y1-y_hat)**2)
     return 1 - ss_errors/ss_tot
-
