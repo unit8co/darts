@@ -33,7 +33,6 @@ class TimeSeries:
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
 
-
         self._series: pd.Series = series.sort_index()  # Sort by time
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
@@ -42,6 +41,9 @@ class TimeSeries:
 
         # TODO: are there some pandas Series where the line below causes issues?
         self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
+
+        # The actual values
+        self._values: np.ndarray = self._series.values
 
         # Handle confidence intervals:
         self._confidence_lo = None
@@ -61,9 +63,10 @@ class TimeSeries:
 
     def pd_series(self) -> pd.Series:
         """
-        Returns the underlying Pandas Series of this TimeSeries.
-
-        :return: A Pandas Series.
+        Returns
+        -------
+        pandas.Series
+            A copy of the Pandas Series underlying this time series
         """
         return self._series.copy()
 
@@ -99,13 +102,32 @@ class TimeSeries:
         """
         return self._series.index[-1]
 
+    def first_value(self) -> float:
+        """
+
+        Returns
+        -------
+
+        """
+        return self._values[0]
+
+    def last_value(self) -> float:
+        """
+
+        Returns
+        -------
+
+        """
+        return self._values[-1]
+
     def values(self) -> np.ndarray:
         """
-        Returns the values of the TimeSeries.
-
-        :return: A numpy array containing the values of the TimeSeries.
+        Returns
+        -------
+        numpy.ndarray
+            A copy of the values composing the time series
         """
-        return np.copy(self._series.values)
+        return np.copy(self._values)
 
     def time_index(self) -> pd.DatetimeIndex:
         """
@@ -670,7 +692,7 @@ class TimeSeries:
         return len(self._series)
 
     def __add__(self, other):
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, np.integer, np.float)):
             new_series = self._series + other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s + other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s + other)
@@ -685,7 +707,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, np.integer, np.float)):
             new_series = self._series - other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
@@ -700,7 +722,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, np.integer, np.float)):
             new_series = self._series * other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
@@ -715,7 +737,7 @@ class TimeSeries:
         return self * other
 
     def __pow__(self, n):
-        if isinstance(n, (int, float)):
+        if isinstance(n, (int, float, np.integer, np.float)):
             if n < 0 and not all(self.values() != 0):
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
 
@@ -728,7 +750,7 @@ class TimeSeries:
                             .format(type(self).__name__, type(n).__name__)), logger)
 
     def __truediv__(self, other):
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, np.integer, np.float)):
             if (other == 0):
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
 
@@ -772,7 +794,7 @@ class TimeSeries:
 
     # TODO: Ignoring confidence series for now
     def __lt__(self, other):
-        if isinstance(other, (int, float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
             series = self._series < other
         elif isinstance(other, TimeSeries):
             series = self._series < other.pd_series()
@@ -782,7 +804,7 @@ class TimeSeries:
         return series  # TODO should we return only the ndarray, the pd series, or our timeseries?
 
     def __gt__(self, other):
-        if isinstance(other, (int, float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
             series = self._series > other
         elif isinstance(other, TimeSeries):
             series = self._series > other.pd_series()
@@ -792,7 +814,7 @@ class TimeSeries:
         return series
 
     def __le__(self, other):
-        if isinstance(other, (int, float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
             series = self._series <= other
         elif isinstance(other, TimeSeries):
             series = self._series <= other.pd_series()
@@ -802,7 +824,7 @@ class TimeSeries:
         return series
 
     def __ge__(self, other):
-        if isinstance(other, (int, float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
             series = self._series >= other
         elif isinstance(other, TimeSeries):
             series = self._series >= other.pd_series()
@@ -828,6 +850,7 @@ class TimeSeries:
     def __deepcopy__(self):
         return self.copy(deep=True)
 
+    # TODO: also support integer 0-D and 1-D indexing
     def __getitem__(self, item):
         # return only main series if nb of values < 3
         if isinstance(item, (int, pd.Timestamp)):
