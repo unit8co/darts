@@ -1,22 +1,18 @@
 """
 Metrics
 -------
+
+Some metrics that can be
 """
 
 import numpy as np
 from typing import Tuple
-from u8timeseries.timeseries import TimeSeries
-from ..logging import raise_if_not, raise_log, get_logger
+from ..timeseries import TimeSeries
+from ..utils.statistics import check_seasonality
+from ..logging import raise_if_not, get_logger
 from warnings import warn
 
 logger = get_logger(__name__)
-
-def _import_check_seasonality():
-    try:
-        from u8timeseries.utils.statistics import check_seasonality as cs
-    except ImportError as e:
-        raise_log(ImportError('Cannot import check_seasonality. Choose a fixed period'), logger)
-    return cs
 
 
 def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np.ndarray, np.ndarray]:
@@ -152,8 +148,7 @@ def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1, time_diff
     :return: A float, the MASE of `pred_series` with respect to `true_series`.
     """
     if m is None:
-        check_seasonality = _import_check_seasonality()
-        test_season, m = check_seasonality()
+        test_season, m = check_seasonality(true_series)
         if not test_season:
             warn("No seasonality found. The period is fixed to 1.", UserWarning)
             m = 1
