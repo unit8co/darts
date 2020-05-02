@@ -1,54 +1,59 @@
 """
-Implementation of an Prophet model.
--------------------------------------------------------
+Prophet
+-------
 """
 
-from u8timeseries.models.forecasting_model import ForecastingModel
+from ..timeseries import TimeSeries
+from .forecasting_model import ForecastingModel
 import pandas as pd
-from ..logging import time_log, get_logger
+from ..logging import get_logger
+from typing import Optional
 
 import fbprophet
 
 logger = get_logger(__name__)
 
 class Prophet(ForecastingModel):
-    """
-    Implementation of the Prophet model.
+    def __init__(self,
+                 frequency: Optional[int] = None,
+                 country_holidays: Optional[str] = None,
+                 **prophet_kwargs):
+        """ Facebook Prophet
 
-    Currently just a wrapper around the fbprophet implementation.
+        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`_.
+        It also supports country holidays.
 
-    :param country_holidays: An optional country code, for which holidays can be taken into account by Prophet.
+        Parameters
+        ----------
+        frequency
+            Optionally, some frequency, specifying a known seasonality, which will be added to prophet.
+        country_holidays
+            An optional country code, for which holidays can be taken into account by Prophet.
 
-                             See: https://github.com/dr-prodigy/python-holidays
+            See: https://github.com/dr-prodigy/python-holidays
 
-                             In addition to those countries, Prophet includes holidays for these
-                             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
-                             Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
-                             Egypt (EG), China (CN), and Russian (RU).
-    :param yearly_seasonality:
-    :param weekly_seasonality:
-    :param daily_seasonality:
-    :param mode: The seasonality mode, either `additive` or `multiplicative`.
-    """
+            In addition to those countries, Prophet includes holidays for these
+            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
+            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
+            Egypt (EG), China (CN), and Russian (RU).
+        prophet_kwargs
+            Some optional keyword arguments for Prophet.
+            For information about the parameters see:
+            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/fbprophet/forecaster.py>`_.
 
-    def __init__(self, frequency: int = None, yearly_seasonality=False, weekly_seasonality=False,
-                 daily_seasonality=False, country_holidays: str = None, mode: str = "additive"):
+        """
 
         super().__init__()
 
         self.country_holidays = country_holidays
-        self.yearly_seasonality = yearly_seasonality
-        self.weekly_seasonality = weekly_seasonality
-        self.daily_seasonality = daily_seasonality
-        self.mode = mode
         self.freq = frequency
+        self.prophet_kwargs = prophet_kwargs
         self.model = None
 
     def __str__(self):
         return 'Prophet'
 
-    @time_log(logger=logger)
-    def fit(self, series):
+    def fit(self, series: TimeSeries) -> None:
         super().fit(series)
 
         in_df = pd.DataFrame(data={
@@ -57,10 +62,7 @@ class Prophet(ForecastingModel):
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
-        self.model = fbprophet.Prophet(yearly_seasonality=self.yearly_seasonality,
-                                       weekly_seasonality=self.weekly_seasonality,
-                                       daily_seasonality=self.daily_seasonality,
-                                       seasonality_mode=self.mode)
+        self.model = fbprophet.Prophet(**self.prophet_kwargs)
         if self.freq is not None:
             if series.freq_str() in ['MS', 'M', 'ME']:
                 interval_length = 30.4375
@@ -77,7 +79,7 @@ class Prophet(ForecastingModel):
 
         self.model.fit(in_df)
 
-    def predict(self, n):
+    def predict(self, n: int) -> TimeSeries:
         super().predict(n)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
