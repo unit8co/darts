@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 logger = get_logger(__name__)
 
 
-class Transformer:
+class ScalerWrapper:
     """
     Wrapper class for using transformers / scalers (typically from scikit-learn) on TimeSeries data
     """
@@ -25,7 +25,7 @@ class Transformer:
         self.train_series = None
         self._fit_called = False
 
-    def fit(self, series: TimeSeries) -> 'Transformer':
+    def fit(self, series: TimeSeries) -> 'ScalerWrapper':
         self.transformer.fit(series.values().reshape((-1, 1)))
         self.train_series = series
         self._fit_called = True

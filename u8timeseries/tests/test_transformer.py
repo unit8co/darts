@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from .. import Transformer
+from .. import ScalerWrapper
 from ..utils import timeseries_generation as tg
 
 
@@ -11,8 +11,8 @@ class TransformerTestCase(unittest.TestCase):
     series = tg.random_walk_timeseries(length=100) * 20 - 10.
 
     def test_scaling(self):
-        transformer1 = Transformer(MinMaxScaler(feature_range=(0, 2)))
-        transformer2 = Transformer(StandardScaler())
+        transformer1 = ScalerWrapper(MinMaxScaler(feature_range=(0, 2)))
+        transformer2 = ScalerWrapper(StandardScaler())
 
         series_tr1 = transformer1.fit_transform(self.series)
         series_tr2 = transformer2.fit_transform(self.series)
