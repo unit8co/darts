@@ -13,6 +13,7 @@ from .logging import raise_log, raise_if_not, get_logger
 
 logger = get_logger(__name__)
 
+
 class TimeSeries:
     def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
         """

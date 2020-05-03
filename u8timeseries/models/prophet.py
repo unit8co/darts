@@ -1,6 +1,6 @@
 """
-Prophet
--------
+Facebook Prophet
+----------------
 """
 
 from ..timeseries import TimeSeries
@@ -12,6 +12,7 @@ from typing import Optional
 import fbprophet
 
 logger = get_logger(__name__)
+
 
 class Prophet(ForecastingModel):
     def __init__(self,
@@ -35,7 +36,7 @@ class Prophet(ForecastingModel):
             In addition to those countries, Prophet includes holidays for these
             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
             Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
-            Egypt (EG), China (CN), and Russian (RU).
+            Egypt (EG), China (CN), and Russia (RU).
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:

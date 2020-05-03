@@ -15,6 +15,7 @@ import math
 
 logger = get_logger(__name__)
 
+
 def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05):
     """
     Returns whether the TimeSeries `ts` is seasonal with period `m` or not.

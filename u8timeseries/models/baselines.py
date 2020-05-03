@@ -73,7 +73,8 @@ class NaiveDrift(ForecastingModel):
 
     def predict(self, n: int):
         super().predict(n)
-        slope = (self.training_series.last_value() - self.training_series.first_value()) / len(self.training_series)
-        last_value = self.training_series.last_value() + slope * n
-        forecast = np.linspace(self.training_series.last_value(), last_value, num=n)
+        first, last = self.training_series.first_value(), self.training_series.last_value()
+        slope = (last - first) / (len(self.training_series) - 1)
+        last_value = last + slope * n
+        forecast = np.linspace(last, last_value, num=n)
         return self._build_forecast_series(forecast)

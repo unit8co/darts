@@ -19,6 +19,7 @@ from typing import List
 
 logger = get_logger(__name__)
 
+
 class RegressionModel(ABC):
     """
     This is a base class for various implementations of multi-variate models - models predicting time series
