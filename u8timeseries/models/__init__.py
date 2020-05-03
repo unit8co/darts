@@ -4,7 +4,7 @@ Models
 """
 
 # Forecasting
-from .arima import Arima, AutoArima
+from .arima import ARIMA, AutoARIMA
 from .baselines import NaiveMean, NaiveSeasonal, NaiveDrift
 from .prophet import Prophet
 from .exponential_smoothing import ExponentialSmoothing
