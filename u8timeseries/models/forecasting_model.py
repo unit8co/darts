@@ -41,9 +41,6 @@ class ForecastingModel(ABC):
         ----------
         series
             the training time series on which to fit the model
-
-        Returns
-        -------
         """
         self.training_series = series
         self._fit_called = True
@@ -73,7 +70,8 @@ class ForecastingModel(ABC):
         new_dates = [self.training_series.time_index()[-1] + (i * self.training_series.freq()) for i in range(1, n+1)]
         return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
 
-    def _build_forecast_series(self, points_preds: np.ndarray,
+    def _build_forecast_series(self,
+                               points_preds: np.ndarray,
                                lower_bound: Optional[np.ndarray] = None,
                                upper_bound: Optional[np.ndarray] = None) -> TimeSeries:
         """

@@ -1,3 +1,8 @@
+"""
+Recurrent Neural Networks
+-------------------------
+"""
+
 import numpy as np
 import os
 import re
@@ -39,29 +44,41 @@ class RNNModule(nn.Module):
                  output_length: int = 1,
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
-        """
-        PyTorch `nn.Module` implementing a simple RNN with the specified `name` layer.
+
+        """ PyTorch module implementing a RNN to be used in `RNNModel`.
+
+        PyTorch module implementing a simple RNN with the specified `name` layer.
         This module combines a PyTorch RNN module, together with a fully connected network, which maps the
-        last hidden layers to output of the desired size `output_length`.
+        last hidden layers to output of the desired size `output_length` and makes it compatible with
+        `RNNModel`s.
 
-        Inputs:
+        Parameters
+        ----------
+        name
+            The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
+        input_size
+            The dimensionality of the input time series.
+        hidden_dim
+            The number of features in the hidden state `h` of the RNN module.
+        num_layers
+            The number of recurrent layers.
+        output_length
+            The number of steps to predict in the future.
+        num_layers_out_fc
+            A list containing the dimensions of the hidden layers of the fully connected NN.
+            This network connects the last hidden layer of the PyTorch RNN module to the output.
+        dropout
+            The fraction of neurons that are dropped in all-but-last RNN layers.
+
+        Inputs
+        ------
+        x of shape `(batch_size, input_length, input_size)`
+            Tensor containing the features of the input sequence.
+
+        Outputs
         -------
-        * x of shape (batch_size, input_length, input_size): tensor containing the features of the input sequence
-
-        Outputs:
-        --------
-        * y of shape (batch_size, out_len, 1): tensor containing the (point) prediction at the last time step of the
-                                               sequence.
-
-        :param name: The name of the specific PyTorch RNN module ('RNN', 'GRU' or 'LSTM').
-        :param input_size: The dimensionality of the input time series.
-                           Currently only set to 1 for univariate time series.
-        :param output_length: The number of steps to predict in the future.
-        :param hidden_dim: The number of features in the hidden state h of the RNN module.
-        :param num_layers: The number of recurrent layers.
-        :param num_layers_out_fc: A list containing the hidden dimensions of the layers of the fully connected NN.
-                                  This network connects the last hidden layer of the PyTorch RNN module to the output.
-        :param dropout: The percentage of neurons that are dropped in the non-last RNN layers. Default: 0.
+        y of shape `(batch_size, out_len, 1)`
+            Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
         super(RNNModule, self).__init__()
@@ -104,6 +121,9 @@ class RNNModule(nn.Module):
 
 
 class RNNModel(ForecastingModel):
+    # TODO: add init seed
+    # TODO: add is_stochastic & reset methods
+    # TODO: transparent support for multivariate time series
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  output_length: int = 1,
@@ -124,6 +144,31 @@ class RNNModel(ForecastingModel):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
+        """
+
+        Parameters
+        ----------
+        model
+        output_length
+        input_length
+        hidden_size
+        n_rnn_layers
+        hidden_fc_size
+        dropout
+        batch_size
+        n_epochs
+        optimizer_cls
+        optimizer_kwargs
+        lr_scheduler_cls
+        lr_scheduler_kwargs
+        loss_fn
+        model_name
+        work_dir
+        log_tensorboard
+        nr_epochs_val_period
+        torch_device_str
+        """
+
         """
         Implementation of different RNNs for forecasting. It is recommended to scale the time series
         (e.g. by using a [u8timeseries.preprocessing.transformer.Transformer] beforehand.
@@ -154,10 +199,6 @@ class RNNModel(ForecastingModel):
                                      TimeSeries is passed to the fit() method).
         :param torch_device_str: Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
                                  is available, otherwise "cpu").
-
-        # TODO: add init seed
-        # TODO: add is_stochastic & reset methods
-        # TODO: transparent support for multivariate time series
         """
         super().__init__()
 

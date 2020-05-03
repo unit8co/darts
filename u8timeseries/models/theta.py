@@ -1,17 +1,18 @@
 """
-Implementation of an Theta model.
----------------------------------
+Theta model
+-----------
 """
 
 import statsmodels.tsa.holtwinters as hw
 from ..timeseries import TimeSeries
-from ..logging import raise_log, time_log, get_logger
+from ..logging import raise_log, get_logger
 from .forecasting_model import ForecastingModel
 import numpy as np
 import math
 from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
 logger = get_logger(__name__)
+
 
 class Theta(ForecastingModel):
     """
@@ -44,7 +45,6 @@ class Theta(ForecastingModel):
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
-    @time_log(logger=logger)
     def fit(self, ts, season_period: int = None):
         """
         Fits the Theta method to the TimeSeries `ts`.

@@ -1,6 +1,6 @@
 """
-ARIMA
------
+ARIMA and Auto-ARIMA
+--------------------
 
 Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA.
 The implementations are wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_

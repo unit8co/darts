@@ -1,17 +1,18 @@
 """
-Implementation of an Standard Regressive model.
------------------------------------------------
+Standard Regression model
+-------------------------
 """
 
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
-from ..logging import time_log, get_logger
+from ..logging import time_log, get_logger, raise_log
 from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 logger = get_logger(__name__)
+
 
 class StandardRegressionModel(RegressionModel):
 
@@ -37,7 +38,6 @@ class StandardRegressionModel(RegressionModel):
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
 
-    @time_log(logger=logger)
     def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
