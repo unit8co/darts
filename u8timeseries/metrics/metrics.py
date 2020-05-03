@@ -26,7 +26,7 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
     return series_a.values(), series_b.values()
 
 
-def mae(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+def mae(series1: TimeSeries, series2: TimeSeries) -> float:
     """ Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -39,8 +39,6 @@ def mae(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> f
         The first time series
     series2
         The second time series
-    difference
-         Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
@@ -49,12 +47,10 @@ def mae(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> f
     """
 
     y1, y2 = _get_values_or_raise(series1, series2)
-    if difference:
-        y1, y2 = np.diff(y1), np.diff(y2)
     return np.mean(np.abs(y1 - y2))
 
 
-def mse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+def mse(series1: TimeSeries, series2: TimeSeries) -> float:
     """ Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -67,8 +63,6 @@ def mse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> f
         The first time series
     series2
         The second time series
-    difference
-         Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
@@ -77,12 +71,10 @@ def mse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> f
     """
 
     y_true, y_pred = _get_values_or_raise(series1, series2)
-    if difference:
-        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     return np.mean((y_true - y_pred)**2)
 
 
-def rmse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+def rmse(series1: TimeSeries, series2: TimeSeries) -> float:
     """ Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -95,15 +87,13 @@ def rmse(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> 
         The first time series
     series2
         The second time series
-    difference
-         Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
     float
         The Root Mean Squared Error (RMSE)
     """
-    return np.sqrt(mse(series1, series2, difference))
+    return np.sqrt(mse(series1, series2))
 
 
 def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
@@ -133,7 +123,7 @@ def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
     return np.sqrt(np.mean((y1 - y2)**2))
 
 
-def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
     """ Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -149,8 +139,6 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
         The series of actual values
     pred_series
         The series of predicted values
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
@@ -158,10 +146,10 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
         The Coefficient of Variation
     """
 
-    return 100 * rmse(actual_series, pred_series, difference) / actual_series.mean()
+    return 100 * rmse(actual_series, pred_series) / actual_series.mean()
 
 
-def mape(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+def mape(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -178,8 +166,6 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = 
         The series of actual values
     pred_series
         The series of predicted values
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Raises
     ------
@@ -194,12 +180,10 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = 
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
     raise_if_not(all(y_true > 0), 'The actual series must be strictly positive to compute the MAPE.')
-    if difference:
-        y_true, y_hat = np.diff(y_true), np.diff(y_hat)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
-def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1, difference: bool = False) -> float:
+def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1) -> float:
     """ Mean Absolute Scaled Error (MASE).
 
     See `the Wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -216,8 +200,6 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
         `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
         If `m=None`, it will be tentatively inferred
         from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
@@ -231,8 +213,6 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
             warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
-    if difference:
-        y_true, y_hat = np.diff(y_true), np.diff(y_hat)
     errors = np.sum(np.abs(y_true - y_hat))
     t = y_true.size
     scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
@@ -240,7 +220,7 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
     return errors / scale
 
 
-def ope(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+def ope(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
     """ Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -254,8 +234,6 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = F
         The series of actual values
     pred_series
         The series of predicted values
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Raises
     ------
@@ -269,14 +247,12 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = F
     """
 
     y_true, y_pred = _get_values_or_raise(actual_series, pred_series)
-    if difference:
-        y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.')
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
-def marre(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool = False) -> float:
+def marre(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
     """ Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -290,8 +266,6 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool =
         The series of actual values
     pred_series
         The series of predicted values
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Raises
     ------
@@ -305,15 +279,13 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, difference: bool =
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
-    if difference:
-        y_true, y_hat= np.diff(y_true), np.diff(y_hat)
     raise_if_not(max(y_true) > min(y_true), 'The difference between the max and min values must be strictly'
                                              'positive to compute the MARRE.')
     true_range = max(y_true) - min(y_true)
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
 
-def r2_score(series1: TimeSeries, series2: TimeSeries, difference: bool = False) -> float:
+def r2_score(series1: TimeSeries, series2: TimeSeries) -> float:
     """ Coefficient of Determination :math:`R^2`.
 
     See `the Wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
@@ -325,8 +297,6 @@ def r2_score(series1: TimeSeries, series2: TimeSeries, difference: bool = False)
         The first time series
     series2
         The second time series
-    difference
-        Whether to consider the time differentiated series, instead of the original ones
 
     Returns
     -------
@@ -335,8 +305,6 @@ def r2_score(series1: TimeSeries, series2: TimeSeries, difference: bool = False)
     """
 
     y1, y2 = _get_values_or_raise(series1, series2)
-    if difference:
-        y1, y2 = np.diff(y1), np.diff(y2)
     ss_errors = np.sum((y1 - y2)**2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1-y_hat)**2)
