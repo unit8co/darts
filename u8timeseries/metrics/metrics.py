@@ -16,17 +16,27 @@ from typing import Optional
 logger = get_logger(__name__)
 
 
-def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np.ndarray, np.ndarray]:
+def _get_values_or_raise(series_a: TimeSeries,
+                         series_b: TimeSeries,
+                         intersect: bool) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Returns the numpy values of two time series, launching an Exception if time series cannot be compared
+    Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
+    Raises a ValueError if the two time series (or their intersection) do not have the same time index.
     """
-    raise_if_not(series_a.has_same_time_as(series_b), 'The two time series must have same time index.' \
-                                                '\nFirst series: {}\nSecond series: {}'.format(
-                                                series_a.time_index(), series_b.time_index()), logger)
-    return series_a.values(), series_b.values()
+
+    series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
+    series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
+
+    raise_if_not(series_a_common.has_same_time_as(series_b_common), 'The two time series (or their intersection) '
+                                                                    'must have the same time index.'
+                                                                    '\nFirst series: {}\nSecond series: {}'.format(
+                                                                    series_a.time_index(), series_b.time_index()),
+                 logger)
+
+    return series_a_common.values(), series_b_common.values()
 
 
-def mae(series1: TimeSeries, series2: TimeSeries) -> float:
+def mae(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -39,6 +49,9 @@ def mae(series1: TimeSeries, series2: TimeSeries) -> float:
         The first time series
     series2
         The second time series
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -46,11 +59,11 @@ def mae(series1: TimeSeries, series2: TimeSeries) -> float:
         The Mean Absolute Error (MAE)
     """
 
-    y1, y2 = _get_values_or_raise(series1, series2)
+    y1, y2 = _get_values_or_raise(series1, series2, intersect)
     return np.mean(np.abs(y1 - y2))
 
 
-def mse(series1: TimeSeries, series2: TimeSeries) -> float:
+def mse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -63,6 +76,9 @@ def mse(series1: TimeSeries, series2: TimeSeries) -> float:
         The first time series
     series2
         The second time series
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -70,11 +86,11 @@ def mse(series1: TimeSeries, series2: TimeSeries) -> float:
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred = _get_values_or_raise(series1, series2)
+    y_true, y_pred = _get_values_or_raise(series1, series2, intersect)
     return np.mean((y_true - y_pred)**2)
 
 
-def rmse(series1: TimeSeries, series2: TimeSeries) -> float:
+def rmse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -87,16 +103,19 @@ def rmse(series1: TimeSeries, series2: TimeSeries) -> float:
         The first time series
     series2
         The second time series
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
     float
         The Root Mean Squared Error (RMSE)
     """
-    return np.sqrt(mse(series1, series2))
+    return np.sqrt(mse(series1, series2, intersect))
 
 
-def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
+def rmsle(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Root Mean Squared Log Error (RMSLE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -111,6 +130,9 @@ def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
         The first time series
     series2
         The second time series
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -118,12 +140,12 @@ def rmsle(series1: TimeSeries, series2: TimeSeries) -> float:
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y1, y2 = _get_values_or_raise(series1, series2)
+    y1, y2 = _get_values_or_raise(series1, series2, intersect)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2)**2))
 
 
-def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
+def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
     """ Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -139,6 +161,9 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries)
         The series of actual values
     pred_series
         The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -146,10 +171,10 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries)
         The Coefficient of Variation
     """
 
-    return 100 * rmse(actual_series, pred_series) / actual_series.mean()
+    return 100 * rmse(actual_series, pred_series, intersect) / actual_series.mean()
 
 
-def mape(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
+def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -166,6 +191,9 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The series of actual values
     pred_series
         The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Raises
     ------
@@ -178,12 +206,12 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     raise_if_not(all(y_true > 0), 'The actual series must be strictly positive to compute the MAPE.')
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
-def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1) -> float:
+def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1, intersect: bool = True) -> float:
     """ Mean Absolute Scaled Error (MASE).
 
     See `the Wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -200,6 +228,9 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
         `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
         If `m=None`, it will be tentatively inferred
         from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -212,7 +243,7 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
         if not test_season:
             warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     errors = np.sum(np.abs(y_true - y_hat))
     t = y_true.size
     scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
@@ -220,7 +251,7 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
     return errors / scale
 
 
-def ope(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
+def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
     """ Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -234,6 +265,9 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The series of actual values
     pred_series
         The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Raises
     ------
@@ -246,13 +280,13 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.')
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
-def marre(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
+def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
     """ Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -266,6 +300,9 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The series of actual values
     pred_series
         The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Raises
     ------
@@ -278,14 +315,14 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries) -> float:
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     raise_if_not(max(y_true) > min(y_true), 'The difference between the max and min values must be strictly'
                                              'positive to compute the MARRE.')
     true_range = max(y_true) - min(y_true)
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
 
-def r2_score(series1: TimeSeries, series2: TimeSeries) -> float:
+def r2_score(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Coefficient of Determination :math:`R^2`.
 
     See `the Wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
@@ -297,6 +334,9 @@ def r2_score(series1: TimeSeries, series2: TimeSeries) -> float:
         The first time series
     series2
         The second time series
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
 
     Returns
     -------
@@ -304,7 +344,7 @@ def r2_score(series1: TimeSeries, series2: TimeSeries) -> float:
         The Coefficient of Determination :math:`R^2`
     """
 
-    y1, y2 = _get_values_or_raise(series1, series2)
+    y1, y2 = _get_values_or_raise(series1, series2, intersect)
     ss_errors = np.sum((y1 - y2)**2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1-y_hat)**2)
