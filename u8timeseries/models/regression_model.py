@@ -1,6 +1,6 @@
 """
-Regression model
-----------------
+Regression Model Base Class
+---------------------------
 
 A regression model predicts values for a time series :math:`Y_t` as a function
 of :math:`N` "features" time series :math:`X^i_t`:

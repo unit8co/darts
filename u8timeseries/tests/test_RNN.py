@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import shutil
 
-from .. import RNNModule, RNNModel
+from ..models.rnn_model import RNNModule, RNNModel
 from ..timeseries import TimeSeries
 
 

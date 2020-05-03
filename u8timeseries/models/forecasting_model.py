@@ -1,6 +1,6 @@
 """
-Forecasting Model
------------------
+Forecasting Model Base Class
+----------------------------
 
 A forecasting model captures the future values of a time series as a function of the past as follows:
 

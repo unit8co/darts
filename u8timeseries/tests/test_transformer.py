@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from .. import ScalerWrapper
+from ..preprocessing import ScalerWrapper
 from ..utils import timeseries_generation as tg
 
 

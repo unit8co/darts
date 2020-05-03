@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries import Prophet, NaiveSeasonal, ExponentialSmoothing, TimeSeries, Arima, AutoArima
+from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA
 from u8timeseries.models.theta import Theta
+
 
 class ModelsTestCase(unittest.TestCase):
 
@@ -21,8 +22,8 @@ class ModelsTestCase(unittest.TestCase):
         models = [
             ExponentialSmoothing(), 
             Prophet(),
-            Arima(1, 1, 1),
-            AutoArima(),
+            ARIMA(1, 1, 1),
+            AutoARIMA(),
             NaiveSeasonal(),
             Theta()
         ]

@@ -5,9 +5,9 @@ import re
 from testfixtures import LogCapture
 
 from ..timeseries import TimeSeries
-from u8timeseries.utils.timeseries_generation import linear_timeseries, constant_timeseries
-from u8timeseries.models.theta import Theta
 from ..logging import raise_log, raise_if_not, time_log, get_logger
+
+logger = get_logger(__name__)
 
 
 class LoggingTestCase(unittest.TestCase):
@@ -77,11 +77,14 @@ class LoggingTestCase(unittest.TestCase):
         )
 
     def test_time_log(self):
-        # test time log decorator log message when running theta model
-        ts = constant_timeseries(length=100)
-        model = Theta()
+        @time_log(logger)
+        def _my_timed_fn():
+            # do something for some time
+            for _ in range(2):
+                pass
+
         with LogCapture() as lc:
-            model.fit(ts)
-        
+            _my_timed_fn()
+
         logged_message = lc.records[-1].getMessage()
-        self.assertTrue(re.match("fit function ran for [0-9]+ milliseconds", logged_message))
+        self.assertTrue(re.match("_my_timed_fn function ran for [0-9]+ milliseconds", logged_message))

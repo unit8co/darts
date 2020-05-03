@@ -18,10 +18,11 @@ class MetricsTestCase(unittest.TestCase):
     series3: TimeSeries = TimeSeries(pd_series3)
 
     def test_zero(self):
-        self.assertTrue(np.isnan(metrics.mape(self.series1, self.series1)))
+        with self.assertRaises(ValueError):
+            metrics.mape(self.series1, self.series1)
 
-        self.assertTrue(np.isnan(metrics.ope(self.series1 - self.series1.mean(),
-                                             self.series1 - self.series1.mean())))
+        with self.assertRaises(ValueError):
+            metrics.ope(self.series1 - self.series1.mean(), self.series1 - self.series1.mean())
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1+1, self.series1+1), 0)
