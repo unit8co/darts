@@ -13,7 +13,4 @@ from u8timeseries.models.RNN_model import RNNModule, RNNModel
 from .timeseries import TimeSeries
 from u8timeseries.preprocessing.transformer import Transformer
 
-import os
-
-path = os.path.join(os.path.dirname(__file__), 'VERSION')
-__version__ = open(path, "r").read()
+__version__ = 'dev'
