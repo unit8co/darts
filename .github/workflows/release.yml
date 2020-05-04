@@ -104,7 +104,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
 
-      - name: ". Create new release draft"
+      - name: "10. Create new release draft"
         id: create_release
         uses: actions/create-release@latest
         env:
