@@ -1,6 +1,7 @@
-import unittest
-import pandas as pd
 import shutil
+import unittest
+
+import pandas as pd
 
 from .. import RNNModule, RNNModel
 from ..timeseries import TimeSeries

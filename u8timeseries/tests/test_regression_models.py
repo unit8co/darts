@@ -1,9 +1,11 @@
 import unittest
-import pandas as pd
-import numpy as np
 
-from ..timeseries import TimeSeries
+import numpy as np
+import pandas as pd
+
 from u8timeseries import StandardRegressiveModel
+from ..timeseries import TimeSeries
+
 
 class RegressionModelsTestCase(unittest.TestCase):
 
@@ -17,7 +19,6 @@ class RegressionModelsTestCase(unittest.TestCase):
     target_ts: TimeSeries = TimeSeries.from_times_and_values(times, target_values)
     feature_ts: TimeSeries = TimeSeries.from_times_and_values(times, feature_values)
 
-    
     def test_regressive_models_runnability(self):
         models = [
             StandardRegressiveModel(self.regression_window)

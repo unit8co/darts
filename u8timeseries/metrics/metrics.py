@@ -3,18 +3,21 @@ List of metrics
 ---------------
 """
 
-import numpy as np
 from typing import Tuple
-from u8timeseries.timeseries import TimeSeries
-from ..custom_logging import raise_if_not, raise_log, get_logger
 from warnings import warn
 
+import numpy as np
+
+from u8timeseries.timeseries import TimeSeries
+from ..custom_logging import raise_if_not, raise_log, get_logger
+
 logger = get_logger(__name__)
+
 
 def _import_check_seasonality():
     try:
         from u8timeseries.models.statistics import check_seasonality as cs
-    except ImportError as e:
+    except ImportError:
         raise_log(ImportError('Cannot import check_seasonality. Choose a fixed period'), logger)
     return cs
 
@@ -23,9 +26,9 @@ def _get_values_or_raise(series_a: TimeSeries, series_b: TimeSeries) -> Tuple[np
     """
     Returns the numpy values of two time series, launching an Exception if time series cannot be compared
     """
-    raise_if_not(series_a.has_same_time_as(series_b), 'The two time series must have same time index.' \
-                                                '\nFirst series: {}\nSecond series: {}'.format(
-                                                series_a.time_index(), series_b.time_index()), logger)
+    raise_if_not(series_a.has_same_time_as(series_b),
+                 'The two time series must have same time index.\nFirst series: {}\nSecond series: {}'
+                 .format(series_a.time_index(), series_b.time_index()), logger)
     return series_a.values(), series_b.values()
 
 
@@ -95,7 +98,7 @@ def coefficient_variation(true_series: TimeSeries, pred_series: TimeSeries, time
     :param time_diff: If True, analyze the time differentiated series, instead of the index one.
     :return: A float, the RMSE of `pred_series` with respect to `true_series`.
     """
-    return 100 * rmse(true_series, pred_series, time_diff)/true_series.mean()
+    return 100 * rmse(true_series, pred_series, time_diff) / true_series.mean()
 
 
 def mape(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = False) -> float:
@@ -134,7 +137,7 @@ def mase_old(true_series: TimeSeries, pred_series: TimeSeries) -> float:
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
     errors = np.sum(np.abs(y_true - y_pred))
     t = y_true.size
-    scale = t/(t-1) * np.sum(np.abs(np.diff(y_true)))
+    scale = t / (t - 1) * np.sum(np.abs(np.diff(y_true)))
     return errors / scale
 
 
@@ -162,7 +165,7 @@ def mase(true_series: TimeSeries, pred_series: TimeSeries, m: int = 1, time_diff
         y_true, y_pred = np.diff(y_true), np.diff(y_pred)
     errors = np.sum(np.abs(y_true - y_pred))
     t = y_true.size
-    scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
+    scale = t / (t - m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
     raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
     return errors / scale
 
@@ -202,7 +205,7 @@ def marre(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool = Fa
     """
     y_true, y_hat = _get_values_or_raise(true_series, pred_series)
     if time_diff:
-        y_true, y_hat= np.diff(y_true), np.diff(y_hat)
+        y_true, y_hat = np.diff(y_true), np.diff(y_hat)
     true_range = y_true.max() - y_true.min()
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
@@ -221,8 +224,7 @@ def r2_score(true_series: TimeSeries, pred_series: TimeSeries, time_diff: bool =
     y_true, y_pred = _get_values_or_raise(true_series, pred_series)
     if time_diff:
         y_true, y_pred = np.diff(y_true), np.diff(y_pred)
-    ss_errors = np.sum((y_true - y_pred)**2)
+    ss_errors = np.sum((y_true - y_pred) ** 2)
     y_hat = y_true.mean()
-    ss_tot = np.sum((y_true-y_hat)**2)
-    return 1 - ss_errors/ss_tot
-
+    ss_tot = np.sum((y_true - y_hat) ** 2)
+    return 1 - ss_errors / ss_tot
