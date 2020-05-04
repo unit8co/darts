@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from .. import Transformer
-from ..utils import timeseries_generation as tg
+from ..preprocessing import Transformer
+from ..utils import TimeSeriesGenerator as tg
 
 
 class TransformerTestCase(unittest.TestCase):

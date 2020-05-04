@@ -5,19 +5,11 @@ Backtesting simulation
 
 import pandas as pd
 import numpy as np
-<<<<<<< HEAD
-from IPython import get_ipython
-from tqdm import tqdm, tqdm_notebook
 from ..timeseries import TimeSeries
 from ..models.autoregressive_model import AutoRegressiveModel
 from ..models.regressive_model import RegressiveModel
-=======
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from u8timeseries.models.regressive_model import RegressiveModel
 
-from u8timeseries.utils import build_tqdm_iterator
->>>>>>> develop
+from ..utils import build_tqdm_iterator
 from ..custom_logging import raise_if_not, get_logger
 from typing import List
 

@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 def _import_check_seasonality():
     try:
-        from u8timeseries.models.statistics import check_seasonality as cs
+        from ..utils.statistics import check_seasonality as cs
     except ImportError as e:
         raise_log(ImportError('Cannot import check_seasonality. Choose a fixed period'), logger)
     return cs

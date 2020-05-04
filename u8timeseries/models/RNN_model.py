@@ -13,7 +13,7 @@ from typing import List, Optional, Dict, Union
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
 from ..custom_logging import raise_if_not, get_logger, raise_log
-from .. import AutoRegressiveModel
+from . import AutoRegressiveModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
