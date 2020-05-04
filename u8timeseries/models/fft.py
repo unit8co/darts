@@ -56,9 +56,7 @@ def find_relevant_timestamp_attributes(series: TimeSeries):
     :param series: The TimeSeries instance to be analyzed.
     :return: A set of pd.Timestamp attributes with high autocorrelation within 'series'.
     """
-    timestamp_attributes = ['month', 'day', 'weekday', 'hour', 'minute', 'second']
     relevant_attributes = set()
-    r = acf(series.values())
 
     if (type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
         # check for yearly seasonality
@@ -134,6 +132,9 @@ class FFT(AutoRegressiveModel):
                                  seasonality, include 'day', etc.
         :param trend: Boolean value indicating whether or not detrending will be applied before performing DFT.
         :param trend_poly_degree: The degree of the polynomial that will be used for detrending.
+        :param automatic_matching: If set to True, the model tries to find the pd.Timestamp attributes that 
+                                   are relevant for the seasonality automatically.
+                                   (Currently the supported seasonality periods are: yearly, monthly)
 
         """
         self.nr_freqs_to_keep = nr_freqs_to_keep
