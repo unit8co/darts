@@ -1,37 +1,27 @@
+"""
+Backtesting simulation
+----------------------
+"""
+
 import pandas as pd
 import numpy as np
+<<<<<<< HEAD
 from IPython import get_ipython
 from tqdm import tqdm, tqdm_notebook
 from ..timeseries import TimeSeries
 from ..models.autoregressive_model import AutoRegressiveModel
 from ..models.regressive_model import RegressiveModel
+=======
+from u8timeseries.timeseries import TimeSeries
+from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.models.regressive_model import RegressiveModel
+
+from u8timeseries.utils import build_tqdm_iterator
+>>>>>>> develop
 from ..custom_logging import raise_if_not, get_logger
 from typing import List
 
 logger = get_logger(__name__)
-
-def _build_iterator(iterable, verbose):
-    def _isnotebook():
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                return True  # Jupyter notebook or qtconsole
-            elif shell == 'TerminalInteractiveShell':
-                return False  # Terminal running IPython
-            else:
-                return False  # Other type (?)
-        except NameError:
-            return False  # Probably standard Python interpreter
-
-    if verbose:
-        if _isnotebook():
-            iterator = tqdm_notebook(iterable)
-        else:
-            iterator = tqdm(iterable)
-    else:
-        iterator = iterable
-    return iterator
-
 
 def simulate_forecast_ar(series: 'TimeSeries',
                          model: 'AutoRegressiveModel',
@@ -69,7 +59,7 @@ def simulate_forecast_ar(series: 'TimeSeries',
     values = []
     times = []
 
-    iterator = _build_iterator(pred_times, verbose)
+    iterator = build_tqdm_iterator(pred_times, verbose)
 
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
@@ -122,7 +112,7 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     values = []
     times = []
 
-    iterator = _build_iterator(pred_times, verbose)
+    iterator = build_tqdm_iterator(pred_times, verbose)
 
     for pred_time in iterator:
         # build train/val series

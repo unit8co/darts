@@ -1,6 +1,11 @@
+"""
+Implementation of an Regressive model.
+--------------------------------------
+"""
+
 from abc import ABC, abstractmethod
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, get_logger
+from ..custom_logging import raise_if_not, get_logger, raise_log
 from typing import List
 
 logger = get_logger(__name__)

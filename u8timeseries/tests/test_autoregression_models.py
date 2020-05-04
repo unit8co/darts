@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
+import logging
 
 from ..timeseries import TimeSeries
 from ..models.prophet import Prophet
@@ -19,6 +20,9 @@ class ModelsTestCase(unittest.TestCase):
     values = np.sin(range(len(times))) + np.array([2.0] * len(times))
     ts: TimeSeries = TimeSeries.from_times_and_values(times, values)
 
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_autoregressive_models_runnability(self):
         models = [
