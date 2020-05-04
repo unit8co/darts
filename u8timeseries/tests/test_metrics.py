@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import pandas as pd
+import logging
 
 from ..timeseries import TimeSeries
 from u8timeseries.metrics import metrics
@@ -16,6 +17,10 @@ class MetricsTestCase(unittest.TestCase):
     series0: TimeSeries = TimeSeries(pd_series1)
     series2: TimeSeries = TimeSeries(pd_series2)
     series3: TimeSeries = TimeSeries(pd_series3)
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_zero(self):
         self.assertTrue(np.isnan(metrics.mape(self.series1, self.series1)))
