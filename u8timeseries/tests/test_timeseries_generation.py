@@ -1,16 +1,16 @@
 import unittest
-import pandas as pd
-import numpy as np
 
-from ..timeseries import TimeSeries
+import pandas as pd
+
 from u8timeseries.utils.timeseries_generation import (
-    constant_timeseries, 
-    linear_timeseries, 
+    constant_timeseries,
+    linear_timeseries,
     sine_timeseries,
-    gaussian_timeseries, 
-    random_walk_timeseries, 
+    gaussian_timeseries,
+    random_walk_timeseries,
     us_holiday_timeseries
 )
+
 
 class TimeSeriesGenerationTestCase(unittest.TestCase):
 
@@ -36,7 +36,8 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         linear_ts = linear_timeseries(start_value=start_value, end_value=end_value, length=length)
         self.assertEqual(linear_ts.values()[0], start_value)
         self.assertEqual(linear_ts.values()[-1], end_value)
-        self.assertAlmostEqual(linear_ts.values()[-1] - linear_ts.values()[-2], (end_value - start_value) / (length - 1))
+        self.assertAlmostEqual(linear_ts.values()[-1] - linear_ts.values()[-2],
+                               (end_value - start_value) / (length - 1))
 
     def test_sine_timeseries(self):
 

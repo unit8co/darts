@@ -3,17 +3,20 @@ List of statistics.
 -------------------
 """
 
-from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, get_logger
+import math
+from typing import Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
-from statsmodels.tsa.stattools import acf
 from scipy.stats import norm
 from statsmodels.tsa.seasonal import seasonal_decompose
-import matplotlib.pyplot as plt
-from typing import Tuple
-import math
+from statsmodels.tsa.stattools import acf
+
+from ..custom_logging import raise_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
 
 def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05):
     """
@@ -97,13 +100,13 @@ def _bartlett_formula(r, m, length) -> float:
     :return: The standard error of `r` with order `m`.
     """
     if m == 1:
-        return math.sqrt(1/length)
+        return math.sqrt(1 / length)
     else:
-        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m-1]))) / length)
+        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m - 1]))) / length)
 
 
-def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
-                                                                -> Tuple['TimeSeries', 'TimeSeries']:
+def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None,
+                                  model: str = 'multiplicative') -> Tuple['TimeSeries', 'TimeSeries']:
     """
     Extracts trend and seasonality from the TimeSeries `ts` using statsmodels.seasonal_decompose.
 
@@ -142,8 +145,8 @@ def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'Ti
     return new_ts
 
 
-def remove_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
-                                                        -> 'TimeSeries':
+def remove_seasonality(ts: 'TimeSeries', freq: int = None,
+                       model: str = 'multiplicative') -> 'TimeSeries':
     """
     Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
@@ -192,7 +195,7 @@ def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 
 
     # Computes the confidence interval at level alpha for all lags.
     stats = []
-    for i in range(1, max_lag+1):
+    for i in range(1, max_lag + 1):
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
 
     plt.figure(figsize=fig_size)
@@ -200,10 +203,10 @@ def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 
     for i in range(len(r)):
         plt.plot((i, i), (0, r[i]), color=('red' if m is not None and i == m else 'black'), lw=.5)
 
-    upp_band = r[1:].mean() + norm.ppf(1 - alpha/2) * r[1:].var()
+    upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
     acf_band = [upp_band * stat for stat in stats]
 
-    plt.fill_between(np.arange(1, max_lag+1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
-    plt.plot((0, max_lag+1), (0, 0), color='black')
+    plt.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
+    plt.plot((0, max_lag + 1), (0, 0), color='black')
 
     plt.show()

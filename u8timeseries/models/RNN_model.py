@@ -1,19 +1,20 @@
-import numpy as np
 import os
-import re
-from glob import glob
-import shutil
 import pickle
+import re
+import shutil
+from glob import glob
+from typing import List, Optional, Dict, Union
+
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from typing import List, Optional, Dict, Union
 
+from .autoregressive_model import AutoRegressiveModel
+from ..custom_logging import raise_if_not, get_logger, raise_log
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
-from ..custom_logging import raise_if_not, get_logger, raise_log
-from .. import AutoRegressiveModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
@@ -203,10 +204,10 @@ class RNNModel(AutoRegressiveModel):
                 instance = cls(**kws)
             except (TypeError, ValueError) as e:
                 raise_log(ValueError('Error when building the optimizer or learning rate scheduler;'
-                                 'please check the provided class and arguments'
-                                 '\nclass: {}'
-                                 '\narguments (kwargs): {}'
-                                 '\nerror:\n{}'.format(cls, kws, e)),
+                                     'please check the provided class and arguments'
+                                     '\nclass: {}'
+                                     '\narguments (kwargs): {}'
+                                     '\nerror:\n{}'.format(cls, kws, e)),
                           logger)
             return instance
 
@@ -398,7 +399,7 @@ class RNNModel(AutoRegressiveModel):
         """
 
         checklist = glob(os.path.join(folder, "checkpoint_*"))
-        checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
+        checklist = sorted(checklist, key=lambda x: float(re.findall('(\\d+)', x)[-1]))
         filename = 'checkpoint_{0}.pth.tar'.format(epoch)
         os.makedirs(folder, exist_ok=True)
         filename = os.path.join(folder, filename)
@@ -414,7 +415,7 @@ class RNNModel(AutoRegressiveModel):
             best_name = os.path.join(folder, 'model_best_{0}.pth.tar'.format(epoch))
             shutil.copyfile(filename, best_name)
             checklist = glob(os.path.join(folder, "model_best_*"))
-            checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
+            checklist = sorted(checklist, key=lambda x: float(re.findall('(\\d+)', x)[-1]))
             if len(checklist) >= 2:
                 # remove older files
                 for chkpt in checklist[:-1]:

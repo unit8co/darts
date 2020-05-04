@@ -14,7 +14,7 @@ and combine the predictions of several models and external regressors.
 `pmdarima` is currently not supported on conda which means we need to reinstall it through pip
 
     conda env create -f conda_recipe/environment.yml
-    conda install -c conda-forge -c alkaline-ml --name u8timeseries-dev --file requirements/main.txt
+    conda install -c conda-forge -c alkaline-ml -c pytorch --name u8timeseries-dev --file requirements/main.txt
     # here install any additional dev requirements from the other requirements/*.txt files
     source activate u8timeseries-dev
     pip install "pmdarima>=1.5.3"
