@@ -60,16 +60,18 @@ def find_relevant_timestamp_attributes(series: TimeSeries):
     relevant_attributes = set()
     r = acf(series.values())
 
-    if (type(series.freq()) == pd.tseries.offsets.Day):
+    if (type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
+        # check for yearly seasonality
+        if (check_approximate_seasonality(series, 12, 1, 0)):
+            relevant_attributes.add('month')
+    elif (type(series.freq()) == pd.tseries.offsets.Day):
         # check for yearly seasonality
         if (check_approximate_seasonality(series, 365, 5, 20)):
             relevant_attributes.update({'month', 'day'})
         # check for monthly seasonality
         elif (check_approximate_seasonality(series, 30, 2, 2)):
             relevant_attributes.add('day')
-    elif (type(series.freq()) == pd.tseries.offsets.Hour):
-        pass
-        # TODO: add other seasonality cases
+    # TODO: add other seasonality cases
 
     logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
     return relevant_attributes
@@ -159,20 +161,21 @@ class FFT(AutoRegressiveModel):
 
         # determine trend
         if (self.trend):
-            trend_coefficients = np.polyfit(range(len(self.training_series)), series.values(), self.trend_poly_degree)
+            trend_coefficients = np.polyfit(range(len(series)), series.values(), self.trend_poly_degree)
             self.trend = np.poly1d(trend_coefficients)
         else:
             self.trend = lambda x: 0
 
-        # crop training set to match the seasonality of the first prediction point
-        if (self.automatic_matching): self.required_matches = find_relevant_timestamp_attributes(series)
-        self.cropped_series = crop_to_match_seasons(series, required_matches=self.required_matches)
-
         # subtract trend
-        detrended_values = self.cropped_series.values() - self.trend(range(len(series) - len(self.cropped_series), len(series)))
+        detrended_values = series.values() - self.trend(range(len(series)))
+        detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
+
+        # crop training set to match the seasonality of the first prediction point
+        if (self.automatic_matching): self.required_matches = find_relevant_timestamp_attributes(detrended_series)
+        cropped_series = crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
 
         # perform dft
-        self.fft_values = np.fft.fft(detrended_values)
+        self.fft_values = np.fft.fft(cropped_series.values())
 
         # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of reduntantly sorting the whole array
