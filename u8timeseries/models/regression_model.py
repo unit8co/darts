@@ -81,7 +81,9 @@ class RegressionModel(ABC):
         """ Computes the time series of residuals of this model on the training time series
 
         The residuals are computed as
+
         .. math:: z_t := y_t - \\hat{y}_t,
+
         where :math:`y_t` is the actual target time series over the training set,
         and :math:`\\hat{y}_t` is the time series of predicted targets, over the training set.
 

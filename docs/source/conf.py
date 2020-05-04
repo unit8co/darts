@@ -62,7 +62,7 @@ language = 'en'
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',
     '**/modules.rst', '**/u8timeseries.tests.*',
-    '**/u8timeseries.utils.*', '**/*custom_logging.rst'
+    '**/*custom_logging.rst'
 ]
 
 

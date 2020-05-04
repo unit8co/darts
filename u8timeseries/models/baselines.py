@@ -37,17 +37,6 @@ class NaiveMean(ForecastingModel):
 
 
 class NaiveSeasonal(ForecastingModel):
-    """ Naive Seasonal
-
-    A baseline model that always predict value of `K` time steps ago.
-
-    So :math:`\\hat{y}_{t+N} = y_{t-k}
-
-    More precisely, at last know time value t, the prediction for t + i is given by the value at time t - k + i.
-
-    :param k: An integer, determines how far to fetch the prediction value.
-    """
-
     def __init__(self, K: int = 1):
         """ Naive Seasonal Model
 

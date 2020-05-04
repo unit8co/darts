@@ -35,7 +35,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 # TODO add batch norm
-class RNNModule(nn.Module):
+class _RNNModule(nn.Module):
     def __init__(self,
                  name: str,
                  input_size: int,
@@ -81,7 +81,7 @@ class RNNModule(nn.Module):
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
-        super(RNNModule, self).__init__()
+        super(_RNNModule, self).__init__()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
@@ -130,9 +130,9 @@ class RNNModel(ForecastingModel):
                  input_length: int = 12,
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
-                 hidden_fc_size: List = None,
+                 hidden_fc_sizes: Optional[List] = None,
                  dropout: float = 0.,
-                 batch_size: int = None,
+                 batch_size: int = 32,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -144,62 +144,67 @@ class RNNModel(ForecastingModel):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
-        """
+        """ Recurrent Neural Network Model (RNNs).
+
+        This class provides three variants of RNNs:
+
+        * Vanilla RNN
+
+        * LSTM
+
+        * GRU
 
         Parameters
         ----------
         model
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
+            or a PyTorch module with the same specifications as
+            `u8timeseries.models.rnn_model.RNNModule`.
         output_length
+            Number of time steps to be output by the RNN module.
         input_length
+            Number of past time steps that are fed to the RNN module.
         hidden_size
+            Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
-        hidden_fc_size
+            Number of layers in the RNN module.
+        hidden_fc_sizes
+            Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
+            Fraction of neurons afected by Dropout.
         batch_size
+            Number of time series (input and output sequences) used in each training pass.
         n_epochs
+            Number of epochs over which to train the model.
         optimizer_cls
+            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`)
+            for specifying a learning rate. Otherwise the default values of the selected `optimizer_cls`
+            will be used.
         lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            to using a constant learning rate.
         lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer.
         loss_fn
+            PyTorch loss function used for training (default: `torch.nn.MSELoss()`).
         model_name
+            Name of the model. Used for creating the checkpoints and saving tensorboard data.
         work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
         log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            `[work_dir]/.u8timeseries/runs/`.
         nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            `TimeSeries` is passed to the `fit()` method).
         torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
         """
 
-        """
-        Implementation of different RNNs for forecasting. It is recommended to scale the time series
-        (e.g. by using a [u8timeseries.preprocessing.transformer.Transformer] beforehand.
-
-        :param model: Either a string representing the kind of RNN module ('RNN' for vanilla RNN, 'GRU' or 'LSTM'),
-                      or custom PyTorch nn.Module instance, with same inputs/outputs as
-                      [u8timeseries.models.RNN_models.RNN].
-        :param output_length: Number of time steps to predict.
-                              Must be consistent with the module output length if a nn.Module is specified.
-        :param input_length: number of previous time stamps taken into account by the model.
-        :param hidden_size: size for feature maps for each RNN layer (h_n) (unnecessary if module given)
-        :param n_rnn_layers: number of RNN layers (unnecessary if module given)
-        :param hidden_fc_size: size of hidden layers for the fully connected part (unnecessary if module given)
-        :param dropout: percent of neuron dropped in RNN hidden layers (unnecessary if module given)
-        :param batch_size: number of time series (input and output sequences) used in each training pass
-        :param n_epochs: number of epochs to train the model
-        :param optimizer_cls: the type of the PyTorch optimizer (default: torch.optim.Adam)
-        :param optimizer_kwargs: keyword arguments for the PyTorch optimizer.
-        :param lr_scheduler_cls: optionally, the type of the PyTorch learning rate scheduler (default: None).
-        :param lr_scheduler_kwargs: keyword arguments for the PyTorch learning rate scheduler.
-        :param loss_fn: PyTorch loss function used for training (default: torch.nn.MSELoss()).
-        :param model_name: name of the model. Used for creating/using the checkpoints and tensorboard directories.
-        :param work_dir: Path of the working directory, where to save checkpoints and Tensorboard summaries.
-                         (default: current working directory).
-        :param log_tensorboard: if True, use Tensorboard to log the different parameters. The logs will be located in:
-                       `[work_dir]/.u8timeseries/runs/`.
-        :param nr_epochs_val_period: Number of epochs to wait before evaluating the validation loss (if a validation
-                                     TimeSeries is passed to the fit() method).
-        :param torch_device_str: Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-                                 is available, otherwise "cpu").
-        """
         super().__init__()
 
         if torch_device_str is None:
@@ -214,10 +219,10 @@ class RNNModel(ForecastingModel):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model in ['RNN', 'LSTM', 'GRU']:
-            hidden_fc_size = [] if hidden_fc_size is None else hidden_fc_size
-            self.model = RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
-                                   num_layers=n_rnn_layers, output_length=output_length,
-                                   num_layers_out_fc=hidden_fc_size, dropout=dropout)
+            hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
+            self.model = _RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
+                                    num_layers=n_rnn_layers, output_length=output_length,
+                                    num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
             self.model = model
         raise_if_not(isinstance(self.model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
@@ -267,20 +272,23 @@ class RNNModel(ForecastingModel):
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False) -> None:
-        """
-        :param series: The training time series
-        :param val_series: Optionally, a validation time series that will
-                           be used to compute validation loss throughout training
+        """ Fit method for RNNs
+
+        Parameters
+        ----------
+        series
+            The training time series
+        val_series
+            Optionally, a validation time series, which will be used to compute the validation loss
+            throughout training and keep track of the best performing models.
+        verbose
+            Optionally, whether to print progress.
         """
 
         super().fit(series)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
-
-        if self.batch_size is None:
-            self.batch_size = len(series) // 10
-            print('No batch size set. Using: {}'.format(self.batch_size))
 
         # Prepare training data:
         dataset = TimeSeriesDataset1D(series, self.seq_len, self.output_length)
@@ -321,10 +329,6 @@ class RNNModel(ForecastingModel):
             tb_writer.close()
 
     def predict(self, n: int) -> TimeSeries:
-        """
-        :return: A TimeSeries containing the `n` next points, starting after the end of the training time series.
-        """
-
         super().predict(n)
 
         scaled_series = self.training_series.values()[-self.seq_len:]
@@ -470,10 +474,21 @@ class RNNModel(ForecastingModel):
         Load the model from the given checkpoint.
         if file is not given, will try to restore the most recent checkpoint.
 
-        :param model_name: the name of the model (used to retrieve the checkpoints folder's name)
-        :param work_dir: working directory (containing the checkpoints folder). Defaults to CWD.
-        :param filename: the name of the checkpoint file. If None, use the most recent one.
-        :param best: if True, will retrieve the best model instead of the most recent one.
+        Parameters
+        ----------
+        model_name
+            The name of the model (used to retrieve the checkpoints folder's name).
+        work_dir
+            Working directory (containing the checkpoints folder). Defaults to current working directory.
+        filename
+            The name of the checkpoint file. If not specified, use the most recent one.
+        best
+            If set, will retrieve the best model (according to validation loss) instead of the most recent one.
+
+        Returns
+        -------
+        RNNModel
+            The corresponding trained `RNNModel`.
         """
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
