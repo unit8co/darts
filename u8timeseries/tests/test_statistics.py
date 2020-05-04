@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from ..models.statistics import check_seasonality
+from ..utils.statistics import check_seasonality
 
 
 class TimeSeriesTestCase(unittest.TestCase):

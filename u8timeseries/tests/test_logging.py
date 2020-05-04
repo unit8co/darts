@@ -5,7 +5,7 @@ import re
 from testfixtures import LogCapture
 
 from ..timeseries import TimeSeries
-from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
+from ..utils.timeseries_generation import TimeSeriesGenerator as tg
 from ..models.theta import Theta
 from ..custom_logging import raise_log, raise_if_not, time_log, get_logger
 
@@ -78,7 +78,7 @@ class LoggingTestCase(unittest.TestCase):
 
     def test_time_log(self):
         # test time log decorator log message when running theta model
-        ts = constant_timeseries(length=100)
+        ts = tg.constant_timeseries(length=100)
         model = Theta()
         with LogCapture() as lc:
             model.fit(ts)
