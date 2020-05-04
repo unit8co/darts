@@ -128,7 +128,7 @@ jobs:
 
       - name: "7. Bump version"
         run: |
-          bump2version --current-version dev --new-version ${{ steps.bump_dry.outputs.new_tag }}
+          bump2version --current-version dev --new-version ${{ steps.bump_dry.outputs.new_tag }} patch
 
       - name: "8. Commit new version"
         uses: stefanzweifel/git-auto-commit-action@v4.1.6
