@@ -1,3 +1,8 @@
+"""
+List of statistics.
+-------------------
+"""
+
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_log, get_logger
 import numpy as np
@@ -108,7 +113,7 @@ def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str
     :return: A tuple (trend, seasonal) of TimeSeries containing the trend and seasonality respectively.
     """
 
-    decomp = seasonal_decompose(ts.pd_series(), freq=freq, model=model, extrapolate_trend='freq')
+    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model, extrapolate_trend='freq')
 
     season = TimeSeries.from_times_and_values(ts.time_index(), decomp.seasonal)
     trend = TimeSeries.from_times_and_values(ts.time_index(), decomp.trend)

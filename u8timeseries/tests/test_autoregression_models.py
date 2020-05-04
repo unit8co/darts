@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
+import logging
 
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
@@ -36,6 +37,10 @@ class AutoregressionModelsTestCase(unittest.TestCase):
 
     # maximum error values for baselines
     max_mape_baseline = 40
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_models_runnability(self):
         for model in (self.models + self.baseline_models):

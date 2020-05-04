@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
+import logging
 
 from ..timeseries import TimeSeries
 
@@ -14,6 +15,10 @@ class TimeSeriesTestCase(unittest.TestCase):
     series1: TimeSeries = TimeSeries(pd_series1)
     series2: TimeSeries = TimeSeries(pd_series1, pd_series2, pd_series3)
     series3: TimeSeries = TimeSeries(pd_series2)
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_creation(self):
         with self.assertRaises(ValueError):
@@ -174,27 +179,27 @@ class TimeSeriesTestCase(unittest.TestCase):
     def test_intersect(self):
         seriesA = TimeSeries(pd.Series(range(2, 8), index=pd.date_range('20130102', '20130107')))
 
-        seriesB = self.series1.intersect(seriesA)
+        seriesB = self.series1.slice_intersect(seriesA)
         self.assertEqual(seriesB.start_time(), pd.Timestamp('20130102'))
         self.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
 
         # The same, with CI
-        seriesC = self.series2.intersect(seriesA)
+        seriesC = self.series2.slice_intersect(seriesA)
         self.assertEqual(seriesC.conf_lo_pd_series().index[0], pd.Timestamp('20130102'))
         self.assertEqual(seriesC.conf_hi_pd_series().index[-1], pd.Timestamp('20130107'))
 
         # Outside of range
-        seriesD = self.series1.intersect(TimeSeries(pd.Series(range(6, 13),
+        seriesD = self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
                                                               index=pd.date_range('20130106', '20130112'))))
         self.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
         self.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
         with self.assertRaises(ValueError):
-            self.series1.intersect(TimeSeries(pd.Series(range(6, 13),
+            self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
                                                         index=pd.date_range('20130116', '20130122'))))
         with self.assertRaises(ValueError):
-            self.series1.intersect(TimeSeries(pd.Series(range(9, 13),
+            self.series1.slice_intersect(TimeSeries(pd.Series(range(9, 13),
                                                         index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
@@ -396,7 +401,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         with self.assertRaises(IndexError):
             self.series1[pd.date_range('19990101', '19990201')]
 
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.series1['19990101']
 
         with self.assertRaises(IndexError):
