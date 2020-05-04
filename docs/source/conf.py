@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'u8timeseries'
 copyright = '2020, Unit8'
 author = 'Unit8'
-version = 'latest'
+version = 'dev'
 
 
 # -- General configuration ---------------------------------------------------
