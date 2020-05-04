@@ -2,7 +2,7 @@
 
 package:
   name: "u8timeseries"
-  version: {{ data.get('version').split('-', 1)[0] }}
+  version: "dev"
 
 source:
   # root folder, not the package
