@@ -2,7 +2,6 @@ from u8timeseries.timeseries import TimeSeries
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Tuple, List
-from scipy.interpolate import interp1d
 
 
 def na_ratio(ts: 'TimeSeries') -> float:

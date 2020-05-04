@@ -4,7 +4,7 @@ from datetime import datetime
 import pathlib
 import time
 
-def get_logger(name):
+def get_logger(name: str, handler=logging.StreamHandler()):
     """
     Internally calls the logging.getLogger function with the 'name' argument to create or 
     retrieve a logger object. It is recommended to pass __name__ as argument when calling 
@@ -12,14 +12,14 @@ def get_logger(name):
     the messages appropriately.
 
     :param name: The name that gets passed to the logger.getLogger function.
+    :param handler: The handler instance to be added to the logger.
     :return: A logger instance with the given name.
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    stderr_handler = logging.StreamHandler()
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s | %(name)s | %(message)s')
-    stderr_handler.setFormatter(formatter)
-    logger.addHandler(stderr_handler)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     return logger
 
 def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
