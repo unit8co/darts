@@ -10,18 +10,24 @@ class ScalerWrapper:
     Wrapper class for using transformers / scalers (typically from scikit-learn) on TimeSeries data
     """
 
-    def __init__(self, transformer=MinMaxScaler(feature_range=(0, 1))):
+    def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1))):
+        """
+
+        Parameters
+        ----------
+        scaler
+        """
         def _raise():
             raise_log(ValueError(
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
-        if (not callable(getattr(transformer, "fit", None)) or
-            not callable(getattr(transformer, "transform", None)) or
-            not callable(getattr(transformer, "inverse_transform", None))):
+        if (not callable(getattr(scaler, "fit", None)) or
+            not callable(getattr(scaler, "transform", None)) or
+            not callable(getattr(scaler, "inverse_transform", None))):
                 _raise()
 
-        self.transformer = transformer
+        self.transformer = scaler
         self.train_series = None
         self._fit_called = False
 
