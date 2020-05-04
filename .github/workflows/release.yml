@@ -1,4 +1,4 @@
-name: u8timeseries workflow
+name: u8timeseries release workflow
 
 on:
   push:
