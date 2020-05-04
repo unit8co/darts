@@ -1,4 +1,5 @@
 from typing import NewType, List, Tuple
+
 from ..timeseries import TimeSeries
 
 # The features used by regressive model

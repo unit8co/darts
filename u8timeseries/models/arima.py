@@ -3,13 +3,15 @@ Implementation of an ARIMA model.
 ---------------------------------
 """
 
-from .autoregressive_model import AutoRegressiveModel
-from statsmodels.tsa.arima_model import ARMA, ARIMA
 from pmdarima import auto_arima
-from ..timeseries import TimeSeries
+from statsmodels.tsa.arima_model import ARMA, ARIMA
+
+from .autoregressive_model import AutoRegressiveModel
 from ..custom_logging import time_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
 
 class Arima(AutoRegressiveModel):
     """
