@@ -126,12 +126,20 @@ jobs:
         uses: elgohr/gcloud-login-action@0.2
         with:
           account_key: ${{ secrets.GCLOUD_KEY }}
+
       - name: "3. Determine current version"
         uses: endrjuskr/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
+
+      - name: "4. Determine docker tags"
+        run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
+
+      - name: "4-1. Determine docker tags for hotfix"
+        if: contains(github.event.head_commit.message, '#hotfix')
+        run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
 
       - name: "4. Build and publish docker to GCR"
         uses: elgohr/Publish-Docker-Github-Action@2.14
@@ -140,12 +148,13 @@ jobs:
           username: ${{ steps.gcloud.outputs.username }}
           password: ${{ steps.gcloud.outputs.password }}
           registry: eu.gcr.io
-          tags: "latest,${{ steps.bump_dry.outputs.tag }}"
+          tags: "${{ env.DOCKER_TAGS }}"
           cache: true
           buildoptions: "--compress -q"
 
   deploy-docs:
     runs-on: ubuntu-latest
+    if: !contains(github.event.head_commit.message, '#hotfix')
     needs: [release]
     steps:
       - name: "1. Clone repository"
