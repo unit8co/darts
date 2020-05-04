@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from .. import AutoRegressiveModel
+from .autoregressive_model import AutoRegressiveModel
 from ..custom_logging import raise_if_not, get_logger, raise_log
 from ..timeseries import TimeSeries
 from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
