@@ -121,7 +121,7 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -
 class FFT(AutoRegressiveModel):
 
     def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, 
-                 trend: bool = False, trend_poly_degree: int = 3, automatic_matching=False):
+                 trend: bool = None, trend_poly_degree: int = 3, automatic_matching=False):
         """
         Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
         with subsequent selection of the most significant frequencies to remove noise from the prediction.
@@ -160,9 +160,12 @@ class FFT(AutoRegressiveModel):
         super().fit(series)
 
         # determine trend
-        if (self.trend):
+        if (self.trend == 'poly'):
             trend_coefficients = np.polyfit(range(len(series)), series.values(), self.trend_poly_degree)
             self.trend = np.poly1d(trend_coefficients)
+        elif (self.trend == 'exp'):
+            trend_coefficients = np.polyfit(range(len(series)), np.log(series.values()), 1)
+            self.trend = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
         else:
             self.trend = lambda x: 0
 
