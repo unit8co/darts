@@ -43,6 +43,6 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
     def __getitem__(self, index):
         # TODO: Cast to PyTorch tensors on the right device in advance
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
-        data = self.series_values[idx:idx+self.data_length]
-        target = self.series_values[idx+self.data_length:idx+self.data_length+self.target_length]
+        data = self.series_values[idx:idx + self.data_length]
+        target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
         return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)

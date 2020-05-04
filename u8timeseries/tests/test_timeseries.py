@@ -192,17 +192,17 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # Outside of range
         seriesD = self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                              index=pd.date_range('20130106', '20130112'))))
+                                                          index=pd.date_range('20130106', '20130112'))))
         self.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
         self.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
         with self.assertRaises(ValueError):
             self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                        index=pd.date_range('20130116', '20130122'))))
+                                                    index=pd.date_range('20130116', '20130122'))))
         with self.assertRaises(ValueError):
             self.series1.slice_intersect(TimeSeries(pd.Series(range(9, 13),
-                                                        index=pd.date_range('20130109', '20130112'))))
+                                                    index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
         with self.assertRaises(ValueError):

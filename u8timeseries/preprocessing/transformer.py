@@ -17,10 +17,11 @@ class Transformer:
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
-        if (not callable(getattr(transformer, "fit", None)) or
-            not callable(getattr(transformer, "transform", None)) or
-            not callable(getattr(transformer, "inverse_transform", None))):
-                _raise()
+        if (not callable(getattr(transformer, "fit", None)) or  # noqa: W504
+            not callable(getattr(transformer, "transform", None)) or  # noqa: W504
+            not callable(getattr(transformer, "inverse_transform", None))
+        ):
+            _raise()
 
         self.transformer = transformer
         self.train_series = None

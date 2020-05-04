@@ -29,13 +29,11 @@ class TimeSeries:
         Within this class, TimeSeries type annotations are 'TimeSeries'; see:
         https://stackoverflow.com/questions/15853469/putting-current-class-as-return-type-annotation
         """
-    def __init__(self, series: pd.Series, confidence_lo: pd.Series = None, confidence_hi: pd.Series = None):
 
         # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
         raise_if_not(len(series) >= 3, 'Series must have at least three values.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
-
 
         self._series: pd.Series = series.sort_index()  # Sort by time
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
