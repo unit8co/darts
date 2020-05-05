@@ -1,6 +1,6 @@
 """
-Theta model
------------
+Theta Method
+------------
 """
 
 import statsmodels.tsa.holtwinters as hw
@@ -15,17 +15,24 @@ logger = get_logger(__name__)
 
 
 class Theta(ForecastingModel):
-    """
-    An implementation of the Theta method with variable value of the `theta` parameter.
-
-    :param theta: User-defined value for the theta parameter. Default to 0.
-    :param mode: Type of seasonality. Either `additive` or `multiplicative`.
-
-    .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
-    .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
-    .. todo: Try with something different than SES? They do that in the paper.
-    """
+    # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
+    # .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
+    # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(self, theta: int = 0, mode: str = 'multiplicative'):
+        """
+        An implementation of the Theta method with configurable `theta` parameter.
+
+        See `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf>`_ paper.
+
+        Parameters
+        ----------
+        theta
+            Value of the theta parameter. Defaults to 0. Cannot be set to 2.0.
+            If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
+        mode
+            Type of seasonality. Either "additive" or "multiplicative".
+        """
+
         super().__init__()
 
         self.model = None

@@ -10,21 +10,31 @@ from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from typing import Optional
 
 logger = get_logger(__name__)
 
 
 class StandardRegressionModel(RegressionModel):
 
-    def __init__(self, train_n_points, model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+    def __init__(self,
+                 train_n_points: Optional[int],
+                 model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
-        Simple regression based on other fit() predict() models (e.g., from sklearn).
+        Simple wrapper for regression models implementing a fit() predict() functions models
+        (e.g., scikit-learn regression).
 
-        :param train_n_points: The number of most recent points from the training time series that
-                               will be used to train the regressive model. If the provided training series
-                               contain fewer points, they will all be used for training.
-        :param model: The actual regressive model. It must contain fit() and predict() methods.
+        Parameters
+        ----------
+        train_n_points
+            The number of most recent points from the training (features and target) time series that
+            will be used to train the regression model. If this is `None`, or if the provided training series
+            contain fewer points, the maximum possible number of time steps will be used for training.
+        model
+            A regression model that implements `fit()` and `predict()` methods.
+            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
+
         super(StandardRegressionModel, self).__init__()
         if (not callable(getattr(model, "fit", None))):
             raise_log(Exception('Provided model object must have a fit() method', logger))
@@ -38,11 +48,17 @@ class StandardRegressionModel(RegressionModel):
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
 
-    def fit(self, train_features: List[TimeSeries], train_target: TimeSeries):
+    def fit(self,
+            train_features: List[TimeSeries],
+            train_target: TimeSeries):
+
+        if self.train_n_points is None:
+            train_n_points = min([len(s) for s in train_features] + [len(train_target)])
+
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
-        last_n_points_features = [s.slice_n_points_before(last_train_ts, self.train_n_points) for s in train_features]
-        last_n_points_target = train_target.slice_n_points_before(last_train_ts, self.train_n_points)
+        last_n_points_features = [s.slice_n_points_before(last_train_ts, train_n_points) for s in train_features]
+        last_n_points_target = train_target.slice_n_points_before(last_train_ts, train_n_points)
 
         super().fit(last_n_points_features, last_n_points_target)
 
