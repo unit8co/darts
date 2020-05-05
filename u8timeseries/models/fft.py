@@ -138,7 +138,7 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -
 class FFT(AutoRegressiveModel):
 
     def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, 
-                 trend: bool = None, trend_poly_degree: int = 3, automatic_matching=False):
+                 trend: bool = None, trend_poly_degree: int = 3):
         """
         Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
         with subsequent selection of the most significant frequencies to remove noise from the prediction.
@@ -149,18 +149,16 @@ class FFT(AutoRegressiveModel):
                                  of the training sequence and the first prediction point have matching 'phases'.
                                  If the series has a yearly seasonality, include 'month', if it has a monthly 
                                  seasonality, include 'day', etc.
+                                 If not set, or explicitly set to None, the model tries to find the pd.Timestamp 
+                                 attributes that are relevant for the seasonality automatically.
+                                 (Currently the supported seasonality periods are: yearly, monthly, weekly, daily, hourly)
         :param trend: Boolean value indicating whether or not detrending will be applied before performing DFT.
         :param trend_poly_degree: The degree of the polynomial that will be used for detrending.
-        :param automatic_matching: If set to True, the model tries to find the pd.Timestamp attributes that 
-                                   are relevant for the seasonality automatically.
-                                   (Currently the supported seasonality periods are: yearly, monthly)
-
         """
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
-        self.automatic_matching = automatic_matching
 
     def __str__(self):
         return 'FFT'
@@ -194,7 +192,7 @@ class FFT(AutoRegressiveModel):
         detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
-        if (self.automatic_matching): self.required_matches = find_relevant_timestamp_attributes(detrended_series)
+        if (self.required_matches is None): self.required_matches = find_relevant_timestamp_attributes(detrended_series)
         cropped_series = crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
 
         # perform dft
