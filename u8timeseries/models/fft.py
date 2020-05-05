@@ -90,7 +90,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries):
         if (_check_approximate_seasonality(series, 1440, 20, 50)):
             relevant_attributes.update({'hour', 'minute'})
         # check for hourly seasonality
-        if (_check_approximate_seasonality(series, 60, 4, 3)):
+        elif (_check_approximate_seasonality(series, 60, 4, 3)):
             relevant_attributes.add('minute')
 
     logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
@@ -140,7 +140,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
 
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, 
+    def __init__(self, nr_freqs_to_keep: Optional[int] = 10, required_matches: Optional[set] = None, 
                  trend: bool = None, trend_poly_degree: int = 3):
         """
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
