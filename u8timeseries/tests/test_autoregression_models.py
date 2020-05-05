@@ -15,7 +15,7 @@ class AutoregressionModelsTestCase(unittest.TestCase):
     forecasting_horizon = 5
 
     # dummy timeseries for runnability tests
-    np.random.seed(0)
+    np.random.seed(1)
     ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
 
     # real timeseries for functionality tests
@@ -23,52 +23,37 @@ class AutoregressionModelsTestCase(unittest.TestCase):
     ts_passengers = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
 
-    # default autoregressive models
+    # autoregressive models - maximum error tuples
     models = [
-        ExponentialSmoothing(), 
-        Prophet(),
-        Arima(1, 1, 1),
-        AutoArima(),
-        Theta()
+        (ExponentialSmoothing(), 4.8),
+        (Prophet(), 13.5),
+        (Arima(0, 1, 1), 17.1),
+        (Arima(1, 1, 1), 14.2),
+        (AutoArima(), 13.7),
+        (Theta(), 11.3),
+        (Theta(1), 20.2),
+        (Theta(3), 9.8),
+        (KthValueAgoBaseline(), 32.4),
     ]
-    baseline_models = [
-        KthValueAgoBaseline()
-    ]
-
-    # maximum error values for baselines
-    max_mape_baseline = 40
 
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
     def test_models_runnability(self):
-        for model in (self.models + self.baseline_models):
+        for model, _ in self.models:
             model.fit(self.ts_gaussian)
             prediction = model.predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
-    def test_baseline_models(self):
-        # for every baseline model, check whether its errors do not exceed the given bounds
-        for baseline in self.baseline_models:
-            baseline.fit(self.ts_pass_train)
-            prediction = baseline.predict(len(self.ts_pass_val))
-            self.assertTrue(mape(prediction, self.ts_pass_val) < self.max_mape_baseline, 
-                            "{} baseline model exceeded the maximum MAPE of {}.".format(str(baseline), self.max_mape_baseline))
-
-    def test_models_against_baselines(self):
-        # iterate through all baseline models and save best scores
-        best_mape = 100
-        for baseline in self.baseline_models:
-            baseline.fit(self.ts_pass_train)
-            prediction = baseline.predict(len(self.ts_pass_val))
-            best_mape = min(mape(prediction, self.ts_pass_val), best_mape)
-
-        # iterate through all models and check if they are at least as good as the baselines
-        for model in self.models:
+    def test_models_performance(self):
+        # for every model, check whether its errors do not exceed the given bounds
+        for model, max_mape in self.models:
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
-            self.assertTrue(mape(prediction, self.ts_pass_val) < best_mape, 
-                            "{} model performed worse than baseline.".format(str(model)))
+            current_mape = mape(prediction, self.ts_pass_val)
+            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}." \
+                            "with a MAPE of {}".format(str(model), max_mape, current_mape))
+
 
             

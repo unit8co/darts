@@ -32,6 +32,8 @@ def train_test_split(features, target, split_ts):
 
 class RegressionModelsTestCase(unittest.TestCase):
 
+    np.random.seed(1)
+
     # number of data points used for training
     regression_window = 5
 
@@ -56,9 +58,11 @@ class RegressionModelsTestCase(unittest.TestCase):
         # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_periodic as inputs
         train_f, train_t, test_f, test_t = train_test_split([self.ts_gaussian, self.ts_sum], self.ts_periodic,
                                                              pd.Timestamp('20010101'))
-        max_mape = 1
+        max_mape = 2.3
 
         for model in self.models:
             model.fit(train_f, train_t)
             prediction = model.predict(test_f)
-            self.assertTrue(mape(prediction, test_t) < max_mape, "{} model was not able to denoise data.".format(str(model)))
+            current_mape = mape(prediction, test_t)
+            self.assertTrue(current_mape < max_mape, "{} model was not able to denoise data." \
+                                 "A MAPE of {} was recorded.".format(str(model), current_mape))
