@@ -9,49 +9,51 @@ from ..utils import timeseries_generation as tg
 
 class FFTTestCase(unittest.TestCase):
 
+    def helper_relevant_attributes(self, freq, length, period_attributes_tuples):
+
+        # test random walk
+        random_walk_ts = tg.random_walk_timeseries(freq=freq, length=length)
+        self.assertEqual(find_relevant_timestamp_attributes(random_walk_ts), set())
+
+        for period, relevant_attributes in period_attributes_tuples:
+
+            # test seasonal period with no noise
+            seasonal_ts = tg.sine_timeseries(freq=freq, value_frequency=1/period, length=length)
+            self.assertEqual(find_relevant_timestamp_attributes(seasonal_ts), relevant_attributes,
+                             'failed to recognize season in non-noisy timeseries')
+
+            # test seasonal period with no noise
+            seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(freq=freq, length=length)
+            self.assertEqual(find_relevant_timestamp_attributes(seasonal_noisy_ts), relevant_attributes,
+                             'failed to recognize season in noisy timeseries')
+
+
     def test_find_relevant_timestamp_attributes(self):
 
         np.random.seed(0)
-        ts_length_1 = 1000
-        ts_length_2 = 150
 
+        # monthly frequency
+        self.helper_relevant_attributes('M', 150, [
+            (12, {'month'}),
+        ])
 
-        ### daily frequency ###
+        # daily frequency
+        self.helper_relevant_attributes('D', 1000, [
+            (365, {'month', 'day'}),
+            (30, {'day'}),
+            (7, {'weekday'})
+        ])
 
-        # random walk
-        random_walk_ts = tg.random_walk_timeseries(length=ts_length_1)
-        self.assertEqual(find_relevant_timestamp_attributes(random_walk_ts), set())
+        # hourly frequency
+        self.helper_relevant_attributes('H', 3000, [
+            (730, {'day', 'hour'}),
+            (168, {'weekday', 'hour'}),
+            (24, {'hour'})
+        ])
 
-        # yearly period with no noise 
-        yearly_ts = tg.sine_timeseries(value_frequency=1/365, length=ts_length_1)
-        self.assertEqual(find_relevant_timestamp_attributes(yearly_ts), {'month', 'day'})
-
-        # yearly period with noise 
-        yearly_noisy_ts = yearly_ts + tg.gaussian_timeseries(length=ts_length_1)
-        self.assertEqual(find_relevant_timestamp_attributes(yearly_noisy_ts), {'month', 'day'})
-
-        # monthly period with no noise
-        monthly_ts = tg.sine_timeseries(value_frequency=1/30, length=ts_length_1)
-        self.assertEqual(find_relevant_timestamp_attributes(monthly_ts), {'day'})
-
-        # monthly period with noise
-        monthly_noisy_ts = monthly_ts + tg.gaussian_timeseries(length=ts_length_1)
-        self.assertEqual(find_relevant_timestamp_attributes(monthly_noisy_ts), {'day'})
-
-
-        ### monthly frequency ###
-
-        # random walk
-        random_walk_ts = tg.random_walk_timeseries(freq='M', length=ts_length_2)
-        self.assertEqual(find_relevant_timestamp_attributes(random_walk_ts), set())
-
-        # yearly period with no noise
-        yearly_ts_2 = tg.sine_timeseries(freq='M', value_frequency=1/12, length=ts_length_2)
-        self.assertEqual(find_relevant_timestamp_attributes(yearly_ts_2), {'month'})
-
-        # yearly period with noise 
-        yearly_noisy_ts_2 = yearly_ts_2 + tg.gaussian_timeseries(freq='M', length=ts_length_2)
-        self.assertEqual(find_relevant_timestamp_attributes(yearly_noisy_ts_2), {'month'})
-
-        
+        # minutely frequency
+        self.helper_relevant_attributes('min', 5000, [
+            (1440, {'hour', 'minute'}),
+            (60, {'minute'}),
+        ])
 

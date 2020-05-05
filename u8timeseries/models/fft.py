@@ -69,7 +69,26 @@ def find_relevant_timestamp_attributes(series: TimeSeries):
         # check for monthly seasonality
         elif (check_approximate_seasonality(series, 30, 2, 2)):
             relevant_attributes.add('day')
-    # TODO: add other seasonality cases
+        # check for weekly seasonality
+        elif (check_approximate_seasonality(series, 7, 0, 0)):
+            relevant_attributes.add('weekday')
+    elif (type(series.freq()) == pd.tseries.offsets.Hour):
+        # check for monthly seasonality
+        if (check_approximate_seasonality(series, 730, 10, 30)):
+            relevant_attributes.update({'day', 'hour'})
+        # check for weekly seasonality
+        if (check_approximate_seasonality(series, 168, 3, 10)):
+            relevant_attributes.update({'weekday', 'hour'})
+        # check for daily seasonality
+        elif (check_approximate_seasonality(series, 24, 1, 1)):
+            relevant_attributes.add('hour')
+    elif (type(series.freq()) == pd.tseries.offsets.Minute):
+        # check for daily seasonality
+        if (check_approximate_seasonality(series, 1440, 20, 50)):
+            relevant_attributes.update({'hour', 'minute'})
+        # check for hourly seasonality
+        if (check_approximate_seasonality(series, 60, 4, 3)):
+            relevant_attributes.add('minute')
 
     logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
     return relevant_attributes
