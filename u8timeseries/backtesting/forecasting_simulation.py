@@ -57,7 +57,7 @@ def simulate_forecast_ar(series: 'TimeSeries',
 
     iterator = build_tqdm_iterator(pred_times, verbose)
 
-    logging.disable(logging.ERROR) # temporarily deactivate info and warning logs 
+    logging.disable(logging.ERROR)  # temporarily deactivate info and warning logs
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
 
@@ -65,7 +65,7 @@ def simulate_forecast_ar(series: 'TimeSeries',
         pred = model.predict(fcast_horizon_n)
         values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
-    logging.disable(logging.NOTSET) # restore logging
+    logging.disable(logging.NOTSET)  # restore logging
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
@@ -114,7 +114,7 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
 
     iterator = build_tqdm_iterator(pred_times, verbose)
 
-    logging.disable(logging.ERROR) # temporarily deactivate info and warning logs 
+    logging.disable(logging.ERROR)  # temporarily deactivate info and warning logs
     for pred_time in iterator:
         # build train/val series
         train_features = [s.drop_after(pred_time) for s in feature_series]
@@ -126,6 +126,6 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
         pred = model.predict(val_features)
         values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
-    logging.disable(logging.NOTSET) # restore logging
+    logging.disable(logging.NOTSET)  # restore logging
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))

@@ -1,7 +1,6 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, time_log, get_logger, raise_log
-from ..models.statistics import check_seasonality
+from ..custom_logging import time_log, get_logger, raise_log
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
@@ -31,7 +30,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     frac = 1 / 4
 
     # return False if there are not enough entries in the TimeSeries instance
-    if (len(series) < seasonality_period * (1 + frac)): 
+    if (len(series) < seasonality_period * (1 + frac)):
         return False
 
     # compute relevant autocorrelation values
@@ -126,7 +125,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     :required_matches: A set of pd.Timestamp attributes which will be used to choose the cropping point.
     :return: New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None): 
+    if (required_matches is None):
         return series
 
     first_ts = series._series.index[0]
@@ -214,7 +213,7 @@ class FFT(AutoRegressiveModel):
         detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
-        if (self.required_matches is None): 
+        if (self.required_matches is None):
             self.required_matches = _find_relevant_timestamp_attributes(detrended_series)
         cropped_series = _crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
 
@@ -224,7 +223,7 @@ class FFT(AutoRegressiveModel):
         # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array
         first_n = self.nr_freqs_to_keep
-        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): 
+        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)):
             first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
 
