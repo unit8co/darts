@@ -73,11 +73,14 @@ def _find_relevant_timestamp_attributes(series: TimeSeries):
         elif (_check_approximate_seasonality(series, 7, 0, 0)):
             relevant_attributes.add('weekday')
     elif (type(series.freq()) == pd.tseries.offsets.Hour):
+        # check for yearly seasonality
+        if (_check_approximate_seasonality(series, 8760, 100, 100)):
+            relevant_attributes.update({'month', 'day', 'hour'})
         # check for monthly seasonality
-        if (_check_approximate_seasonality(series, 730, 10, 30)):
+        elif (_check_approximate_seasonality(series, 730, 10, 30)):
             relevant_attributes.update({'day', 'hour'})
         # check for weekly seasonality
-        if (_check_approximate_seasonality(series, 168, 3, 10)):
+        elif (_check_approximate_seasonality(series, 168, 3, 10)):
             relevant_attributes.update({'weekday', 'hour'})
         # check for daily seasonality
         elif (_check_approximate_seasonality(series, 24, 1, 1)):
