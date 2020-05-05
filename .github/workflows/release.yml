@@ -1,0 +1,205 @@
+name: u8timeseries release workflow
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python ${{ matrix.python-version }}"
+          uses: actions/setup-python@v1
+          with:
+            python-version: ${{ matrix.python-version }}
+
+      - name: "3. Update pip"
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          restore-keys: |
+            tests-${{ runner.os }}-pip-
+
+      - name: "5. Install main and dev dependencies"
+        run: |
+          pip install -q .
+          pip install -q -r requirements/dev.txt
+
+      - name: "5. Run tests"
+        run: |
+          python -m unittest
+
+      - name: "6. Run linter"
+          run: |
+            flake8 --config=setup.cfg u8timeseries
+
+  release:
+    needs: [tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: '1'
+
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: "3. Update pip"
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            release-${{ runner.os }}-pip-
+
+      - name: "5. Install release dependencies"
+        run: |
+          pip install -q -r requirements/release.txt
+
+      - name: "6. Determine next version"
+        uses: endrjuskr/github-tag-action@master
+        id: bump_dry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INITIAL_VERSION: 0.0.2
+          DRY_RUN: true
+
+      - name: "7. Bump version"
+        run: |
+          bump2version --new-version ${{ steps.bump_dry.outputs.new_tag }} patch
+
+      - name: "8. Commit new version"
+        uses: stefanzweifel/git-auto-commit-action@v4.1.6
+        with:
+          commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
+          branch: master
+          commit_user_name: Unit8 Bot
+          commit_user_email: info@unit8.co
+
+      - name: "9. Publish new tag"
+        uses: endrjuskr/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
+
+      - name: "10. Create new release draft"
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump_dry.outputs.new_tag }}
+          release_name: Release ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          draft: true
+
+  deploy-docker:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Login to GCR"
+        id: gcloud
+        uses: elgohr/gcloud-login-action@0.2
+        with:
+          account_key: ${{ secrets.GCLOUD_KEY }}
+
+      - name: "3. Determine current version"
+        uses: endrjuskr/github-tag-action@master
+        id: bump_dry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: true
+
+      - name: "4. Determine docker tags"
+        run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
+
+      - name: "4-1. Determine docker tags for hotfix"
+        if: contains(github.event.head_commit.message, '#hotfix')
+        run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
+
+      - name: "4. Build and publish docker to GCR"
+        uses: elgohr/Publish-Docker-Github-Action@2.14
+        with:
+          name: eu.gcr.io/unit8-product/u8timeseries
+          username: ${{ steps.gcloud.outputs.username }}
+          password: ${{ steps.gcloud.outputs.password }}
+          registry: eu.gcr.io
+          tags: "${{ env.DOCKER_TAGS }}"
+          cache: true
+          buildoptions: "--compress -q"
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    if: !contains(github.event.head_commit.message, '#hotfix')
+    needs: [release]
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: "3. Update pip and install pandoc"
+        run: |
+          sudo apt-get install -y pandoc
+          python -m pip install --upgrade pip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            release-${{ runner.os }}-pip-
+
+      - name: "5. Install main and release dependencies"
+        run: |
+          pip install -q .
+          pip install -q -r requirements/release.txt
+
+      - name: "6. Copy examples"
+        run: |
+          make --directory ./docs copy-examples
+
+      - name: "7. Generate API documentation"
+        run: |
+          make --directory ./docs generate
+
+      - name: "8. Build documentation"
+        run: |
+          make --directory ./docs html
+
+      - name: "9. Publish documentation to gh-pages"
+        uses: s0/git-publish-subdir-action@v2.2.0
+        env:
+          REPO: self
+          BRANCH: gh-pages
+          FOLDER: docs/build/html
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

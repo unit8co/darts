@@ -15,5 +15,5 @@ from u8timeseries.models.theta import Theta
 from u8timeseries.preprocessing.transformer import Transformer
 from .timeseries import TimeSeries
 
-path = os.path.join(os.path.dirname(__file__), 'VERSION')
-__version__ = open(path, "r").read()
+__version__ = 'dev'
+

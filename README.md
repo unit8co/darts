@@ -1,6 +1,6 @@
-![u8timeseries](images/logo-72dpi.png "u8timeseries")
+![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
 
-![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/ci_workflow/badge.svg)
+![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/workflow/badge.svg)
 
 **u8timeseries** is a python library for easy manipulation and forecasting time series in python.
 It contains a variety of models, from classics such as ARIMA to neural networks.
@@ -19,6 +19,7 @@ pip install u8timeseries
 
 To run the example notebooks without installing, using Docker, you can also run: 
 ```
+cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
@@ -51,7 +52,7 @@ prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
-![example](images/example.png "example")
+![example](static/images/example.png "example")
 
 We invite you to go over the example notebooks in the `examples` directory.
 
