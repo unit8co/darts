@@ -140,8 +140,20 @@ class FFT(AutoRegressiveModel):
     def __init__(self, nr_freqs_to_keep: Optional[int] = None, required_matches: Optional[set] = None, 
                  trend: bool = None, trend_poly_degree: int = 3):
         """
-        Forecasting based on a discrete fourier transform using FFT of the (cropped and detrended) training sequence
-        with subsequent selection of the most significant frequencies to remove noise from the prediction.
+        This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
+        (controlled by the 'nr_freqs_to_keep' argument) and  inverse FFT, combined with the option to detrend 
+        the data (controlled by the 'trend' argument) and to crop the training sequence to full seasonal periods
+        (controlled by the 'required_matches' argument).
+
+        Examples:
+
+        FFT(nr_freqs_to_keep=10) 
+        - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
+          forecasting and expects no global trend to be present in the data
+
+        FFT(required_matches={'month'}, trend='exp')
+        - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
+          global trend, and it will not perform any frequency filtering
 
         :param nr_freqs_to_keep: The total number of frequencies that will be used for forecasting.
         :param required_matches: The attributes of pd.Timestamp that will be used to create a training
