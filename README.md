@@ -8,28 +8,14 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
-## install
+# Install
 
-### using conda
-`pmdarima` is currently not supported on conda which means we need to reinstall it through pip
-
-    conda env create -f conda_recipe/environment.yml
-    conda install -c conda-forge -c alkaline-ml -c pytorch --name u8timeseries-dev --file requirements/main.txt
-    # here install any additional dev requirements from the other requirements/*.txt files
-    source activate u8timeseries-dev
-    pip install "pmdarima>=1.5.3"
-    pip install --no-deps -e .
-    
-### pure pip
-This approach most likely requires other non-Python dependencies.
-
+From your favorite Python environment (3.6+), you can run:
 ```
-    pip install .
-    # install any additional dev requirements, e.g.:
-    pip install -r requirements/dev.txt
+pip install u8timeseries
 ```
 
-**Running the examples only without installing:**
+#### Running the examples only, without installing:
 
 To run the example notebooks without installing, using Docker, you can also run: 
 ```
@@ -37,10 +23,10 @@ cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
+This requires a Docker install.
 
-### docker
 
-## Example Usage
+# Example Usage
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
 ```python
 from u8timeseries import TimeSeries
@@ -70,17 +56,18 @@ plt.xlabel('Year')
 
 We invite you to go over the example notebooks in the `examples` directory.
 
-## Documentation
+# Documentation
 The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
-## List of Features
+# Features
 Currently, the library contains the following features: 
 
 **Forecasting Models:** 
 * Exponential smoothing, 
 * ARIMA & auto-ARIMA,
 * Facebook Prophet,
-* Theta method, 
+* Theta method,
+* FFT (Fast Fourier Transform)
 * Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).
 
 **Preprocessing:** Transformer tool for easily scaling / normalizing time series.
@@ -94,6 +81,6 @@ from R2-scores to Mean Absolute Scaled Error.
 (e.g., external regressors), using arbitrary regressive models.
 
 
-## Contribute
+# Contribute
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.
