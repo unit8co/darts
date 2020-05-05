@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -p 8888:8888 -it eu.gcr.io/unit8-product/u8timeseries:latest
+docker run -p 8888:8888 -it unit8/u8timeseries:latest
