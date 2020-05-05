@@ -1,6 +1,6 @@
 from .autoregressive_model import AutoRegressiveModel
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, time_log, get_logger
+from ..custom_logging import raise_if_not, time_log, get_logger, raise_log
 from ..models.statistics import check_seasonality
 import numpy as np
 import pandas as pd
@@ -9,8 +9,9 @@ from typing import List, Optional
 
 logger = get_logger(__name__)
 
-def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int, 
-                                  period_error_margin: int, max_seasonality_order: int) -> bool:
+
+def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
+                                   period_error_margin: int, max_seasonality_order: int) -> bool:
     """
     Analyzes the given TimeSeries instance for seasonality of the given period
     while taking into account potential noise of the autocorrelation function.
@@ -25,16 +26,17 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
                                   can exceed the acf computed over the interval described above.
     :return: Boolean value indicating whether the seasonality is significant given the parameters passed.
     """
-    # fraction of seasonality_period that will skipped when looking at acf values due to high 
+    # fraction of seasonality_period that will skipped when looking at acf values due to high
     # autocorrelation for small lags
-    frac = 1 / 4 
+    frac = 1 / 4
 
     # return False if there are not enough entries in the TimeSeries instance
-    if (len(series) < seasonality_period * (1 + frac)): return False
+    if (len(series) < seasonality_period * (1 + frac)): 
+        return False
 
     # compute relevant autocorrelation values
     r = acf(series.values(), nlags=int(seasonality_period * (1 + frac)))
-    
+
     # compute the approximate autocorrelation value for the given period
     left_bound = seasonality_period - period_error_margin
     right_bound = seasonality_period + period_error_margin
@@ -47,10 +49,11 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
 
     return order <= max_seasonality_order
 
+
 def _find_relevant_timestamp_attributes(series: TimeSeries):
     """
     Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes
-    in terms of the autocorrelation of their length within the series with the 
+    in terms of the autocorrelation of their length within the series with the
     goal of finding the periods of the seasonal trends present in the series.
 
     :param series: The TimeSeries instance to be analyzed.
@@ -96,6 +99,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries):
     logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
     return relevant_attributes
 
+
 def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """
     Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
@@ -107,6 +111,7 @@ def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, re
     :return: True if and only if 'ts_1' and 'ts_2' match in all attributes given in 'required_matches'.
     """
     return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
+
 
 def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
     """
@@ -121,7 +126,8 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     :required_matches: A set of pd.Timestamp attributes which will be used to choose the cropping point.
     :return: New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None): return series
+    if (required_matches is None): 
+        return series
 
     first_ts = series._series.index[0]
     freq = first_ts.freq
@@ -134,23 +140,24 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
         if _compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
             new_series = series.drop_before(curr_ts)
             return new_series
-    
+
     logger.warning("No matching timestamp could be found, returning original TimeSeries.")
     return series
 
+
 class FFT(AutoRegressiveModel):
 
-    def __init__(self, nr_freqs_to_keep: Optional[int] = 10, required_matches: Optional[set] = None, 
+    def __init__(self, nr_freqs_to_keep: Optional[int] = 10, required_matches: Optional[set] = None,
                  trend: bool = None, trend_poly_degree: int = 3):
         """
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
-        (controlled by the 'nr_freqs_to_keep' argument) and  inverse FFT, combined with the option to detrend 
+        (controlled by the 'nr_freqs_to_keep' argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the 'trend' argument) and to crop the training sequence to full seasonal periods
         (controlled by the 'required_matches' argument).
 
         Examples:
 
-        FFT(nr_freqs_to_keep=10) 
+        FFT(nr_freqs_to_keep=10)
         - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
           forecasting and expects no global trend to be present in the data
 
@@ -160,13 +167,13 @@ class FFT(AutoRegressiveModel):
 
         :param nr_freqs_to_keep: The total number of frequencies that will be used for forecasting.
         :param required_matches: The attributes of pd.Timestamp that will be used to create a training
-                                 sequence that is cropped at the beginning such that the first timestamp 
+                                 sequence that is cropped at the beginning such that the first timestamp
                                  of the training sequence and the first prediction point have matching 'phases'.
-                                 If the series has a yearly seasonality, include 'month', if it has a monthly 
+                                 If the series has a yearly seasonality, include 'month', if it has a monthly
                                  seasonality, include 'day', etc.
-                                 If not set, or explicitly set to None, the model tries to find the pd.Timestamp 
+                                 If not set, or explicitly set to None, the model tries to find the pd.Timestamp
                                  attributes that are relevant for the seasonality automatically.
-                                 (Currently the supported seasonality periods are: yearly, monthly, weekly, daily, hourly)
+                                 (Currently supported seasonality periods are: yearly, monthly, weekly, daily, hourly)
         :param trend: Boolean value indicating whether or not detrending will be applied before performing DFT.
         :param trend_poly_degree: The degree of the polynomial that will be used for detrending.
         """
@@ -207,16 +214,18 @@ class FFT(AutoRegressiveModel):
         detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
-        if (self.required_matches is None): self.required_matches = _find_relevant_timestamp_attributes(detrended_series)
+        if (self.required_matches is None): 
+            self.required_matches = _find_relevant_timestamp_attributes(detrended_series)
         cropped_series = _crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
 
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.values())
 
         # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
-        # by partitioning around the element with sorted index -nr_freqs_to_keep instead of reduntantly sorting the whole array
+        # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array
         first_n = self.nr_freqs_to_keep
-        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): first_n = len(self.fft_values)
+        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)): 
+            first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
 
         # set all other values in the frequency domain to 0
