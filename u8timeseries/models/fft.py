@@ -9,7 +9,7 @@ from typing import List, Optional
 
 logger = get_logger(__name__)
 
-def check_approximate_seasonality(series: TimeSeries, seasonality_period: int, 
+def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int, 
                                   period_error_margin: int, max_seasonality_order: int) -> bool:
     """
     Analyzes the given TimeSeries instance for seasonality of the given period
@@ -47,7 +47,7 @@ def check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
 
     return order <= max_seasonality_order
 
-def find_relevant_timestamp_attributes(series: TimeSeries):
+def _find_relevant_timestamp_attributes(series: TimeSeries):
     """
     Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes
     in terms of the autocorrelation of their length within the series with the 
@@ -60,40 +60,40 @@ def find_relevant_timestamp_attributes(series: TimeSeries):
 
     if (type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
         # check for yearly seasonality
-        if (check_approximate_seasonality(series, 12, 1, 0)):
+        if (_check_approximate_seasonality(series, 12, 1, 0)):
             relevant_attributes.add('month')
     elif (type(series.freq()) == pd.tseries.offsets.Day):
         # check for yearly seasonality
-        if (check_approximate_seasonality(series, 365, 5, 20)):
+        if (_check_approximate_seasonality(series, 365, 5, 20)):
             relevant_attributes.update({'month', 'day'})
         # check for monthly seasonality
-        elif (check_approximate_seasonality(series, 30, 2, 2)):
+        elif (_check_approximate_seasonality(series, 30, 2, 2)):
             relevant_attributes.add('day')
         # check for weekly seasonality
-        elif (check_approximate_seasonality(series, 7, 0, 0)):
+        elif (_check_approximate_seasonality(series, 7, 0, 0)):
             relevant_attributes.add('weekday')
     elif (type(series.freq()) == pd.tseries.offsets.Hour):
         # check for monthly seasonality
-        if (check_approximate_seasonality(series, 730, 10, 30)):
+        if (_check_approximate_seasonality(series, 730, 10, 30)):
             relevant_attributes.update({'day', 'hour'})
         # check for weekly seasonality
-        if (check_approximate_seasonality(series, 168, 3, 10)):
+        if (_check_approximate_seasonality(series, 168, 3, 10)):
             relevant_attributes.update({'weekday', 'hour'})
         # check for daily seasonality
-        elif (check_approximate_seasonality(series, 24, 1, 1)):
+        elif (_check_approximate_seasonality(series, 24, 1, 1)):
             relevant_attributes.add('hour')
     elif (type(series.freq()) == pd.tseries.offsets.Minute):
         # check for daily seasonality
-        if (check_approximate_seasonality(series, 1440, 20, 50)):
+        if (_check_approximate_seasonality(series, 1440, 20, 50)):
             relevant_attributes.update({'hour', 'minute'})
         # check for hourly seasonality
-        if (check_approximate_seasonality(series, 60, 4, 3)):
+        if (_check_approximate_seasonality(series, 60, 4, 3)):
             relevant_attributes.add('minute')
 
     logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
     return relevant_attributes
 
-def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
+def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """
     Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
     It returns true if and only if the two timestamps are matching in all given attributes.
@@ -105,7 +105,7 @@ def compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, req
     """
     return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
 
-def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
+def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
     """
     Crops a given TimeSeries 'series' that will be used as a training set in such
     a way that its first entry has a timestamp that matches the first timestamp
@@ -128,7 +128,7 @@ def crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -
     curr_ts = first_ts
     while (curr_ts < pred_ts - 4 * freq):
         curr_ts += freq
-        if compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
+        if _compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
             new_series = series.drop_before(curr_ts)
             return new_series
     
@@ -192,8 +192,8 @@ class FFT(AutoRegressiveModel):
         detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
-        if (self.required_matches is None): self.required_matches = find_relevant_timestamp_attributes(detrended_series)
-        cropped_series = crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
+        if (self.required_matches is None): self.required_matches = _find_relevant_timestamp_attributes(detrended_series)
+        cropped_series = _crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
 
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.values())

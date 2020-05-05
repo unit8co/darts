@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..models.fft import find_relevant_timestamp_attributes
+from ..models.fft import _find_relevant_timestamp_attributes
 from ..utils import timeseries_generation as tg
 
 
@@ -13,18 +13,18 @@ class FFTTestCase(unittest.TestCase):
 
         # test random walk
         random_walk_ts = tg.random_walk_timeseries(freq=freq, length=length)
-        self.assertEqual(find_relevant_timestamp_attributes(random_walk_ts), set())
+        self.assertEqual(_find_relevant_timestamp_attributes(random_walk_ts), set())
 
         for period, relevant_attributes in period_attributes_tuples:
 
             # test seasonal period with no noise
             seasonal_ts = tg.sine_timeseries(freq=freq, value_frequency=1/period, length=length)
-            self.assertEqual(find_relevant_timestamp_attributes(seasonal_ts), relevant_attributes,
+            self.assertEqual(_find_relevant_timestamp_attributes(seasonal_ts), relevant_attributes,
                              'failed to recognize season in non-noisy timeseries')
 
             # test seasonal period with no noise
             seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(freq=freq, length=length)
-            self.assertEqual(find_relevant_timestamp_attributes(seasonal_noisy_ts), relevant_attributes,
+            self.assertEqual(_find_relevant_timestamp_attributes(seasonal_noisy_ts), relevant_attributes,
                              'failed to recognize season in noisy timeseries')
 
 
