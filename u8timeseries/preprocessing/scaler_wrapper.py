@@ -16,6 +16,8 @@ class ScalerWrapper:
         scaler
             The transformer/scaler to transform the data.
             It must provide the `fit()`, `transform()` and `inverse_transform()` methods.
+            Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this
+            will scale all the values of a time series between 0 and 1.
         """
         def _raise():
             raise_log(ValueError(
