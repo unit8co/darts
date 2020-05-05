@@ -121,33 +121,26 @@ jobs:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
 
-      - name: "2. Login to GCR"
-        id: gcloud
-        uses: elgohr/gcloud-login-action@0.2
-        with:
-          account_key: ${{ secrets.GCLOUD_KEY }}
-
-      - name: "3. Determine current version"
+      - name: "2. Determine current version"
         uses: endrjuskr/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
 
-      - name: "4. Determine docker tags"
+      - name: "3. Determine docker tags"
         run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
 
-      - name: "4-1. Determine docker tags for hotfix"
+      - name: "3-1. Determine docker tags for hotfix"
         if: contains(github.event.head_commit.message, '#hotfix')
         run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
 
-      - name: "4. Build and publish docker to GCR"
+      - name: "4. Build and publish docker to docker hub"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
-          name: eu.gcr.io/unit8-product/u8timeseries
-          username: ${{ steps.gcloud.outputs.username }}
-          password: ${{ steps.gcloud.outputs.password }}
-          registry: eu.gcr.io
+          name: unit8/u8timeseries
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
           tags: "${{ env.DOCKER_TAGS }}"
           cache: true
           buildoptions: "--compress -q"
