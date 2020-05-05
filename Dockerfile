@@ -19,8 +19,10 @@ USER $NB_USER
 
 # u8ts specific deps
 RUN pip install pystan
-WORKDIR /deps
 ADD . /home/jovyan/work
+
 WORKDIR /home/jovyan/work
-RUN pip install .
+
+RUN pip install -q .
+RUN pip install -q -r requirements/dev.txt
 

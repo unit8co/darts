@@ -1,8 +1,13 @@
-from .regressive_model import RegressiveModel
-from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
+"""
+Implementation of an Simple Aggregation model.
+----------------------------------------------
+"""
 
 from typing import List
+
+from .regressive_model import RegressiveModel
+from ..custom_logging import time_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

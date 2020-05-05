@@ -1,24 +1,33 @@
-import statsmodels.tsa.holtwinters as hw
-from ..timeseries import TimeSeries
-from ..custom_logging import raise_log, time_log, get_logger
-from .autoregressive_model import AutoRegressiveModel
-import numpy as np
+"""
+Implementation of an Theta model.
+---------------------------------
+"""
+
 import math
+
+import numpy as np
+import statsmodels.tsa.holtwinters as hw
+
+from .autoregressive_model import AutoRegressiveModel
 from .statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
+from ..custom_logging import raise_log, time_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
 
 class Theta(AutoRegressiveModel):
     """
     An implementation of the Theta method with variable value of the `theta` parameter.
 
     :param theta: User-defined value for the theta parameter. Default to 0.
+    :param mode: Type of seasonality. Either `additive` or `multiplicative`.
 
     .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
     .. todo: Try with something different than SES? They do that in the paper.
     """
-    def __init__(self, theta: int = 0):
+    def __init__(self, theta: int = 0, mode: str = 'multiplicative'):
         super().__init__()
 
         self.model = None
@@ -29,6 +38,7 @@ class Theta(AutoRegressiveModel):
         self.is_seasonal = False
         self.seasonality = None
         self.season_period = 0
+        self.mode = mode
 
         # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
@@ -55,14 +65,19 @@ class Theta(AutoRegressiveModel):
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        self.is_seasonal, self.season_period = check_seasonality(ts, season_period)
+        if season_period is None:
+            max_lag = 24
+            self.is_seasonal, self.season_period = check_seasonality(ts, season_period, max_lag=max_lag)
+        else:
+            self.season_period = season_period
+            self.is_seasonal = True  # force the user-defined seasonality to be considered as a true seasonal period.
 
         new_ts = ts
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period)
-            new_ts = remove_seasonality(ts, self.season_period)
+            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.mode)
+            new_ts = remove_seasonality(ts, self.season_period, model=self.mode)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
@@ -98,6 +113,11 @@ class Theta(AutoRegressiveModel):
 
             replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
                                              math.ceil(n / self.season_period))[:n]
-            forecast *= replicated_seasonality
+            if self.mode in ['multiplicative', 'mul']:
+                forecast *= replicated_seasonality
+            elif self.mode in ['additive', 'add']:
+                forecast += replicated_seasonality
+            else:
+                raise ValueError("mode cannot be {}".format(self.mode))
 
         return self._build_forecast_series(forecast)

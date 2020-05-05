@@ -1,12 +1,20 @@
-from .regressive_model import RegressiveModel
-from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger
+"""
+Implementation of an Standard Regressive model.
+-----------------------------------------------
+"""
+
 from typing import List
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
+from .regressive_model import RegressiveModel
+from ..custom_logging import time_log, get_logger, raise_log
+from ..timeseries import TimeSeries
+
 logger = get_logger(__name__)
+
 
 class StandardRegressiveModel(RegressiveModel):
 
@@ -20,9 +28,9 @@ class StandardRegressiveModel(RegressiveModel):
         :param model: The actual regressive model. It must contain fit() and predict() methods.
         """
         super(StandardRegressiveModel, self).__init__()
-        if (not callable(getattr(model, "fit", None))):
+        if not callable(getattr(model, "fit", None)):
             raise_log(Exception('Provided model object must have a fit() method', logger))
-        if (not callable(getattr(model, "predict", None))):
+        if not callable(getattr(model, "predict", None)):
             raise_log(Exception('Provided model object must have a predict() method', logger))
 
         self.train_n_points = train_n_points

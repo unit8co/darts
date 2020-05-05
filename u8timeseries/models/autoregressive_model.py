@@ -1,11 +1,19 @@
+"""
+Implementation of an Auto-regressive model.
+-------------------------------------------
+"""
+
 from abc import ABC, abstractmethod
-import numpy as np
-import pandas as pd
-from ..timeseries import TimeSeries
-from ..custom_logging import get_logger
 from typing import Optional
 
+import numpy as np
+import pandas as pd
+
+from ..custom_logging import get_logger, raise_log
+from ..timeseries import TimeSeries
+
 logger = get_logger(__name__)
+
 
 class AutoRegressiveModel(ABC):
     """
@@ -33,14 +41,15 @@ class AutoRegressiveModel(ABC):
         """
         :return: A TimeSeries containing the `n` next points, starting after the end of the training time series.
         """
-        if (not self._fit_called):
+        if not self._fit_called:
             raise_log(Exception('fit() must be called before predict()'), logger)
 
     def _generate_new_dates(self, n: int):
         """
         Generate `n` new dates after the end of the training set
         """
-        new_dates = [self.training_series.time_index()[-1] + (i * self.training_series.freq()) for i in range(1, n+1)]
+        new_dates = [self.training_series.time_index()[-1] + (i * self.training_series.freq())
+                     for i in range(1, n + 1)]
         return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
 
     def _build_forecast_series(self, points_preds: np.ndarray,

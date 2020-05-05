@@ -1,8 +1,9 @@
-from u8timeseries.timeseries import TimeSeries
+from typing import Tuple, List
+
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Tuple, List
-from scipy.interpolate import interp1d
+
+from u8timeseries.timeseries import TimeSeries
 
 
 def na_ratio(ts: 'TimeSeries') -> float:
@@ -40,7 +41,7 @@ def nan_structure_visual(ts: 'TimeSeries', plot: bool = True) -> np.ndarray:
 
     nans = np.isnan(ts.values())
 
-    if plot: # TODO: find a better way to visualize NaN data
+    if plot:  # TODO: find a better way to visualize NaN data
         plt.scatter(np.arange(len(nans)), nans)
         plt.yticks([0, 1], ["Non-missing", "NaN"])
         plt.show()
@@ -100,7 +101,7 @@ def auto_fillna(ts: 'TimeSeries', first: float = None, last: float = None,
 
     # if last value is missing and `last` is specified, fill values
     if np.isnan(ts.values()[-1]) and last is not None:
-        ts_temp[arr[-1]+1:] = last
+        ts_temp[arr[-1] + 1:] = last
 
     # pandas interpolate wrapper, with chosen `method`
     ts_temp.interpolate(method=interpolate, inplace=True, limit_direction='both', limit=len(ts_temp), **kwargs)

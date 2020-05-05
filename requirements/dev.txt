@@ -1,0 +1,5 @@
+# tests
+testfixtures>=6.14.0
+
+# linters
+flake8>=3.7.9

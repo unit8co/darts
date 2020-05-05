@@ -1,17 +1,23 @@
-import pandas as pd
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from ..custom_logging import raise_if_not, get_logger
+"""
+Backtesting utilities
+---------------------
+
+This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
+on some validation sets, sliding over time.
+The functionality is here for AutoRegressiveModel, not yet for regressive models.
+
+These functions will probably rarely be useful, compared to the ones in "forecasting_simulation.py"
+"""
+
 from typing import Tuple, List, Callable, Any
 
-logger = get_logger(__name__)
+import pandas as pd
 
-""" This file contains some backtesting utilities, to evaluate user-defined functions (such as error functions)
-    on some validation sets, sliding over time.
-    The functionality is here for AutoRegressiveModel, not yet for regressive models.
-    
-    These functions will probably rarely be useful, compared to the ones in "forecasting_simulation.py"
-"""
+from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.timeseries import TimeSeries
+from ..custom_logging import raise_if_not, get_logger
+
+logger = get_logger(__name__)
 
 
 def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val: int,
@@ -29,7 +35,8 @@ def get_train_val_series(series: TimeSeries, start: pd.Timestamp, nr_points_val:
     """
 
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start != series.end_time(),
+                 'The provided start timestamp is the last timestamp of the time series', logger)
     # TODO: maybe also check that valset_duration >= series frequency
 
     curr_val_start: pd.Timestamp = start

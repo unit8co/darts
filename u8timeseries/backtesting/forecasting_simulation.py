@@ -1,37 +1,21 @@
-import pandas as pd
-import numpy as np
-from IPython import get_ipython
-from tqdm import tqdm, tqdm_notebook
-from u8timeseries.timeseries import TimeSeries
-import logging
-from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from u8timeseries.models.regressive_model import RegressiveModel
-from ..custom_logging import raise_if_not, get_logger
+"""
+Backtesting simulation
+----------------------
+"""
+
 from typing import List
 
+import numpy as np
+import pandas as pd
+
+from u8timeseries.models.autoregressive_model import AutoRegressiveModel
+from u8timeseries.models.regressive_model import RegressiveModel
+from u8timeseries.timeseries import TimeSeries
+from u8timeseries.utils import build_tqdm_iterator
+from ..custom_logging import raise_if_not, get_logger
+import logging
+
 logger = get_logger(__name__)
-
-def _build_iterator(iterable, verbose):
-    def _isnotebook():
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                return True  # Jupyter notebook or qtconsole
-            elif shell == 'TerminalInteractiveShell':
-                return False  # Terminal running IPython
-            else:
-                return False  # Other type (?)
-        except NameError:
-            return False  # Probably standard Python interpreter
-
-    if verbose:
-        if _isnotebook():
-            iterator = tqdm_notebook(iterable)
-        else:
-            iterator = tqdm(iterable)
-    else:
-        iterator = iterable
-    return iterator
 
 
 def simulate_forecast_ar(series: 'TimeSeries',
@@ -57,7 +41,8 @@ def simulate_forecast_ar(series: 'TimeSeries',
 
     """
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start != series.end_time(),
+                 'The provided start timestamp is the last timestamp of the time series', logger)
 
     last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
 
@@ -70,7 +55,7 @@ def simulate_forecast_ar(series: 'TimeSeries',
     values = []
     times = []
 
-    iterator = _build_iterator(pred_times, verbose)
+    iterator = build_tqdm_iterator(pred_times, verbose)
 
     logging.disable(logging.ERROR) # temporarily deactivate info and warning logs 
     for pred_time in iterator:
@@ -109,12 +94,14 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     :param verbose: whether to print progress
     :return:
     """
-    raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must ' \
-                                                                             'have the same time index', logger)
+    raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]),
+                 'All provided time series must have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start != target_series.end_time(),
+                 'The provided start timestamp is the last timestamp of the time series', logger)
 
-    last_pred_time = target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series else target_series.time_index()[-2]
+    trim = -fcast_horizon_n if trim_to_series else 0
+    last_pred_time = target_series.time_index()[trim - 2]
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -125,7 +112,7 @@ def simulate_forecast_regr(feature_series: List[TimeSeries],
     values = []
     times = []
 
-    iterator = _build_iterator(pred_times, verbose)
+    iterator = build_tqdm_iterator(pred_times, verbose)
 
     logging.disable(logging.ERROR) # temporarily deactivate info and warning logs 
     for pred_time in iterator:

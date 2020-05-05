@@ -1,9 +1,16 @@
-from .autoregressive_model import AutoRegressiveModel
-from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, time_log, get_logger
+"""
+Implementation of baseline model.
+-------------------------------------------
+"""
+
 import numpy as np
 
+from .autoregressive_model import AutoRegressiveModel
+from ..custom_logging import raise_if_not, time_log, get_logger
+from ..timeseries import TimeSeries
+
 logger = get_logger(__name__)
+
 
 class KthValueAgoBaseline(AutoRegressiveModel):
     """
@@ -26,7 +33,8 @@ class KthValueAgoBaseline(AutoRegressiveModel):
     @time_log(logger=logger)
     def fit(self, series: 'TimeSeries'):
         super().fit(series)
-        raise_if_not(len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K), logger)
+        raise_if_not(len(series) >= self.K,
+                     'The time series has to contain at least K={} points'.format(self.K), logger)
         self.last_k_vals = series.values()[-self.K:]
 
     def predict(self, n: int):
