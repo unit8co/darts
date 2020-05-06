@@ -36,6 +36,9 @@ class StandardRegressiveModel(RegressiveModel):
         self.train_n_points = train_n_points
         self.model = model
 
+    def __str__(self):
+        return 'StandardRegressiveModel: ' + str(self.model)
+
     @staticmethod
     def _get_features_matrix_from_series(features: List[TimeSeries]):
         return np.array([s.values() for s in features]).T  # (n_samples x n_features)
