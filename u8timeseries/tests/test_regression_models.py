@@ -1,11 +1,13 @@
 import unittest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape, overall_percentage_error, mase
 from u8timeseries import StandardRegressiveModel
+
 
 def train_test_split(features, target, split_ts):
     """

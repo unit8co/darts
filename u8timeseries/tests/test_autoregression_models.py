@@ -1,13 +1,16 @@
-import unittest
-import pandas as pd
-import numpy as np
 import logging
+import unittest
+
+import numpy as np
+import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape, overall_percentage_error, mase
 from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, TimeSeries, Arima, AutoArima
 from u8timeseries.models.theta import Theta
+from ..models.fft import FFT
+from ..models.RNN_model import RNNModel
 
 class AutoregressionModelsTestCase(unittest.TestCase):
 
@@ -33,6 +36,7 @@ class AutoregressionModelsTestCase(unittest.TestCase):
         (Theta(), 11.3),
         (Theta(1), 20.2),
         (Theta(3), 9.8),
+        (FFT(trend='poly'), 11.4),
         (KthValueAgoBaseline(), 32.4),
     ]
 
