@@ -6,11 +6,11 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
-from ..metrics import mape, overall_percentage_error, mase
-from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, TimeSeries, Arima, AutoArima
+from ..metrics import mape
+from u8timeseries import Prophet, KthValueAgoBaseline, ExponentialSmoothing, Arima, AutoArima
 from u8timeseries.models.theta import Theta
 from ..models.fft import FFT
-from ..models.RNN_model import RNNModel
+
 
 class AutoregressionModelsTestCase(unittest.TestCase):
 
@@ -56,8 +56,5 @@ class AutoregressionModelsTestCase(unittest.TestCase):
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}." \
+            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
                             "with a MAPE of {}".format(str(model), max_mape, current_mape))
-
-
-            

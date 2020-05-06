@@ -3,9 +3,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
-from ..metrics import mape, overall_percentage_error, mase
+from ..metrics import mape
 from u8timeseries import StandardRegressiveModel
 
 
@@ -48,7 +47,7 @@ class RegressionModelsTestCase(unittest.TestCase):
     models = [
         StandardRegressiveModel(regression_window)
     ]
-    
+
     def test_models_runnability(self):
         for model in self.models:
             # training and predicting on same features, since only runnability is tested
@@ -59,12 +58,12 @@ class RegressionModelsTestCase(unittest.TestCase):
     def test_models_denoising(self):
         # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_periodic as inputs
         train_f, train_t, test_f, test_t = train_test_split([self.ts_gaussian, self.ts_sum], self.ts_periodic,
-                                                             pd.Timestamp('20010101'))
+                                                            pd.Timestamp('20010101'))
         max_mape = 2.3
 
         for model in self.models:
             model.fit(train_f, train_t)
             prediction = model.predict(test_f)
             current_mape = mape(prediction, test_t)
-            self.assertTrue(current_mape < max_mape, "{} model was not able to denoise data." \
-                                 "A MAPE of {} was recorded.".format(str(model), current_mape))
+            self.assertTrue(current_mape < max_mape, "{} model was not able to denoise data."
+                            "A MAPE of {} was recorded.".format(str(model), current_mape))
