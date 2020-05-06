@@ -10,5 +10,6 @@ dist/
 examples/.ipynb_checkpoints/
 runs/
 .coverage
+htmlcov
 
 docs_env
