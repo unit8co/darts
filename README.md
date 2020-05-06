@@ -17,7 +17,7 @@ The following steps assume running inside a conda environment.
 If that's not possible, first follow the official instructions to install 
 [fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
 and [torch](https://pytorch.org/get-started/locally/), then skip to 
-[Install u8timeseries](#-install-u8timeseries)
+[Install u8timeseries](#install-u8timeseries)
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
