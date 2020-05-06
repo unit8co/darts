@@ -9,5 +9,6 @@ build/
 dist/
 examples/.ipynb_checkpoints/
 runs/
+.coverage
 
 docs_env

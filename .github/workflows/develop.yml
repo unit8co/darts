@@ -38,9 +38,10 @@ jobs:
           pip install -q .
           pip install -q -r requirements/dev.txt
 
-      - name: "5. Run tests"
+      - name: "5. Run tests with coverage"
         run: |
-          python -m unittest
+          coverage run -m unittest
+          coverage report -m --fail-under=80
 
       - name: "6. Run linter"
         run: |
