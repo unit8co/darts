@@ -16,7 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 from typing import List, Optional, Dict, Union
 
 from ..timeseries import TimeSeries
-from ..utils import build_tqdm_iterator
+from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import ForecastingModel
 
@@ -405,7 +405,7 @@ class RNNModel(ForecastingModel):
 
         best_loss = np.inf
 
-        iterator = build_tqdm_iterator(range(self.n_epochs), verbose)
+        iterator = _build_tqdm_iterator(range(self.n_epochs), verbose)
         for epoch in iterator:
             epoch = epoch
             total_loss = 0

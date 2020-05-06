@@ -9,7 +9,7 @@ from u8timeseries.timeseries import TimeSeries
 from u8timeseries.models.forecasting_model import ForecastingModel
 from u8timeseries.models.regression_model import RegressionModel
 
-from u8timeseries.utils import build_tqdm_iterator
+from u8timeseries.utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
 from typing import List, Iterable
 
@@ -74,7 +74,7 @@ def backtest_forecasting(series: TimeSeries,
     values = []
     times = []
 
-    iterator = build_tqdm_iterator(pred_times, verbose)
+    iterator = _build_tqdm_iterator(pred_times, verbose)
 
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
@@ -148,7 +148,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
     values = []
     times = []
 
-    iterator = build_tqdm_iterator(pred_times, verbose)
+    iterator = _build_tqdm_iterator(pred_times, verbose)
 
     for pred_time in iterator:
         # build train/val series
