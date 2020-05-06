@@ -11,7 +11,7 @@ from ..custom_logging import time_log, get_logger, execute_and_suppress_output
 import logging
 
 logger = get_logger(__name__)
-logger.level = logging.WARNING # set to warning to suppress prophet logs
+logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
 class Prophet(AutoRegressiveModel):
@@ -79,7 +79,6 @@ class Prophet(AutoRegressiveModel):
             self.model.add_country_holidays(self.country_holidays)
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
-
 
     def predict(self, n):
         super().predict(n)
