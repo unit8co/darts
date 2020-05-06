@@ -33,6 +33,8 @@ jobs:
 
       - name: "5. Install main and dev dependencies"
         run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install torch==1.5.0+cpu torchvision==0.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install -q .
           pip install -q -r requirements/dev.txt
 
@@ -72,6 +74,8 @@ jobs:
 
       - name: "5. Install main and release dependencies"
         run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install torch==1.5.0+cpu torchvision==0.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install -q .
           pip install -q -r requirements/release.txt
 
