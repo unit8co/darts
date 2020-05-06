@@ -54,6 +54,8 @@ class StandardRegressionModel(RegressionModel):
 
         if self.train_n_points is None:
             train_n_points = min([len(s) for s in train_features] + [len(train_target)])
+        else:
+            train_n_points = self.train_n_points
 
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
