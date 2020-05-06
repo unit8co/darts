@@ -7,9 +7,11 @@ import fbprophet
 import pandas as pd
 
 from u8timeseries.models.autoregressive_model import AutoRegressiveModel
-from ..custom_logging import time_log, get_logger
+from ..custom_logging import time_log, get_logger, execute_and_suppress_output
+import logging
 
 logger = get_logger(__name__)
+logger.level = logging.WARNING # set to warning to suppress prophet logs
 
 
 class Prophet(AutoRegressiveModel):
@@ -76,7 +78,8 @@ class Prophet(AutoRegressiveModel):
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
 
-        self.model.fit(in_df)
+        execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
+
 
     def predict(self, n):
         super().predict(n)
