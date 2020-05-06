@@ -15,12 +15,31 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
-## Install
 
-From your favorite Python environment (3.6+), you can run:
-```
-pip install u8timeseries
-```
+# Install
+## Preconditions
+Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+A Conda environment is thus recommended because it will handle all of those in one go.
+
+The following steps assume running inside a conda environment. 
+If that's not possible, first follow the official instructions to install 
+[fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
+and [torch](https://pytorch.org/get-started/locally/), then skip to 
+[Install u8timeseries](#install-u8timeseries)
+
+To create a conda environment for Python 3.7
+(after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
+
+    conda create --name <choose-your-name> python=3.7
+
+#### MAC
+    conda install -c conda-forge -c pytorch pip fbprophet pytorch
+
+#### Linux and Windows
+    conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
+    
+## Install u8timeseries
+    pip install u8timeseries
 
 #### Running the examples only, without installing:
 
