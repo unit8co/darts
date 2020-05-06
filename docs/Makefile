@@ -17,8 +17,14 @@ help:
 generate:
 	@sphinx-apidoc -e -f --templatedir templates -o source/generated_api ../u8timeseries
 
+readme:
+	@m2r ../README.md; mv ../README.rst source
+
 copy-examples:
 	@cp -r ../examples source
+
+copy-static:
+	@cp -r ../static source
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
