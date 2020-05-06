@@ -108,7 +108,7 @@ class SuppressStdoutStderr(object):
 def execute_and_suppress_output(function, logger, suppression_threshold_level, *args):
     """
     This function conditionally executes the given function with the given arguments
-    based on whether the current level of 'logger' is below, above or equal to 
+    based on whether the current level of 'logger' is below, above or equal to
     'suppression_threshold_level'. In the latter two cases, all printouts to stdout
     and stderr will be suppressed.
 
