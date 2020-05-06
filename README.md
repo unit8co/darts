@@ -28,7 +28,7 @@ To create a conda environment for Python 3.7
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
 
 #### Linux and Windows
-    conda install -c conda-forge -c pytorch pip fbprophet cpuonly pytorch
+    conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
     
 ## Install u8timeseries
     pip install u8timeseries
