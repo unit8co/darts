@@ -10,14 +10,14 @@ and combine the predictions of several models and external regressors.
 
 # Install
 ## Preconditions
-Our dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
 If that's not possible, first follow the official instructions to install 
 [fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
 and [torch](https://pytorch.org/get-started/locally/), then skip to 
-[Install u8timeseries](##Install u8timeseries)
+[Install u8timeseries](##-install-u8timeseries)
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
