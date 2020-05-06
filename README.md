@@ -1,12 +1,20 @@
+# u8timeseries: easy manipulation and forecasting
+
 ![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
 
-![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/workflow/badge.svg)
+[![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop?style=flat-square)
+![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg?style=flat-square)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/u8timeseries?label=docker&sort=date&style=flat-square)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/u8timeseries?style=flat-square)
+![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/u8timeseries?style=flat-square)
 
-**u8timeseries** is a python library for easy manipulation and forecasting time series in python.
+**u8timeseries** is a python library for easy manipulation and forecasting time series.
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
+
 
 # Install
 ## Preconditions
@@ -44,7 +52,7 @@ Then copy and paste the URL provided by the docker container into your browser t
 This requires a Docker install.
 
 
-# Example Usage
+## Example Usage
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
 ```python
 from u8timeseries import TimeSeries
@@ -74,10 +82,10 @@ plt.xlabel('Year')
 
 We invite you to go over the example notebooks in the `examples` directory.
 
-# Documentation
+## Documentation
 The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
-# Features
+## Features
 Currently, the library contains the following features: 
 
 **Forecasting Models:** 
@@ -99,6 +107,6 @@ from R2-scores to Mean Absolute Scaled Error.
 (e.g., external regressors), using arbitrary regressive models.
 
 
-# Contribute
+## Contribute
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.

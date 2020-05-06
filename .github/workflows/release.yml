@@ -191,11 +191,19 @@ jobs:
         run: |
           make --directory ./docs generate
 
-      - name: "8. Build documentation"
+      - name: "8. Copy static files"
+        run: |
+          make --directory ./docs copy-static
+
+      - name: "9. Build readme"
+        run: |
+          make --directory ./docs readme
+
+      - name: "10. Build documentation"
         run: |
           make --directory ./docs html
 
-      - name: "9. Publish documentation to gh-pages"
+      - name: "11. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self
