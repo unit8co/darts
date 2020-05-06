@@ -11,12 +11,12 @@ import shutil
 import pickle
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from typing import List, Optional, Dict, Union
 
 from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset1D, build_tqdm_iterator
+from ..utils import build_tqdm_iterator
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import ForecastingModel
 
@@ -32,6 +32,53 @@ def _get_checkpoint_folder(work_dir, model_name):
 
 def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
+
+
+class _TimeSeriesDataset1D(Dataset):
+
+    def __init__(self,
+                 series: TimeSeries,
+                 data_length: int = 1,
+                 target_length: int = 1):
+        """
+        A PyTorch Dataset from a univariate TimeSeries.
+        The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
+        where `data` is a 1-D sub-sequence of length [data_length] and target is the 1-D sub-sequence of length
+        [target_length] following it in the time series.
+
+        Parameters
+        ----------
+        series
+            The time series to be included in the dataset.
+        data_length
+            The length of the training sub-sequences.
+        target_length
+            The length of the target sub-sequences, starting at the end of the training sub-sequence.
+        """
+
+        self.series_values = series.values()
+
+        # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
+        self.len_series = len(series)
+        self.data_length = len(series) - 1 if data_length is None else data_length
+        self.target_length = target_length
+
+        raise_if_not(self.data_length > 0,
+                     "The input sequence length must be positive. It is {}".format(self.data_length),
+                     logger)
+        raise_if_not(self.target_length > 0,
+                     "The output sequence length must be positive. It is {}".format(self.target_length),
+                     logger)
+
+    def __len__(self):
+        return self.len_series - self.data_length - self.target_length + 1
+
+    def __getitem__(self, index):
+        # TODO: Cast to PyTorch tensors on the right device in advance
+        idx = index % (self.len_series - self.data_length - self.target_length + 1)
+        data = self.series_values[idx:idx + self.data_length]
+        target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
+        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
 
 
 # TODO add batch norm
@@ -291,7 +338,7 @@ class RNNModel(ForecastingModel):
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data:
-        dataset = TimeSeriesDataset1D(series, self.seq_len, self.output_length)
+        dataset = _TimeSeriesDataset1D(series, self.seq_len, self.output_length)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
         raise_if_not(len(train_loader) > 0,
@@ -300,7 +347,7 @@ class RNNModel(ForecastingModel):
 
         # Prepare validation data:
         if val_series is not None:
-            val_dataset = TimeSeriesDataset1D(val_series, self.seq_len, self.output_length)
+            val_dataset = _TimeSeriesDataset1D(val_series, self.seq_len, self.output_length)
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
             raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
