@@ -1,37 +1,50 @@
 """
-List of statistics.
--------------------
+Time Series Statistics
+----------------------
 """
 
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.logging import raise_log, get_logger
+from ..timeseries import TimeSeries
+from ..logging import raise_log, get_logger
 import numpy as np
 from statsmodels.tsa.stattools import acf
-from scipy.stats import norm
 from statsmodels.tsa.seasonal import seasonal_decompose
+from scipy.stats import norm
 import matplotlib.pyplot as plt
-from typing import Tuple
 import math
+from typing import Tuple, Optional
+
 
 logger = get_logger(__name__)
 
 
-def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05):
+def check_seasonality(ts: TimeSeries,
+                      m: Optional[int] = None,
+                      max_lag: int = 24,
+                      alpha: float = 0.05):
     """
     Returns whether the TimeSeries `ts` is seasonal with period `m` or not.
 
-    If [m] is None, we work under the assumption that there is a unique seasonality period, which is inferred
+    If `m` is None, we work under the assumption that there is a unique seasonality period, which is inferred
     from the Auto-correlation Function (ACF).
 
-    .. todo: Generalize to multiple seasonality periods.
+    Parameters
+    ----------
+    ts
+        The time series to check for seasonality.
+    m
+        The seasonality period to check.
+    max_lag
+        The maximal lag allowed in the ACF.
+    alpha
+        The desired confidence level (default 5%).
 
-    :param ts: The TimeSeries to check for seasonality.
-    :param m: The seasonality period to check.
-    :param max_lag: The maximal lag allowed in the ACF.
-    :param alpha: The desired confidence level (default 5%).
-    :return: A tuple (season, m), where season is a boolean indicating whether the TimeSeries has seasonality or not
-             and m is the seasonality period.
+    Returns
+    -------
+    Tuple[bool, int]
+        A tuple `(season, m)`, where season is a boolean indicating whether the series has seasonality or not
+        and `m` is the seasonality period.
     """
+
     if m is not None and (m < 2 or not isinstance(m, int)):
         raise_log(ValueError('m must be an integer greater than 1.'), logger)
 
@@ -88,30 +101,51 @@ def check_seasonality(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha:
     return False, 0
 
 
-def _bartlett_formula(r, m, length) -> float:
+def _bartlett_formula(r: np.ndarray,
+                      m: int,
+                      length: int) -> float:
     """
     Computes the standard error of `r` at order `m` with respect to `length` according to Bartlett's formula.
 
-    :param r: The array whose standard error is to be computed.
-    :param m: The order of the standard error.
-    :param length: The size of the underlying sample to be used.
-    :return: The standard error of `r` with order `m`.
+    Parameters
+    ----------
+    r
+        The array whose standard error is to be computed.
+    m
+        The order of the standard error.
+    length
+        The size of the underlying sample to be used.
+
+    Returns
+    -------
+    float
+        The standard error of `r` with order `m`.
     """
+
     if m == 1:
         return math.sqrt(1/length)
     else:
         return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m-1]))) / length)
 
 
-def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
-                                                                -> Tuple['TimeSeries', 'TimeSeries']:
+def extract_trend_and_seasonality(ts: TimeSeries,
+                                  freq: int = None,
+                                  model: str = 'multiplicative') -> Tuple[TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from the TimeSeries `ts` using statsmodels.seasonal_decompose.
+    Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.
 
-    :param ts: The TimeSeries to study.
-    :param freq: The seasonality period to use.
-    :param model: The type of decomposition to use ('additive' or 'multiplicative').
-    :return: A tuple (trend, seasonal) of TimeSeries containing the trend and seasonality respectively.
+    Parameters
+    ----------
+    ts
+        The series to decompose
+    freq
+        The seasonality period to use.
+    model
+        The type of decomposition to use ('additive' or 'multiplicative').
+
+    Returns
+    -------
+        A tuple of (trend, seasonal) time series.
     """
 
     decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model, extrapolate_trend='freq')
@@ -122,73 +156,106 @@ def extract_trend_and_seasonality(ts: 'TimeSeries', freq: int = None, model: str
     return trend, season
 
 
-def remove_from_series(ts: 'TimeSeries', other: 'TimeSeries', model: str) -> 'TimeSeries':
+def remove_from_series(ts: TimeSeries,
+                       other: TimeSeries,
+                       model: str) -> TimeSeries:
     """
-    Removes the TimeSeries `other` from the TimeSeries `ts` according to the specified model.
+    Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
+    Use e.g. to remove an additive or multiplicative trend from a series.
 
-    :param ts: The TimeSeries to be modified.
-    :param other: The TimeSeries to remove.
-    :param model: The type of model considered (either 'additive' or 'multiplicative').
-    :return: A TimeSeries `new_ts`, defined by removing `other` from `ts`.
+    Parameters
+    ----------
+    ts
+        The TimeSeries to be modified.
+    other
+        The TimeSeries to remove.
+    model
+        The type of model considered (either 'additive' or 'multiplicative').
+
+    Returns
+    -------
+    TimeSeries
+        A TimeSeries defined by removing `other` from `ts`.
     """
-    if (other.values() < 1e-6).any() and model == 'multiplicative':
-        logger.warning("Indexes equal to zero, cannot remove for a multiplicative model.")
-        return ts
+
+    if model == 'multiplicative':
+        new_ts = ts / other
+    elif model == 'additive':
+        new_ts = ts - other
     else:
-        if model == 'multiplicative':
-            new_ts = ts / other
-        else:
-            new_ts = ts - other
-
+        raise_log(ValueError('Invalid parameter; must be either "additive" or "multiplicative". Was: {}'.format(model)))
     return new_ts
 
 
-def remove_seasonality(ts: 'TimeSeries', freq: int = None, model: str = 'multiplicative') \
-                                                        -> 'TimeSeries':
+def remove_seasonality(ts: TimeSeries,
+                       freq: int = None,
+                       model: str = 'multiplicative') -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
-    :param ts: The TimeSeries to adjust.
-    :param freq: The seasonality period to use.
-    :param model: The type of decomposition to use (additive or multiplicative).
-    :return: A tuple (new_ts, seasonality) of TimeSeries where new_ts is the adjusted original TimeSeries and
-            seasonality is a TimeSeries containing the removed seasonality.
+    Parameters
+    ----------
+    ts
+        The TimeSeries to adjust.
+    freq
+        The seasonality period to use.
+    model
+        The type of decomposition to use ('additive' or 'multiplicative').
+    Returns
+    -------
+    TimeSeries
+        A new time series that is the adjusted original time series
     """
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model)
-
     new_ts = remove_from_series(ts, seasonality, model)
-
     return new_ts
 
 
-def remove_trend(ts: 'TimeSeries', model='multiplicative') -> 'TimeSeries':
+def remove_trend(ts: TimeSeries,
+                 model='multiplicative') -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.
 
-    :param ts: The TimeSeries to adjust.
-    :param model: The type of decomposition to use (additive or multiplicative).
-    :return: A tuple (new_ts, trend) of TimeSeries where new_ts is the adjusted original TimeSeries and
-            seasonality is a TimeSeries containing the removed trend.
+    Parameters
+    ----------
+    ts
+        The TimeSeries to adjust.
+    model
+        The type of decomposition to use (additive or multiplicative).
+    Returns
+    -------
+    TimeSeries
+        A new time series that is the adjusted original time series
     """
+
     trend, _ = extract_trend_and_seasonality(ts, model=model)
-
     new_ts = remove_from_series(ts, trend, model)
-
     return new_ts
 
 
-def plot_acf(ts: 'TimeSeries', m: int = None, max_lag: int = 24, alpha: float = 0.05,
-             fig_size: Tuple[int, int] = (10, 5)):
+def plot_acf(ts: TimeSeries,
+             m: Optional[int] = None,
+             max_lag: int = 24,
+             alpha: float = 0.05,
+             fig_size: Tuple[int, int] = (10, 5)) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
 
-    :param ts: The TimeSeries whose ACF should be plotted.
-    :param m:  The lag to highlight.
-    :param max_lag: The maximal lag order to consider.
-    :param alpha: The confidence interval.
-    :param fig_size: The size of the figure to be displayed.
+    Parameters
+    ----------
+    ts
+        The TimeSeries whose ACF should be plotted.
+    m
+        Optionally, a time lag to highlight on the plot.
+    max_lag
+        The maximal lag order to consider.
+    alpha
+        The confidence interval to display.
+    fig_size
+        The size of the figure to be displayed.
     """
+
     r = acf(ts.values(), nlags=max_lag)  # , alpha=alpha) and confint as output too
 
     # Computes the confidence interval at level alpha for all lags.
