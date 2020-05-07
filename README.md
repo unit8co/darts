@@ -2,12 +2,12 @@
 
 ![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
 
-[![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop)
-![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
-![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/u8timeseries?label=docker&sort=date)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/u8timeseries)
-![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/u8timeseries)
+[![PyPI version](https://img.shields.io/pypi/v/u8timeseries?color=green&style=flat-square)](https://pypi.org/project/u8timeseries/)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop?style=flat-square)
+![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg?style=flat-square)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/u8timeseries?label=docker&sort=date&style=flat-square)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/u8timeseries?style=flat-square)
+![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/u8timeseries?style=flat-square)
 
 **u8timeseries** is a python library for easy manipulation and forecasting time series.
 It contains a variety of models, from classics such as ARIMA to neural networks.
