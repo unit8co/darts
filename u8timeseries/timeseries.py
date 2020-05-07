@@ -2,7 +2,7 @@
 Timeseries
 ----------
 
-The main type of objects in `u8timeseries`, currently representing univariate time series,
+`TimeSeries` is the main class in `u8timeseries`. It represents a univariate time series,
 possibly with lower and upper confidence bounds.
 """
 
