@@ -349,15 +349,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.series1.update(self.times, conf_lo=range(5, 15))
 
-    def test_drop_values(self):
-        seriesA = self.series1.append_values([1])
-        self.assertEqual(seriesA.drop_values(pd.Timestamp('20130111'), inplace=False), self.series1)
-        seriesA.drop_values(pd.Timestamp('20130111'))
-        self.assertEqual(seriesA, self.series1)
-
-        with self.assertRaises(KeyError):
-            seriesA.drop_values(pd.Timestamp('20130112'))
-
     def test_ops(self):
         seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
         targetAdd = TimeSeries(pd.Series(range(2, 12), index=self.pd_series1.index))

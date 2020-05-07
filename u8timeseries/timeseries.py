@@ -24,9 +24,10 @@ class TimeSeries:
                  confidence_lo: Optional[pd.Series] = None,
                  confidence_hi: Optional[pd.Series] = None):
         """
-        A TimeSeries is an immutable object, representing a univariate time series, and optional confidence intervals.
+        A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
-        It is defined by the following three components:
+        TimeSeries are meant to be immutable.
+        One TimeSeries is defined by the following three components:
 
         Parameters
         ----------
@@ -546,17 +547,20 @@ class TimeSeries:
         if plot_ci and self._confidence_lo is not None and self._confidence_hi is not None:
             plt.fill_between(self.time_index(), self._confidence_lo.values, self._confidence_hi.values, alpha=0.5)
 
-    """
-    Some useful methods for TimeSeries combination:
-    """
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
         """
         Checks whether this TimeSeries and another one have the same index.
 
-        :param other: A second TimeSeries.
-        :return: A boolean. True if both TimeSeries have the same index, False otherwise.
-        """
+        Parameters
+        ----------
+        other
+            the other series
 
+        Returns
+        -------
+        bool
+            True if both TimeSeries have the same index, False otherwise.
+        """
         if self.__len__() != len(other):
             return False
         return (other.time_index() == self.time_index()).all()
@@ -565,8 +569,15 @@ class TimeSeries:
         """
         Appends another TimeSeries to this TimeSeries.
 
-        :param other: A second TimeSeries.
-        :return: A new TimeSeries, obtained by appending the second TimeSeries to the first.
+        Parameters
+        ----------
+        other
+            A second TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
         raise_if_not(other.start_time() == self.end_time() + self.freq(), 'Appended TimeSeries must start one time step ' \
                                                                     'after current one.', logger)
@@ -582,8 +593,11 @@ class TimeSeries:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
         return TimeSeries(series, conf_lo, conf_hi)
 
-    def append_values(self, values: np.ndarray, index: pd.DatetimeIndex = None,
-            conf_lo: np.ndarray = None, conf_hi: np.ndarray = None) -> 'TimeSeries':
+    def append_values(self,
+                      values: np.ndarray,
+                      index: pd.DatetimeIndex = None,
+                      conf_lo: np.ndarray = None,
+                      conf_hi: np.ndarray = None) -> 'TimeSeries':
         """
         Appends values to current TimeSeries, to the given indices.
 
@@ -591,11 +605,21 @@ class TimeSeries:
         Does not add new confidence values if there were none first.
         Does not update value if already existing indices are provided.
 
-        :param values: An array with the values to append.
-        :param index: A DateTimeIndex for each value (optional).
-        :param conf_lo: The lower confidence interval values (optional).
-        :param conf_hi: The higher confidence interval values (optional).
-        :return: A new TimeSeries with the new values appended
+        Parameters
+        ----------
+        values
+            An array with the values to append.
+        index
+            A `pandas.DateTimeIndex` for the new values (optional)
+        conf_lo
+            The lower confidence interval values (optional).
+        conf_hi
+            The upper confidence interval values (optional).
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the new values appended
         """
         if len(values) < 1:
             return self
@@ -631,25 +655,39 @@ class TimeSeries:
 
         return TimeSeries(series, conf_lo, conf_hi)
 
-    def update(self, index: pd.DatetimeIndex, values: np.ndarray = None,
-               conf_lo: np.ndarray = None, conf_hi: np.ndarray = None, inplace: bool = True) -> 'TimeSeries':
+    def update(self,
+               index: pd.DatetimeIndex,
+               values: np.ndarray = None,
+               conf_lo: np.ndarray = None,
+               conf_hi: np.ndarray = None,
+               inplace: bool = False) -> 'TimeSeries':
         """
         Updates the Series with the new values provided.
         If indices are not in original TimeSeries, they will be discarded.
         At least one parameter other than index must be filled.
-        Use np.nan to ignore a specific index in a series.
+        Use `numpy.nan` to ignore a specific index in a series.
 
         It will raise an error if try to update a missing CI series
 
-        :param index: A DateTimeIndex containing the indices to replace.
-        :param values: An array containing the values to replace (optional).
-        :param conf_lo: The lower confidence interval values to change (optional).
-        :param conf_hi: The higher confidence interval values (optional).
-        :param inplace: If True, do operation inplace and return None, defaults to True.
-        :return: A TimeSeries with values updated
+        Parameters
+        ----------
+        index
+            A `pandas.DateTimeIndex` containing the indices to replace.
+        values
+            An array containing the values to replace (optional).
+        conf_lo
+            The lower confidence interval values to change (optional).
+        conf_hi
+            The upper confidence interval values (optional).
+        inplace
+            If True, do operation inplace and return self, defaults to False.
 
-        TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries (if `inplace = False`) or the same TimeSeries with values updated
         """
+
         raise_if_not(not (values is None and conf_lo is None and conf_hi is None), "At least one parameter must be filled " \
                                                                              "other than index", logger)
         raise_if_not(not index is None, "Index must be filled.")                                                            
@@ -675,7 +713,7 @@ class TimeSeries:
                 self._confidence_lo.update(conf_lo)
             if conf_hi is not None:
                 self._confidence_hi.update(conf_hi)
-            return None
+            return self
         else:
             new_series = self.pd_series()
             new_lo = self.conf_lo_pd_series()
@@ -688,41 +726,46 @@ class TimeSeries:
                 new_hi.update(conf_hi)
             return TimeSeries(new_series, new_lo, new_hi)
 
-    def drop_values(self, index: pd.DatetimeIndex, inplace: bool = True, **kwargs):
+    def is_within_range(self,
+                        ts: pd.Timestamp) -> bool:
         """
-        Remove elements of all series with specified indices.
+        Check whether a given timestamp is withing the time interval of this time series
 
-        :param index: The indices to be dropped
-        :param kwargs: Option to pass to pd.Series drop method
-        :param inplace: If True, do operation inplace and return None, defaults to True.
-        :return: A TimeSeries with values dropped
+        Parameters
+        ----------
+        ts
+            The `pandas.Timestamp` to check
 
-        TODO: Do we need this method? Where/how is it used? We should avoid mutating values at all cost.
+        Returns
+        -------
+        bool
+            Whether the timestamp is contained within the time interval of this time series.
+            Note that the timestamp does not need to be *in* the time series.
         """
-        series = self._series.drop(index=index, inplace=inplace, **kwargs)
-        conf_lo = self._op_or_none(self._confidence_lo, lambda s: s.drop(index, inplace=inplace, **kwargs))
-        conf_hi = self._op_or_none(self._confidence_hi, lambda s: s.drop(index, inplace=inplace, **kwargs))
-        if inplace:
-            return None
-        return TimeSeries(series, conf_lo, conf_hi)
-
-    def is_within_range(self, ts: pd.Timestamp) -> bool:
         index = self.time_index()
         return index[0] <= ts <= index[-1]
 
     @staticmethod
     def _combine_or_none(series_a: Optional[pd.Series],
                          series_b: Optional[pd.Series],
-                         combine_fn: Callable[[pd.Series, pd.Series], Any]):
+                         combine_fn: Callable[[pd.Series, pd.Series], Any]) -> Optional[pd.Series]:
         """
-        Combines two Pandas Series [series_a] and [series_b] using [combine_fn] if neither is None.
+        Combines two Pandas Series `series_a and `series_b` using `combine_fn` if neither is `None`.
 
-        :param series_a: A Pandas Series.
-        :param series_b: A Pandas Series.
-        :param combine_fn: An operation with input two Pandas Series and output one Pandas Series.
-        :return: A new Pandas Series, the result of [combine_fn], or None.
+        Parameters
+        ----------
+        series_a
+            the first series
+        series_b
+            the second series
+        combine_fn
+            An operation with input two Pandas Series and output one Pandas Series.
+
+        Returns
+        -------
+        Optional[pandas.Series]
+            A new Pandas Series, the result of [combine_fn], or None.
         """
-
         if series_a is not None and series_b is not None:
             return combine_fn(series_a, series_b)
         return None
@@ -734,13 +777,20 @@ class TimeSeries:
     def _combine_from_pd_ops(self, other: 'TimeSeries',
                              combine_fn: Callable[[pd.Series, pd.Series], pd.Series]) -> 'TimeSeries':
         """
-        Combines this TimeSeries with another one, using the [combine_fn] on the underlying Pandas Series.
+        Combines this TimeSeries with another one, using the `combine_fn` on the underlying Pandas Series.
 
-        :param other: A second TimeSeries.
-        :param combine_fn: An operation with input two Pandas Series and output one Pandas Series.
-        :return: A new TimeSeries, with underlying Pandas Series the series obtained with [combine_fn].
+        Parameters
+        ----------
+        other
+            A second TimeSeries.
+        combine_fn
+            An operation with input two Pandas Series and output one Pandas Series.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with underlying Pandas Series the series obtained with `combine_fn`.
         """
-
         raise_if_not(self.has_same_time_as(other), 'The two TimeSeries must have the same time index.', logger)
 
         series = combine_fn(self._series, other.pd_series())
@@ -750,10 +800,8 @@ class TimeSeries:
 
     """
     Definition of some useful statistical methods.
-    
     These methods rely on the Pandas implementation.
     """
-
     def mean(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
         return self._series.mean(axis, skipna, level, numeric_only, **kwargs)
 
