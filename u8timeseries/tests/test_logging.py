@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 import re
+import logging
 from testfixtures import LogCapture
 
 from ..timeseries import TimeSeries
@@ -10,10 +11,15 @@ from ..logging import raise_log, raise_if_not, time_log, get_logger
 
 class LoggingTestCase(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.NOTSET)
+
     def test_raise_log(self):
         exception_was_raised = False
         with LogCapture() as lc:
             logger = get_logger(__name__)
+            logger.handlers = []
             try:
                 raise_log(Exception('test'), logger)
             except:
@@ -31,13 +37,12 @@ class LoggingTestCase(unittest.TestCase):
         exception_was_raised = False
         with LogCapture() as lc:
             logger = get_logger(__name__)
+            logger.handlers = []
             try:
                 raise_if_not(True, "test", logger)
                 raise_if_not(False, "test", logger)
             except:
                 exception_was_raised = True
-
-        print('messages: {}'.format(lc.records))
 
         # testing correct log message
         lc.check(
@@ -52,8 +57,9 @@ class LoggingTestCase(unittest.TestCase):
         times = pd.date_range(start='2000-01-01', periods=2, freq='D')
         values = np.array([1, 2])
         with LogCapture() as lc:
+            get_logger('u8timeseries.timeseries').handlers = []
             try:
-                ts = TimeSeries.from_times_and_values(times, values)
+                TimeSeries.from_times_and_values(times, values)
             except:
                 pass
             
@@ -67,13 +73,15 @@ class LoggingTestCase(unittest.TestCase):
         values = np.array(range(3))
         ts = TimeSeries.from_times_and_values(times, values)
         with LogCapture() as lc:
+            get_logger('u8timeseries.timeseries').handlers = []
             try:
                 ts.split_after(pd.Timestamp('2020-02-01'))
             except:
                 pass
             
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00')
+            ('u8timeseries.timeseries', 'ERROR',
+             'ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00')
         )
 
     def test_time_log(self):
