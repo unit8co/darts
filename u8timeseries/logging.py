@@ -82,7 +82,7 @@ def time_log(logger: logging.Logger = get_logger('main_logger')):
     """
     A decorator function that logs the runtime of the function it is decorating
     to the logger object that is taken as an argument.
-    Inspired by: 
+    Inspired by:
     `https://medium.com/pythonhive/python-decorator-to-measure-the-execution-time-of-methods-fa04cb6bb36d`_.
 
     Parameters

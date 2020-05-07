@@ -72,7 +72,7 @@ class RegressionModel(ABC):
 
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
-        raise_if_not(len(features) == len(self.train_features), 
+        raise_if_not(len(features) == len(self.train_features),
                      'Provided features must have same dimensionality as training features. '
                      'There were {} training features and the function has been called with {} features'
                      .format(len(self.train_features), len(features)), logger)

@@ -20,7 +20,7 @@ class MissingValuesTestCase(unittest.TestCase):
 
     def test_fill_constant(self):
         seriesA: TimeSeries = TimeSeries.from_times_and_values(
-            self.time, 
+            self.time,
             np.array([np.nan] * 5 + [2.0] * 5 + [np.nan] * 5 + [2.0] * 10 + [np.nan] * 5)
         )
 

@@ -58,7 +58,7 @@ class NaiveSeasonal(ForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        raise_if_not(len(series) >= self.K, 'The time series has to contain at least K={} points'.format(self.K), logger)
+        raise_if_not(len(series) >= self.K, 'The time series requires at least K={} points'.format(self.K), logger)
         self.last_k_vals = series.values()[-self.K:]
 
     def predict(self, n: int):

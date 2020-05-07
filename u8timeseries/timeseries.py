@@ -69,7 +69,7 @@ class TimeSeries:
         if confidence_hi is not None:
             self._confidence_hi = confidence_hi.sort_index()
             raise_if_not(len(self._confidence_hi) == len(self._series),
-                        'Upper confidence interval must have same size as the main time series.', logger)
+                         'Upper confidence interval must have same size as the main time series.', logger)
             raise_if_not((self._confidence_hi.index == self._series.index).all(),
                          'Upper confidence interval and main series must have the same time index.', logger)
 
@@ -202,7 +202,7 @@ class TimeSeries:
 
     def _raise_if_not_within(self, ts: pd.Timestamp):
         if (ts < self.start_time()) or (ts > self.end_time()):
-            raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(), 
+            raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
                                                                               self.end_time())), logger)
 
     def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
@@ -587,7 +587,7 @@ class TimeSeries:
         raise_if_not(other.start_time() == self.end_time() + self.freq(),
                      'Appended TimeSeries must start one time step after current one.', logger)
         # TODO additional check?
-        raise_if_not(other.freq() == self.freq(), 
+        raise_if_not(other.freq() == self.freq(),
                      'Appended TimeSeries must have the same frequency as the current one', logger)
 
         series = self._series.append(other.pd_series())
@@ -694,19 +694,19 @@ class TimeSeries:
             A new TimeSeries (if `inplace = False`) or the same TimeSeries with values updated
         """
 
-        raise_if_not(not (values is None and conf_lo is None and conf_hi is None), 
+        raise_if_not(not (values is None and conf_lo is None and conf_hi is None),
                      "At least one parameter must be filled other than index", logger)
-        raise_if_not(not index is None, "Index must be filled.")
-        if (not values is None):
+        raise_if_not(index is not None, "Index must be filled.")
+        if (values is not None):
             raise_if_not(len(values) == len(index), "The number of values must correspond "
                          "to the number of indices: {} != {}".format(len(values), len(index)), logger)
-        if (not conf_lo is None):
+        if (conf_lo is not None):
             raise_if_not(len(conf_lo) == len(index), "The number of values must correspond "
                          "to the number of indices: ""{} != {}".format(len(conf_lo), len(index)), logger)
-        if (not conf_hi is None):
+        if (conf_hi is not None):
             raise_if_not(len(conf_hi) == len(index), "The number of values must correspond "
                          "to the number of indices: {} != {}".format(len(conf_hi), len(index)), logger)
-        ignored_indices = [index.get_loc(ind) for ind in (set(index)-set(self.time_index()))]
+        ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)
         series = values if values is None else pd.Series(np.delete(values, ignored_indices), index=index)
         conf_lo = conf_lo if conf_lo is None else pd.Series(np.delete(conf_lo, ignored_indices), index=index)

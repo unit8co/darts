@@ -329,7 +329,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesC = seriesA.copy()
         with self.assertRaises(ValueError):
             seriesC.update(self.times + 100 * seriesC.freq(), range(10))
-        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')), 
+        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
                        list(range(10)) + [0] * 10, inplace=True)
         self.assertEqual(seriesC, self.series1)
 

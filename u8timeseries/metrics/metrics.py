@@ -153,7 +153,7 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
 
     .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y_t},
 
-    where :math:`\\text{RMSE}()` denotes the root mean squred error, and 
+    where :math:`\\text{RMSE}()` denotes the root mean squred error, and
     :math:`\\bar{y_t}` is the average of :math:`y_t`.
 
     Parameters
@@ -258,7 +258,7 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = Tr
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
     both of length :math:`T`, it is a percentage value computed as
 
-    .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t} 
+    .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
     Parameters
@@ -294,8 +294,8 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
     both of length :math:`T`, it is a percentage value computed as
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t 
-              - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|}
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
+              \\min_t{y_t}} \\right|}
 
     Parameters
     ----------

@@ -15,7 +15,7 @@ class DatasetTestCase(unittest.TestCase):
     def test_creation(self):
         # Cannot have train window <= 0
         with self.assertRaises(ValueError):
-            dataset = _TimeSeriesDataset1D(self.series, -1)
+            _TimeSeriesDataset1D(self.series, -1)
         # Cannot have label window <= 0
         with self.assertRaises(ValueError):
             _TimeSeriesDataset1D(self.series, 1, -1)
