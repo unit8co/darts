@@ -207,7 +207,7 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = T
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    raise_if_not(all(y_true > 0), 'The actual series must be strictly positive to compute the MAPE.')
+    raise_if_not(all(y_true != 0), 'The actual series must be strictly positive to compute the MAPE.')
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 

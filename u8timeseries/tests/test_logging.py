@@ -7,8 +7,6 @@ from testfixtures import LogCapture
 from ..timeseries import TimeSeries
 from ..logging import raise_log, raise_if_not, time_log, get_logger
 
-logger = get_logger(__name__)
-
 
 class LoggingTestCase(unittest.TestCase):
 
@@ -38,6 +36,8 @@ class LoggingTestCase(unittest.TestCase):
                 raise_if_not(False, "test", logger)
             except:
                 exception_was_raised = True
+
+        print('messages: {}'.format(lc.records))
 
         # testing correct log message
         lc.check(
@@ -77,6 +77,8 @@ class LoggingTestCase(unittest.TestCase):
         )
 
     def test_time_log(self):
+        logger = get_logger(__name__)
+
         @time_log(logger)
         def _my_timed_fn():
             # do something for some time
