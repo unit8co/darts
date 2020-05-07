@@ -24,8 +24,8 @@ class ScalerWrapper:
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
-        if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None)) or
-                not callable(getattr(scaler, "inverse_transform", None))):
+        if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
+                or not callable(getattr(scaler, "inverse_transform", None))):
             _raise()
 
         self.transformer = scaler
