@@ -7,7 +7,7 @@ A collection of simple benchmark models.
 
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import raise_if_not, time_log, get_logger
+from ..logging import raise_if_not, get_logger
 import numpy as np
 
 logger = get_logger(__name__)

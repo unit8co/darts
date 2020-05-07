@@ -111,7 +111,8 @@ def sine_timeseries(value_frequency: float = 0.1,
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.array(range(length), dtype=float)
-    f = np.vectorize(lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset)
+    f = np.vectorize(lambda x: value_amplitude * math.sin(2 * math.pi 
+                     * value_frequency * x + value_phase) + value_y_offset)
     values = f(values)
 
     return TimeSeries.from_times_and_values(times, values)
@@ -152,10 +153,11 @@ def gaussian_timeseries(length: int = 10,
     """
 
     if (type(mean) == np.ndarray):
-        raise_if_not(mean.shape == (length,), 'If a vector of means is provided, it requires the same length as the TimeSeries.', logger)
+        raise_if_not(mean.shape == (length,), 'If a vector of means is provided, '
+                     'it requires the same length as the TimeSeries.', logger)
     if (type(std) == np.ndarray):
-        raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided,' \
-                                              ' its shape has to match the length of the TimeSeries.', logger)
+        raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided, '
+                     'its shape has to match the length of the TimeSeries.', logger)
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.random.normal(mean, std, size=length)
@@ -218,10 +220,5 @@ def us_holiday_timeseries(length: int = 10,
     times = pd.date_range(periods=length, freq='D', start=start_ts)
     us_holidays = USFederalHolidayCalendar().holidays()
     values = times.isin(us_holidays).astype(int)
-    
+
     return TimeSeries.from_times_and_values(times, values)
-
-
-
-
-    

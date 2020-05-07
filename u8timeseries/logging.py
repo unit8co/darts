@@ -1,6 +1,7 @@
 import logging
 import time
 
+
 def get_logger(name):
     """
     Internally calls the logging.getLogger function with the `name` argument to create or
@@ -25,6 +26,7 @@ def get_logger(name):
     stderr_handler.setFormatter(formatter)
     logger.addHandler(stderr_handler)
     return logger
+
 
 def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
     """
@@ -80,7 +82,8 @@ def time_log(logger: logging.Logger = get_logger('main_logger')):
     """
     A decorator function that logs the runtime of the function it is decorating
     to the logger object that is taken as an argument.
-    Inspired by: `https://medium.com/pythonhive/python-decorator-to-measure-the-execution-time-of-methods-fa04cb6bb36d`_.
+    Inspired by: 
+    `https://medium.com/pythonhive/python-decorator-to-measure-the-execution-time-of-methods-fa04cb6bb36d`_.
 
     Parameters
     ----------

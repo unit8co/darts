@@ -123,9 +123,9 @@ def _bartlett_formula(r: np.ndarray,
     """
 
     if m == 1:
-        return math.sqrt(1/length)
+        return math.sqrt(1 / length)
     else:
-        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m-1]))) / length)
+        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m - 1]))) / length)
 
 
 def extract_trend_and_seasonality(ts: TimeSeries,
@@ -260,7 +260,7 @@ def plot_acf(ts: TimeSeries,
 
     # Computes the confidence interval at level alpha for all lags.
     stats = []
-    for i in range(1, max_lag+1):
+    for i in range(1, max_lag + 1):
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
 
     plt.figure(figsize=fig_size)
@@ -268,10 +268,10 @@ def plot_acf(ts: TimeSeries,
     for i in range(len(r)):
         plt.plot((i, i), (0, r[i]), color=('red' if m is not None and i == m else 'black'), lw=.5)
 
-    upp_band = r[1:].mean() + norm.ppf(1 - alpha/2) * r[1:].var()
+    upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
     acf_band = [upp_band * stat for stat in stats]
 
-    plt.fill_between(np.arange(1, max_lag+1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
-    plt.plot((0, max_lag+1), (0, 0), color='black')
+    plt.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
+    plt.plot((0, max_lag + 1), (0, 0), color='black')
 
     plt.show()

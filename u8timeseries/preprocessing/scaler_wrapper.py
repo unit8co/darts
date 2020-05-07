@@ -1,6 +1,6 @@
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 logger = get_logger(__name__)
 
@@ -24,10 +24,10 @@ class ScalerWrapper:
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
-        if (not callable(getattr(scaler, "fit", None)) or
-            not callable(getattr(scaler, "transform", None)) or
-            not callable(getattr(scaler, "inverse_transform", None))):
-                _raise()
+        if (not callable(getattr(scaler, "fit", None))
+            or not callable(getattr(scaler, "transform", None))
+            or not callable(getattr(scaler, "inverse_transform", None))):
+            _raise()
 
         self.transformer = scaler
         self.train_series = None

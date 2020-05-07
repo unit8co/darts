@@ -153,7 +153,8 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
 
     .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y_t},
 
-    where :math:`\\text{RMSE}()` denotes the root mean squred error, and :math:`\\bar{y_t}` is the average of :math:`y_t`.
+    where :math:`\\text{RMSE}()` denotes the root mean squred error, and 
+    :math:`\\bar{y_t}` is the average of :math:`y_t`.
 
     Parameters
     ----------
@@ -246,7 +247,7 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     errors = np.sum(np.abs(y_true - y_hat))
     t = y_true.size
-    scale = t/(t-m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
+    scale = t / (t - m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
     raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
     return errors / scale
 
@@ -257,7 +258,8 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = Tr
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
     both of length :math:`T`, it is a percentage value computed as
 
-    .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t} - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
+    .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t} 
+              - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
     Parameters
     ----------
@@ -292,7 +294,8 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
     both of length :math:`T`, it is a percentage value computed as
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|}
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t 
+              - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|}
 
     Parameters
     ----------
@@ -317,7 +320,7 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     raise_if_not(max(y_true) > min(y_true), 'The difference between the max and min values must be strictly'
-                                             'positive to compute the MARRE.', logger)
+                 'positive to compute the MARRE.', logger)
     true_range = max(y_true) - min(y_true)
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
@@ -345,7 +348,7 @@ def r2_score(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -
     """
 
     y1, y2 = _get_values_or_raise(series1, series2, intersect)
-    ss_errors = np.sum((y1 - y2)**2)
+    ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
-    ss_tot = np.sum((y1-y_hat)**2)
-    return 1 - ss_errors/ss_tot
+    ss_tot = np.sum((y1 - y_hat) ** 2)
+    return 1 - ss_errors / ss_tot

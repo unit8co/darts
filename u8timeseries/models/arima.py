@@ -61,7 +61,7 @@ class AutoARIMA(ForecastingModel):
         """ Auto-ARIMA
 
         This implementation is a thin wrapper around
-        `pmdarima AutoARIMA's model <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
+        `pmdarima AutoARIMA model <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
         which provides functionality similar
         to R's `auto.arima <https://www.rdocumentation.org/packages/forecast/versions/7.3/topics/auto.arima>`_.
 

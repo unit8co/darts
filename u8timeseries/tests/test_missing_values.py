@@ -10,17 +10,19 @@ class MissingValuesTestCase(unittest.TestCase):
 
     time = pd.date_range('20130101', '20130130')
     lin = [float(i) for i in range(len(time))]
-    cub = [float(i-4)**2 for i in range(len(time))]
-    series1: TimeSeries = TimeSeries.from_times_and_values(time, np.array([2.0]*len(time)))
+    cub = [float(i - 4) ** 2 for i in range(len(time))]
+    series1: TimeSeries = TimeSeries.from_times_and_values(time, np.array([2.0] * len(time)))
     series2: TimeSeries = TimeSeries.from_times_and_values(time, np.array(lin))
-    series3: TimeSeries = TimeSeries.from_times_and_values(time, np.array([10]*10 + lin[-20:]))
-    series4: TimeSeries = TimeSeries.from_times_and_values(time, np.array(lin[:20] + [19]*10))
+    series3: TimeSeries = TimeSeries.from_times_and_values(time, np.array([10] * 10 + lin[-20:]))
+    series4: TimeSeries = TimeSeries.from_times_and_values(time, np.array(lin[:20] + [19] * 10))
     series5: TimeSeries = TimeSeries.from_times_and_values(time, np.array(cub))
-    series6: TimeSeries = TimeSeries.from_times_and_values(time, [0]*2 + cub[2:-2] + [-1]*2)
+    series6: TimeSeries = TimeSeries.from_times_and_values(time, [0] * 2 + cub[2:-2] + [-1] * 2)
 
     def test_fill_constant(self):
-        seriesA: TimeSeries = TimeSeries.from_times_and_values(self.time,
-                                    np.array([np.nan] * 5 + [2.0] * 5 + [np.nan] * 5 + [2.0] * 10 + [np.nan] * 5))
+        seriesA: TimeSeries = TimeSeries.from_times_and_values(
+            self.time, 
+            np.array([np.nan] * 5 + [2.0] * 5 + [np.nan] * 5 + [2.0] * 10 + [np.nan] * 5)
+        )
 
         # Check that no changes are made if there are no missing values
         self.assertEqual(self.series1, auto_fillna(self.series1))
@@ -30,7 +32,7 @@ class MissingValuesTestCase(unittest.TestCase):
 
     def test_linear(self):
         seriesB: TimeSeries = TimeSeries.from_times_and_values(self.time,
-                                                               np.array(self.lin[:10] + [np.nan]*10 + self.lin[-10:]))
+                                                               np.array(self.lin[:10] + [np.nan] * 10 + self.lin[-10:]))
 
         # Check for linear interpolation part
         self.assertEqual(self.series2, auto_fillna(seriesB))
@@ -50,5 +52,5 @@ class MissingValuesTestCase(unittest.TestCase):
 
     def test_fill_quad(self):
         seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time,
-                                                               np.array(self.cub[:10] + [np.nan]*10 + self.cub[-10:]))
+                                                               np.array(self.cub[:10] + [np.nan] * 10 + self.cub[-10:]))
         self.assertEqual(self.series5, round(auto_fillna(seriesE, method='quadratic'), 7))

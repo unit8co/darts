@@ -49,8 +49,8 @@ class RegressionModel(ABC):
         """
 
         raise_if_not(len(train_features) > 0, 'Need at least one feature series', logger)
-        raise_if_not(all([s.has_same_time_as(train_target) for s in train_features]), 'All provided time series must ' \
-                                                                                'have the same time index', logger)
+        raise_if_not(all([s.has_same_time_as(train_target) for s in train_features]),
+                     'All provided time series must have the same time index', logger)
         self.train_features = train_features
         self.train_target = train_target
         self._fit_called = True
@@ -72,10 +72,10 @@ class RegressionModel(ABC):
 
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
-        raise_if_not(len(features) == len(self.train_features), 'Provided features must have same dimensionality as ' \
-                                                          'training features. There were {} training features and ' \
-                                                          'the function has been called with {} features' \
-                                                          .format(len(self.train_features), len(features)), logger)
+        raise_if_not(len(features) == len(self.train_features), 
+                     'Provided features must have same dimensionality as training features. '
+                     'There were {} training features and the function has been called with {} features'
+                     .format(len(self.train_features), len(features)), logger)
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series

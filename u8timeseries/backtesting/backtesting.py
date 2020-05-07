@@ -11,7 +11,7 @@ from u8timeseries.models.regression_model import RegressionModel
 
 from u8timeseries.utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
-from typing import List, Iterable
+from typing import Iterable
 
 logger = get_logger(__name__)
 
@@ -61,7 +61,8 @@ def backtest_forecasting(series: TimeSeries,
     """
 
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
+                logger)
 
     last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
 
@@ -132,12 +133,14 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         the specified model with the specified forecast horizon.
     """
 
-    raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must ' \
-                                                                             'have the same time index', logger)
+    raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
+                 'have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series', logger)
+    raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
+                 logger)
 
-    last_pred_time = target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series else target_series.time_index()[-2]
+    last_pred_time = (target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series
+                      else target_series.time_index()[-2])
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]

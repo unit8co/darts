@@ -72,4 +72,3 @@ def _build_tqdm_iterator(iterable, verbose):
     else:
         iterator = iterable
     return iterator
-

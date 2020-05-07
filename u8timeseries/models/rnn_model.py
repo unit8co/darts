@@ -296,10 +296,10 @@ class RNNModel(ForecastingModel):
                 instance = cls(**kws)
             except (TypeError, ValueError) as e:
                 raise_log(ValueError('Error when building the optimizer or learning rate scheduler;'
-                                 'please check the provided class and arguments'
-                                 '\nclass: {}'
-                                 '\narguments (kwargs): {}'
-                                 '\nerror:\n{}'.format(cls, kws, e)),
+                                     'please check the provided class and arguments'
+                                     '\nclass: {}'
+                                     '\narguments (kwargs): {}'
+                                     '\nerror:\n{}'.format(cls, kws, e)),
                           logger)
             return instance
 
@@ -490,7 +490,7 @@ class RNNModel(ForecastingModel):
         """
 
         checklist = glob(os.path.join(folder, "checkpoint_*"))
-        checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
+        checklist = sorted(checklist, key=lambda x: float(re.findall(r'(\d+)', x)[-1]))
         filename = 'checkpoint_{0}.pth.tar'.format(epoch)
         os.makedirs(folder, exist_ok=True)
         filename = os.path.join(folder, filename)
@@ -506,7 +506,7 @@ class RNNModel(ForecastingModel):
             best_name = os.path.join(folder, 'model_best_{0}.pth.tar'.format(epoch))
             shutil.copyfile(filename, best_name)
             checklist = glob(os.path.join(folder, "model_best_*"))
-            checklist = sorted(checklist, key=lambda x: float(re.findall('(\d+)', x)[-1]))
+            checklist = sorted(checklist, key=lambda x: float(re.findall(r'(\d+)', x)[-1]))
             if len(checklist) >= 2:
                 # remove older files
                 for chkpt in checklist[:-1]:
