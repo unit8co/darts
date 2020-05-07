@@ -6,12 +6,13 @@ Facebook Prophet
 from ..timeseries import TimeSeries
 from .forecasting_model import ForecastingModel
 import pandas as pd
-from ..logging import get_logger
+from ..logging import get_logger, execute_and_suppress_output
 from typing import Optional
-
 import fbprophet
+import logging
 
 logger = get_logger(__name__)
+logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
 class Prophet(ForecastingModel):
@@ -78,7 +79,7 @@ class Prophet(ForecastingModel):
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
 
-        self.model.fit(in_df)
+        execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
 
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
