@@ -2,6 +2,7 @@
 *.pyc
 docs/build
 docs/source/examples
+docs/source/README.rst
 docs/source/generated_api
 u8timeseries.egg-info/
 build/

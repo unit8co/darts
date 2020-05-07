@@ -1,7 +1,4 @@
-import sys
 import logging
-from datetime import datetime
-import pathlib
 import time
 
 def get_logger(name):

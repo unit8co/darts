@@ -1,24 +1,56 @@
 from pathlib import Path
-
 from setuptools import setup, find_packages
-import os
 
 
 def read_requirements(path):
     return list(Path(path).read_text().splitlines())
 
 
+with open("README.md", "r") as fh:
+    LONG_DESCRIPTION = fh.read()
+
+
+URL = 'https://unit8co.github.io/u8timeseries/'
+
+
+PROJECT_URLS = {
+    'Bug Tracker': 'https://github.com/unit8co/u8timeseries/issues',
+    'Documentation': URL,
+    'Source Code': 'https://github.com/unit8co/u8timeseries'
+}
+
+
 setup(
       name='u8timeseries',
-      version=open('u8timeseries/VERSION', 'r').read(),
-      description='A collection of easy-to-use timeseries forecasting models',
-      url='http://github.com/unit8co/u8timeseries',
-      author='Unit8 SA',
-      author_email='info@unit8.co',
+      version="dev",
+      description='A python library for easy manipulation and forecasting time series.',
+      long_description=LONG_DESCRIPTION,
+      long_description_content_type="text/markdown",
+      project_urls=PROJECT_URLS,
+      url=URL,
+      maintainer='Unit8 SA',
+      maintainer_email='info@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=read_requirements('requirements/main.txt'),
       zip_safe=False,
       python_requires='>=3.6',
-      package_data={'u8timeseries': ['VERSION']}
+      classifiers=[
+            'Intended Audience :: Science/Research',
+            'Intended Audience :: Developers',
+            'Programming Language :: Python',
+            'Topic :: Software Development',
+            'Topic :: Scientific/Engineering',
+            'Operating System :: Microsoft :: Windows',
+            'Operating System :: POSIX',
+            'Operating System :: Unix',
+            'Operating System :: MacOS',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            ('Programming Language :: Python :: '
+             'Implementation :: PyPy')
+      ],
+      keywords='timeseries forecasting arima'
 )

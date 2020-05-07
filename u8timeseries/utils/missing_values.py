@@ -1,7 +1,4 @@
 from ..timeseries import TimeSeries
-import matplotlib.pyplot as plt
-import numpy as np
-from typing import Tuple, List
 
 
 def na_ratio(ts: TimeSeries) -> float:

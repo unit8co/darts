@@ -1,0 +1,98 @@
+name: u8timeseries develop workflow
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: "3. Update pip"
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          restore-keys: |
+            tests-${{ runner.os }}-pip-
+
+      - name: "5. Install main and dev dependencies"
+        run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -q .
+          pip install -q -r requirements/dev.txt
+
+      - name: "5. Run tests"
+        run: |
+          python -m unittest
+
+      - name: "6. Run linter"
+        run: |
+          flake8 --config=setup.cfg u8timeseries
+
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python 3.6"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+
+      - name: "3. Update pip and install pandoc"
+        run: |
+          sudo apt-get install -y pandoc
+          python -m pip install --upgrade pip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            release-${{ runner.os }}-pip-
+
+      - name: "5. Install main and release dependencies"
+        run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -q .
+          pip install -q -r requirements/release.txt
+
+      - name: "6. Copy examples"
+        run: |
+          make --directory ./docs copy-examples
+
+      - name: "7. Generate API documentation"
+        run: |
+          make --directory ./docs generate
+
+      - name: "8. Build documentation"
+        run: |
+          make --directory ./docs html
+
+      - name: "9. Store documentation artifact"
+        uses: actions/upload-artifact@v1
+        with:
+          name: docs
+          path: docs/build/html
