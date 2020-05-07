@@ -25,7 +25,7 @@ class ScalerWrapper:
                       logger)
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
-                or not callable(getattr(scaler, "inverse_transform", None))):
+                or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503 
             _raise()
 
         self.transformer = scaler
