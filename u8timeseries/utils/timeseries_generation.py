@@ -111,8 +111,8 @@ def sine_timeseries(value_frequency: float = 0.1,
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.array(range(length), dtype=float)
-    f = np.vectorize(lambda x: value_amplitude * math.sin(2 * math.pi 
-                     * value_frequency * x + value_phase) + value_y_offset)
+    f = np.vectorize(lambda x: value_amplitude * math.sin(2 * math.pi *
+                     value_frequency * x + value_phase) + value_y_offset)
     values = f(values)
 
     return TimeSeries.from_times_and_values(times, values)
