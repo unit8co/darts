@@ -86,6 +86,7 @@ class LoggingTestCase(unittest.TestCase):
 
     def test_time_log(self):
         logger = get_logger(__name__)
+        logger.handlers = []
 
         @time_log(logger)
         def _my_timed_fn():

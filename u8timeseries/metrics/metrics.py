@@ -207,7 +207,7 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = T
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    raise_if_not(all(y_true != 0), 'The actual series must be strictly positive to compute the MAPE.')
+    raise_if_not(all(y_true != 0), 'The actual series must be strictly positive to compute the MAPE.', logger)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
@@ -282,7 +282,7 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = Tr
 
     y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
-    raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.')
+    raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.', logger)
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
@@ -317,7 +317,7 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
     raise_if_not(max(y_true) > min(y_true), 'The difference between the max and min values must be strictly'
-                                             'positive to compute the MARRE.')
+                                             'positive to compute the MARRE.', logger)
     true_range = max(y_true) - min(y_true)
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
