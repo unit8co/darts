@@ -1,4 +1,4 @@
-# u8timeseries: easy manipulation and forecasting time series
+# u8timeseries: Easy manipulation and forecasting of time series
 
 ![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries")
 
