@@ -1,6 +1,6 @@
 # u8timeseries: easy manipulation and forecasting time series
 
-![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
+![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries")
 
 [![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop)
@@ -78,7 +78,7 @@ prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
-![example](static/images/example.png "example")
+![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example")
 
 We invite you to go over the example notebooks in the `examples` directory.
 
