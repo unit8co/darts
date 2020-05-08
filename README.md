@@ -1,4 +1,4 @@
-# u8timeseries: easy manipulation and forecasting
+# u8timeseries: easy manipulation and forecasting time series
 
 ![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
 
