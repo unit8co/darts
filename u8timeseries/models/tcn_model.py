@@ -129,6 +129,7 @@ class TCNModule(nn.Module):
 class TCNModel(TorchForecastingModel):
 
     def __init__(self,
+                 input_length: int = 12,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -139,6 +140,8 @@ class TCNModel(TorchForecastingModel):
 
         Parameters
         ----------
+        input_length
+            Number of past time steps that are fed to the forecasting module.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -149,12 +152,13 @@ class TCNModel(TorchForecastingModel):
             The number of convolutional layers.
         """
 
-        raise_if_not(kernel_size < kwargs['input_length'],
+        raise_if_not(kernel_size < input_length,
                      "The kernel size must be strictly smaller than the input length.", logger)
 
         self.input_size = 1
+        kwargs['input_length'] = input_length
 
-        self.model = TCNModule(input_size=self.input_size, input_length=kwargs['input_length'], 
+        self.model = TCNModule(input_size=self.input_size, input_length=input_length, 
                                kernel_size=kernel_size, num_filters=num_filters,
                                num_layers=num_layers, dilation_base=dilation_base, 
                                output_length=1)

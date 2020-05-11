@@ -145,9 +145,9 @@ class TorchForecastingModel(ForecastingModel):
         Parameters
         ----------
         output_length
-            Number of time steps to be output by the RNN module.
+            Number of time steps to be output by the forecasting module.
         input_length
-            Number of past time steps that are fed to the RNN module.
+            Number of past time steps that are fed to the forecasting module.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -182,6 +182,10 @@ class TorchForecastingModel(ForecastingModel):
         """
 
         super().__init__()
+
+        raise_if_not(isinstance(self.model, nn.Module), 'Please make sure that self.model is set to a valid '
+                     'nn.Module subclass when subclassing TorchForecastingModel',
+                     logger)
 
         if torch_device_str is None:
             self.device = self._get_best_torch_device()

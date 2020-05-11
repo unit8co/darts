@@ -121,6 +121,7 @@ class RNNModel(TorchForecastingModel):
     
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
+                 output_length: int = 1,
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
                  hidden_fc_sizes: Optional[List] = None,
@@ -143,6 +144,8 @@ class RNNModel(TorchForecastingModel):
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             `u8timeseries.models.rnn_model.RNNModule`.
+        output_length
+            Number of time steps to be output by the forecasting module.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -154,12 +157,13 @@ class RNNModel(TorchForecastingModel):
         """
         
         self.input_size = 1
+        kwargs['output_length'] = output_length
 
         ## set self.model
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
             self.model = _RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
-                                    num_layers=n_rnn_layers, output_length=kwargs['output_length'],
+                                    num_layers=n_rnn_layers, output_length=output_length,
                                     num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
             self.model = model
