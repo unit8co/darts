@@ -46,3 +46,28 @@ class TimeSeriesDataset1D(torch.utils.data.Dataset):
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
         return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
+
+
+class TimeSeriesDataset1DTCN(torch.utils.data.Dataset):
+
+    def __init__(self,
+                 series: TimeSeries,
+                 data_length: int = 3):
+    
+
+        self.series_values = series.values()
+        self.len_series = len(series)
+        self.data_length = len(series) - 1 if data_length is None else data_length
+
+        raise_if_not(self.data_length > 0,
+                     "The input sequence length must be positive. It is {}".format(self.data_length),
+                     logger)
+
+    def __len__(self):
+        return self.len_series - self.data_length 
+
+    def __getitem__(self, index):
+        idx = index % self.__len__()
+        data = self.series_values[idx:idx + self.data_length]
+        target = self.series_values[idx + 1:idx + self.data_length + 1]
+        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
