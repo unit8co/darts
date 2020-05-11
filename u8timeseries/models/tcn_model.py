@@ -20,7 +20,8 @@ from typing import List, Optional, Dict, Union
 from ..timeseries import TimeSeries
 from ..custom_logging import raise_if_not, get_logger, raise_log
 from .autoregressive_model import AutoRegressiveModel
-from ..utils import TimeSeriesDataset1DTCN, build_tqdm_iterator
+from ..utils import _build_tqdm_iterator
+from .rnn_model import _TimeSeriesDataset1DTCN
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
@@ -280,7 +281,7 @@ class TCNModel(AutoRegressiveModel):
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data:
-        dataset = TimeSeriesDataset1DTCN(series, self.seq_len)
+        dataset = _TimeSeriesDataset1DTCN(series, self.seq_len)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
         raise_if_not(len(train_loader) > 0,
@@ -289,7 +290,7 @@ class TCNModel(AutoRegressiveModel):
 
         # Prepare validation data:
         if val_series is not None:
-            val_dataset = TimeSeriesDataset1DTCN(val_series, self.seq_len)
+            val_dataset = _TimeSeriesDataset1DTCN(val_series, self.seq_len)
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
             raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
@@ -347,7 +348,7 @@ class TCNModel(AutoRegressiveModel):
 
         best_loss = np.inf
 
-        iterator = build_tqdm_iterator(range(self.n_epochs), verbose)
+        iterator = _build_tqdm_iterator(range(self.n_epochs), verbose)
         for epoch in iterator:
             epoch = epoch
             total_loss = 0

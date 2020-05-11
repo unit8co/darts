@@ -3,7 +3,7 @@ import unittest
 
 import pandas as pd
 
-from .. import RNNModule, RNNModel
+from ..models.rnn_model import _RNNModule, RNNModel
 from ..timeseries import TimeSeries
 
 
@@ -12,8 +12,8 @@ class RNNModelTestCase(unittest.TestCase):
     times = pd.date_range('20130101', '20130410')
     pd_series = pd.Series(range(100), index=times)
     series: TimeSeries = TimeSeries(pd_series)
-    module = RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
-                       num_layers=1, num_layers_out_fc=[], dropout=0)
+    module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
+                        num_layers=1, num_layers_out_fc=[], dropout=0)
 
     def test_creation(self):
         with self.assertRaises(ValueError):

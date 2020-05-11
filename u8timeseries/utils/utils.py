@@ -1,22 +1,32 @@
+from ..timeseries import TimeSeries
+from ..logging import raise_log, get_logger
 from typing import List
-
 from IPython import get_ipython
 from tqdm import tqdm, tqdm_notebook
-
-from ..custom_logging import raise_log, get_logger
-from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
+# TODO: we do not check the time index here
 def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     """
-    Trims all series in the provided list, if necessary, so that the return time series have
-    the same time index (corresponding to largest duration common to all series).
+    Trims all series in the provided list, if necessary, so that the returned time series have
+    a common span (corresponding to largest time sub-interval common to all series).
 
-    Raises an error if no such time index exists.
-    :param series:
-    :return:
+    Parameters
+    ----------
+    series
+        The list of series to consider.
+
+    Raises
+    ------
+    ValueError
+        If no common time sub-interval exists
+
+    Returns
+    -------
+    List[TimeSeries]
+        A list of series, where each series have the same span
     """
 
     last_first = max(map(lambda s: s.start_time(), series))
@@ -28,12 +38,18 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     return list(map(lambda s: s.slice(last_first, first_last), series))
 
 
-def build_tqdm_iterator(iterable, verbose):
+def _build_tqdm_iterator(iterable, verbose):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
-    :param iterable:
-    :param verbose:
-    :return:
+
+    Parameters
+    ----------
+    iterable
+    verbose
+
+    Returns
+    -------
+
     """
 
     def _isnotebook():

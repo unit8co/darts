@@ -1,30 +1,35 @@
-# Models
-
-## Auto-Regressive
-- Theta (https://robjhyndman.com/papers/Theta.pdf)
-- FFT (https://www.youtube.com/watch?v=VYpAodcdFfA)
-
-## Regressive
-- vanilla RNN
-- LSTM
-- Gaussian process (http://www.gaussianprocess.org/gpml/chapters/RW2.pdf)
-- Quantile regression forest
+# Forecasting
 - seq2seq (https://www.youtube.com/watch?v=VYpAodcdFfA)
 
+# Regression
+- Gaussian processes (http://www.gaussianprocess.org/gpml/chapters/RW2.pdf)
+- Quantile regression forest
+
 # Backtesting
-Track weights history in `simulate_forecast_regr()`
+- Parameterize the moving window
+- Track weights history in `backtest_regression()`
 
+# TimeSeries
+- Multivariate TimeSeries
+- Support categorical time series
 
-# Useful TimeSeries
-
-The following could be useful TimeSeries to regress over:
-- Indicator variable for holidays (1 during holidays 0 else)
-- TimeSeries filled with values linearly increasing over time
-- Constant TimeSeries
+# TimeSeries Generation
+The following could be useful TimeSeries:
+- Time of day, day of week, week of month, month of year, etc
+- Indicator variable for holidays (1 during holidays 0 else) in many regions
 - Indicator for quarters
 
+# Metrics
+- Correlation coefficient
+
 # Utils
+- More preprocessing: moving average, filters, ...
 - A function such as `checkresiduals()` used here https://otexts.com/fpp2/regression-evaluation.html
 
+# Vizualisation
+- seasonal plots (incl polar)
+- scatterplots (for multivariate) and scatterplot matrix
+
 # Others
-- Logging
+- Collection of datasets
+- Hierarchical reconciliation

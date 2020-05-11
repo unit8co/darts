@@ -1,6 +1,6 @@
-from .autoregressive_model import AutoRegressiveModel
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..custom_logging import time_log, get_logger, raise_log
+from ..logging import time_log, get_logger, raise_log
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
@@ -144,8 +144,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     return series
 
 
-class FFT(AutoRegressiveModel):
-
+class FFT(ForecastingModel):
     def __init__(self, nr_freqs_to_keep: Optional[int] = 10, required_matches: Optional[set] = None,
                  trend: bool = None, trend_poly_degree: int = 3):
         """

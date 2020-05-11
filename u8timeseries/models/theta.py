@@ -1,33 +1,38 @@
 """
-Implementation of an Theta model.
----------------------------------
+Theta Method
+------------
 """
 
-import math
-
-import numpy as np
 import statsmodels.tsa.holtwinters as hw
-
-from .autoregressive_model import AutoRegressiveModel
-from .statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
-from ..custom_logging import raise_log, time_log, get_logger
 from ..timeseries import TimeSeries
+from ..logging import raise_log, get_logger
+from .forecasting_model import ForecastingModel
+import numpy as np
+import math
+from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
 logger = get_logger(__name__)
 
 
-class Theta(AutoRegressiveModel):
-    """
-    An implementation of the Theta method with variable value of the `theta` parameter.
-
-    :param theta: User-defined value for the theta parameter. Default to 0.
-    :param mode: Type of seasonality. Either `additive` or `multiplicative`.
-
-    .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
-    .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
-    .. todo: Try with something different than SES? They do that in the paper.
-    """
+class Theta(ForecastingModel):
+    # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
+    # .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
+    # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(self, theta: int = 0, mode: str = 'multiplicative'):
+        """
+        An implementation of the Theta method with configurable `theta` parameter.
+
+        See `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf>`_ paper.
+
+        Parameters
+        ----------
+        theta
+            Value of the theta parameter. Defaults to 0. Cannot be set to 2.0.
+            If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
+        mode
+            Type of seasonality. Either "additive" or "multiplicative".
+        """
+
         super().__init__()
 
         self.model = None
@@ -47,7 +52,6 @@ class Theta(AutoRegressiveModel):
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
-    @time_log(logger=logger)
     def fit(self, ts, season_period: int = None):
         """
         Fits the Theta method to the TimeSeries `ts`.
