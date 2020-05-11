@@ -1,6 +1,7 @@
 # docs
 sphinx
 sphinx-automodapi
+sphinx_autodoc_typehints
 nbsphinx
 sphinx-rtd-theme
 recommonmark

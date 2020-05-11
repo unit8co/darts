@@ -1,10 +1,9 @@
 import unittest
-
-import numpy as np
 import pandas as pd
+import numpy as np
 
-from u8timeseries.utils.missing_values import auto_fillna
 from ..timeseries import TimeSeries
+from u8timeseries.utils.missing_values import auto_fillna
 
 
 class MissingValuesTestCase(unittest.TestCase):
@@ -44,24 +43,14 @@ class MissingValuesTestCase(unittest.TestCase):
 
         # Check that auto-backfill works properly
         self.assertEqual(self.series3, auto_fillna(seriesC))
-        self.assertNotEqual(self.series3, auto_fillna(seriesC, first=2))
 
     def test_ffil(self):
         seriesD: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.lin[:20] + [np.nan] * 10))
 
         self.assertEqual(self.series4, auto_fillna(seriesD))
-        self.assertNotEqual(self.series4, auto_fillna(seriesD, last=20))
 
     def test_fill_quad(self):
-        seriesE_data = np.array(self.cub[:10] + [np.nan] * 10 + self.cub[-10:])
-        seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time, seriesE_data)
-
-        seriesF_data = [np.nan] * 2 + self.cub[2:10] + [np.nan] * 10 + self.cub[-10:-2] + [np.nan] * 2
-        seriesF: TimeSeries = TimeSeries.from_times_and_values(self.time, np.array(seriesF_data))
-
-        self.assertEqual(self.series5, round(auto_fillna(seriesE, interpolate='quadratic'), 7))
-        self.assertEqual(self.series6, round(auto_fillna(seriesF, first=0, last=-1, interpolate='quadratic'), 2))
-        # extrapolate values outside
-        self.assertEqual(self.series5,
-                         round(auto_fillna(seriesF, interpolate='quadratic', fill_value='extrapolate'), 2))
+        seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time,
+                                                               np.array(self.cub[:10] + [np.nan] * 10 + self.cub[-10:]))
+        self.assertEqual(self.series5, round(auto_fillna(seriesE, method='quadratic'), 7))

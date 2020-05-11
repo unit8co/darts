@@ -2,4 +2,5 @@
 Metrics
 -------
 """
-from .metrics import mape, mase, overall_percentage_error, marre, r2_score, coefficient_variation
+
+from .metrics import mae, mse, rmse, rmsle, mape, mase, ope, marre, r2_score, coefficient_of_variation

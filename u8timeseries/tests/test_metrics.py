@@ -1,11 +1,10 @@
-import logging
 import unittest
-
 import numpy as np
 import pandas as pd
+import logging
 
-from u8timeseries.metrics import metrics
 from ..timeseries import TimeSeries
+from u8timeseries.metrics import metrics
 
 
 class MetricsTestCase(unittest.TestCase):
@@ -24,17 +23,18 @@ class MetricsTestCase(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     def test_zero(self):
-        self.assertTrue(np.isnan(metrics.mape(self.series1, self.series1)))
+        with self.assertRaises(ValueError):
+            metrics.mape(self.series1, self.series1)
 
-        self.assertTrue(np.isnan(metrics.overall_percentage_error(self.series1 - self.series1.mean(),
-                                                                  self.series1 - self.series1.mean())))
+        with self.assertRaises(ValueError):
+            metrics.ope(self.series1 - self.series1.mean(), self.series1 - self.series1.mean())
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.mase(self.series1 + 1, self.series1 + 1, 1), 0)
         self.assertEqual(metrics.marre(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.r2_score(self.series1 + 1, self.series1 + 1), 1)
-        self.assertEqual(metrics.overall_percentage_error(self.series1 + 1, self.series1 + 1), 0)
+        self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
 
     def test_r2(self):
         from sklearn.metrics import r2_score
