@@ -23,7 +23,7 @@ class TimeSeries:
                  series: pd.Series,
                  confidence_lo: Optional[pd.Series] = None,
                  confidence_hi: Optional[pd.Series] = None,
-                 fill_missing_dates = True):
+                 fill_missing_dates: Optional[bool] = True):
         """
         A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
@@ -46,9 +46,8 @@ class TimeSeries:
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
 
         series = series.sort_index()  # Sort by time
-        if fill_missing_dates:
+        if series.index.inferred_freq is None and fill_missing_dates:
             series = self._fill_missing_dates(series)
-
 
         self._series: pd.Series = series
 
@@ -811,12 +810,16 @@ class TimeSeries:
         conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
         return TimeSeries(series, conf_lo, conf_hi)
 
-    def _fill_missing_dates(self, series: pd.Series) -> pd.Series:
-        date_axis = series.axes[0]
-        available_frequencies = np.unique(np.diff(date_axis.to_numpy()).astype(int))
-        gcd_frequency = np.gcd.reduce(available_frequencies)
-        desired_delta = pd.Timedelta(gcd_frequency)
-        return series.resample(desired_delta).mean()
+    @staticmethod
+    def _fill_missing_dates(series: pd.Series) -> pd.Series:
+        date_axis = series.index
+        size = 3
+        available_frequencies = [date_axis[x:x + size].inferred_freq for x in range(len(date_axis) - size + 1)]
+        available_frequencies = set(filter(None.__ne__, available_frequencies))
+
+        raise_if_not(len(available_frequencies) == 1, 'Could not infer explicit frequency.', logger)
+        suggested_frequency = available_frequencies.pop()
+        return series.resample(suggested_frequency).sum()
 
     """
     Definition of some useful statistical methods.

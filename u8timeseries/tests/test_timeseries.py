@@ -407,14 +407,19 @@ class TimeSeriesTestCase(unittest.TestCase):
 
     def test_fill_missing_dates(self):
         with self.assertRaises(ValueError):
-            # Main series cannot have date holes
+            # Series cannot have date holes without automatic filling
             range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
             TimeSeries(pd.Series(range(9), index=range_), fill_missing_dates=False)
+
+        with self.assertRaises(ValueError):
+            # Main series should have explicit frequency in case of date holes
+            range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110', freq='2D'))
+            TimeSeries(pd.Series(range(7), index=range_))
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
         series_test = TimeSeries(pd.Series(range(9), index=range_))
         self.assertTrue(series_test.freq_str() == 'D')
 
-        range_ = pd.date_range('20130101', '20130104', freq='2D').append(pd.date_range('20130106', '20130110', freq='2D'))
+        range_ = pd.date_range('20130101', '20130104', freq='2D').append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries(pd.Series(range(5), index=range_))
-        self.assertTrue(series_test.freq_str() == 'D')
+        self.assertTrue(series_test.freq_str() == '2D')
