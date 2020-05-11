@@ -43,7 +43,7 @@ class TCNModule(nn.Module):
                  dilation_base: int,
                  output_length: int):
 
-        """ PyTorch module implementing a dilated TCN model used in `RNNModel`.
+        """ PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
 
         Parameters

@@ -127,6 +127,32 @@ class RNNModel(TorchForecastingModel):
                  dropout: float = 0.,
                  **kwargs):
         
+        """ Recurrent Neural Network Model (RNNs).
+
+        This class provides three variants of RNNs:
+
+        * Vanilla RNN
+
+        * LSTM
+
+        * GRU
+
+        Parameters
+        ----------
+        model
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
+            or a PyTorch module with the same specifications as
+            `u8timeseries.models.rnn_model.RNNModule`.
+        hidden_size
+            Size for feature maps for each hidden RNN layer (:math:`h_n`).
+        n_rnn_layers
+            Number of layers in the RNN module.
+        hidden_fc_sizes
+            Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
+        dropout
+            Fraction of neurons afected by Dropout.
+        """
+        
         self.input_size = 1
 
         ## set self.model
