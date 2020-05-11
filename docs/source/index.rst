@@ -1,28 +1,21 @@
-.. u8timeseries documentation master file, created by
-   sphinx-quickstart on Tue Jan 14 11:32:55 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-.. mdinclude:: ../../README.md
-
-
-===
-API
-===
+.. include:: README.rst
 
 .. toctree::
+   :hidden:
 
-   generated_api/u8timeseries
+   Home <README>
 
-
-========
-Examples
-========
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
-   examples
+   API<generated_api/u8timeseries>
+
+
+.. toctree::
+   :hidden:
+
+   Examples<examples>
 
 
 Indices and tables

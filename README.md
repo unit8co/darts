@@ -1,19 +1,45 @@
-![u8timeseries](static/images/logo-72dpi.png "u8timeseries")
+# u8timeseries: Easy manipulation and forecasting of time series
 
-![ci_workflow](https://github.com/unit8co/u8timeseries/workflows/workflow/badge.svg)
+![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries")
 
-**u8timeseries** is a python library for easy manipulation and forecasting time series in python.
+[![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop)
+![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/u8timeseries?label=docker&sort=date)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/u8timeseries)
+![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/u8timeseries)
+
+**u8timeseries** is a python library for easy manipulation and forecasting time series.
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
-# Install
 
-From your favorite Python environment (3.6+), you can run:
-```
-pip install u8timeseries
-```
+# Install
+## Preconditions
+Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+A Conda environment is thus recommended because it will handle all of those in one go.
+
+The following steps assume running inside a conda environment. 
+If that's not possible, first follow the official instructions to install 
+[fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
+and [torch](https://pytorch.org/get-started/locally/), then skip to 
+[Install u8timeseries](#install-u8timeseries)
+
+To create a conda environment for Python 3.7
+(after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
+
+    conda create --name <choose-your-name> python=3.7
+
+#### MAC
+    conda install -c conda-forge -c pytorch pip fbprophet pytorch
+
+#### Linux and Windows
+    conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
+    
+## Install u8timeseries
+    pip install u8timeseries
 
 #### Running the examples only, without installing:
 
@@ -26,7 +52,7 @@ Then copy and paste the URL provided by the docker container into your browser t
 This requires a Docker install.
 
 
-# Example Usage
+## Example Usage
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
 ```python
 from u8timeseries import TimeSeries
@@ -52,14 +78,14 @@ prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
-![example](static/images/example.png "example")
+![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example")
 
 We invite you to go over the example notebooks in the `examples` directory.
 
-# Documentation
+## Documentation
 The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
-# Features
+## Features
 Currently, the library contains the following features: 
 
 **Forecasting Models:** 
@@ -81,6 +107,6 @@ from R2-scores to Mean Absolute Scaled Error.
 (e.g., external regressors), using arbitrary regressive models.
 
 
-# Contribute
+## Contribute
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.

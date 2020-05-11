@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'u8timeseries'
-copyright = '2020, Unit8'
-author = 'Unit8'
+copyright = '2020, Unit8 SA'
+author = 'Unit8 SA'
 version = 'dev'
 
 
@@ -38,9 +38,13 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
+    'sphinx_autodoc_typehints',
     'nbsphinx',
     'm2r'
 ]
+
+# In order to also have the docstrings of __init__() methods included
+autoclass_content = 'both'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -58,7 +62,7 @@ language = 'en'
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',
     '**/modules.rst', '**/u8timeseries.tests.*',
-    '**/u8timeseries.utils.*', '**/*custom_logging.rst'
+    '**/*custom_logging.rst'
 ]
 
 
@@ -72,7 +76,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['static']
 
 
 # -- Extension configuration -------------------------------------------------

@@ -329,23 +329,24 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesC = seriesA.copy()
         with self.assertRaises(ValueError):
             seriesC.update(self.times + 100 * seriesC.freq(), range(10))
-        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')), list(range(10)) + [0] * 10)
+        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
+                       list(range(10)) + [0] * 10, inplace=True)
         self.assertEqual(seriesC, self.series1)
 
         # change random
         seriesC = seriesA.copy()
-        seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2])
+        seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2], inplace=True)
         self.assertEqual(seriesC, self.series1)
 
         # change one of each series
         seriesD = seriesB.copy()
         seriesD.update(self.times, seriesA.pd_series())
-        seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9])
+        seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9], inplace=True)
         self.assertEqual(seriesA, self.series1)
-        seriesB.update(self.times[::2], conf_hi=range(15, 25, 2))
+        seriesB.update(self.times[::2], conf_hi=range(15, 25, 2), inplace=True)
         self.assertTrue(seriesB.conf_hi_pd_series().equals(self.series2.conf_hi_pd_series()))
         self.assertNotEqual(seriesB, self.series2)
-        seriesB.update(self.times[1::2], conf_lo=range(6, 15, 2))
+        seriesB.update(self.times[1::2], conf_lo=range(6, 15, 2), inplace=True)
         self.assertEqual(seriesB, self.series2)
 
         # use nan to update all series altogether
@@ -358,21 +359,12 @@ class TimeSeriesTestCase(unittest.TestCase):
         new_hi = np.empty(10)
         new_hi[:] = np.nan
         new_hi[::2] = np.arange(15, 25, 2)
-        seriesD.update(self.times, new_series, new_lo, new_hi)
+        seriesD.update(self.times, new_series, new_lo, new_hi, inplace=True)
         self.assertEqual(seriesD, self.series2)
 
         # raise error when update missing CI
         with self.assertRaises(AttributeError):
             self.series1.update(self.times, conf_lo=range(5, 15))
-
-    def test_drop_values(self):
-        seriesA = self.series1.append_values([1])
-        self.assertEqual(seriesA.drop_values(pd.Timestamp('20130111'), inplace=False), self.series1)
-        seriesA.drop_values(pd.Timestamp('20130111'))
-        self.assertEqual(seriesA, self.series1)
-
-        with self.assertRaises(KeyError):
-            seriesA.drop_values(pd.Timestamp('20130112'))
 
     def test_ops(self):
         seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))

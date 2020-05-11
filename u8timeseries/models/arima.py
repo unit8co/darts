@@ -1,30 +1,39 @@
 """
-Implementation of an ARIMA model.
----------------------------------
+ARIMA and Auto-ARIMA
+--------------------
+
+Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA.
+The implementations are wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_
+and `pmdarima <https://github.com/alkaline-ml/pmdarima>`_.
+
+References
+----------
+.. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from pmdarima import auto_arima
-from statsmodels.tsa.arima_model import ARMA, ARIMA
-
-from .autoregressive_model import AutoRegressiveModel
-from ..custom_logging import time_log, get_logger
+from .forecasting_model import ForecastingModel
+from statsmodels.tsa.arima_model import ARMA as staARMA
+from statsmodels.tsa.arima_model import ARIMA as staARIMA
+from pmdarima import AutoARIMA as PmdAutoARIMA
 from ..timeseries import TimeSeries
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class Arima(AutoRegressiveModel):
-    """
-    Implementation of an ARIMA model.
-
-    Currently a wrapper around the statsmodel implementation.
-
-    :param p: An integer representing the lag order.
-    :param d: An integer for the order of differentiation.
-    :param q: An interger for the size of the moving average window.
-    """
-
+class ARIMA(ForecastingModel):
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
+        """ ARIMA
+
+        Parameters
+        ----------
+        p : int
+            Order (number of time lags) of the autoregressive model (AR)
+        d : int
+            The order of differentiation; i.e., the number of times the data have had past values subtracted. (I)
+        q : int
+            The size of the moving average window (MA).
+        """
         super().__init__()
         self.p = p
         self.d = d
@@ -34,12 +43,10 @@ class Arima(AutoRegressiveModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
-
-        m = ARIMA(series.values(),
-                  order=(self.p, self.d, self.q)) if self.d > 0 else ARMA(series.values(), order=(self.p, self.q))
+        m = staARIMA(series.values(),
+                     order=(self.p, self.d, self.q)) if self.d > 0 else staARMA(series.values(), order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
     def predict(self, n):
@@ -48,58 +55,37 @@ class Arima(AutoRegressiveModel):
         return self._build_forecast_series(forecast)
 
 
-class AutoArima(AutoRegressiveModel):
+class AutoARIMA(ForecastingModel):
 
-    def __init__(self, start_p=1, max_p=12, start_q=0, max_q=12, max_P=2, max_Q=2, start_P=1, start_Q=1,
-                 start_d=0, max_d=2, max_D=1, max_order=30, seasonal=True, stepwise=True, approximation=False,
-                 error_action='ignore', trace=False, suppress_warnings=True):
+    def __init__(self, *autoarima_args, **autoarima_kwargs):
+        """ Auto-ARIMA
+
+        This implementation is a thin wrapper around
+        `pmdarima AutoARIMA model <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
+        which provides functionality similar
+        to R's `auto.arima <https://www.rdocumentation.org/packages/forecast/versions/7.3/topics/auto.arima>`_.
+
+        This model supports the same parameters as the pmdarima AutoARIMA model.
+        See `pmdarima documentation <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_
+        for an extensive documentation and a list of supported parameters.
+
+        Parameters
+        ----------
+        autoarima_args
+            Positional arguments for the pmdarima AutoARIMA model
+        autoarima_kwargs
+            Keyword arguments for the pmdarima AutoARIMA model
+        """
 
         super().__init__()
-
-        self.start_p = start_p
-        self.max_p = max_p
-        self.start_q = start_q
-        self.max_q = max_q
-        self.max_P = max_P
-        self.max_Q = max_Q
-        self.start_P = start_P
-        self.start_Q = start_Q
-        self.start_d = start_d
-        self.max_d = max_d
-        self.max_D = max_D
-        self.max_order = max_order
-        self.seasonal = seasonal
-        self.stepwise = stepwise
-        self.approximation = approximation
-        self.error_action = error_action
-        self.trace = trace
-        self.suppress_warnings = suppress_warnings
-        self.model = None
+        self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
 
     def __str__(self):
-        return 'auto-ARIMA'
+        return 'Auto-ARIMA'
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.model = auto_arima(series.values(),
-                                start_p=self.start_p,
-                                max_p=self.max_p,
-                                start_q=self.start_q,
-                                max_q=self.max_q,
-                                max_P=self.max_P,
-                                max_Q=self.max_Q,
-                                start_P=self.start_P,
-                                start_Q=self.start_Q,
-                                start_d=self.start_d,
-                                max_d=self.max_d,
-                                max_D=self.max_D,
-                                max_order=self.max_order,
-                                seasonal=self.seasonal,
-                                stepwise=self.stepwise,
-                                approximation=self.approximation,
-                                error_action=self.error_action,
-                                trace=self.trace,
-                                suppress_warnings=self.suppress_warnings)
+        self.model.fit(series.values())
 
     def predict(self, n):
         super().predict(n)

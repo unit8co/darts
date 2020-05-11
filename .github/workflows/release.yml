@@ -36,6 +36,8 @@ jobs:
 
       - name: "5. Install main and dev dependencies"
         run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install -q .
           pip install -q -r requirements/dev.txt
 
@@ -76,6 +78,8 @@ jobs:
 
       - name: "5. Install release dependencies"
         run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install -q -r requirements/release.txt
 
       - name: "6. Determine next version"
@@ -121,33 +125,26 @@ jobs:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
 
-      - name: "2. Login to GCR"
-        id: gcloud
-        uses: elgohr/gcloud-login-action@0.2
-        with:
-          account_key: ${{ secrets.GCLOUD_KEY }}
-
-      - name: "3. Determine current version"
+      - name: "2. Determine current version"
         uses: endrjuskr/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
 
-      - name: "4. Determine docker tags"
+      - name: "3. Determine docker tags"
         run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
 
-      - name: "4-1. Determine docker tags for hotfix"
+      - name: "3-1. Determine docker tags for hotfix"
         if: contains(github.event.head_commit.message, '#hotfix')
         run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
 
-      - name: "4. Build and publish docker to GCR"
+      - name: "4. Build and publish docker to docker hub"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
-          name: eu.gcr.io/unit8-product/u8timeseries
-          username: ${{ steps.gcloud.outputs.username }}
-          password: ${{ steps.gcloud.outputs.password }}
-          registry: eu.gcr.io
+          name: unit8/u8timeseries
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
           tags: "${{ env.DOCKER_TAGS }}"
           cache: true
           buildoptions: "--compress -q"
@@ -181,6 +178,8 @@ jobs:
 
       - name: "5. Install main and release dependencies"
         run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install -q .
           pip install -q -r requirements/release.txt
 
@@ -192,11 +191,19 @@ jobs:
         run: |
           make --directory ./docs generate
 
-      - name: "8. Build documentation"
+      - name: "8. Copy static files"
+        run: |
+          make --directory ./docs copy-static
+
+      - name: "9. Build readme"
+        run: |
+          make --directory ./docs readme
+
+      - name: "10. Build documentation"
         run: |
           make --directory ./docs html
 
-      - name: "9. Publish documentation to gh-pages"
+      - name: "11. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self
