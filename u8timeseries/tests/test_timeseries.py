@@ -420,6 +420,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         series_test = TimeSeries(pd.Series(range(9), index=range_))
         self.assertTrue(series_test.freq_str() == 'D')
 
-        range_ = pd.date_range('20130101', '20130104', freq='2D').append(pd.date_range('20130107', '20130111', freq='2D'))
+        range_ = pd.date_range('20130101', '20130104', freq='2D') \
+            .append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries(pd.Series(range(5), index=range_))
         self.assertTrue(series_test.freq_str() == '2D')

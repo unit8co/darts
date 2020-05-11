@@ -858,7 +858,6 @@ class TimeSeries:
     def describe(self, percentiles=None, include=None, exclude=None) -> pd.Series:
         return self._series.describe(percentiles, include, exclude)
 
-
     """
     Definition of some dunder methods
     """
