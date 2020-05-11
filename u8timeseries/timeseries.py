@@ -22,7 +22,8 @@ class TimeSeries:
     def __init__(self,
                  series: pd.Series,
                  confidence_lo: Optional[pd.Series] = None,
-                 confidence_hi: Optional[pd.Series] = None):
+                 confidence_hi: Optional[pd.Series] = None,
+                 fill_missing_dates = True):
         """
         A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
@@ -44,7 +45,13 @@ class TimeSeries:
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
 
-        self._series: pd.Series = series.sort_index()  # Sort by time
+        series = series.sort_index()  # Sort by time
+        if fill_missing_dates:
+            series = self._fill_missing_dates(series)
+
+
+        self._series: pd.Series = series
+
         self._freq: str = self._series.index.inferred_freq  # Infer frequency
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
@@ -804,6 +811,13 @@ class TimeSeries:
         conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
         return TimeSeries(series, conf_lo, conf_hi)
 
+    def _fill_missing_dates(self, series: pd.Series) -> pd.Series:
+        date_axis = series.axes[0]
+        available_frequencies = np.unique(np.diff(date_axis.to_numpy()).astype(int))
+        gcd_frequency = np.gcd.reduce(available_frequencies)
+        desired_delta = pd.Timedelta(gcd_frequency)
+        return series.resample(desired_delta).mean()
+
     """
     Definition of some useful statistical methods.
     These methods rely on the Pandas implementation.
@@ -840,6 +854,7 @@ class TimeSeries:
 
     def describe(self, percentiles=None, include=None, exclude=None) -> pd.Series:
         return self._series.describe(percentiles, include, exclude)
+
 
     """
     Definition of some dunder methods
