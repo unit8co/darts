@@ -1,5 +1,6 @@
 import logging
 import unittest
+import math
 
 import numpy as np
 import pandas as pd
@@ -424,3 +425,6 @@ class TimeSeriesTestCase(unittest.TestCase):
             .append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries(pd.Series(range(5), index=range_))
         self.assertTrue(series_test.freq_str() == '2D')
+        self.assertTrue(series_test.start_time() == range_[0])
+        self.assertTrue(series_test.end_time() == range_[-1])
+        self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
