@@ -89,5 +89,5 @@ class ForecastingModel(ABC):
 
         time_index = self._generate_new_dates(len(points_preds))
 
-        return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound, 
+        return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound,
                                                 self.training_series.freq())

@@ -168,14 +168,14 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
-def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1, 
+def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1,
                           verbose: bool = True) -> TimeSeries:
     """ A function for computing the residuals produced by a given model and time series.
 
     This function computes the difference between the actual observations from 'series'
-    and the fitted values vector p obtained by training 'model' on 'series'. 
+    and the fitted values vector p obtained by training 'model' on 'series'.
 
-    For every index i in 'series', p[i] is computed by training 'model' on 
+    For every index i in 'series', p[i] is computed by training 'model' on
     series[:(i - 'fcast_horizon_n')] and forecasting 'fcast_horizon_n' into the future.
     (p[i] will be set to the last value of the predicted vector.)
     The vector of residuals will be shorter than 'series' due to the minimum

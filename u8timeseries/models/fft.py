@@ -1,6 +1,6 @@
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import time_log, get_logger, raise_log
+from ..logging import get_logger, raise_log
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf

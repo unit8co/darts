@@ -50,7 +50,7 @@ class TimeSeries:
         self._series: pd.Series = series.sort_index()  # Sort by time
         if (freq is None):
             self._freq: str = self._series.index.inferred_freq  # Infer frequency
-        else: 
+        else:
             self._freq = freq
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates

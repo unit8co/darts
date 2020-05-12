@@ -274,4 +274,3 @@ def plot_acf(ts: TimeSeries,
     plt.plot((0, max_lag + 1), (0, 0), color='black')
 
     plt.show()
-
