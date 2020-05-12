@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from u8timeseries import TimeSeries
-from u8timeseries.models.statistics import check_seasonality
+from .. import TimeSeries
+from ..utils.statistics import check_seasonality
 
 
 class TimeSeriesTestCase(unittest.TestCase):

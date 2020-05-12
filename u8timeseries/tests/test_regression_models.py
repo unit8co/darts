@@ -5,7 +5,7 @@ import pandas as pd
 
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from u8timeseries import StandardRegressiveModel
+from u8timeseries.models import StandardRegressionModel
 
 
 def train_test_split(features, target, split_ts):
@@ -45,7 +45,7 @@ class RegressionModelsTestCase(unittest.TestCase):
 
     # default regression models
     models = [
-        StandardRegressiveModel(regression_window)
+        StandardRegressionModel(regression_window)
     ]
 
     def test_models_runnability(self):

@@ -1,10 +1,9 @@
 import unittest
-
 import pandas as pd
 import torch
 
 from ..timeseries import TimeSeries
-from ..utils import TimeSeriesDataset1D
+from ..models.rnn_model import _TimeSeriesDataset1D
 
 
 class DatasetTestCase(unittest.TestCase):
@@ -16,14 +15,14 @@ class DatasetTestCase(unittest.TestCase):
     def test_creation(self):
         # Cannot have train window <= 0
         with self.assertRaises(ValueError):
-            TimeSeriesDataset1D(self.series, -1)
+            _TimeSeriesDataset1D(self.series, -1)
         # Cannot have label window <= 0
         with self.assertRaises(ValueError):
-            TimeSeriesDataset1D(self.series, 1, -1)
+            _TimeSeriesDataset1D(self.series, 1, -1)
 
     def test_content(self):
         # Can have no transformation
-        dataset = TimeSeriesDataset1D(self.series, 12, 4)
+        dataset = _TimeSeriesDataset1D(self.series, 12, 4)
         self.assertEqual(len(dataset), 100 - 12 - 4 + 1)
         # correct types
         self.assertEqual(type(dataset[0][0]), torch.Tensor)

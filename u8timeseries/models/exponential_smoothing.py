@@ -1,45 +1,69 @@
 """
-Implementation of an Simple Exponential Smoothing model.
---------------------------------------------------------
+Exponential Smoothing
+---------------------
 """
 
-import statsmodels.tsa.holtwinters as hw
-
-from .autoregressive_model import AutoRegressiveModel
-from ..custom_logging import time_log, get_logger
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
+from ..logging import get_logger
+import statsmodels.tsa.holtwinters as hw
+from typing import Optional
 
 logger = get_logger(__name__)
 
 
-class ExponentialSmoothing(AutoRegressiveModel):
-    """
-    Implementation of a Simple Exponential Smoothing.
+class ExponentialSmoothing(ForecastingModel):
+    def __init__(self,
+                 trend: Optional[str] = 'additive',
+                 damped: Optional[bool] = False,
+                 seasonal: Optional[str] = 'additive',
+                 seasonal_periods: Optional[int] = 12,
+                 **fit_kwargs):
+        """ Exponential Smoothing
 
-    Currently just a wrapper around the statsmodels holtwinter implementation.
+        This is a wrapper around
+        `statsmodels  Holt-Winters' Exponential Smoothing
+        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
 
-    :param trend: A string for the type of trend to consider: either `additive` (default) or `multiplicative`.
-    :param seasonal: A string for the type of seasonality to consider: either `additive` (default) or `multiplicative`.
-    :param seasonal_periods: An integer, the order of seasonality to consider.
-    """
+        We refer to this link for the original and more complete documentation of the parameters.
 
-    def __init__(self, trend: str = 'additive', seasonal: str = 'additive', seasonal_periods: int = 12):
+        Parameters
+        ----------
+        trend
+            Type of trend component
+        damped
+            Should the trend component be damped.
+        seasonal
+            Type of seasonal component
+        seasonal_periods
+            The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
+            data with a weekly cycle.
+        fit_kwargs
+            Some optional keyword arguments that will be used to call
+            `statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+        """
         super().__init__()
         self.trend = trend
+        self.damped = damped
         self.seasonal = seasonal
         self.seasonal_periods = seasonal_periods
+        self.fit_kwargs = fit_kwargs
         self.model = None
 
     def __str__(self):
         return 'Exponential smoothing'
 
-    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.model = hw.ExponentialSmoothing(series.values(),
-                                             trend=self.trend,
-                                             seasonal=self.seasonal,
-                                             seasonal_periods=self.seasonal_periods).fit()
+        hw_model = hw.ExponentialSmoothing(series.values(),
+                                           trend=self.trend,
+                                           damped=self.damped,
+                                           seasonal=self.seasonal,
+                                           seasonal_periods=self.seasonal_periods)
+        hw_results = hw_model.fit(**self.fit_kwargs)
+        self.model = hw_results
 
     def predict(self, n):
         super().predict(n)
