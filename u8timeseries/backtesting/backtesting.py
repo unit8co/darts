@@ -64,7 +64,7 @@ def backtest_forecasting(series: TimeSeries,
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
 
-    last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
+    last_pred_time = series.time_index()[-fcast_horizon_n - 1] if trim_to_series else series.time_index()[-1]
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -166,3 +166,48 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         times.append(pred.end_time())  # store the N-th timestamp
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+
+
+def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1, 
+                          verbose: bool = True) -> TimeSeries:
+    """ A function for computing the residuals produced by a given model and time series.
+
+    This function computes the difference between the actual observations from 'series'
+    and the fitted values vector p obtained by training 'model' on 'series'. 
+
+    For every index i in 'series', p[i] is computed by training 'model' on 
+    series[:(i - 'fcast_horizon_n')] and forecasting 'fcast_horizon_n' into the future.
+    (p[i] will be set to the last value of the predicted vector.)
+    The vector of residuals will be shorter than 'series' due to the minimum
+    training series length required by 'model' and the gap introduced by 'fcast_horizon_n'.
+
+    Note that the common usage of the term residuals implies a value for 'fcast_horizon_n' of 1.
+
+    Parameters
+    ----------
+    model
+        Instance of ForecastingModel used to compute the fitted values p.
+    series
+        The TimeSeries instance which the residuals will be computed for.
+    fcast_horizon_n
+        The forecasting horizon used to predict each fitted value.
+    verbose
+        Whether to print progress.
+
+    Returns
+    -------
+    TimeSeries
+        The vector of residuals.
+    """
+
+    # get first index not contained in the first training set
+    first_index = series.time_index()[model.get_min_train_series_length()]
+
+    # compute fitted values
+    p = backtest_forecasting(series, model, first_index, fcast_horizon_n, True, verbose=verbose)
+
+    # compute residuals
+    series_trimmed = series.slice_intersect(p)
+    residuals = series_trimmed - p
+
+    return residuals

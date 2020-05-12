@@ -13,9 +13,6 @@ import matplotlib.pyplot as plt
 import math
 from typing import Tuple, Optional
 
-from ..backtesting import simulate_forecast_ar
-from ..models.forecasting_model import ForecastingModel
-
 logger = get_logger(__name__)
 
 
@@ -278,34 +275,3 @@ def plot_acf(ts: TimeSeries,
 
     plt.show()
 
-
-def autoregression_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1, 
-                             verbose = True):
-    """
-    Computes the difference between the actual observations from 'series'
-    and the fitted values vector p obtained by training 'model' on 'series'. 
-
-    For every index i in 'series', p[i] is computed by training 'model' on 
-    series[:(i - 'fcast_horizon_n')] and forecasting 'fcast_horizon_n' into the future.
-    (p[i] will be set to the last value of the predicted vector.)
-    Note that the vector of residuals will be ('fcast_horizon_n' + 2) elements shorter than 
-    due to the minimum length of 3 that is required for the training set.
-
-    Note that the common usage of the term residuals implies a value for 'fcast_horizon_n' of 1.
-
-    :param model: Instance of AutoRegressiveModel used to compute the fitted values p.
-    :param series: The TimeSeries instance which the residuals will be computed for.
-    :return: A vector of rediduals with length len(series) - ('fcast_horizon_n' + 2).
-    """
-
-    # get first index of the residual TimeSeries
-    first_index = series.time_index()[fcast_horizon_n + 2]
-
-    # compute fitted values
-    p = simulate_forecast_ar(series, model, first_index, fcast_horizon_n, True, verbose=verbose)
-
-    # compute residuals
-    print(first_index, p.start_time())
-    residuals = series.drop_before(first_index) - p
-
-    return residuals
