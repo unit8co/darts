@@ -54,6 +54,9 @@ class ARIMA(ForecastingModel):
         forecast = self.model.forecast(steps=n)[0]
         return self._build_forecast_series(forecast)
 
+    def get_min_train_series_length(self) -> int:
+        return 30
+
 
 class AutoARIMA(ForecastingModel):
 
@@ -91,3 +94,6 @@ class AutoARIMA(ForecastingModel):
         super().predict(n)
         forecast = self.model.predict(n_periods=n)
         return self._build_forecast_series(forecast)
+
+    def get_min_train_series_length(self) -> int:
+        return 30

@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log
+from ..logging import get_logger, raise_log, raise_if_not
 from typing import Optional
 
 logger = get_logger(__name__)
@@ -42,6 +42,9 @@ class ForecastingModel(ABC):
         series
             the training time series on which to fit the model
         """
+        raise_if_not(len(series) >= self.get_min_train_series_length(),
+                     "Train series only contains {} elements but {} model requires at least {} entries"
+                     .format(len(series), str(self), self.get_min_train_series_length()))
         self.training_series = series
         self._fit_called = True
 
@@ -63,6 +66,9 @@ class ForecastingModel(ABC):
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
 
+    def get_min_train_series_length(self) -> int:
+        return 3
+
     def _generate_new_dates(self, n: int) -> pd.DatetimeIndex:
         """
         Generates `n` new dates after the end of the training set
@@ -83,4 +89,5 @@ class ForecastingModel(ABC):
 
         time_index = self._generate_new_dates(len(points_preds))
 
-        return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound)
+        return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound, 
+                                                self.training_series.freq())

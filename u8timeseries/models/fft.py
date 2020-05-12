@@ -95,7 +95,6 @@ def _find_relevant_timestamp_attributes(series: TimeSeries):
         elif (_check_approximate_seasonality(series, 60, 4, 3)):
             relevant_attributes.add('minute')
 
-    logger.info('pd.TimeStamp attributes found to be relevant: ' + str(relevant_attributes))
     return relevant_attributes
 
 

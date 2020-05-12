@@ -53,6 +53,9 @@ class NaiveSeasonal(ForecastingModel):
         self.last_k_vals = None
         self.K = K
 
+    def get_min_train_series_length(self):
+        return self.K
+
     def __str__(self):
         return 'Naive seasonal model, with K={}'.format(self.K)
 

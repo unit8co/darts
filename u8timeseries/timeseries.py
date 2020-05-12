@@ -22,7 +22,8 @@ class TimeSeries:
     def __init__(self,
                  series: pd.Series,
                  confidence_lo: Optional[pd.Series] = None,
-                 confidence_hi: Optional[pd.Series] = None):
+                 confidence_hi: Optional[pd.Series] = None,
+                 freq: Optional[str] = None):
         """
         A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
@@ -37,15 +38,20 @@ class TimeSeries:
             Optionally, a Pandas Series representing lower confidence interval.
         confidence_hi
             Optionally, a Pandas Series representing upper confidence interval.
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
         """
 
         # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
-        raise_if_not(len(series) >= 3, 'Series must have at least three values.', logger)
+        raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
 
         self._series: pd.Series = series.sort_index()  # Sort by time
-        self._freq: str = self._series.index.inferred_freq  # Infer frequency
+        if (freq is None):
+            self._freq: str = self._series.index.inferred_freq  # Infer frequency
+        else: 
+            self._freq = freq
 
         # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
         raise_if_not(self._freq is not None, 'Could not infer frequency. Are some dates missing? '
@@ -496,7 +502,8 @@ class TimeSeries:
     def from_times_and_values(times: pd.DatetimeIndex,
                               values: np.ndarray,
                               confidence_lo: np.ndarray = None,
-                              confidence_hi: np.ndarray = None) -> 'TimeSeries':
+                              confidence_hi: np.ndarray = None,
+                              freq: Optional[str] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and values.
 
@@ -510,6 +517,8 @@ class TimeSeries:
             The lower confidence interval values (optional).
         confidence_hi
             The higher confidence interval values (optional).
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
 
         Returns
         -------
@@ -520,7 +529,7 @@ class TimeSeries:
         series_lo = pd.Series(confidence_lo, index=times) if confidence_lo is not None else None
         series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
 
-        return TimeSeries(series, series_lo, series_hi)
+        return TimeSeries(series, series_lo, series_hi, freq)
 
     def plot(self,
              plot_ci: bool = True,
