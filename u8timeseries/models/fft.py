@@ -193,28 +193,29 @@ class FFT(ForecastingModel):
         chosen_frequencies = frequencies[self.filtered_indices]
         return chosen_frequencies
 
-    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
 
         # determine trend
         if (self.trend == 'poly'):
             trend_coefficients = np.polyfit(range(len(series)), series.values(), self.trend_poly_degree)
-            self.trend = np.poly1d(trend_coefficients)
+            self.trend_function = np.poly1d(trend_coefficients)
         elif (self.trend == 'exp'):
             trend_coefficients = np.polyfit(range(len(series)), np.log(series.values()), 1)
-            self.trend = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
+            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
         else:
-            self.trend = lambda x: 0
+            self.trend_function = lambda x: 0
 
         # subtract trend
-        detrended_values = series.values() - self.trend(range(len(series)))
+        detrended_values = series.values() - self.trend_function(range(len(series)))
         detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
         if (self.required_matches is None):
-            self.required_matches = _find_relevant_timestamp_attributes(detrended_series)
-        cropped_series = _crop_to_match_seasons(detrended_series, required_matches=self.required_matches)
+            curr_required_matches = _find_relevant_timestamp_attributes(detrended_series)
+        else:
+            curr_required_matches = self.required_matches
+        cropped_series = _crop_to_match_seasons(detrended_series, required_matches=curr_required_matches)
 
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.values())
@@ -235,6 +236,6 @@ class FFT(ForecastingModel):
 
     def predict(self, n: int):
         super().predict(n)
-        trend_forecast = np.array([self.trend(i + len(self.training_series)) for i in range(n)])
+        trend_forecast = np.array([self.trend_function(i + len(self.training_series)) for i in range(n)])
         periodic_forecast = np.array([self.predicted_values[i % len(self.predicted_values)] for i in range(n)])
         return self._build_forecast_series(periodic_forecast + trend_forecast)
