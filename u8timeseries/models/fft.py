@@ -1,10 +1,10 @@
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log
+from ..logging import get_logger
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
-from typing import List, Optional
+from typing import Optional
 
 logger = get_logger(__name__)
 
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
                                    period_error_margin: int, max_seasonality_order: int) -> bool:
     """ Checks whether the given series has a given seasonality.
-    
+
     Analyzes the given TimeSeries instance for seasonality of the given period
     while taking into account potential noise of the autocorrelation function.
     This is done by averaging all AC values that are within 'period_error_margin'
@@ -59,7 +59,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     return order <= max_seasonality_order
 
 
-def _find_relevant_timestamp_attributes(series: TimeSeries):
+def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
     """ Finds pd.Timestamp attributes relevant for seasonality.
 
     Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes
