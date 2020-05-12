@@ -41,7 +41,8 @@ class TCNModule(nn.Module):
                  num_filters: int,
                  num_layers: Optional[int],
                  dilation_base: int,
-                 output_length: int):
+                 output_length: int,
+                 dropout: float):
 
         """ PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
@@ -81,10 +82,13 @@ class TCNModule(nn.Module):
         self.kernel_size = kernel_size
         self.out_len = output_length
         self.dilation_base = dilation_base
+        self.dropout = nn.Dropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
-        if (num_layers is None):
+        if (num_layers is None and dilation_base > 1):
             num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base))
+        else: 
+            num_layers = input_length - kernel_size + 1
 
         # Building TCN module
         self.tcn_layers_list = [
@@ -96,7 +100,10 @@ class TCNModule(nn.Module):
         self.tcn_layers_list.append(
             nn.Conv1d(num_filters, input_size, kernel_size, dilation=(dilation_base ** (i + 1)))
         )
+        for layer in self.tcn_layers_list:
+            nn.init.xavier_uniform(layer.weight)
         self.tcn_layers = nn.ModuleList(self.tcn_layers_list)
+
 
 
     def forward(self, x):
@@ -106,18 +113,15 @@ class TCNModule(nn.Module):
         x = x.transpose(1, 2)
 
         for i, conv1d_layer in enumerate(self.tcn_layers_list):
-
             # pad input
             left_padding = (self.dilation_base ** i) * (self.kernel_size - 1)
             x = F.pad(x, (left_padding, 0))
-
             # feed input to convolutional layer
             x = conv1d_layer(x)
-
             # introduce non-linearity
             x = F.relu(x)
-
-            #TODO: introduce dropout
+            # dropout
+            x = self.dropout(x)
         
         x = x.transpose(1, 2)
 
@@ -134,6 +138,7 @@ class TCNModel(TorchForecastingModel):
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
                  dilation_base: int = 2,
+                 dropout: float = 0.2,
                  **kwargs):
 
         """ Temporal Convolutional Network Model (TCN).
@@ -161,7 +166,7 @@ class TCNModel(TorchForecastingModel):
         self.model = TCNModule(input_size=self.input_size, input_length=input_length, 
                                kernel_size=kernel_size, num_filters=num_filters,
                                num_layers=num_layers, dilation_base=dilation_base, 
-                               output_length=1)
+                               output_length=1, dropout=dropout)
 
         super().__init__(**kwargs)
 
@@ -169,6 +174,22 @@ class TCNModel(TorchForecastingModel):
     def create_dataset(self, series):
         return _TimeSeriesDataset1DShifted(series, self.input_length, 1)
 
+
+    def predict(self, n: int) -> TimeSeries:
+        super().predict(n)
+
+        scaled_series = self.training_series.values()[-self.seq_len:]
+        pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
+        test_out = []
+        self.model.eval()
+        for i in range(n):
+            out = self.model(pred_in)
+            pred_in = pred_in.roll(-1, 1)
+            pred_in[:, -1, :] = out[:, -1]
+            test_out.append(out.cpu().detach().numpy()[0, 0])
+        test_out = np.stack(test_out)
+
+        return self._build_forecast_series(test_out.squeeze())
 
 
    
