@@ -46,6 +46,8 @@ class TimeSeries:
         raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
+        raise_if_not(len(series) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
+                     'is not passed', logger)
 
         self._series: pd.Series = series.sort_index()  # Sort by time
         if (freq is None):
