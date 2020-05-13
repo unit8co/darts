@@ -48,7 +48,7 @@ class TimeSeries:
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
 
         series = series.sort_index()  # Sort by time
-        if series.index.inferred_freq is None:
+        if not series.index.inferred_freq:
             if fill_missing_dates:
                 series = self._fill_missing_dates(series)
             else:
@@ -840,8 +840,13 @@ class TimeSeries:
 
         observed_frequencies = set(filter(None.__ne__, observed_frequencies))
 
-        raise_if_not(len(observed_frequencies) == 1, 'Could not infer explicit frequency. '
-                                                     'Is Series too short (n=2)?', logger)
+        raise_if_not(
+            len(observed_frequencies) == 1,
+            'Could not infer explicit frequency. Observed frequencies: ' +
+            ('none' if len(observed_frequencies) == 0 else str(observed_frequencies)) +
+            '. Is Series too short (n=2)?',
+            logger)
+
         inferred_frequency = observed_frequencies.pop()
         return series.resample(inferred_frequency).asfreq(fill_value=None)
 
