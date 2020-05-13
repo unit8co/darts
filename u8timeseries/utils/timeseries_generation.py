@@ -232,7 +232,7 @@ def holiday_timeseries(country_code: str,
     Returns
     -------
     TimeSeries
-        Binary TimeSeries for country's holidays.
+        Binary daily TimeSeries for country's holidays.
     """
 
     times = pd.date_range(periods=length, start=start_ts)
