@@ -842,9 +842,9 @@ class TimeSeries:
 
         raise_if_not(
             len(observed_frequencies) == 1,
-            'Could not infer explicit frequency. Observed frequencies: '
+            "Could not infer explicit frequency. Observed frequencies: "
             + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
-            + '. Is Series too short (n=2)?',
+            + ". Is Series too short (n=2)?",
             logger)
 
         inferred_frequency = observed_frequencies.pop()
