@@ -8,7 +8,7 @@ from u8timeseries.utils.timeseries_generation import (
     sine_timeseries,
     gaussian_timeseries,
     random_walk_timeseries,
-    us_holiday_timeseries
+    holiday_timeseries
 )
 
 
@@ -69,13 +69,20 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         random_walk_ts = random_walk_timeseries(length=length)
         self.assertEqual(len(random_walk_ts), length)
 
-    def test_us_holiday_timeseries(self):
+    def test_holiday_timeseries(self):
 
         # testing parameters
         length = 30
         start_ts = pd.Timestamp('20201201')
 
-        # testing for christmas and non-holiday
-        us_holiday_ts = us_holiday_timeseries(length=length, start_ts=start_ts)
+        # testing for christmas and non-holiday in US
+        us_holiday_ts = holiday_timeseries("US", length=length, start_ts=start_ts)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
         self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201226')], 0)
+
+        # testing for christmas and non-holiday in PL
+        pl_holiday_ts = holiday_timeseries("PL", length=length, start_ts=start_ts)
+        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
+        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201226')], 1)

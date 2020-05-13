@@ -1,8 +1,9 @@
+import math
+from typing import Union
+
 import numpy as np
 import pandas as pd
-import math
-from pandas.tseries.holiday import USFederalHolidayCalendar
-from typing import Union
+import holidays
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
@@ -155,10 +156,10 @@ def gaussian_timeseries(length: int = 10,
 
     if (type(mean) == np.ndarray):
         raise_if_not(mean.shape == (length,), 'If a vector of means is provided, '
-                     'it requires the same length as the TimeSeries.', logger)
+                                              'it requires the same length as the TimeSeries.', logger)
     if (type(std) == np.ndarray):
         raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided, '
-                     'its shape has to match the length of the TimeSeries.', logger)
+                                                    'its shape has to match the length of the TimeSeries.', logger)
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.random.normal(mean, std, size=length)
@@ -199,14 +200,17 @@ def random_walk_timeseries(length: int = 10,
     return TimeSeries.from_times_and_values(times, values)
 
 
-def us_holiday_timeseries(length: int = 10,
-                          start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
+def holiday_timeseries(country_code: str,
+                       length: int = 10,
+                       start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a binary TimeSeries that equals 1 at every index that corresponds to a US holiday,
+    Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
     and 0 otherwise. The frequency of the TimeSeries is daily.
 
     Parameters
     ----------
+    country_code
+        The country ISO code
     length
         The length of the returned TimeSeries.
     start_ts
@@ -215,11 +219,11 @@ def us_holiday_timeseries(length: int = 10,
     Returns
     -------
     TimeSeries
-        Binary TimeSeries for US holidays.
+        Binary TimeSeries for country's holidays.
     """
 
     times = pd.date_range(periods=length, freq='D', start=start_ts)
-    us_holidays = USFederalHolidayCalendar().holidays()
-    values = times.isin(us_holidays).astype(int)
+    country_holidays = holidays.CountryHoliday(country_code)[times[0]:times[-1] + pd.Timedelta(days=1)]
+    values = times.isin(country_holidays).astype(int)
 
     return TimeSeries.from_times_and_values(times, values)
