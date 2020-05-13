@@ -11,9 +11,10 @@ from u8timeseries.models.regression_model import RegressionModel
 
 from u8timeseries.utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
-from ..utils.statistics import plot_acf, _gaussian_function
+from ..utils.statistics import plot_acf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+from scipy.stats import norm
 from typing import Iterable
 
 logger = get_logger(__name__)
@@ -220,7 +221,7 @@ def analyze_residuals(residuals: TimeSeries, num_bins: int = 20):
     """ Plots data relevant to residuals.
 
     This function takes a TimeSeries instance of residuals and plots their values,
-    their distribution and their acf function.
+    their distribution and their ACF.
 
     Parameters
     ----------
@@ -245,7 +246,7 @@ def analyze_residuals(residuals: TimeSeries, num_bins: int = 20):
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
     ax2.hist(residuals.values(), bins=num_bins)
-    ax2.plot(x, _gaussian_function(res_mean, res_std, x) * len(residuals) * (res_max - res_min) / num_bins)
+    ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
     ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax2.set_title('Distribution')
     ax2.set_ylabel('count')

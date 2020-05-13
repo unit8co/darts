@@ -277,26 +277,3 @@ def plot_acf(ts: TimeSeries,
 
     axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
-
-
-def _gaussian_function(m: float, s: float, x: np.ndarray):
-    """ Gaussian Function.
-
-    Given a mean 'm' and variance 's'^2, this function computes the values
-    for every point in a numpy array given as 'x'.
-
-    Parameters
-    ----------
-    m
-        The float mean, or mu used in the gaussian function.
-    s
-        The float standard deviation, or sigma used in the gaussian function.
-    x
-        The inputs to the gaussian function as numpy array.
-
-    Returns
-    -------
-    np.ndarray
-        Numpy array of gaussian function values.
-    """
-    return np.exp(-1 / 2 * np.power((x - m) / s, 2)) / (s * np.sqrt(2 * math.pi))
