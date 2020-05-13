@@ -1,3 +1,8 @@
+"""
+Utils for time series generation
+--------------------------------
+"""
+
 import math
 from typing import Union
 
@@ -209,7 +214,7 @@ def holiday_timeseries(country_code: str,
     Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
     and 0 otherwise. The frequency of the TimeSeries is daily.
 
-    Available countries can be found at https://github.com/dr-prodigy/python-holidays#available-countries
+    Available countries can be found at: `<https://github.com/dr-prodigy/python-holidays#available-countries>` _.
 
     Parameters
     ----------
@@ -230,8 +235,9 @@ def holiday_timeseries(country_code: str,
         Binary TimeSeries for country's holidays.
     """
 
-    times = pd.date_range(periods=length, freq='D', start=start_ts)
-    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)[times[0]:times[-1] + pd.Timedelta(days=1)]
-    values = times.isin(country_holidays).astype(int)
+    times = pd.date_range(periods=length, start=start_ts)
+    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)
+    scoped_country_holidays = country_holidays[times[0]:times[-1] + pd.Timedelta(days=1)]
+    values = times.isin(scoped_country_holidays).astype(int)
 
     return TimeSeries.from_times_and_values(times, values)

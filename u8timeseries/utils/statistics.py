@@ -1,5 +1,5 @@
 """
-Time Series Statistics
+Time series Statistics
 ----------------------
 """
 
