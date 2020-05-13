@@ -53,7 +53,8 @@ class NaiveSeasonal(ForecastingModel):
         self.last_k_vals = None
         self.K = K
 
-    def get_min_train_series_length(self):
+    @property
+    def min_train_series_length(self):
         return max(self.K, 3)
 
     def __str__(self):

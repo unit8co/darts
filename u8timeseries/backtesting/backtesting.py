@@ -204,7 +204,7 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
     """
 
     # get first index not contained in the first training set
-    first_index = series.time_index()[model.get_min_train_series_length()]
+    first_index = series.time_index()[model.min_train_series_length]
 
     # compute fitted values
     p = backtest_forecasting(series, model, first_index, fcast_horizon_n, True, verbose=verbose)

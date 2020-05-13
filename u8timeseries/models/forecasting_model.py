@@ -42,9 +42,9 @@ class ForecastingModel(ABC):
         series
             the training time series on which to fit the model
         """
-        raise_if_not(len(series) >= self.get_min_train_series_length(),
+        raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(series), str(self), self.get_min_train_series_length()))
+                     .format(len(series), str(self), self.min_train_series_length))
         self.training_series = series
         self._fit_called = True
 
@@ -66,7 +66,8 @@ class ForecastingModel(ABC):
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
 
-    def get_min_train_series_length(self) -> int:
+    @property
+    def min_train_series_length(self) -> int:
         return 3
 
     def _generate_new_dates(self, n: int) -> pd.DatetimeIndex:
