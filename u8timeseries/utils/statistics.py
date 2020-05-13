@@ -266,7 +266,7 @@ def plot_acf(ts: TimeSeries,
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
 
     if (axis is None):
-        fig = plt.figure(figsize=fig_size)
+        plt.figure(figsize=fig_size)
         axis = plt
 
     for i in range(len(r)):

@@ -215,6 +215,7 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
 
     return residuals
 
+
 def analyze_residuals(residuals: TimeSeries, num_bins: int = 20):
     """ Plots data relevant to residuals.
 
