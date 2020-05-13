@@ -201,16 +201,24 @@ def random_walk_timeseries(length: int = 10,
 
 
 def holiday_timeseries(country_code: str,
+                       prov: str = None,
+                       state: str = None,
                        length: int = 10,
                        start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
     Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
     and 0 otherwise. The frequency of the TimeSeries is daily.
 
+    Available countries can be found at https://github.com/dr-prodigy/python-holidays#available-countries
+
     Parameters
     ----------
     country_code
         The country ISO code
+    prov
+        The province
+    state
+        The state
     length
         The length of the returned TimeSeries.
     start_ts
@@ -223,7 +231,7 @@ def holiday_timeseries(country_code: str,
     """
 
     times = pd.date_range(periods=length, freq='D', start=start_ts)
-    country_holidays = holidays.CountryHoliday(country_code)[times[0]:times[-1] + pd.Timedelta(days=1)]
+    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)[times[0]:times[-1] + pd.Timedelta(days=1)]
     values = times.isin(country_holidays).astype(int)
 
     return TimeSeries.from_times_and_values(times, values)
