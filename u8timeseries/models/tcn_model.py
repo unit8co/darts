@@ -32,6 +32,44 @@ from .torch_forecasting_model import (
 
 logger = get_logger(__name__)
 
+class ResidualBlock(nn.Module):
+
+    def __init__(self, num_filters, kernel_size, dilation_base, dropout, i, num_layers):
+        super(ResidualBlock, self).__init__()
+
+        self.dilation_base = dilation_base
+        self.kernel_size = kernel_size
+        self.dropout = dropout
+        self.num_layers = num_layers
+        self.i = i
+
+        input_dim = 1 if (i == 0) else num_filters
+        output_dim = 1 if (i == num_layers - 1) else num_filters
+        self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** i))
+        self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** i))
+        if (i == 0):
+            self.conv3 = nn.Conv1d(1, num_filters, 1)
+        elif (i == num_layers - 1):
+            self.conv3 = nn.Conv1d(num_filters, 1, 1)
+
+    def forward(self, x):
+        residual = x
+
+        # first step
+        left_padding = (self.dilation_base ** self.i) * (self.kernel_size - 1)
+        x = F.pad(x, (left_padding, 0))
+        x = self.dropout(F.relu(self.conv1(x)))
+
+        # second step
+        x = F.pad(x, (left_padding, 0))
+        x = self.dropout(F.relu(self.conv2(x)))
+
+        # add residual
+        if (self.i in {0, self.num_layers - 1}):
+            residual = self.conv3(residual)
+        x += residual
+
+        return x
 
 class TCNModule(nn.Module):
     def __init__(self,
@@ -69,8 +107,10 @@ class TCNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, 1, 1)`
-            Tensor containing the point prediciton of the next point in the series after the last entry.
+        y of shape `(batch_size, input_length, 1)`
+            Tensor containing the predictions of the next 'output_length' points in the last
+            'output_length' entries of the tensor. The entries before contain the data points
+            leading up to the first prediction, all in chronological order.
         """
 
         super(TCNModule, self).__init__()
@@ -86,45 +126,27 @@ class TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if (num_layers is None and dilation_base > 1):
-            num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base))
-        else: 
-            num_layers = input_length - kernel_size + 1
+            num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base)) # - 1
+        elif (num_layers is None): 
+            num_layers = (input_length - kernel_size) / 2 + 1
 
         # Building TCN module
-        self.tcn_layers_list = [
-            nn.Conv1d(input_size, num_filters, kernel_size, dilation=1)
-        ]
-        for i in range(1, num_layers - 1):
-            conv1d_layer = nn.Conv1d(num_filters, num_filters, kernel_size, dilation=(dilation_base ** i))
-            self.tcn_layers_list.append(conv1d_layer)
-        self.tcn_layers_list.append(
-            nn.Conv1d(num_filters, input_size, kernel_size, dilation=(dilation_base ** (i + 1)))
-        )
-        for layer in self.tcn_layers_list:
-            nn.init.xavier_uniform(layer.weight)
-        self.tcn_layers = nn.ModuleList(self.tcn_layers_list)
+        self.res_blocks_list = []
+        for i in range(num_layers):
+            res_block = ResidualBlock(num_filters, kernel_size, dilation_base, self.dropout, i, num_layers)
+            self.res_blocks_list.append(res_block)
+        self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
-
-
+    
     def forward(self, x):
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.size(0)
-
         x = x.transpose(1, 2)
 
-        for i, conv1d_layer in enumerate(self.tcn_layers_list):
-            # pad input
-            left_padding = (self.dilation_base ** i) * (self.kernel_size - 1)
-            x = F.pad(x, (left_padding, 0))
-            # feed input to convolutional layer
-            x = conv1d_layer(x)
-            # introduce non-linearity
-            x = F.relu(x)
-            # dropout
-            x = self.dropout(x)
+        for res_block in self.res_blocks_list:
+            x = res_block(x)
         
         x = x.transpose(1, 2)
-
         x = x.view(batch_size, self.input_length, 1)
 
         return x
@@ -134,6 +156,7 @@ class TCNModel(TorchForecastingModel):
 
     def __init__(self,
                  input_length: int = 12,
+                 output_length: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -147,6 +170,8 @@ class TCNModel(TorchForecastingModel):
         ----------
         input_length
             Number of past time steps that are fed to the forecasting module.
+        output_length
+            Number of time steps to be output by the forecasting module.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -159,6 +184,8 @@ class TCNModel(TorchForecastingModel):
 
         raise_if_not(kernel_size < input_length,
                      "The kernel size must be strictly smaller than the input length.", logger)
+        raise_if_not(output_length < input_length,
+                     "The output length must be strictly smaller than the input length", logger)
 
         self.input_size = 1
         kwargs['input_length'] = input_length
@@ -166,13 +193,13 @@ class TCNModel(TorchForecastingModel):
         self.model = TCNModule(input_size=self.input_size, input_length=input_length, 
                                kernel_size=kernel_size, num_filters=num_filters,
                                num_layers=num_layers, dilation_base=dilation_base, 
-                               output_length=1, dropout=dropout)
+                               output_length=output_length, dropout=dropout)
 
         super().__init__(**kwargs)
 
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DShifted(series, self.input_length, 1)
+        return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length)
 
 
     def predict(self, n: int) -> TimeSeries:
@@ -185,8 +212,8 @@ class TCNModel(TorchForecastingModel):
         for i in range(n):
             out = self.model(pred_in)
             pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, -1]
-            test_out.append(out.cpu().detach().numpy()[0, 0])
+            pred_in[:, -1, :] = out[:, -self.output_length]
+            test_out.append(out.cpu().detach().numpy()[0, -self.output_length])
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
