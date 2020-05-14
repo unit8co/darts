@@ -3,11 +3,14 @@ Exponential Smoothing
 ---------------------
 """
 
-from .forecasting_model import ForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger
-import statsmodels.tsa.holtwinters as hw
 from typing import Optional
+
+import numpy as np
+import statsmodels.tsa.holtwinters as hw
+
+from .forecasting_model import ForecastingModel
+from ..logging import get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -62,7 +65,9 @@ class ExponentialSmoothing(ForecastingModel):
                                            damped=self.damped,
                                            seasonal=self.seasonal,
                                            seasonal_periods=self.seasonal_periods)
-        hw_results = hw_model.fit(**self.fit_kwargs)
+        # numpy issues warnings if it encounters np.nan's in the data, which are acceptable in this case
+        with np.errstate(invalid='ignore'):
+            hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
     def predict(self, n):

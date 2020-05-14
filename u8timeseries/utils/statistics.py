@@ -256,7 +256,7 @@ def plot_acf(ts: TimeSeries,
         The size of the figure to be displayed.
     """
 
-    r = acf(ts.values(), nlags=max_lag)  # , alpha=alpha) and confint as output too
+    r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
 
     # Computes the confidence interval at level alpha for all lags.
     stats = []
