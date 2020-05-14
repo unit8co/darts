@@ -34,7 +34,7 @@ To create a conda environment for Python 3.7
 
 Don't forget to activate your virtual environment
 
-    conda activate --name <env-name>
+    conda activate <env-name>
 
 
 #### MAC
