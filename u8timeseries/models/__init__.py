@@ -10,6 +10,7 @@ from .prophet import Prophet
 from .exponential_smoothing import ExponentialSmoothing
 from .rnn_model import RNNModel
 from .theta import Theta
+from .fft import FFT
 
 # Regression
 from .standard_regression_model import StandardRegressionModel
