@@ -9,6 +9,7 @@ from ..logging import raise_log, get_logger
 from .forecasting_model import ForecastingModel
 import numpy as np
 import math
+from typing import Optional
 from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 
 logger = get_logger(__name__)
@@ -18,17 +19,26 @@ class Theta(ForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
     # .. todo: Try with something different than SES? They do that in the paper.
-    def __init__(self, theta: int = 0, mode: str = 'multiplicative'):
+    def __init__(self,
+                 theta: int = 0,
+                 seasonality_period: Optional[int] = None,
+                 mode: str = 'multiplicative'):
         """
         An implementation of the Theta method with configurable `theta` parameter.
 
         See `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf>`_ paper.
+
+        The training time series is de-seasonalized according to `seasonality_period`,
+        or an inferred seasonality period.
 
         Parameters
         ----------
         theta
             Value of the theta parameter. Defaults to 0. Cannot be set to 2.0.
             If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
+        seasonality_period
+            User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
+            calling `fit()`.
         mode
             Type of seasonality. Either "additive" or "multiplicative".
         """
@@ -42,7 +52,7 @@ class Theta(ForecastingModel):
         self.theta = theta
         self.is_seasonal = False
         self.seasonality = None
-        self.season_period = 0
+        self.season_period = seasonality_period
         self.mode = mode
 
         # Remark on the values of the theta parameter:
@@ -52,28 +62,18 @@ class Theta(ForecastingModel):
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
-    def fit(self, ts, season_period: int = None):
-        """
-        Fits the Theta method to the TimeSeries `ts`.
-
-
-        The model decomposition is defined by the parameters `theta`, and the TimeSeries `ts`
-        is de-seasonalized according to `season_period`.
-
-        :param ts: The TimeSeries to fit.
-        :param season_period: User-defined seasonality period. Default to None.
-        """
+    def fit(self, ts):
         super().fit(ts)
 
         self.length = len(ts)
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        if season_period is None:
-            max_lag = 24
-            self.is_seasonal, self.season_period = check_seasonality(ts, season_period, max_lag=max_lag)
+        if self.season_period is None:
+            max_lag = len(ts) // 2
+            self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
+            logger.info('Theta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
-            self.season_period = season_period
             self.is_seasonal = True  # force the user-defined seasonality to be considered as a true seasonal period.
 
         new_ts = ts
@@ -95,12 +95,6 @@ class Theta(ForecastingModel):
         self.alpha = self.model.params["smoothing_level"]
 
     def predict(self, n: int) -> 'TimeSeries':
-        """
-        Uses the fitted model to predict `n` values in the future.
-
-        :param n: The length of the horizon to predict over.
-        :return: A new TimeSeries containing the `n` prediction points.
-        """
         super().predict(n)
 
         # Forecast of the SES part.
@@ -125,3 +119,6 @@ class Theta(ForecastingModel):
                 raise ValueError("mode cannot be {}".format(self.mode))
 
         return self._build_forecast_series(forecast)
+
+    def __str__(self):
+        return 'Theta({})'.format(self.theta)
