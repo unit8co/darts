@@ -31,7 +31,7 @@ def constant_timeseries(value: float = 1,
         The length of the returned TimeSeries.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
-                   see: `https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects`_.
+        see `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     start_ts
         The time index of the first entry in the returned TimeSeries.
 
@@ -214,7 +214,7 @@ def holiday_timeseries(country_code: str,
     Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
     and 0 otherwise. The frequency of the TimeSeries is daily.
 
-    Available countries can be found at: `<https://github.com/dr-prodigy/python-holidays#available-countries>` _.
+    Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
 
     Parameters
     ----------

@@ -1,6 +1,6 @@
 """
-Time series Statistics
-----------------------
+Utils for time series statistics
+--------------------------------
 """
 
 import math

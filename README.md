@@ -1,7 +1,8 @@
 # u8timeseries: Easy manipulation and forecasting of time series
 
-![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries")
+![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries") 
 
+---
 [![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop)
 ![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
@@ -15,9 +16,10 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
+## Install
 
-# Install
-## Preconditions
+### Preconditions
+
 Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
@@ -38,29 +40,35 @@ Don't forget to activate your virtual environment
 
 
 #### MAC
+
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
 
 #### Linux and Windows
+
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
-    
-## Install u8timeseries
+
+### Install u8timeseries
+
     pip install u8timeseries
 
-#### Running the examples only, without installing:
+### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 ```
+
 cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
+
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
-For this setup to work you need to have a Docker service installed. You can get it [here](https://docs.docker.com/get-docker/).
-
+For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
 
 ## Example Usage
+
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
+
 ```python
 from u8timeseries import TimeSeries
 
@@ -70,6 +78,7 @@ train, val = series.split_after(pd.Timestamp('19590101'))
 ```
 
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
+
 ```python
 from u8timeseries import ExponentialSmoothing
 
@@ -85,18 +94,22 @@ prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
-![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example")
+
+![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example") { width=100% }
 
 We invite you to go over the example notebooks in the `examples` directory.
 
 ## Documentation
+
 The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
 ## Features
+
 Currently, the library contains the following features: 
 
-**Forecasting Models:** 
-* Exponential smoothing, 
+**Forecasting Models:**
+
+* Exponential smoothing,
 * ARIMA & auto-ARIMA,
 * Facebook Prophet,
 * Theta method,
@@ -113,7 +126,7 @@ from R2-scores to Mean Absolute Scaled Error.
 **Regressive Models:** Possibility to predict a time series from several other time series 
 (e.g., external regressors), using arbitrary regressive models.
 
-
 ## Contribute
+
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.
