@@ -57,7 +57,7 @@ def check_seasonality(ts: TimeSeries,
     if n_unique == 1:  # Check for non-constant TimeSeries
         return False, 0
 
-    r = acf(ts.values(), nlags=max_lag)  # In case user wants to check for seasonality higher than 24 steps.
+    r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
     gradient = np.gradient(r)
     gradient_signs_changes = np.diff(np.sign(gradient))
