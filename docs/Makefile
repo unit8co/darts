@@ -15,13 +15,13 @@ help:
 .PHONY: help Makefile
 
 generate:
-	@sphinx-apidoc -e -f --templatedir templates -o source/generated_api ../u8timeseries ../u8timeseries/logging.py ../u8timeseries/tests/*
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../u8timeseries ../u8timeseries/logging.py ../u8timeseries/tests/*
 
 readme:
-	@m2r ../README.md; mv ../README.rst source
+	@m2r ../README.md; mv ../README.rst "$(SOURCEDIR)"
 
 copy-examples:
-	@cp -r ../examples source
+	@cp -r ../examples "$(SOURCEDIR)/examples"
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

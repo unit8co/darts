@@ -63,7 +63,7 @@ cd scripts
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
-For this setup to work you need to have a Docker service installed. You can get it [here](https://docs.docker.com/get-docker/).
+For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
 
 ## Example Usage
 
