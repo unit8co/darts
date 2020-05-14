@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 
 class ResidualBlock(nn.Module):
 
-    def __init__(self, num_filters, kernel_size, dilation_base, dropout, i, num_layers):
+    def __init__(self, num_filters, kernel_size, dilation_base, dropout, weight_norm, i, num_layers):
         super(ResidualBlock, self).__init__()
 
         self.dilation_base = dilation_base
@@ -47,6 +47,9 @@ class ResidualBlock(nn.Module):
         output_dim = 1 if (i == num_layers - 1) else num_filters
         self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** i))
         self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** i))
+        if (weight_norm):
+            self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
+        
         if (i == 0):
             self.conv3 = nn.Conv1d(1, num_filters, 1)
         elif (i == num_layers - 1):
@@ -79,6 +82,7 @@ class TCNModule(nn.Module):
                  num_filters: int,
                  num_layers: Optional[int],
                  dilation_base: int,
+                 weight_norm: bool,
                  output_length: int,
                  dropout: float):
 
@@ -97,6 +101,8 @@ class TCNModule(nn.Module):
             The number of filters in a convolutional layer of the TCN.
         num_layers
             The number of convolutional layers.
+        weight_norm
+            Boolean value indicating whether to use weight normalization.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
 
@@ -133,7 +139,8 @@ class TCNModule(nn.Module):
         # Building TCN module
         self.res_blocks_list = []
         for i in range(num_layers):
-            res_block = ResidualBlock(num_filters, kernel_size, dilation_base, self.dropout, i, num_layers)
+            res_block = ResidualBlock(num_filters, kernel_size, dilation_base, 
+                                      self.dropout, weight_norm, i, num_layers)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -161,6 +168,7 @@ class TCNModel(TorchForecastingModel):
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
                  dilation_base: int = 2,
+                 weight_norm: bool = False,
                  dropout: float = 0.2,
                  **kwargs):
 
@@ -176,6 +184,8 @@ class TCNModel(TorchForecastingModel):
             The size of every kernel in a convolutional layer.
         num_filters
             The number of filters in a convolutional layer of the TCN.
+        weight_norm
+            Boolean value indicating whether to use weight normalization.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
         num_layers
@@ -193,7 +203,7 @@ class TCNModel(TorchForecastingModel):
         self.model = TCNModule(input_size=self.input_size, input_length=input_length, 
                                kernel_size=kernel_size, num_filters=num_filters,
                                num_layers=num_layers, dilation_base=dilation_base, 
-                               output_length=output_length, dropout=dropout)
+                               output_length=output_length, dropout=dropout, weight_norm=weight_norm)
 
         super().__init__(**kwargs)
 
