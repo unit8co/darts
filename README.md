@@ -30,7 +30,12 @@ and [torch](https://pytorch.org/get-started/locally/), then skip to
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <choose-your-name> python=3.7
+    conda create --name <env-name> python=3.7
+
+Don't forget to activate your virtual environment
+
+    conda activate --name <env-name>
+
 
 #### MAC
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
@@ -43,13 +48,15 @@ To create a conda environment for Python 3.7
 
 #### Running the examples only, without installing:
 
-To run the example notebooks without installing, using Docker, you can also run: 
+If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
+To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 ```
 cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
-This requires a Docker install.
+
+For this setup to work you need to have a Dockr service installed. You can get it [here](https://docs.docker.com/get-docker/).
 
 
 ## Example Usage
