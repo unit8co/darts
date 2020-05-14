@@ -31,7 +31,7 @@ def constant_timeseries(value: float = 1,
         The length of the returned TimeSeries.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
-                   see `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        see `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     start_ts
         The time index of the first entry in the returned TimeSeries.
 

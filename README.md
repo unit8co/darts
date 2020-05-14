@@ -1,7 +1,8 @@
 # u8timeseries: Easy manipulation and forecasting of time series
 
-![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries")
+![u8timeseries](https://github.com/unit8co/u8timeseries/raw/develop/static/images/logo-72dpi.png "u8timeseries") 
 
+---
 [![PyPI version](https://badge.fury.io/py/u8timeseries.svg)](https://badge.fury.io/py/u8timeseries)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/u8timeseries/develop)
 ![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)

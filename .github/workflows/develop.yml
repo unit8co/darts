@@ -87,13 +87,11 @@ jobs:
       - name: "7. Generate API documentation"
         run: |
           make --directory ./docs generate
+      
+      - name: "8. Generate README"
+        run: |
+          make --directory ./docs readme
 
-      - name: "8. Build documentation"
+      - name: "9. Build documentation"
         run: |
           make --directory ./docs html
-
-      - name: "9. Store documentation artifact"
-        uses: actions/upload-artifact@v1
-        with:
-          name: docs
-          path: docs/build/html
