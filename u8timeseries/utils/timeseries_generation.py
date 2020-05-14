@@ -8,6 +8,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
 import holidays
 
 from ..timeseries import TimeSeries
@@ -241,3 +242,44 @@ def holiday_timeseries(country_code: str,
     values = times.isin(scoped_country_holidays).astype(int)
 
     return TimeSeries.from_times_and_values(times, values)
+
+
+def upsample_timeseries(ts: TimeSeries, freq: str, method: str = 'pad') -> TimeSeries:
+    """
+    Creates an upsampled time series with given frequency.
+    Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
+
+    Parameters
+    ----------
+    ts
+        The TimeSeries to upsample.
+    freq
+        The new time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
+    method:
+        Method to fill holes in upsampled TimeSeries (note this does not fill NaNs that already were present):
+
+        ‘pad’: propagate last valid observation forward to next valid
+
+        ‘backfill’: use NEXT valid observation to fill.
+    Returns
+    -------
+    TimeSeries
+        A reindexed TimeSeries with given frequency.
+    """
+
+    new_offset = to_offset(freq)
+    old_offset = ts.freq()
+
+    raise_if_not(new_offset < old_offset, "Frequency needs to higher than from given time series. "
+                                          "Did you try to downsample?")
+
+    new_series = ts.pd_series().asfreq(freq, method=method)
+    new_conf_hi_series = ts.conf_hi_pd_series()
+    if new_conf_hi_series is not None:
+        new_conf_hi_series = new_conf_hi_series.asfreq(freq, method=method)
+
+    new_conf_lo_series = ts.conf_lo_pd_series()
+    if new_conf_lo_series is not None:
+        new_conf_lo_series = new_conf_lo_series.asfreq(freq, method=method)
+
+    return TimeSeries(series=new_series, confidence_hi=new_conf_hi_series, confidence_lo=new_conf_lo_series)

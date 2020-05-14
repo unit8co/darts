@@ -8,8 +8,11 @@ from u8timeseries.utils.timeseries_generation import (
     sine_timeseries,
     gaussian_timeseries,
     random_walk_timeseries,
-    holiday_timeseries
+    holiday_timeseries,
+    upsample_timeseries
 )
+
+from u8timeseries.timeseries import TimeSeries
 
 
 class TimeSeriesGenerationTestCase(unittest.TestCase):
@@ -77,12 +80,35 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for christmas and non-holiday in US
         us_holiday_ts = holiday_timeseries("US", length=length, start_ts=start_ts)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201226')], 0)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201225')], 1)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201226')], 0)
 
         # testing for christmas and non-holiday in PL
         pl_holiday_ts = holiday_timeseries("PL", length=length, start_ts=start_ts)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201226')], 1)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201225')], 1)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201226')], 1)
+
+    def test_upsample_timeseries(self):
+        times = pd.date_range('20130101', '20130110')
+        pd_series = pd.Series(range(10), index=times)
+        timeseries = TimeSeries(pd_series)
+
+        resampled_timeseries = upsample_timeseries(timeseries, 'H')
+        self.assertEqual(resampled_timeseries.freq_str(), 'H')
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101020000')], 0)
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130102020000')], 1)
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109090000')], 8)
+
+        with self.assertRaises(ValueError):
+            # try to downsample
+            upsample_timeseries(timeseries, '2D')
+
+        confidence_hi_series = pd.Series(range(5, 15), index=times)
+        timeseries = TimeSeries(pd_series, confidence_hi=confidence_hi_series)
+        resampled_timeseries = upsample_timeseries(timeseries, 'H')
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().index.inferred_freq, 'H')
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130101020000')], 5)
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130102020000')], 6)
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130109090000')], 13)
