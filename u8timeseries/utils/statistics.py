@@ -3,16 +3,17 @@ Time series Statistics
 ----------------------
 """
 
-from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger
-import numpy as np
-from statsmodels.tsa.stattools import acf
-from statsmodels.tsa.seasonal import seasonal_decompose
-from scipy.stats import norm
-import matplotlib.pyplot as plt
 import math
 from typing import Tuple, Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import norm
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import acf
+
+from ..logging import raise_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -256,7 +257,7 @@ def plot_acf(ts: TimeSeries,
         The size of the figure to be displayed.
     """
 
-    r = acf(ts.values(), nlags=max_lag)  # , alpha=alpha) and confint as output too
+    r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
 
     # Computes the confidence interval at level alpha for all lags.
     stats = []

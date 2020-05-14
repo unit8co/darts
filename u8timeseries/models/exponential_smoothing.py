@@ -3,11 +3,13 @@ Exponential Smoothing
 ---------------------
 """
 
-from .forecasting_model import ForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger
-import statsmodels.tsa.holtwinters as hw
 from typing import Optional
+
+import statsmodels.tsa.holtwinters as hw
+
+from .forecasting_model import ForecastingModel
+from ..logging import get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

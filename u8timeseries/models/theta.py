@@ -3,14 +3,16 @@ Theta Method
 ------------
 """
 
-import statsmodels.tsa.holtwinters as hw
-from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger
-from .forecasting_model import ForecastingModel
-import numpy as np
 import math
 from typing import Optional
+
+import numpy as np
+import statsmodels.tsa.holtwinters as hw
+
 from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
+from .forecasting_model import ForecastingModel
+from ..logging import raise_log, get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
