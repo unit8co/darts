@@ -38,10 +38,10 @@ Don't forget to activate your virtual environment
 
 
 #### MAC
-    conda install -c conda-forge -c pytorch pip fbprophet pytorch
+    conda install -c conda-forge -c pytorch pip fbprophet
 
 #### Linux and Windows
-    conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
+    conda install -c conda-forge -c pytorch pip fbprophet cpuonly
     
 ## Install u8timeseries
     pip install u8timeseries
