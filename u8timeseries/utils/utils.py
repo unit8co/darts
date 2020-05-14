@@ -1,3 +1,8 @@
+"""
+Additional util functions
+-------------------------
+"""
+
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger
 from typing import List

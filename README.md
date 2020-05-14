@@ -15,9 +15,10 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
+## Install
 
-# Install
-## Preconditions
+### Preconditions
+
 Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
@@ -33,27 +34,33 @@ To create a conda environment for Python 3.7
     conda create --name <choose-your-name> python=3.7
 
 #### MAC
+
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
 
 #### Linux and Windows
+
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
-    
-## Install u8timeseries
+
+### Install u8timeseries
+
     pip install u8timeseries
 
 #### Running the examples only, without installing:
 
 To run the example notebooks without installing, using Docker, you can also run: 
-```
+
+``` bash
 cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
+
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 This requires a Docker install.
 
-
 ## Example Usage
+
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
+
 ```python
 from u8timeseries import TimeSeries
 
@@ -63,6 +70,7 @@ train, val = series.split_after(pd.Timestamp('19590101'))
 ```
 
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
+
 ```python
 from u8timeseries import ExponentialSmoothing
 
@@ -78,18 +86,22 @@ prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
-![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example")
+
+![example](https://github.com/unit8co/u8timeseries/raw/develop/static/images/example.png "example") { width=100% }
 
 We invite you to go over the example notebooks in the `examples` directory.
 
 ## Documentation
+
 The documentation of the API and models is available [here](https://unit8co.github.io/u8timeseries/).
 
 ## Features
+
 Currently, the library contains the following features: 
 
-**Forecasting Models:** 
-* Exponential smoothing, 
+**Forecasting Models:**
+
+* Exponential smoothing,
 * ARIMA & auto-ARIMA,
 * Facebook Prophet,
 * Theta method,
@@ -106,7 +118,7 @@ from R2-scores to Mean Absolute Scaled Error.
 **Regressive Models:** Possibility to predict a time series from several other time series 
 (e.g., external regressors), using arbitrary regressive models.
 
-
 ## Contribute
+
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.

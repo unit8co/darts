@@ -1,3 +1,8 @@
+"""
+Fast Fourier Transform
+----------------------
+"""
+
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import time_log, get_logger, raise_log
@@ -157,11 +162,11 @@ class FFT(ForecastingModel):
 
         FFT(nr_freqs_to_keep=10)
         - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
-          forecasting and expects no global trend to be present in the data
+        forecasting and expects no global trend to be present in the data
 
         FFT(required_matches={'month'}, trend='exp')
         - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
-          global trend, and it will not perform any frequency filtering
+        global trend, and it will not perform any frequency filtering
 
         :param nr_freqs_to_keep: The total number of frequencies that will be used for forecasting.
         :param required_matches: The attributes of pd.Timestamp that will be used to create a training
