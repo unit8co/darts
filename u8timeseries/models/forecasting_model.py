@@ -68,6 +68,10 @@ class ForecastingModel(ABC):
 
     @property
     def min_train_series_length(self) -> int:
+        """
+        Class property defining the minimum required length for the training series.
+        This function/property should be overridden if a value higher than 3 is required.
+        """
         return 3
 
     def _generate_new_dates(self, n: int) -> pd.DatetimeIndex:

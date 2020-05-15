@@ -1,10 +1,11 @@
-from .forecasting_model import ForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger
+from typing import Optional
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
-from typing import Optional
+
+from .forecasting_model import ForecastingModel
+from ..timeseries import TimeSeries
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 

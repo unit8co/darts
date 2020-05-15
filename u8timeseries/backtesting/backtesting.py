@@ -3,19 +3,19 @@ Backtesting Functions
 ---------------------
 """
 
+from typing import Iterable
 import pandas as pd
 import numpy as np
-from u8timeseries.timeseries import TimeSeries
-from u8timeseries.models.forecasting_model import ForecastingModel
-from u8timeseries.models.regression_model import RegressionModel
-
-from u8timeseries.utils import _build_tqdm_iterator
-from ..logging import raise_if_not, get_logger
-from ..utils.statistics import plot_acf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import norm
-from typing import Iterable
+
+from ..timeseries import TimeSeries
+from ..models.forecasting_model import ForecastingModel
+from ..models.regression_model import RegressionModel
+from ..utils import _build_tqdm_iterator
+from ..logging import raise_if_not, get_logger
+from ..utils.statistics import plot_acf
 
 logger = get_logger(__name__)
 
@@ -217,7 +217,7 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
     return residuals
 
 
-def analyze_residuals(residuals: TimeSeries, num_bins: int = 20):
+def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     """ Plots data relevant to residuals.
 
     This function takes a TimeSeries instance of residuals and plots their values,
