@@ -141,20 +141,12 @@ class TorchForecastingModel(ForecastingModel):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 model_name: str = "RNN_run",  # TODO uid
+                 model_name: str = "torch_model_run",  # TODO uid
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
-        """ Recurrent Neural Network Model (RNNs).
-
-        This class provides three variants of RNNs:
-
-        * Vanilla RNN
-
-        * LSTM
-
-        * GRU
+        """ Pytorch-based Forecasting Model.
 
         Parameters
         ----------
@@ -256,7 +248,7 @@ class TorchForecastingModel(ForecastingModel):
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False) -> None:
-        """ Fit method for RNNs
+        """ Fit method for torch modules
 
         Parameters
         ----------
@@ -417,7 +409,7 @@ class TorchForecastingModel(ForecastingModel):
                     folder: str,
                     epoch: int):
         """
-        Saves the whole RNNModel object to a file
+        Saves the whole torch model object to a file
         TODO: shall we try to optimize going through torch.save, which uses uses zip?
 
         :param is_best: whether the model we're currently saving is the best (on validation set)
@@ -474,8 +466,8 @@ class TorchForecastingModel(ForecastingModel):
 
         Returns
         -------
-        RNNModel
-            The corresponding trained `RNNModel`.
+        TorchForecastingModel
+            The corresponding trained `TorchForecastingModel`.
         """
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
