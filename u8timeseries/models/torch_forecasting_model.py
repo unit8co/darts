@@ -90,8 +90,8 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-        where `data` and `target` are both 1-D sub-sequences of length [data_length]. The sequence contained in 
-        target is shifted forward by [shift] positions, meaning that `target` contains the last 
+        where `data` and `target` are both 1-D sub-sequences of length [data_length]. The sequence contained in
+        target is shifted forward by [shift] positions, meaning that `target` contains the last
         [data_length] - [shift] entries of `data` and then the [shift] following ones.
 
         Parameters
@@ -125,7 +125,6 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.shift:idx + self.data_length + self.shift]
         return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
-
 
 
 class TorchForecastingModel(ForecastingModel):
@@ -213,7 +212,6 @@ class TorchForecastingModel(ForecastingModel):
         self.seq_len = input_length
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
-
 
         self.model = self.model.to(self.device)
         self.model_name = model_name
