@@ -150,7 +150,7 @@ class TorchForecastingModel(ForecastingModel):
 
         This class is meant to be inherited to create a new pytorch-based forecasting module.
         When subclassing this class, please make sure to set the self.model attribute
-        in the __init__ function and then call super().__init__(**kwargs).
+        in the __init__ function and then call super().__init__ while passing the kwargs.
 
         Parameters
         ----------
