@@ -87,7 +87,22 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
                  series: TimeSeries,
                  data_length: int = 3,
                  shift: int = 1):
-    
+        """
+        A PyTorch Dataset from a univariate TimeSeries.
+        The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
+        where `data` and `target` are both 1-D sub-sequences of length [data_length]. The sequence contained in 
+        target is shifted forward by [shift] positions, meaning that `target` contains the last 
+        [data_length] - [shift] entries of `data` and then the [shift] following ones.
+
+        Parameters
+        ----------
+        series
+            The time series to be included in the dataset.
+        data_length
+            The length of the training and target sub-sequences.
+        shift
+            The number of positions that the target sequence is shifted forward compared to the training sequence.
+        """
 
         self.series_values = series.values()
         self.len_series = len(series)
