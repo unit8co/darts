@@ -148,6 +148,10 @@ class TorchForecastingModel(ForecastingModel):
                  torch_device_str: Optional[str] = None):
         """ Pytorch-based Forecasting Model.
 
+        This class is meant to be inherited to create a new pytorch-based forecasting module.
+        When subclassing this class, please make sure to set the self.model attribute
+        in the __init__ function and then call super().__init__(**kwargs).
+
         Parameters
         ----------
         output_length
