@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 
 from ..timeseries import TimeSeries
-from ..models.rnn_model import _TimeSeriesDataset1DSequential
+from ..models.torch_forecasting_model import _TimeSeriesDataset1DSequential
 
 
 class DatasetTestCase(unittest.TestCase):
