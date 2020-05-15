@@ -4,33 +4,18 @@ Temporal Convolutional Network
 """
 
 import numpy as np
-import os
-import re
-from glob import glob
-import shutil
 import math
-import pickle
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
-from typing import List, Optional, Dict, Union
+from typing import Optional
 
 from ..timeseries import TimeSeries
-from ..custom_logging import raise_if_not, get_logger, raise_log
-from .autoregressive_model import AutoRegressiveModel
-from ..utils import _build_tqdm_iterator
-from .torch_forecasting_model import (
-    TorchForecastingModel,
-    _TimeSeriesDataset1DShifted,
-    _get_checkpoint_folder,
-    _get_runs_folder,
-    CHECKPOINTS_FOLDER,
-    RUNS_FOLDER
-)
+from ..logging import raise_if_not, get_logger
+from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesDataset1DShifted
 
 logger = get_logger(__name__)
+
 
 class _ResidualBlock(nn.Module):
 
@@ -49,11 +34,11 @@ class _ResidualBlock(nn.Module):
             The dropout rate for every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
-        i 
+        i
             The number of residual blocks before the current one.
         num_layers
             The number of convolutional layers.
-        
+
         Inputs
         ------
         x of shape `(batch_size, in_dimension, input_length)`
@@ -82,7 +67,7 @@ class _ResidualBlock(nn.Module):
         self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** i))
         if (weight_norm):
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
-        
+
         if (i == 0):
             self.conv3 = nn.Conv1d(1, num_filters, 1)
         elif (i == num_layers - 1):
@@ -106,6 +91,7 @@ class _ResidualBlock(nn.Module):
         x += residual
 
         return x
+
 
 class _TCNModule(nn.Module):
     def __init__(self,
@@ -169,19 +155,18 @@ class _TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if (num_layers is None and dilation_base > 1):
-            num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base)) # - 1
-        elif (num_layers is None): 
+            num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base))
+        elif (num_layers is None):
             num_layers = (input_length - kernel_size) / 2 + 1
 
         # Building TCN module
         self.res_blocks_list = []
         for i in range(num_layers):
-            res_block = _ResidualBlock(num_filters, kernel_size, dilation_base, 
-                                      self.dropout, weight_norm, i, num_layers)
+            res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
+                                       self.dropout, weight_norm, i, num_layers)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
-    
     def forward(self, x):
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.size(0)
@@ -189,7 +174,7 @@ class _TCNModule(nn.Module):
 
         for res_block in self.res_blocks_list:
             x = res_block(x)
-        
+
         x = x.transpose(1, 2)
         x = x.view(batch_size, self.input_length, 1)
 
@@ -242,17 +227,15 @@ class TCNModel(TorchForecastingModel):
         self.input_size = 1
         kwargs['input_length'] = input_length
 
-        self.model = _TCNModule(input_size=self.input_size, input_length=input_length, 
-                               kernel_size=kernel_size, num_filters=num_filters,
-                               num_layers=num_layers, dilation_base=dilation_base, 
-                               output_length=output_length, dropout=dropout, weight_norm=weight_norm)
+        self.model = _TCNModule(input_size=self.input_size, input_length=input_length,
+                                kernel_size=kernel_size, num_filters=num_filters,
+                                num_layers=num_layers, dilation_base=dilation_base,
+                                output_length=output_length, dropout=dropout, weight_norm=weight_norm)
 
         super().__init__(**kwargs)
 
-
     def create_dataset(self, series):
         return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length)
-
 
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
@@ -269,6 +252,3 @@ class TCNModel(TorchForecastingModel):
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
-
-
-   

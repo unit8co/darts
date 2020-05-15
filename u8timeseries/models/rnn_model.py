@@ -4,29 +4,11 @@ Recurrent Neural Networks
 """
 
 import numpy as np
-import os
-import re
-from glob import glob
-import shutil
-import pickle
-import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.tensorboard import SummaryWriter
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Union
 
-from ..timeseries import TimeSeries
-from ..utils import _build_tqdm_iterator
-from ..logging import raise_if_not, get_logger, raise_log
-from .forecasting_model import ForecastingModel
-from .torch_forecasting_model import (
-    TorchForecastingModel,
-    _TimeSeriesDataset1DSequential,
-    _get_checkpoint_folder,
-    _get_runs_folder,
-    CHECKPOINTS_FOLDER,
-    RUNS_FOLDER
-)
+from ..logging import raise_if_not, get_logger
+from .torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
 
@@ -118,7 +100,7 @@ class _RNNModule(nn.Module):
 
 
 class RNNModel(TorchForecastingModel):
-    
+
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  output_length: int = 1,
@@ -127,7 +109,7 @@ class RNNModel(TorchForecastingModel):
                  hidden_fc_sizes: Optional[List] = None,
                  dropout: float = 0.,
                  **kwargs):
-        
+
         """ Recurrent Neural Network Model (RNNs).
 
         This class provides three variants of RNNs:
@@ -155,11 +137,11 @@ class RNNModel(TorchForecastingModel):
         dropout
             Fraction of neurons afected by Dropout.
         """
-        
+
         self.input_size = 1
         kwargs['output_length'] = output_length
 
-        ## set self.model
+        # set self.model
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
             self.model = _RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,

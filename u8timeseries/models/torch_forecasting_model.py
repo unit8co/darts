@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import List, Optional, Dict, Union
+from typing import Optional, Dict
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -458,7 +458,7 @@ class TorchForecastingModel(ForecastingModel):
     def load_from_checkpoint(model_name: str,
                              work_dir: str = os.getcwd(),
                              filename: str = None,
-                             best: bool = True) -> 'RNNModel':
+                             best: bool = True) -> 'TorchForecastingModel':
         """
         Load the model from the given checkpoint.
         if file is not given, will try to restore the most recent checkpoint.
@@ -509,4 +509,3 @@ class TorchForecastingModel(ForecastingModel):
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
             return p['lr']
-
