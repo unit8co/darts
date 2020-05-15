@@ -32,10 +32,43 @@ from .torch_forecasting_model import (
 
 logger = get_logger(__name__)
 
-class ResidualBlock(nn.Module):
+class _ResidualBlock(nn.Module):
 
     def __init__(self, num_filters, kernel_size, dilation_base, dropout, weight_norm, i, num_layers):
-        super(ResidualBlock, self).__init__()
+        """ PyTorch module implementing a residual block module used in `_TCNModule`.
+
+        Parameters
+        ----------
+        num_filters
+            The number of filters in a convolutional layer of the TCN.
+        kernel_size
+            The size of every kernel in a convolutional layer.
+        dilation_base
+            The base of the exponent that will determine the dilation on every level.
+        dropout
+            The dropout rate for every convolutional layer.
+        weight_norm
+            Boolean value indicating whether to use weight normalization.
+        i 
+            The number of residual blocks before the current one.
+        num_layers
+            The number of convolutional layers.
+        
+        Inputs
+        ------
+        x of shape `(batch_size, in_dimension, input_length)`
+            Tensor containing the features of the input sequence.
+            in_dimension is equal to 1 if this is the first residual block (i = 0),
+            in all other cases it is equal to num_filters.
+
+        Outputs
+        -------
+        y of shape `(batch_size, out_dimension, input_length)`
+            Tensor containing the output sequence of the residual block.
+            out_dimension is equal to 1 if this is the last residual block (i = num_layers - 1),
+            in all other cases it is equal to num_filters.
+        """
+        super(_ResidualBlock, self).__init__()
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
@@ -74,7 +107,7 @@ class ResidualBlock(nn.Module):
 
         return x
 
-class TCNModule(nn.Module):
+class _TCNModule(nn.Module):
     def __init__(self,
                  input_size: int,
                  input_length: int,
@@ -95,6 +128,8 @@ class TCNModule(nn.Module):
             The dimensionality of the input time series.
         input_length
             The length of the input time series.
+        output_length
+            Number of time steps the torch module will predict into the future at once.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -105,6 +140,8 @@ class TCNModule(nn.Module):
             Boolean value indicating whether to use weight normalization.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
+        dropout
+            The dropout rate for every convolutional layer.
 
         Inputs
         ------
@@ -119,7 +156,7 @@ class TCNModule(nn.Module):
             leading up to the first prediction, all in chronological order.
         """
 
-        super(TCNModule, self).__init__()
+        super(_TCNModule, self).__init__()
 
         # Defining parameters
         self.input_size = input_size
@@ -139,7 +176,7 @@ class TCNModule(nn.Module):
         # Building TCN module
         self.res_blocks_list = []
         for i in range(num_layers):
-            res_block = ResidualBlock(num_filters, kernel_size, dilation_base, 
+            res_block = _ResidualBlock(num_filters, kernel_size, dilation_base, 
                                       self.dropout, weight_norm, i, num_layers)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
@@ -174,12 +211,15 @@ class TCNModel(TorchForecastingModel):
 
         """ Temporal Convolutional Network Model (TCN).
 
+        This is an implementation of a dilated TCN used for forecasting.
+        Inspiration: https://arxiv.org/abs/1803.01271
+
         Parameters
         ----------
         input_length
             Number of past time steps that are fed to the forecasting module.
         output_length
-            Number of time steps to be output by the forecasting module.
+            Number of time steps the torch module will predict into the future at once.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -190,6 +230,8 @@ class TCNModel(TorchForecastingModel):
             The base of the exponent that will determine the dilation on every level.
         num_layers
             The number of convolutional layers.
+        dropout
+            The dropout rate for every convolutional layer.
         """
 
         raise_if_not(kernel_size < input_length,
@@ -200,7 +242,7 @@ class TCNModel(TorchForecastingModel):
         self.input_size = 1
         kwargs['input_length'] = input_length
 
-        self.model = TCNModule(input_size=self.input_size, input_length=input_length, 
+        self.model = _TCNModule(input_size=self.input_size, input_length=input_length, 
                                kernel_size=kernel_size, num_filters=num_filters,
                                num_layers=num_layers, dilation_base=dilation_base, 
                                output_length=output_length, dropout=dropout, weight_norm=weight_norm)
