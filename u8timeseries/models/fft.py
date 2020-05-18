@@ -28,8 +28,8 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     period_error_margin
         The radius around the 'seasonality_period' that is taken into consideration when computing the autocorrelation.
     max_seasonality_order
-        The maximum number of lags (or inputs to the acf) that can exceed the acf computed over the interval
-        described above.
+        The maximum number of lags (or inputs to the acf) that can exceed the ac value computed over the interval
+        around 'seasonality_period'. The lower this number, the stricter the criterion for seasonality.
 
     Returns
     -------
@@ -121,7 +121,7 @@ def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, re
     """ Compares pd.Timestamp instances on attributes.
 
     Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
-    It returns true if and only if the two timestamps are matching in all given attributes.
+    It returns True if and only if the two timestamps are matching in all given attributes.
 
     Parameters
     ----------
