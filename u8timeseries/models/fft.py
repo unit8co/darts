@@ -17,7 +17,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     Analyzes the given TimeSeries instance for seasonality of the given period
     while taking into account potential noise of the autocorrelation function.
     This is done by averaging all AC values that are within 'period_error_margin'
-    steps from the index 'period_error_margin' in the ACF domain.
+    steps from the index 'seasonality_period' in the ACF domain.
 
     Parameters
     ----------
