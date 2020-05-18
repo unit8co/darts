@@ -181,16 +181,16 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
     Parameters
     ----------
     model
-        A ForecastingModel subclass to be tuned for 'series'.
+        The ForecastingModel subclass to be tuned for 'series'.
     parameters
-        A dictionary containg as keys hyperparameter names, and as values lists of values for the
+        A dictionary containing as keys hyperparameter names, and as values lists of values for the
         respective hyperparameter.
     series
         The TimeSeries instance used for backtesting.
     fcast_horizon_n
         The integer value of the forecasting horizon used during backtesting.
     num_predictions:
-        The number of train/predictions cycles performed when testing one hyperparameter combination.
+        The number of train/prediction cycles performed when testing one hyperparameter combination.
     metric:
         The function name (as string) of a metrics function from the metrics module.
     verbose:
@@ -199,10 +199,10 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
     Returns
     -------
     ForecastingModel
-        A 'model_cls' instance with the best-performing hyperparameters from the given selection.
+        A 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
-    raise_if_not(hasattr(metrics, metric), "'metric' must be an attribute of u8timeseries.metriecs.", logger)
+    raise_if_not(hasattr(metrics, metric), "'metric' must be an attribute of u8timeseries.metrics.", logger)
 
     backtest_start_time = series.end_time() - (num_predictions + fcast_horizon_n) * series.freq()
     metric_function = getattr(metrics, metric)
