@@ -7,6 +7,7 @@ from ..metrics import mape
 from ..utils.timeseries_generation import linear_timeseries as lt, sine_timeseries as st, random_walk_timeseries as rt
 from ..models import Theta, FFT, ExponentialSmoothing
 
+
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model given parameters 'params'
@@ -27,10 +28,12 @@ def compare_best_against_random(model_class, params, series):
 class BacktestingTestCase(unittest.TestCase):
 
     def test_backtest_gridsearch(self):
-        
+
         np.random.seed(1)
         ts_length = 50
-        dummy_series = lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+        dummy_series = (
+            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+        )
 
         theta_params = {'theta': list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))

@@ -172,9 +172,9 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries, fcast_horizon_n: int,
                         num_predictions: int = 10, metric='mape', verbose=False):
     """ A function for finding the best hyperparameters.
-    
+
     Computes 'num_predictions' predictions with horizon 'fcast_horizon_n' for every combination
-    of hyperparameter values provided in the 'parameters' dictionary using an instance of the 
+    of hyperparameter values provided in the 'parameters' dictionary using an instance of the
     given 'model_class' subclass of ForecastingModel. An instance with the best-performing
     hyperparameters (with respect to 'metric') will be returned.
 
@@ -195,7 +195,7 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
         The function name (as string) of a metrics function from the metrics module.
     verbose:
         Whether to print progress.
-    
+
     Returns
     -------
     ForecastingModel
