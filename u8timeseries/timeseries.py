@@ -42,7 +42,8 @@ class TimeSeries:
             Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
-            Optionally, a boolean indicating filling missing dates with NaN in case missing inferred_freq on index.
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series`cannot be inferred.
         """
 
         raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
@@ -61,7 +62,7 @@ class TimeSeries:
                     self._series = self._fill_missing_dates(self._series)
                 else:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
-                                        'Is Series too short (n=2)?', logger)
+                                        'Try specifying `fill_missing_dates=True`.', logger)
             self._freq: str = self._series.index.inferred_freq  # Infer frequency
             raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
                          'value of the "freq" argument.', logger)
@@ -472,7 +473,9 @@ class TimeSeries:
                        time_col: Optional[str],
                        value_col: str,
                        conf_lo_col: str = None,
-                       conf_hi_col: str = None) -> 'TimeSeries':
+                       conf_hi_col: str = None,
+                       freq: Optional[str] = None,
+                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -490,6 +493,11 @@ class TimeSeries:
             The lower confidence interval column name (optional).
         conf_hi_col
             The upper confidence interval column name (optional).
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series`cannot be inferred.
 
         Returns
         -------
@@ -505,14 +513,15 @@ class TimeSeries:
         conf_lo = pd.Series(df[conf_lo_col], index=times) if conf_lo_col is not None else None
         conf_hi = pd.Series(df[conf_hi_col], index=times) if conf_hi_col is not None else None
 
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
                               values: np.ndarray,
                               confidence_lo: np.ndarray = None,
                               confidence_hi: np.ndarray = None,
-                              freq: Optional[str] = None) -> 'TimeSeries':
+                              freq: Optional[str] = None,
+                              fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and values.
 
@@ -528,6 +537,9 @@ class TimeSeries:
             The higher confidence interval values (optional).
         freq
             Optionally, a string representing the frequency of the Pandas Series.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series`cannot be inferred.
 
         Returns
         -------
@@ -538,7 +550,7 @@ class TimeSeries:
         series_lo = pd.Series(confidence_lo, index=times) if confidence_lo is not None else None
         series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
 
-        return TimeSeries(series, series_lo, series_hi, freq)
+        return TimeSeries(series, series_lo, series_hi, freq, fill_missing_dates)
 
     def plot(self,
              plot_ci: bool = True,
