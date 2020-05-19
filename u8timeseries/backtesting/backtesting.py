@@ -67,6 +67,7 @@ def backtest_forecasting(series: TimeSeries,
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
+    raise_if_not(fcast_horizon_n >= 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
     last_pred_time = series.time_index()[-fcast_horizon_n - 1] if trim_to_series else series.time_index()[-1]
 
