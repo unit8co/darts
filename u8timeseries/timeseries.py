@@ -497,7 +497,7 @@ class TimeSeries:
             Optionally, a string representing the frequency of the Pandas Series.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
-            in case the frequency of `series`cannot be inferred.
+            in case the frequency of `series` cannot be inferred.
 
         Returns
         -------
@@ -539,7 +539,7 @@ class TimeSeries:
             Optionally, a string representing the frequency of the Pandas Series.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
-            in case the frequency of `series`cannot be inferred.
+            in case the frequency of `series` cannot be inferred.
 
         Returns
         -------
