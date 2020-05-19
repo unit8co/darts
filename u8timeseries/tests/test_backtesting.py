@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import random
+import logging
 
 from ..backtesting import backtest_gridsearch, backtest_forecasting
 from ..metrics import mape
@@ -10,8 +11,12 @@ from ..models import Theta, FFT, ExponentialSmoothing
 
 def compare_best_against_random(model_class, params, series):
 
-    # instantiate best model given parameters 'params'
-    best_model = backtest_gridsearch(model_class, params, series, 10)
+    # instantiate best model in expanding window mode
+    best_model_1 = backtest_gridsearch(model_class, params, series, fcast_horizon_n=10)
+
+    # instantiate best model in split mode
+    train, val = series.split_before(series.time_index()[-10])
+    best_model_2 = backtest_gridsearch(model_class, params, train, val_series=val)
 
     # intantiate model with random parameters from 'params'
     random_param_choice = {}
@@ -20,12 +25,28 @@ def compare_best_against_random(model_class, params, series):
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_forecast = backtest_forecasting(series, best_model, series.time_index()[-20], 10)
-    random_forecast = backtest_forecasting(series, random_model, series.time_index()[-20], 10)
-    return mape(best_forecast, series) <= mape(random_forecast, series)
+    best_forecast_1 = backtest_forecasting(series, best_model_1, series.time_index()[-21], 10)
+    random_forecast_1 = backtest_forecasting(series, random_model, series.time_index()[-21], 10)
+
+    # perform train/val evaluation on both models
+    best_model_2.fit(train)
+    best_forecast_2 = best_model_2.predict(len(val))
+    random_model = model_class(**random_param_choice)
+    random_model.fit(train)
+    random_forecast_2 = random_model.predict(len(val))
+
+    # check whether best models are at least as good as random models
+    expanding_window_ok = mape(best_forecast_1, series) <= mape(random_forecast_1, series)
+    split_ok = mape(best_forecast_2, val) <= mape(random_forecast_2, val)
+
+    return expanding_window_ok and split_ok
 
 
 class BacktestingTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_backtest_gridsearch(self):
 

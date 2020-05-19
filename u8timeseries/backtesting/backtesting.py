@@ -11,7 +11,7 @@ from ..models.regression_model import RegressionModel
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
-from typing import Iterable
+from typing import Iterable, Optional
 from itertools import product
 
 logger = get_logger(__name__)
@@ -169,14 +169,31 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
-def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries, fcast_horizon_n: int,
-                        num_predictions: int = 10, metric='mape', verbose=False):
+def backtest_gridsearch(model_class: type, parameters: dict, 
+                        train_series: TimeSeries, 
+                        val_series: Optional[TimeSeries] = None,  # only used by split mode
+                        fcast_horizon_n: int = 5, num_predictions: int = 10,  # only used by expanding window mode
+                        metric='mape', verbose=False):
     """ A function for finding the best hyperparameters.
 
-    Computes 'num_predictions' predictions with horizon 'fcast_horizon_n' for every combination
-    of hyperparameter values provided in the 'parameters' dictionary using an instance of the
-    given 'model_class' subclass of ForecastingModel. An instance with the best-performing
-    hyperparameters (with respect to 'metric') will be returned.
+    This function has 2 modes of operation: Expanding window mode and split mode.
+    Both modes of operation evaluate every possible combination of hyperparameter values
+    provided in the `parameters` dictionary by instantiating the `model_class` subclass
+    of ForecastingModel with each combination and returning the best-performing model with regards
+    to the `metric` function. The relationship of the training data and test data depends
+    on the mode of operation.
+
+    Expanding window mode (default):
+    For every model, `num_predictions` predictions with horizon `fcast_horizon_n` are computed
+    by using the `backtest_forecast` function as a subroutine on `train_series`. This means that
+    the model is both trained and evaluated on `train_series`.
+    Note that the model is retrained for every single prediction, thus this mode is slower.
+
+    Split window mode (activated when `val_series` is passed):
+    This mode will be used when the `val_series` argument is passed.
+    For every hyperparameter combination, the model is trained on `train_series` and
+    evaluated on `val_series`.
+
 
     Parameters
     ----------
@@ -185,14 +202,16 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
     parameters
         A dictionary containing as keys hyperparameter names, and as values lists of values for the
         respective hyperparameter.
-    series
-        The TimeSeries instance used for backtesting.
+    train_series
+        The TimeSeries instance used for training (and also validation in split mode).
+    test_series
+        The TimeSeries instance used for validation in split mode.
     fcast_horizon_n
-        The integer value of the forecasting horizon used during backtesting.
+        The integer value of the forecasting horizon used in expanding window mode.
     num_predictions:
-        The number of train/prediction cycles performed when testing one hyperparameter combination.
+        The number of train/prediction cycles performed in one iteration of expanding window mode.
     metric:
-        The function name (as string) of a metrics function from the metrics module.
+        The function name (as string) of a metrics function from the metrics module used for evaluating performance.
     verbose:
         Whether to print progress.
 
@@ -204,7 +223,7 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
 
     raise_if_not(hasattr(metrics, metric), "'metric' must be an attribute of u8timeseries.metrics.", logger)
 
-    backtest_start_time = series.end_time() - (num_predictions + fcast_horizon_n) * series.freq()
+    backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
     metric_function = getattr(metrics, metric)
 
     min_error = float('inf')
@@ -216,8 +235,12 @@ def backtest_gridsearch(model_class: type, parameters: dict, series: TimeSeries,
     for param_combination in iterator:
         param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
         model = model_class(**param_combination_dict)
-        backtest_forecast = backtest_forecasting(series, model, backtest_start_time, fcast_horizon_n)
-        error = metric_function(backtest_forecast, series)
+        if (val_series is None):  # expanding window mode
+            backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n)
+            error = metric_function(backtest_forecast, train_series)
+        else:  # split mode
+            model.fit(train_series)
+            error = metric_function(model.predict(len(val_series)), val_series)
         if (error < min_error):
             min_error = error
             best_param_combination = param_combination_dict

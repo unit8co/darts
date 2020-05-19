@@ -202,7 +202,6 @@ class FFT(ForecastingModel):
         chosen_frequencies = frequencies[self.filtered_indices]
         return chosen_frequencies
 
-    @time_log(logger=logger)
     def fit(self, series: TimeSeries):
         super().fit(series)
 
