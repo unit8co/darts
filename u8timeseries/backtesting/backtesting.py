@@ -3,6 +3,7 @@ Backtesting Functions
 ---------------------
 """
 
+from typing import Iterable
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -66,8 +67,9 @@ def backtest_forecasting(series: TimeSeries,
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
+    raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    last_pred_time = series.time_index()[-fcast_horizon_n - 2] if trim_to_series else series.time_index()[-2]
+    last_pred_time = series.time_index()[-fcast_horizon_n - 1] if trim_to_series else series.time_index()[-1]
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -169,6 +171,87 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         times.append(pred.end_time())  # store the N-th timestamp
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+
+
+def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1,
+                          verbose: bool = True) -> TimeSeries:
+    """ A function for computing the residuals produced by a given model and time series.
+    This function computes the difference between the actual observations from `series`
+    and the fitted values vector p obtained by training `model` on `series`.
+    For every index i in `series`, p[i] is computed by training `model` on
+    series[:(i - `fcast_horizon_n`)] and forecasting `fcast_horizon_n` into the future.
+    (p[i] will be set to the last value of the predicted vector.)
+    The vector of residuals will be shorter than `series` due to the minimum
+    training series length required by `model` and the gap introduced by `fcast_horizon_n`.
+    Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.
+    Parameters
+    ----------
+    model
+        Instance of ForecastingModel used to compute the fitted values p.
+    series
+        The TimeSeries instance which the residuals will be computed for.
+    fcast_horizon_n
+        The forecasting horizon used to predict each fitted value.
+    verbose
+        Whether to print progress.
+    Returns
+    -------
+    TimeSeries
+        The vector of residuals.
+    """
+
+    # get first index not contained in the first training set
+    first_index = series.time_index()[model.min_train_series_length]
+
+    # compute fitted values
+    p = backtest_forecasting(series, model, first_index, fcast_horizon_n, True, verbose=verbose)
+
+    # compute residuals
+    series_trimmed = series.slice_intersect(p)
+    residuals = series_trimmed - p
+
+    return residuals
+
+
+def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
+    """ Plots data relevant to residuals.
+    This function takes a TimeSeries instance of residuals and plots their values,
+    their distribution and their ACF.
+    Parameters
+    ----------
+    residuals
+        TimeSeries instance representing residuals.
+    num_bins
+        Optionally, an integer value determining the number of bins in the histogram.
+    """
+
+    fig = plt.figure(constrained_layout=True, figsize=(8, 6))
+    gs = fig.add_gridspec(2, 2)
+
+    # plot values
+    ax1 = fig.add_subplot(gs[:1, :])
+    residuals.plot(ax=ax1)
+    ax1.set_ylabel('value')
+    ax1.set_title('Residual values')
+
+    # plot distribution
+    res_mean, res_std = np.mean(residuals.values()), np.std(residuals.values())
+    res_min, res_max = min(residuals.values()), max(residuals.values())
+    x = np.linspace(res_min, res_max, 100)
+    ax2 = fig.add_subplot(gs[1:, 1:])
+    ax2.hist(residuals.values(), bins=num_bins)
+    ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
+    ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax2.set_title('Distribution')
+    ax2.set_ylabel('count')
+    ax2.set_xlabel('value')
+
+    # plot ACF
+    ax3 = fig.add_subplot(gs[1:, :1])
+    plot_acf(residuals, axis=ax3)
+    ax3.set_ylabel('ACF value')
+    ax3.set_xlabel('lag')
+    ax3.set_title('ACF')
 
 
 def backtest_gridsearch(model_class: type, parameters: dict, 

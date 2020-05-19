@@ -3,10 +3,15 @@ import numpy as np
 import random
 import logging
 
-from ..backtesting import backtest_gridsearch, backtest_forecasting
+from ..backtesting import backtest_gridsearch, backtest_forecasting, forecasting_residuals
 from ..metrics import mape
-from ..utils.timeseries_generation import linear_timeseries as lt, sine_timeseries as st, random_walk_timeseries as rt
-from ..models import Theta, FFT, ExponentialSmoothing
+from ..utils.timeseries_generation import (
+    linear_timeseries as lt,
+    sine_timeseries as st,
+    random_walk_timeseries as rt,
+    constant_timeseries as ct
+)
+from ..models import Theta, FFT, ExponentialSmoothing, NaiveSeasonal
 
 
 def compare_best_against_random(model_class, params, series):
@@ -64,3 +69,17 @@ class BacktestingTestCase(unittest.TestCase):
 
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
+
+    def test_forecasting_residuals(self):
+        model = NaiveSeasonal(K=1)
+
+        # test zero residuals
+        constant_ts = ct(length=20)
+        residuals = forecasting_residuals(model, constant_ts)
+        np.testing.assert_almost_equal(residuals.values(), np.zeros(len(residuals)))
+
+        # test constant, positive residuals
+        linear_ts = lt(length=20)
+        residuals = forecasting_residuals(model, linear_ts)
+        np.testing.assert_almost_equal(np.diff(residuals.values()), np.zeros(len(residuals) - 1))
+        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.values())
