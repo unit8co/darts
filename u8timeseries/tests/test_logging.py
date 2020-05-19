@@ -54,17 +54,16 @@ class LoggingTestCase(unittest.TestCase):
 
     def test_timeseries_constructor_error_log(self):
         # test assert error log when trying to construct a TimeSeries that is too short
-        times = pd.date_range(start='2000-01-01', periods=2, freq='D')
-        values = np.array([1, 2])
+        empty_series = pd.Series()
         with LogCapture() as lc:
             get_logger('u8timeseries.timeseries').handlers = []
             try:
-                TimeSeries.from_times_and_values(times, values)
+                TimeSeries(empty_series)
             except Exception:
                 pass
 
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must have at least three values.')
+            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must not be empty.')
         )
 
     def test_timeseries_split_error_log(self):

@@ -23,12 +23,12 @@ class TimeSeries:
                  series: pd.Series,
                  confidence_lo: Optional[pd.Series] = None,
                  confidence_hi: Optional[pd.Series] = None,
+                 freq: Optional[str] = None,
                  fill_missing_dates: Optional[bool] = True):
         """
         A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
         TimeSeries are meant to be immutable.
-        One TimeSeries is defined by the following three components:
 
         Parameters
         ----------
@@ -38,26 +38,34 @@ class TimeSeries:
             Optionally, a Pandas Series representing lower confidence interval.
         confidence_hi
             Optionally, a Pandas Series representing upper confidence interval.
+        freq
+            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
+            instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
-            Optionally, a boolean indicating filling missing dates with NaN in case missing inferred_freq on index.
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series` cannot be inferred.
         """
 
-        # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
-        raise_if_not(len(series) >= 3, 'Series must have at least three values.', logger)
+        raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
+        raise_if_not(len(series) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
+                     'is not passed', logger)
 
-        series = series.sort_index()  # Sort by time
-        if not series.index.inferred_freq:
-            if fill_missing_dates:
-                series = self._fill_missing_dates(series)
-            else:
-                raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
-                                    'Is Series too short (n=2)?', logger)
+        self._series = series.sort_index()  # Sort by time
 
-        self._series: pd.Series = series
-
-        self._freq: str = self._series.index.inferred_freq  # Infer frequency
+        if (len(series) < 3):
+            self._freq: str = freq
+        else:
+            if not series.index.inferred_freq:
+                if fill_missing_dates:
+                    self._series = self._fill_missing_dates(self._series)
+                else:
+                    raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
+                                        'Try specifying `fill_missing_dates=True`.', logger)
+            self._freq: str = self._series.index.inferred_freq  # Infer frequency
+            raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
+                         'value of the "freq" argument.', logger)
 
         # TODO: are there some pandas Series where the line below causes issues?
         self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
@@ -465,7 +473,9 @@ class TimeSeries:
                        time_col: Optional[str],
                        value_col: str,
                        conf_lo_col: str = None,
-                       conf_hi_col: str = None) -> 'TimeSeries':
+                       conf_hi_col: str = None,
+                       freq: Optional[str] = None,
+                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -483,6 +493,11 @@ class TimeSeries:
             The lower confidence interval column name (optional).
         conf_hi_col
             The upper confidence interval column name (optional).
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series` cannot be inferred.
 
         Returns
         -------
@@ -498,13 +513,15 @@ class TimeSeries:
         conf_lo = pd.Series(df[conf_lo_col], index=times) if conf_lo_col is not None else None
         conf_hi = pd.Series(df[conf_hi_col], index=times) if conf_hi_col is not None else None
 
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
                               values: np.ndarray,
                               confidence_lo: np.ndarray = None,
-                              confidence_hi: np.ndarray = None) -> 'TimeSeries':
+                              confidence_hi: np.ndarray = None,
+                              freq: Optional[str] = None,
+                              fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and values.
 
@@ -518,6 +535,11 @@ class TimeSeries:
             The lower confidence interval values (optional).
         confidence_hi
             The higher confidence interval values (optional).
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series` cannot be inferred.
 
         Returns
         -------
@@ -528,7 +550,7 @@ class TimeSeries:
         series_lo = pd.Series(confidence_lo, index=times) if confidence_lo is not None else None
         series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
 
-        return TimeSeries(series, series_lo, series_hi)
+        return TimeSeries(series, series_lo, series_hi, freq, fill_missing_dates)
 
     def plot(self,
              plot_ci: bool = True,
