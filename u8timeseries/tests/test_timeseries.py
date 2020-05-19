@@ -1,5 +1,6 @@
 import logging
 import unittest
+import math
 
 import numpy as np
 import pandas as pd
@@ -45,11 +46,6 @@ class TimeSeriesTestCase(unittest.TestCase):
             # Conf interval must have same time index as main series
             pd_lo = pd.Series(range(5, 15), index=pd.date_range('20130102', '20130111'))
             TimeSeries(self.pd_series1, None, pd_lo)
-
-        with self.assertRaises(ValueError):
-            # Main series cannot have date holes
-            range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
-            TimeSeries(pd.Series(range(9), index=range_))
 
         series_test = TimeSeries(self.pd_series1, self.pd_series2, self.pd_series3)
 
@@ -409,3 +405,26 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         with self.assertRaises(IndexError):
             self.series1[::-1]
+
+    def test_fill_missing_dates(self):
+        with self.assertRaises(ValueError):
+            # Series cannot have date holes without automatic filling
+            range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
+            TimeSeries(pd.Series(range(9), index=range_), fill_missing_dates=False)
+
+        with self.assertRaises(ValueError):
+            # Main series should have explicit frequency in case of date holes
+            range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110', freq='2D'))
+            TimeSeries(pd.Series(range(7), index=range_))
+
+        range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
+        series_test = TimeSeries(pd.Series(range(9), index=range_))
+        self.assertEqual(series_test.freq_str(), 'D')
+
+        range_ = pd.date_range('20130101', '20130104', freq='2D') \
+            .append(pd.date_range('20130107', '20130111', freq='2D'))
+        series_test = TimeSeries(pd.Series(range(5), index=range_))
+        self.assertEqual(series_test.freq_str(), '2D')
+        self.assertEqual(series_test.start_time(), range_[0])
+        self.assertEqual(series_test.end_time(), range_[-1])
+        self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))

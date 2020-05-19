@@ -23,12 +23,12 @@ class TimeSeries:
                  series: pd.Series,
                  confidence_lo: Optional[pd.Series] = None,
                  confidence_hi: Optional[pd.Series] = None,
-                 freq: Optional[str] = None):
+                 freq: Optional[str] = None,
+                 fill_missing_dates: Optional[bool] = True):
         """
         A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
 
         TimeSeries are meant to be immutable.
-        One TimeSeries is defined by the following three components:
 
         Parameters
         ----------
@@ -39,25 +39,33 @@ class TimeSeries:
         confidence_hi
             Optionally, a Pandas Series representing upper confidence interval.
         freq
-            Optionally, a string representing the frequency of the Pandas Series.
+            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries 
+            instance with a length smaller than 3, this argument must be passed.
+        fill_missing_dates
+            Optionally, a boolean indicating filling missing dates with NaN in case missing inferred_freq on index.
         """
 
-        # cannot create a timeseries with n<3 -> can add less than 3 elements with add function
         raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
         raise_if_not(len(series) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
                      'is not passed', logger)
 
-        self._series: pd.Series = series.sort_index()  # Sort by time
-        if (freq is None):
-            self._freq: str = self._series.index.inferred_freq  # Infer frequency
-        else:
-            self._freq = freq
+        self._series = series.sort_index()  # Sort by time
 
-        # TODO: optionally fill holes (including missing dates) - for now we assume no missing dates
-        raise_if_not(self._freq is not None, 'Could not infer frequency. Are some dates missing? '
-                                             'Is Series too short (n=2)?', logger)
+        if (len(series) < 3):
+            self._freq: str = freq
+        else:    
+            if not series.index.inferred_freq:
+                if fill_missing_dates:
+                    self._series = self._fill_missing_dates(self._series)
+                else:
+                    raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
+                                        'Is Series too short (n=2)?', logger)
+            self._freq: str = self._series.index.inferred_freq  # Infer frequency
+            raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
+                         'value of the "freq" argument.', logger)
+
 
         # TODO: are there some pandas Series where the line below causes issues?
         self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
@@ -710,13 +718,16 @@ class TimeSeries:
         raise_if_not(index is not None, "Index must be filled.")
         if (values is not None):
             raise_if_not(len(values) == len(index), "The number of values must correspond "
-                         "to the number of indices: {} != {}".format(len(values), len(index)), logger)
+                                                    "to the number of indices: {} != {}".format(len(values),
+                                                                                                len(index)), logger)
         if (conf_lo is not None):
             raise_if_not(len(conf_lo) == len(index), "The number of values must correspond "
-                         "to the number of indices: ""{} != {}".format(len(conf_lo), len(index)), logger)
+                                                     "to the number of indices: ""{} != {}".format(len(conf_lo),
+                                                                                                   len(index)), logger)
         if (conf_hi is not None):
             raise_if_not(len(conf_hi) == len(index), "The number of values must correspond "
-                         "to the number of indices: {} != {}".format(len(conf_hi), len(index)), logger)
+                                                     "to the number of indices: {} != {}".format(len(conf_hi),
+                                                                                                 len(index)), logger)
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)
         series = values if values is None else pd.Series(np.delete(values, ignored_indices), index=index)
@@ -815,10 +826,46 @@ class TimeSeries:
         conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
         return TimeSeries(series, conf_lo, conf_hi)
 
+    @staticmethod
+    def _fill_missing_dates(series: pd.Series) -> pd.Series:
+        """
+        Tries to fill missing dates in series with NaN.
+        Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.
+
+        Parameters
+        ----------
+        series
+            The actual time series, as a pandas Series with a proper time index.
+
+        Returns
+        -------
+        pandas.Series
+            A new Pandas Series without missing dates.
+        """
+        date_axis = series.index
+        samples_size = 3
+        observed_frequencies = [
+            date_axis[x:x + samples_size].inferred_freq
+            for x
+            in range(len(date_axis) - samples_size + 1)]
+
+        observed_frequencies = set(filter(None.__ne__, observed_frequencies))
+
+        raise_if_not(
+            len(observed_frequencies) == 1,
+            "Could not infer explicit frequency. Observed frequencies: "
+            + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
+            + ". Is Series too short (n=2)?",
+            logger)
+
+        inferred_frequency = observed_frequencies.pop()
+        return series.resample(inferred_frequency).asfreq(fill_value=None)
+
     """
     Definition of some useful statistical methods.
     These methods rely on the Pandas implementation.
     """
+
     def mean(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
         return self._series.mean(axis, skipna, level, numeric_only, **kwargs)
 
@@ -855,6 +902,7 @@ class TimeSeries:
     """
     Definition of some dunder methods
     """
+
     def __eq__(self, other):
         if isinstance(other, TimeSeries):
             if not self._series.equals(other.pd_series()):

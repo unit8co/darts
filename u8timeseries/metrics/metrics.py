@@ -215,7 +215,7 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = T
 def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1, intersect: bool = True) -> float:
     """ Mean Absolute Scaled Error (MASE).
 
-    See `the Wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
+    See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
     for details about the MASE and how it is computed.
 
     Parameters
@@ -328,7 +328,7 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
 def r2_score(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
     """ Coefficient of Determination :math:`R^2`.
 
-    See `the Wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
+    See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
     for details about the :math:`R^2` score and how it is computed.
 
     Parameters

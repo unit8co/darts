@@ -1,3 +1,8 @@
+"""
+Fast Fourier Transform
+----------------------
+"""
+
 from typing import Optional
 import numpy as np
 import pandas as pd
@@ -5,7 +10,8 @@ from statsmodels.tsa.stattools import acf
 
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger
+from ..logging import time_log, get_logger, raise_log
+from .forecasting_model import ForecastingModel
 
 logger = get_logger(__name__)
 
@@ -181,10 +187,12 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
 
 
 class FFT(ForecastingModel):
-    def __init__(self, nr_freqs_to_keep: Optional[int] = 10, required_matches: Optional[set] = None,
-                 trend: Optional[str] = None, trend_poly_degree: int = 3):
-        """ FFT.
-
+    def __init__(self,
+                 nr_freqs_to_keep: Optional[int] = 10,
+                 required_matches: Optional[set] = None,
+                 trend: Optional[str] = None,
+                 trend_poly_degree: int = 3):
+        """
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
         (controlled by the 'nr_freqs_to_keep' argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the 'trend' argument) and to crop the training sequence to full seasonal periods
@@ -194,11 +202,11 @@ class FFT(ForecastingModel):
 
         FFT(nr_freqs_to_keep=10)
         - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
-          forecasting and expects no global trend to be present in the data
+        forecasting and expects no global trend to be present in the data
 
         FFT(required_matches={'month'}, trend='exp')
         - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
-          global trend, and it will not perform any frequency filtering
+        global trend, and it will not perform any frequency filtering
 
         Parameters
         ----------
@@ -212,11 +220,10 @@ class FFT(ForecastingModel):
             pd.Timestamp attributes that are relevant for the seasonality automatically. (Currently supported
             seasonality periods are: yearly, monthly, weekly, daily, hourly.)
         trend
-            Optional string value indicating which detrending method will be used ('exp' or 'poly'). If no
-            string is passed, no detrending will be applied.
+            If set, indicates what kind of detrending will be applied before performing DFT.
+            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
         trend_poly_degree
-            The degree of the polynomial that will be used for detrending if trend = 'poly'. Will be ignored
-            otherwise.
+            The degree of the polynomial that will be used for detrending, if `trend='poly'`.
         """
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches

@@ -38,7 +38,6 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
-    'sphinx_autodoc_typehints',
     'nbsphinx',
     'm2r'
 ]
@@ -62,7 +61,7 @@ language = 'en'
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',
     '**/modules.rst', '**/u8timeseries.tests.*',
-    '**/*custom_logging.rst'
+    '**/*logging.rst'
 ]
 
 

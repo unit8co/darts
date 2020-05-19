@@ -3,5 +3,4 @@ static
 scripts
 docs
 conda_recipe
-*.md
 LICENSE
