@@ -10,8 +10,7 @@ from statsmodels.tsa.stattools import acf
 
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import time_log, get_logger, raise_log
-from .forecasting_model import ForecastingModel
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -22,8 +21,8 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
 
     Analyzes the given TimeSeries instance for seasonality of the given period
     while taking into account potential noise of the autocorrelation function.
-    This is done by averaging all AC values that are within 'period_error_margin'
-    steps from the index 'seasonality_period' in the ACF domain.
+    This is done by averaging all AC values that are within `period_error_margin`
+    steps from the index `seasonality_period` in the ACF domain.
 
     Parameters
     ----------
@@ -32,10 +31,10 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     seasonality_period
         The (approximate) period to be checked for seasonality.
     period_error_margin
-        The radius around the 'seasonality_period' that is taken into consideration when computing the autocorrelation.
+        The radius around the `seasonality_period` that is taken into consideration when computing the autocorrelation.
     max_seasonality_order
         The maximum number of lags (or inputs to the acf) that can exceed the ac value computed over the interval
-        around 'seasonality_period'. The lower this number, the stricter the criterion for seasonality.
+        around `seasonality_period`. The lower this number, the stricter the criterion for seasonality.
 
     Returns
     -------
@@ -81,7 +80,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
     Returns
     -------
     set
-        A set of pd.Timestamp attributes with high autocorrelation within 'series'.
+        A set of pd.Timestamp attributes with high autocorrelation within `series`.
     """
     relevant_attributes = set()
 
@@ -141,7 +140,7 @@ def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, re
     Returns
     -------
     bool
-        True if and only if 'ts_1' and 'ts_2' match in all attributes given in 'required_matches'.
+        True if and only if `ts_1` and `ts_2` match in all attributes given in `required_matches`.
     """
     return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
 
@@ -149,11 +148,11 @@ def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, re
 def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
     """ Crops TimeSeries instance to contain full periods.
 
-    Crops a given TimeSeries 'series' that will be used as a training set in such
+    Crops a given TimeSeries `series` that will be used as a training set in such
     a way that its first entry has a timestamp that matches the first timestamp
-    right after the end of 'series' in all attributes given in 'required_matches'.
+    right after the end of `series` in all attributes given in `required_matches`.
     If no such timestamp can be found, the original TimeSeries instance is returned.
-    If the value of 'required_matches' is 'None', the original TimeSeries instance is returned.
+    If the value of `required_matches` is `None`, the original TimeSeries instance is returned.
 
     Parameters
     ----------
@@ -194,9 +193,9 @@ class FFT(ForecastingModel):
                  trend_poly_degree: int = 3):
         """
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
-        (controlled by the 'nr_freqs_to_keep' argument) and  inverse FFT, combined with the option to detrend
-        the data (controlled by the 'trend' argument) and to crop the training sequence to full seasonal periods
-        (controlled by the 'required_matches' argument).
+        (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend
+        the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods
+        (controlled by the `required_matches` argument).
 
         Examples:
 
@@ -204,7 +203,7 @@ class FFT(ForecastingModel):
         - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
         forecasting and expects no global trend to be present in the data
 
-        FFT(required_matches={'month'}, trend='exp')
+        FFT(required_matches={`month`}, trend=`exp`)
         - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
         global trend, and it will not perform any frequency filtering
 
@@ -215,15 +214,15 @@ class FFT(ForecastingModel):
         required_matches
             The attributes of pd.Timestamp that will be used to create a training sequence that is cropped at the
             beginning such that the first timestamp of the training sequence and the first prediction point have
-            matching 'phases'. If the series has a yearly seasonality, include 'month', if it has a monthly
-            seasonality, include 'day', etc. If not set, or explicitly set to None, the model tries to find the
+            matching `phases`. If the series has a yearly seasonality, include `month`, if it has a monthly
+            seasonality, include `day`, etc. If not set, or explicitly set to None, the model tries to find the
             pd.Timestamp attributes that are relevant for the seasonality automatically. (Currently supported
             seasonality periods are: yearly, monthly, weekly, daily, hourly.)
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
-            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
+            Possible values: `poly` or `exp`, for polynomial trend, or exponential trend, respectively.
         trend_poly_degree
-            The degree of the polynomial that will be used for detrending, if `trend='poly'`.
+            The degree of the polynomial that will be used for detrending, if `trend=`poly``.
         """
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
@@ -260,7 +259,7 @@ class FFT(ForecastingModel):
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.values())
 
-        # get indices of 'nr_freqs_to_keep' (if a correct value was provied) frequencies with the highest amplitudes
+        # get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array
         first_n = self.nr_freqs_to_keep
         if (first_n is None or first_n < 1 or first_n > len(self.fft_values)):

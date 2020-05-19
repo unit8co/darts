@@ -39,7 +39,7 @@ class TimeSeries:
         confidence_hi
             Optionally, a Pandas Series representing upper confidence interval.
         freq
-            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries 
+            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
             Optionally, a boolean indicating filling missing dates with NaN in case missing inferred_freq on index.
@@ -55,7 +55,7 @@ class TimeSeries:
 
         if (len(series) < 3):
             self._freq: str = freq
-        else:    
+        else:
             if not series.index.inferred_freq:
                 if fill_missing_dates:
                     self._series = self._fill_missing_dates(self._series)
@@ -65,7 +65,6 @@ class TimeSeries:
             self._freq: str = self._series.index.inferred_freq  # Infer frequency
             raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
                          'value of the "freq" argument.', logger)
-
 
         # TODO: are there some pandas Series where the line below causes issues?
         self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series

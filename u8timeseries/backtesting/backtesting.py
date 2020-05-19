@@ -176,16 +176,16 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
                           verbose: bool = True) -> TimeSeries:
     """ A function for computing the residuals produced by a given model and time series.
 
-    This function computes the difference between the actual observations from 'series'
-    and the fitted values vector p obtained by training 'model' on 'series'.
+    This function computes the difference between the actual observations from `series`
+    and the fitted values vector p obtained by training `model` on `series`.
 
-    For every index i in 'series', p[i] is computed by training 'model' on
-    series[:(i - 'fcast_horizon_n')] and forecasting 'fcast_horizon_n' into the future.
+    For every index i in `series`, p[i] is computed by training `model` on
+    series[:(i - `fcast_horizon_n`)] and forecasting `fcast_horizon_n` into the future.
     (p[i] will be set to the last value of the predicted vector.)
-    The vector of residuals will be shorter than 'series' due to the minimum
-    training series length required by 'model' and the gap introduced by 'fcast_horizon_n'.
+    The vector of residuals will be shorter than `series` due to the minimum
+    training series length required by `model` and the gap introduced by `fcast_horizon_n`.
 
-    Note that the common usage of the term residuals implies a value for 'fcast_horizon_n' of 1.
+    Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.
 
     Parameters
     ----------
