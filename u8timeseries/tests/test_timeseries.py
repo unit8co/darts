@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..utils.timeseries_generation import constant_timeseries
+
 
 class TimeSeriesTestCase(unittest.TestCase):
 
