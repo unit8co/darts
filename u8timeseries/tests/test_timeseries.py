@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-
+from ..utils.timeseries_generation import constant_timeseries
 
 class TimeSeriesTestCase(unittest.TestCase):
 
@@ -428,3 +428,16 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
+
+    def test_short_series_creation(self):
+        # test missing freq argument error
+        with self.assertRaises(ValueError):
+            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2))
+        # test empty pandas series error
+        with self.assertRaises(ValueError):
+            TimeSeries(pd.Series(), freq='D')
+        # test frequency mismatch error
+        with self.assertRaises(ValueError):
+            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
+        # test successful instantiation of TimeSeries with length 2
+        TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
