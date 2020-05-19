@@ -190,7 +190,7 @@ class FFT(ForecastingModel):
         self.trend_poly_degree = trend_poly_degree
 
     def __str__(self):
-        return 'FFT'
+        return 'FFT(nr_freqs_to_keep=' + str(self.nr_freqs_to_keep) + ', trend=' + str(self.trend) + ')' 
 
     def chosen_frequencies(self) -> List[float]:
         """

@@ -5,9 +5,11 @@ Backtesting Functions
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from ..timeseries import TimeSeries
 from ..models.forecasting_model import ForecastingModel
 from ..models.regression_model import RegressionModel
+from ..models import AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
@@ -246,3 +248,38 @@ def backtest_gridsearch(model_class: type, parameters: dict,
             best_param_combination = param_combination_dict
     logger.info('Chosen parameters: ' + str(best_param_combination))
     return model_class(**best_param_combination)
+
+
+def explore_models(train_series: TimeSeries, val_series: TimeSeries):
+
+    model_parameter_tuples = [
+        (AutoARIMA, {}),
+        (FFT, {
+            'nr_freqs_to_keep': [5, 10, 25, 50, 100],
+            'trend': [None, 'poly', 'exp']
+        }),
+        (Theta, {
+            'theta': list(range(3, 10))
+        }),
+        (Prophet, {})
+    ]
+
+    for model_class, params in model_parameter_tuples:
+
+        if (len(params.keys()) > 0):
+            model = backtest_gridsearch(model_class, params, train_series, val_series)
+        else:
+            model = model_class()
+
+        # fit and predict
+        model.fit(train_series)
+        predictions = model.predict(len(val_series))
+
+        # visualize
+        print(str(model), ", MAPE:", metrics.mape(predictions, val_series))
+        train_series.plot(label='train')
+        val_series.plot(label='val')
+        predictions.plot(label='pred')
+        plt.legend()
+
+        plt.show()
