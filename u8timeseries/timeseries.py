@@ -43,7 +43,7 @@ class TimeSeries:
             instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
-            in case the frequency of `series`cannot be inferred.
+            in case the frequency of `series` cannot be inferred.
         """
 
         raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
