@@ -216,7 +216,7 @@ class FFT(ForecastingModel):
             beginning such that the first timestamp of the training sequence and the first prediction point have
             matching phases. If the series has a yearly seasonality, include `month`, if it has a monthly
             seasonality, include `day`, etc. If not set, or explicitly set to None, the model tries to find the
-            pd.Timestamp attributes that are relevant for the seasonality automatically. 
+            pd.Timestamp attributes that are relevant for the seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
             Possible values: `poly` or `exp`, for polynomial trend, or exponential trend, respectively.
