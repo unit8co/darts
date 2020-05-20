@@ -17,11 +17,11 @@ from ..models import Theta, FFT, ExponentialSmoothing, NaiveSeasonal
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = backtest_gridsearch(model_class, params, series, fcast_horizon_n=10)
+    best_model_1 = backtest_gridsearch(model_class, params, series, fcast_horizon_n=10, metric=mape)
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
-    best_model_2 = backtest_gridsearch(model_class, params, train, val_series=val)
+    best_model_2 = backtest_gridsearch(model_class, params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random_param_choice = {}
