@@ -743,9 +743,9 @@ class TimeSeries:
                 new_hi.update(conf_hi)
             return TimeSeries(new_series, new_lo, new_hi)
 
-    def upsample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
+    def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
-        Creates an upsampled time series with a given frequency.
+        Creates an reindexed time series with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
 
         Parameters
@@ -754,7 +754,7 @@ class TimeSeries:
             The new time difference between two adjacent entries in the returned TimeSeries.
             A DateOffset alias is expected.
         method:
-            Method to fill holes in upsampled TimeSeries (note this does not fill NaNs that already were present):
+            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
 
             ‘pad’: propagate last valid observation forward to next valid
 
@@ -764,15 +764,6 @@ class TimeSeries:
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
-
-        new_offset = to_offset(freq)
-        old_offset = self.freq()
-
-        raise_if_not(
-            new_offset < old_offset,
-            "Frequency needs to higher than current one - "
-            + self.freq_str() + ". "
-            + "Did you try to downsample?")
 
         new_series = self.pd_series().asfreq(freq, method=method)
         new_conf_hi_series = self.conf_hi_pd_series()

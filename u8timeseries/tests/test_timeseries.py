@@ -429,24 +429,28 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertTrue(series_test.end_time() == range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
 
-    def test_upsample_timeseries(self):
+    def test_resample_timeseries(self):
         times = pd.date_range('20130101', '20130110')
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries(pd_series)
 
-        resampled_timeseries = timeseries.upsample('H')
+        resampled_timeseries = timeseries.resample('H')
         self.assertEqual(resampled_timeseries.freq_str(), 'H')
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101020000')], 0)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130102020000')], 1)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109090000')], 8)
 
-        with self.assertRaises(ValueError):
-            # try to downsample
-            timeseries.upsample('2D')
+        resampled_timeseries = timeseries.resample('2D')
+        self.assertEqual(resampled_timeseries.freq_str(), '2D')
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101')], 0)
+        with self.assertRaises(KeyError):
+            resampled_timeseries.pd_series().at[pd.Timestamp('20130102')]
+
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109')], 8)
 
         confidence_hi_series = pd.Series(range(5, 15), index=times)
         timeseries = TimeSeries(pd_series, confidence_hi=confidence_hi_series)
-        resampled_timeseries = timeseries.upsample('H')
+        resampled_timeseries = timeseries.resample('H')
         self.assertEqual(resampled_timeseries.conf_hi_pd_series().index.inferred_freq, 'H')
         self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130101020000')], 5)
         self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130102020000')], 6)
