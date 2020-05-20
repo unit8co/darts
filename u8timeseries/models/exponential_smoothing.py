@@ -3,11 +3,13 @@ Exponential Smoothing
 ---------------------
 """
 
-from .forecasting_model import ForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger
-import statsmodels.tsa.holtwinters as hw
 from typing import Optional
+
+import statsmodels.tsa.holtwinters as hw
+
+from .forecasting_model import ForecastingModel
+from ..logging import get_logger
+from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -62,6 +64,7 @@ class ExponentialSmoothing(ForecastingModel):
                                            damped=self.damped,
                                            seasonal=self.seasonal,
                                            seasonal_periods=self.seasonal_periods)
+
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
@@ -69,3 +72,9 @@ class ExponentialSmoothing(ForecastingModel):
         super().predict(n)
         forecast = self.model.forecast(n)
         return self._build_forecast_series(forecast)
+
+    @property
+    def min_train_series_length(self) -> int:
+        if (self.seasonal_periods is not None and self.seasonal_periods > 1):
+            return 2 * self.seasonal_periods
+        return 3

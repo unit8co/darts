@@ -2,7 +2,7 @@
 ARIMA and Auto-ARIMA
 --------------------
 
-Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA.
+Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA [1]_.
 The implementations are wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_
 and `pmdarima <https://github.com/alkaline-ml/pmdarima>`_.
 
@@ -54,6 +54,10 @@ class ARIMA(ForecastingModel):
         forecast = self.model.forecast(steps=n)[0]
         return self._build_forecast_series(forecast)
 
+    @property
+    def min_train_series_length(self) -> int:
+        return 30
+
 
 class AutoARIMA(ForecastingModel):
 
@@ -91,3 +95,7 @@ class AutoARIMA(ForecastingModel):
         super().predict(n)
         forecast = self.model.predict(n_periods=n)
         return self._build_forecast_series(forecast)
+
+    @property
+    def min_train_series_length(self) -> int:
+        return 30

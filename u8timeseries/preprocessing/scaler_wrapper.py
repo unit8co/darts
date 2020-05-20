@@ -1,3 +1,7 @@
+"""
+Scaler wrapper
+--------------
+"""
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
 from sklearn.preprocessing import MinMaxScaler
