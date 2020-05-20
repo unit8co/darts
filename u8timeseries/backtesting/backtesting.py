@@ -4,13 +4,15 @@ Backtesting Functions
 """
 
 from typing import Iterable
+import math
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 from ..timeseries import TimeSeries
 from ..models.forecasting_model import ForecastingModel
 from ..models.regression_model import RegressionModel
-from ..models import AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
+from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger
@@ -176,6 +178,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_horizon_n: int = 1,
                           verbose: bool = True) -> TimeSeries:
     """ A function for computing the residuals produced by a given model and time series.
+
     This function computes the difference between the actual observations from `series`
     and the fitted values vector p obtained by training `model` on `series`.
     For every index i in `series`, p[i] is computed by training `model` on
@@ -184,6 +187,7 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
     The vector of residuals will be shorter than `series` due to the minimum
     training series length required by `model` and the gap introduced by `fcast_horizon_n`.
     Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.
+
     Parameters
     ----------
     model
@@ -215,8 +219,10 @@ def forecasting_residuals(model: ForecastingModel, series: TimeSeries, fcast_hor
 
 def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     """ Plots data relevant to residuals.
+
     This function takes a TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
+
     Parameters
     ----------
     residuals
@@ -310,13 +316,14 @@ def backtest_gridsearch(model_class: type, parameters: dict,
 
     backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
     metric_function = getattr(metrics, metric)
-
     min_error = float('inf')
     best_param_combination = {}
+
+    # compute all hyperparameter combinations from selection
     params_cross_product = list(product(*parameters.values()))
-    iterator = _build_tqdm_iterator(params_cross_product, verbose)
 
     # iterate through all combinations of the provided parameters and choose the best one
+    iterator = _build_tqdm_iterator(params_cross_product, verbose)
     for param_combination in iterator:
         param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
         model = model_class(**param_combination_dict)
@@ -333,36 +340,103 @@ def backtest_gridsearch(model_class: type, parameters: dict,
     return model_class(**best_param_combination)
 
 
-def explore_models(train_series: TimeSeries, val_series: TimeSeries):
+def explore_models(train_series: TimeSeries, val_series: TimeSeries, test_series: TimeSeries,
+                   width: int = 3, verbose: bool = True):
+    """ A function for exploring the suitability of multiple models on a given train/validation/test split.
 
+    This funtion iterates through a list of models, training each on 'train_series' and 'val_series'
+    and evaluating them on 'test_series'. Models with free hyperparameters are first
+    tuned by trying out a 'resonable' set of hyperparameter combinations. A model for
+    each combination is trained on 'train_series' and evaluated on 'val_series'.
+    The best-performing set of hyperparameters is then chosen for that type of model.
+    This way, none of the models have 'looked at' the test set before the final evaluation.
+
+    The performance of every model type is then plotted against the series of actual observations.
+    Additionally, the MAPE values and the runtimes of every model type are plotted in bar charts.
+
+    Parameters
+    ----------
+    train_series
+        A TimeSeries instance used for training during model tuning and evaluation.
+    val_series
+        A TimeSeries instance used for validation during model tuning and for training during evaluation.
+    test_series
+        A TimeSeries instance used for validation when evaluating a model.
+    width
+        An integer indicating the number of plots that are displayed in one row.
+    verbose:
+        Whether to print progress.
+    """
+
+    raise_if_not(width > 1, "Please choose an integer 'width' value larger than 1", logger)
+
+    # list of tuples containing model classes and hyperparameter selection, if required
     model_parameter_tuples = [
-        (AutoARIMA, {}),
+        (NaiveSeasonal, {
+            'K': list(range(1, 31))
+        }),
         (FFT, {
-            'nr_freqs_to_keep': [5, 10, 25, 50, 100],
+            'nr_freqs_to_keep': [5, 10, 25, 50, 100, 150, 200],
             'trend': [None, 'poly', 'exp']
         }),
         (Theta, {
-            'theta': list(range(3, 10))
+            'theta': [0, 1] + list(range(3, 50))
         }),
-        (Prophet, {})
+        (Prophet, {}),
+        (AutoARIMA, {})
     ]
 
-    for model_class, params in model_parameter_tuples:
+    # set up plot grid
+    height = math.ceil(len(model_parameter_tuples) / width) + 1
+    fig = plt.figure(constrained_layout=True, figsize=(width * 4, height * 4))
+    gs = fig.add_gridspec(height, width)
 
+    # arrays to store data for bar charts
+    mape_vals = []
+    times = []
+    index = []
+
+    # iterate through model type selection
+    iterator = _build_tqdm_iterator(model_parameter_tuples, verbose)
+    for i, (model_class, params) in enumerate(iterator):
+        
+        # if necessary, tune hyperparameters using train_series and val_series
         if (len(params.keys()) > 0):
             model = backtest_gridsearch(model_class, params, train_series, val_series)
         else:
             model = model_class()
 
-        # fit and predict
-        model.fit(train_series)
-        predictions = model.predict(len(val_series))
+        # fit on train and val series, predict test series
+        train_and_val_series = train_series.append(val_series)
+        start_time = time.time()
+        model.fit(train_and_val_series)
+        end_time = time.time()
+        predictions = model.predict(len(test_series))
 
-        # visualize
-        print(str(model), ", MAPE:", metrics.mape(predictions, val_series))
-        train_series.plot(label='train')
-        val_series.plot(label='val')
-        predictions.plot(label='pred')
+        # plot predictions against observations
+        y = int(i / width)
+        x = i - y * width
+        ax = fig.add_subplot(gs[y, x])
+        mape_val = metrics.mape(predictions, test_series)
+        ax.set_title(str(model) + "\nMAPE: " + str(round(mape_val, 2)))
+        train_and_val_series[-len(test_series):].plot(label='train and val', ax=ax)
+        test_series.plot(label='test', ax=ax)
+        predictions.plot(label='pred', ax=ax)
         plt.legend()
 
-        plt.show()
+        # record data for bar charts
+        mape_vals.append(mape_val)
+        times.append(end_time - start_time)
+        index.append(str(model)[:3] + "..")
+
+    # plot bar charts
+    ax_mapes = fig.add_subplot(gs[-1, 0])
+    ax_mapes.set_title("Performance")
+    ax_mapes.set_ylabel('MAPE value')
+    pd.Series(mape_vals, index=index).plot.bar(ax=ax_mapes, rot=0)
+    ax_times = fig.add_subplot(gs[-1, 1])
+    ax_times.set_title("Runtime")
+    ax_times.set_ylabel('seconds')
+    pd.Series(times, index=index).plot.bar(ax=ax_times, rot=0)
+
+    plt.show()
