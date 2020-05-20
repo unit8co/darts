@@ -765,6 +765,39 @@ class TimeSeries:
                 new_hi.update(conf_hi)
             return TimeSeries(new_series, new_lo, new_hi)
 
+    def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
+        """
+        Creates an reindexed time series with a given frequency.
+        Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
+
+        Parameters
+        ----------
+        freq
+            The new time difference between two adjacent entries in the returned TimeSeries.
+            A DateOffset alias is expected.
+        method:
+            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
+
+            ‘pad’: propagate last valid observation forward to next valid
+
+            ‘backfill’: use NEXT valid observation to fill.
+        Returns
+        -------
+        TimeSeries
+            A reindexed TimeSeries with given frequency.
+        """
+
+        new_series = self.pd_series().asfreq(freq, method=method)
+        new_conf_hi_series = self.conf_hi_pd_series()
+        if new_conf_hi_series is not None:
+            new_conf_hi_series = new_conf_hi_series.asfreq(freq, method=method)
+
+        new_conf_lo_series = self.conf_lo_pd_series()
+        if new_conf_lo_series is not None:
+            new_conf_lo_series = new_conf_lo_series.asfreq(freq, method=method)
+
+        return TimeSeries(series=new_series, confidence_hi=new_conf_hi_series, confidence_lo=new_conf_lo_series)
+
     def is_within_range(self,
                         ts: pd.Timestamp) -> bool:
         """
