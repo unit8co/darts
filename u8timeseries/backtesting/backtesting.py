@@ -3,21 +3,24 @@ Backtesting Functions
 ---------------------
 """
 
-from typing import Iterable
+from typing import Iterable, Optional, Callable
+from itertools import product
 import math
+import time
 import pandas as pd
 import numpy as np
+from scipy.stats import norm
 import matplotlib.pyplot as plt
-import time
+
 from ..timeseries import TimeSeries
 from ..models.forecasting_model import ForecastingModel
 from ..models.regression_model import RegressionModel
 from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
 from ..utils import _build_tqdm_iterator
+from ..utils.statistics import plot_acf
 from ..logging import raise_if_not, get_logger
-from typing import Iterable, Optional, Callable
-from itertools import product
+
 
 logger = get_logger(__name__)
 
@@ -249,7 +252,7 @@ def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     ax2 = fig.add_subplot(gs[1:, 1:])
     ax2.hist(residuals.values(), bins=num_bins)
     ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
-    ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title('Distribution')
     ax2.set_ylabel('count')
     ax2.set_xlabel('value')
@@ -391,17 +394,22 @@ def explore_models(train_series: TimeSeries,
     # list of tuples containing model classes and hyperparameter selection, if required
     if model_parameter_tuples is None:
         model_parameter_tuples = [
+            (ExponentialSmoothing, {
+                'trend': ['additive', 'multiplicative'],
+                'seasonal': ['additive', 'multiplicative'],
+                'seasonal_periods': [7, 12, 30]
+            }),
             (NaiveSeasonal, {
                 'K': list(range(1, 31))
             }),
             (FFT, {
-                'nr_freqs_to_keep': [5, 10, 25, 50, 100, 150, 200],
+                'nr_freqs_to_keep': [2, 3, 5, 10, 25, 50, 100, 150, 200],
                 'trend': [None, 'poly', 'exp']
             }),
             (Theta, {
                 'theta': np.delete(np.linspace(-10, 10, 51), 30)
             }),
-            (Prophet, {}), 
+            (Prophet, {}),
             (AutoARIMA, {})
         ]
 
@@ -418,7 +426,7 @@ def explore_models(train_series: TimeSeries,
     # iterate through model type selection
     iterator = _build_tqdm_iterator(model_parameter_tuples, verbose)
     for i, (model_class, params) in enumerate(iterator):
-        
+
         # if necessary, tune hyperparameters using train_series and val_series
         if (len(params.keys()) > 0):
             model = backtest_gridsearch(model_class, params, train_series, val_series=val_series, metric=metric)
