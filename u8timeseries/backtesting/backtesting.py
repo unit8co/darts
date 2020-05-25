@@ -449,7 +449,7 @@ def explore_models(train_series: TimeSeries,
         ax.set_title("{}\n{}: {}, runtime: {}s".format(model, metric.__name__, round(metric_val, 2),
                                                        round(runtime, 2)))
 
-        train_and_val_series[-len(test_series):].plot(label='train and val', ax=ax)
+        train_and_val_series.plot(label='train and val', ax=ax)
         test_series.plot(label='test', ax=ax)
         predictions.plot(label='pred', ax=ax)
         plt.legend()
