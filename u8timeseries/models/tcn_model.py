@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class _ResidualBlock(nn.Module):
 
-    def __init__(self, num_filters, kernel_size, dilation_base, dropout, weight_norm, i, num_layers):
+    def __init__(self, num_filters, kernel_size, dilation_base, dropout, weight_norm, nr_blocks_below, num_layers):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
@@ -34,7 +34,7 @@ class _ResidualBlock(nn.Module):
             The dropout rate for every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
-        i
+        nr_blocks_below
             The number of residual blocks before the current one.
         num_layers
             The number of convolutional layers.
@@ -43,14 +43,14 @@ class _ResidualBlock(nn.Module):
         ------
         x of shape `(batch_size, in_dimension, input_length)`
             Tensor containing the features of the input sequence.
-            in_dimension is equal to 1 if this is the first residual block (i = 0),
+            in_dimension is equal to 1 if this is the first residual block (nr_blocks_below = 0),
             in all other cases it is equal to num_filters.
 
         Outputs
         -------
         y of shape `(batch_size, out_dimension, input_length)`
             Tensor containing the output sequence of the residual block.
-            out_dimension is equal to 1 if this is the last residual block (i = num_layers - 1),
+            out_dimension is equal to 1 if this is the last residual block (nr_blocks_below = num_layers - 1),
             in all other cases it is equal to num_filters.
         """
         super(_ResidualBlock, self).__init__()
@@ -59,25 +59,25 @@ class _ResidualBlock(nn.Module):
         self.kernel_size = kernel_size
         self.dropout = dropout
         self.num_layers = num_layers
-        self.i = i
+        self.nr_blocks_below = nr_blocks_below
 
-        input_dim = 1 if (i == 0) else num_filters
-        output_dim = 1 if (i == num_layers - 1) else num_filters
-        self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** i))
-        self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** i))
+        input_dim = 1 if (nr_blocks_below == 0) else num_filters
+        output_dim = 1 if (nr_blocks_below == num_layers - 1) else num_filters
+        self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** nr_blocks_below))
+        self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         if (weight_norm):
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
-        if (i == 0):
+        if (nr_blocks_below == 0):
             self.conv3 = nn.Conv1d(1, num_filters, 1)
-        elif (i == num_layers - 1):
+        elif (nr_blocks_below == num_layers - 1):
             self.conv3 = nn.Conv1d(num_filters, 1, 1)
 
     def forward(self, x):
         residual = x
 
         # first step
-        left_padding = (self.dilation_base ** self.i) * (self.kernel_size - 1)
+        left_padding = (self.dilation_base ** self.nr_blocks_below) * (self.kernel_size - 1)
         x = F.pad(x, (left_padding, 0))
         x = self.dropout(F.relu(self.conv1(x)))
 
@@ -86,7 +86,7 @@ class _ResidualBlock(nn.Module):
         x = self.dropout(F.relu(self.conv2(x)))
 
         # add residual
-        if (self.i in {0, self.num_layers - 1}):
+        if (self.nr_blocks_below in {0, self.num_layers - 1}):
             residual = self.conv3(residual)
         x += residual
 
@@ -240,7 +240,7 @@ class TCNModel(TorchForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
-        scaled_series = self.training_series.values()[-self.seq_len:]
+        scaled_series = self.training_series.values()[-self.input_length:]
         pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
         test_out = []
         self.model.eval()
