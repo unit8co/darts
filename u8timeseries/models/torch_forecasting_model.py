@@ -1,6 +1,6 @@
 """
-Recurrent Neural Networks
--------------------------
+Torch Forecasting Model
+-----------------------
 """
 
 import numpy as np
@@ -43,8 +43,8 @@ class _TimeSeriesDataset1DSequential(Dataset):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-        where `data` is a 1-D sub-sequence of length [data_length] and target is the 1-D sub-sequence of length
-        [target_length] following it in the time series.
+        where `data` is a 1-D sub-sequence of length `data_length` and target is the 1-D sub-sequence of length
+        `target_length` following it in the time series.
 
         Parameters
         ----------
@@ -85,20 +85,20 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
 
     def __init__(self,
                  series: TimeSeries,
-                 data_length: int = 3,
+                 length: int = 3,
                  shift: int = 1):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-        where `data` and `target` are both 1-D sub-sequences of length [data_length]. The sequence contained in
-        target is shifted forward by [shift] positions, meaning that `target` contains the last
-        [data_length] - [shift] entries of `data` and then the [shift] following ones.
+        where `data` and `target` are both 1-D sub-sequences of length `ength`. The sequence contained in
+        target is shifted forward by `shift` positions, meaning that `target` contains the last
+        `length` - `shift` entries of `data` and then the `shift` following ones.
 
         Parameters
         ----------
         series
             The time series to be included in the dataset.
-        data_length
+        length
             The length of the training and target sub-sequences.
         shift
             The number of positions that the target sequence is shifted forward compared to the training sequence.
@@ -106,24 +106,24 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
 
         self.series_values = series.values()
         self.len_series = len(series)
-        self.data_length = len(series) - 1 if data_length is None else data_length
+        self.length = len(series) - 1 if length is None else length
         self.shift = shift
 
-        raise_if_not(self.data_length > 0,
-                     "The input sequence length must be positive. It is {}".format(self.data_length),
+        raise_if_not(self.length > 0,
+                     "The input sequence length must be positive. It is {}".format(self.length),
                      logger)
 
         raise_if_not(self.shift > 0,
-                     "The shift value must be positive. It is {}".format(self.data_length),
+                     "The shift value must be positive. It is {}".format(self.length),
                      logger)
 
     def __len__(self):
-        return self.len_series - self.data_length - self.shift + 1
+        return self.len_series - self.length - self.shift + 1
 
     def __getitem__(self, index):
         idx = index % self.__len__()
-        data = self.series_values[idx:idx + self.data_length]
-        target = self.series_values[idx + self.shift:idx + self.data_length + self.shift]
+        data = self.series_values[idx:idx + self.length]
+        target = self.series_values[idx + self.shift:idx + self.length + self.shift]
         return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
 
 
@@ -205,7 +205,6 @@ class TorchForecastingModel(ForecastingModel):
         self.input_size = 1  # We support only univariate time series currently
         self.input_length = input_length
         self.output_length = output_length
-        self.seq_len = input_length
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -295,7 +294,7 @@ class TorchForecastingModel(ForecastingModel):
             if self.from_scratch:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.seq_len, self.input_size).to(self.device)
+                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
@@ -311,8 +310,8 @@ class TorchForecastingModel(ForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
-        scaled_series = self.training_series.values()[-self.seq_len:]
-        pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
+        input_sequence = self.training_series.values()[-self.input_length:]
+        pred_in = torch.from_numpy(input_sequence).float().view(1, -1, 1).to(self.device)
         test_out = []
         self.model.eval()
         for i in range(n):
