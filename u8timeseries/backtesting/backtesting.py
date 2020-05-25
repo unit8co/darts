@@ -265,8 +265,8 @@ def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
 def backtest_gridsearch(model_class: type,
                         parameters: dict,
                         train_series: TimeSeries,
+                        fcast_horizon_n: Optional[int] = None,
                         val_series: Optional[TimeSeries] = None,
-                        fcast_horizon_n: int = 5,
                         num_predictions: int = 10,
                         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                         verbose=False):
@@ -275,15 +275,15 @@ def backtest_gridsearch(model_class: type,
     This function has 2 modes of operation: Expanding window mode and split mode.
     Both modes of operation evaluate every possible combination of hyperparameter values
     provided in the `parameters` dictionary by instantiating the `model_class` subclass
-    of ForecastingModel with each combination and returning the best-performing model with regards
+    of ForecastingModel with each combination, and returning the best-performing model with regards
     to the `metric` function. The `metric` function is expected to return an error value,
     thus the model resulting in the smallest `metric` output will be chosen.
     The relationship of the training data and test data depends on the mode of operation.
 
-    Expanding window mode (default):
-    For every model, `num_predictions` predictions with horizon `fcast_horizon_n` are computed
-    by using the `backtest_forecast` function as a subroutine on `train_series`. This means that
-    the model is both trained and evaluated on `train_series`.
+    Expanding window mode (activated when `fcast_horizon_n` is passed):
+    For every hyperparameter combination, the model is repeatedly trained and evaluated on different
+    splits of `train_series`. The number of splits is equal to `num_predictions`, and the
+    forecasting horizon used when making a prediction is `fcast_horizon_n`.
     Note that the model is retrained for every single prediction, thus this mode is slower.
 
     Split window mode (activated when `val_series` is passed):
@@ -315,10 +315,14 @@ def backtest_gridsearch(model_class: type,
     Returns
     -------
     ForecastingModel
-        A 'model_class' instance with the best-performing hyperparameters from the given selection.
+        An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
-    backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
+    raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
+                 "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
+
+    if val_series is None:
+        backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
     min_error = float('inf')
     best_param_combination = {}
 
@@ -330,13 +334,13 @@ def backtest_gridsearch(model_class: type,
     for param_combination in iterator:
         param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
         model = model_class(**param_combination_dict)
-        if (val_series is None):  # expanding window mode
+        if val_series is None:  # expanding window mode
             backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n)
             error = metric(backtest_forecast, train_series)
         else:  # split mode
             model.fit(train_series)
             error = metric(model.predict(len(val_series)), val_series)
-        if (error < min_error):
+        if error < min_error:
             min_error = error
             best_param_combination = param_combination_dict
     logger.info('Chosen parameters: ' + str(best_param_combination))
@@ -346,8 +350,9 @@ def backtest_gridsearch(model_class: type,
 def explore_models(train_series: TimeSeries,
                    val_series: TimeSeries,
                    test_series: TimeSeries,
-                   width: int = 3,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                   model_parameter_tuples: Optional[list] = None,
+                   plot_width: int = 3,
                    verbose: bool = True):
     """ A function for exploring the suitability of multiple models on a given train/validation/test split.
 
@@ -370,39 +375,43 @@ def explore_models(train_series: TimeSeries,
         A TimeSeries instance used for validation during model tuning and for training during evaluation.
     test_series
         A TimeSeries instance used for validation when evaluating a model.
-    width
-        An integer indicating the number of plots that are displayed in one row.
     metric:
         A function that takes two TimeSeries instances as inputs and returns a float error value.
+    model_parameter_tuples:
+        Optionally, a custom list of (model class, hyperparameter dictionary) tuples that will be
+        explored instead of the default selection.
+    plot_width
+        An integer indicating the number of plots that are displayed in one row.
     verbose:
         Whether to print progress.
     """
 
-    raise_if_not(width > 1, "Please choose an integer 'width' value larger than 1", logger)
+    raise_if_not(plot_width > 1, "Please choose an integer 'plot_width' value larger than 1", logger)
 
     # list of tuples containing model classes and hyperparameter selection, if required
-    model_parameter_tuples = [
-        (NaiveSeasonal, {
-            'K': list(range(1, 31))
-        }),
-        (FFT, {
-            'nr_freqs_to_keep': [5, 10, 25, 50, 100, 150, 200],
-            'trend': [None, 'poly', 'exp']
-        }),
-        (Theta, {
-            'theta': [0, 1] + list(range(3, 50))
-        }),
-        (Prophet, {}),
-        (AutoARIMA, {})
-    ]
+    if model_parameter_tuples is None:
+        model_parameter_tuples = [
+            (NaiveSeasonal, {
+                'K': list(range(1, 31))
+            }),
+            (FFT, {
+                'nr_freqs_to_keep': [5, 10, 25, 50, 100, 150, 200],
+                'trend': [None, 'poly', 'exp']
+            }),
+            (Theta, {
+                'theta': np.delete(np.linspace(-10, 10, 51), 30)
+            }),
+            (Prophet, {}), 
+            (AutoARIMA, {})
+        ]
 
     # set up plot grid
-    height = math.ceil(len(model_parameter_tuples) / width) + 1
-    fig = plt.figure(constrained_layout=True, figsize=(width * 4, height * 4))
-    gs = fig.add_gridspec(height, width)
+    plot_height = math.ceil(len(model_parameter_tuples) / plot_width) + 1
+    fig = plt.figure(constrained_layout=True, figsize=(plot_width * 4, plot_height * 4))
+    gs = fig.add_gridspec(plot_height, plot_width)
 
     # arrays to store data for bar charts
-    mape_vals = []
+    metric_vals = []
     times = []
     index = []
 
@@ -412,7 +421,7 @@ def explore_models(train_series: TimeSeries,
         
         # if necessary, tune hyperparameters using train_series and val_series
         if (len(params.keys()) > 0):
-            model = backtest_gridsearch(model_class, params, train_series, val_series, metric=metric)
+            model = backtest_gridsearch(model_class, params, train_series, val_series=val_series, metric=metric)
         else:
             model = model_class()
 
@@ -421,29 +430,32 @@ def explore_models(train_series: TimeSeries,
         start_time = time.time()
         model.fit(train_and_val_series)
         end_time = time.time()
+        runtime = end_time - start_time
         predictions = model.predict(len(test_series))
 
         # plot predictions against observations
-        y = int(i / width)
-        x = i - y * width
+        y = int(i / plot_width)
+        x = i - y * plot_width
         ax = fig.add_subplot(gs[y, x])
-        mape_val = metrics.mape(predictions, test_series)
-        ax.set_title(str(model) + "\n" + metric.__name__ + ": " + str(round(mape_val, 2)))
+        metric_val = metric(predictions, test_series)
+        ax.set_title("{}\n{}: {}, runtime: {}s".format(model, metric.__name__, round(metric_val, 2),
+                                                       round(runtime, 2)))
+
         train_and_val_series[-len(test_series):].plot(label='train and val', ax=ax)
         test_series.plot(label='test', ax=ax)
         predictions.plot(label='pred', ax=ax)
         plt.legend()
 
         # record data for bar charts
-        mape_vals.append(mape_val)
-        times.append(end_time - start_time)
+        metric_vals.append(metric_val)
+        times.append(runtime)
         index.append(str(model)[:3] + "..")
 
     # plot bar charts
-    ax_mapes = fig.add_subplot(gs[-1, 0])
-    ax_mapes.set_title("Performance")
-    ax_mapes.set_ylabel(metric.__name__ + ' value')
-    pd.Series(mape_vals, index=index).plot.bar(ax=ax_mapes, rot=0)
+    ax_metrics = fig.add_subplot(gs[-1, 0])
+    ax_metrics.set_title("Performance")
+    ax_metrics.set_ylabel(metric.__name__ + ' value')
+    pd.Series(metric_vals, index=index).plot.bar(ax=ax_metrics, rot=0)
     ax_times = fig.add_subplot(gs[-1, 1])
     ax_times.set_title("Runtime")
     ax_times.set_ylabel('seconds')
