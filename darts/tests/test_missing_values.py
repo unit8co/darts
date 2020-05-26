@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from u8timeseries.utils.missing_values import auto_fillna
+from darts.utils.missing_values import auto_fillna
 
 
 class MissingValuesTestCase(unittest.TestCase):

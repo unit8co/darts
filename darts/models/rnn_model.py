@@ -20,8 +20,8 @@ from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import ForecastingModel
 
-CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
-RUNS_FOLDER = os.path.join('.u8ts', 'runs')
+CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
+RUNS_FOLDER = os.path.join('.darts', 'runs')
 
 logger = get_logger(__name__)
 
@@ -206,7 +206,7 @@ class RNNModel(ForecastingModel):
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
-            `u8timeseries.models.rnn_model.RNNModule`.
+            `darts.models.rnn_model.RNNModule`.
         output_length
             Number of time steps to be output by the RNN module.
         input_length
@@ -243,7 +243,7 @@ class RNNModel(ForecastingModel):
             (default: current working directory).
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.u8timeseries/runs/`.
+            `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             `TimeSeries` is passed to the `fit()` method).

@@ -7,8 +7,8 @@ import pandas as pd
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from u8timeseries.models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA
-from u8timeseries.models.theta import Theta
+from darts.models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA
+from darts.models.theta import Theta
 from ..models.fft import FFT
 
 

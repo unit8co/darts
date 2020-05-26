@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
-from u8timeseries.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
+from darts.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
 from .forecasting_model import ForecastingModel
 from ..logging import raise_log, get_logger
 from ..timeseries import TimeSeries

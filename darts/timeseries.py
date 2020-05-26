@@ -2,7 +2,7 @@
 Timeseries
 ----------
 
-`TimeSeries` is the main class in `u8timeseries`. It represents a univariate time series,
+`TimeSeries` is the main class in `darts`. It represents a univariate time series,
 possibly with lower and upper confidence bounds.
 """
 
