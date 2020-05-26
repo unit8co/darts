@@ -47,7 +47,7 @@ jobs:
 
       - name: "6. Run linter"
           run: |
-            flake8 --config=setup.cfg u8timeseries
+            flake8 --config=setup.cfg darts
 
   release:
     needs: [tests]
