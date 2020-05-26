@@ -419,12 +419,52 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
         series_test = TimeSeries(pd.Series(range(9), index=range_))
-        self.assertTrue(series_test.freq_str() == 'D')
+        self.assertEqual(series_test.freq_str(), 'D')
 
         range_ = pd.date_range('20130101', '20130104', freq='2D') \
             .append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries(pd.Series(range(5), index=range_))
-        self.assertTrue(series_test.freq_str() == '2D')
-        self.assertTrue(series_test.start_time() == range_[0])
-        self.assertTrue(series_test.end_time() == range_[-1])
+        self.assertEqual(series_test.freq_str(), '2D')
+        self.assertEqual(series_test.start_time(), range_[0])
+        self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
+
+    def test_resample_timeseries(self):
+        times = pd.date_range('20130101', '20130110')
+        pd_series = pd.Series(range(10), index=times)
+        timeseries = TimeSeries(pd_series)
+
+        resampled_timeseries = timeseries.resample('H')
+        self.assertEqual(resampled_timeseries.freq_str(), 'H')
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101020000')], 0)
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130102020000')], 1)
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109090000')], 8)
+
+        resampled_timeseries = timeseries.resample('2D')
+        self.assertEqual(resampled_timeseries.freq_str(), '2D')
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101')], 0)
+        with self.assertRaises(KeyError):
+            resampled_timeseries.pd_series().at[pd.Timestamp('20130102')]
+
+        self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109')], 8)
+
+        confidence_hi_series = pd.Series(range(5, 15), index=times)
+        timeseries = TimeSeries(pd_series, confidence_hi=confidence_hi_series)
+        resampled_timeseries = timeseries.resample('H')
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().index.inferred_freq, 'H')
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130101020000')], 5)
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130102020000')], 6)
+        self.assertEqual(resampled_timeseries.conf_hi_pd_series().at[pd.Timestamp('20130109090000')], 13)
+
+    def test_short_series_creation(self):
+        # test missing freq argument error
+        with self.assertRaises(ValueError):
+            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2))
+        # test empty pandas series error
+        with self.assertRaises(ValueError):
+            TimeSeries(pd.Series(), freq='D')
+        # test frequency mismatch error
+        with self.assertRaises(ValueError):
+            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
+        # test successful instantiation of TimeSeries with length 2
+        TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')

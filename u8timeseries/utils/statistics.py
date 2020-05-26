@@ -239,7 +239,8 @@ def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
              max_lag: int = 24,
              alpha: float = 0.05,
-             fig_size: Tuple[int, int] = (10, 5)) -> None:
+             fig_size: Tuple[int, int] = (10, 5),
+             axis: Optional[plt.axis] = None) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
 
@@ -255,6 +256,8 @@ def plot_acf(ts: TimeSeries,
         The confidence interval to display.
     fig_size
         The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot the ACF on.
     """
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
@@ -264,15 +267,15 @@ def plot_acf(ts: TimeSeries,
     for i in range(1, max_lag + 1):
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
 
-    plt.figure(figsize=fig_size)
+    if (axis is None):
+        plt.figure(figsize=fig_size)
+        axis = plt
 
     for i in range(len(r)):
-        plt.plot((i, i), (0, r[i]), color=('red' if m is not None and i == m else 'black'), lw=.5)
+        axis.plot((i, i), (0, r[i]), color=('red' if m is not None and i == m else 'black'), lw=.5)
 
     upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
     acf_band = [upp_band * stat for stat in stats]
 
-    plt.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
-    plt.plot((0, max_lag + 1), (0, 0), color='black')
-
-    plt.show()
+    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
+    axis.plot((0, max_lag + 1), (0, 0), color='black')

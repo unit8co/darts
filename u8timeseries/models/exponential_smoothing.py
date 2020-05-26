@@ -72,3 +72,9 @@ class ExponentialSmoothing(ForecastingModel):
         super().predict(n)
         forecast = self.model.forecast(n)
         return self._build_forecast_series(forecast)
+
+    @property
+    def min_train_series_length(self) -> int:
+        if (self.seasonal_periods is not None and self.seasonal_periods > 1):
+            return 2 * self.seasonal_periods
+        return 3

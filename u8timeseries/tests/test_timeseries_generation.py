@@ -77,12 +77,12 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for christmas and non-holiday in US
         us_holiday_ts = holiday_timeseries("US", length=length, start_ts=start_ts)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
-        self.assertEqual(us_holiday_ts._series.at[pd.Timestamp('20201226')], 0)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201225')], 1)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(us_holiday_ts.pd_series().at[pd.Timestamp('20201226')], 0)
 
         # testing for christmas and non-holiday in PL
         pl_holiday_ts = holiday_timeseries("PL", length=length, start_ts=start_ts)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201225')], 1)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201210')], 0)
-        self.assertEqual(pl_holiday_ts._series.at[pd.Timestamp('20201226')], 1)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201225')], 1)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201210')], 0)
+        self.assertEqual(pl_holiday_ts.pd_series().at[pd.Timestamp('20201226')], 1)
