@@ -49,7 +49,7 @@ Don't forget to activate your virtual environment
 
 ### Install darts
 
-    pip install darts
+    pip install u8darts
 
 ### Running the examples only, without installing:
 
