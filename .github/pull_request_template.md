@@ -13,4 +13,4 @@ a draft and ask for comments. -->
 request, mention that information here. This could include
 benchmarks, code samples, or others. -->
 
-<!--Thank you for contributing to u8timeseries! -->
+<!--Thank you for contributing to darts! -->
