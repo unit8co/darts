@@ -1,13 +1,8 @@
-import shutil
 import unittest
-
-import pandas as pd
 import logging
 
 from ..models.tcn_model import TCNModel
-from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
-from ..metrics import mape
 
 
 class TCNModelTestCase(unittest.TestCase):
@@ -20,8 +15,8 @@ class TCNModelTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             # cannot choose a kernel size larger than the input length
             TCNModel(kernel_size=100, input_length=20)
-        model = TCNModel()
-    
+        TCNModel()
+
     def test_fit(self):
         large_ts = tg.constant_timeseries(length=100, value=1000)
         small_ts = tg.constant_timeseries(length=100, value=10)
