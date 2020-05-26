@@ -15,7 +15,7 @@ help:
 .PHONY: help Makefile
 
 generate:
-	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../u8timeseries ../u8timeseries/logging.py ../u8timeseries/tests/*
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
 
 readme:
 	@m2r ../README.md; mv ../README.rst "$(SOURCEDIR)"
