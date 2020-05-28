@@ -40,7 +40,7 @@ class TCNModelTestCase(unittest.TestCase):
 
         for kernel_size in kernel_sizes:
             for dilation_base in dilation_bases:
-                if (dilation_base > kernel_size):
+                if dilation_base > kernel_size:
                     continue
                 for input_length in input_lengths:
                     model = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length)
@@ -56,10 +56,10 @@ class TCNModelTestCase(unittest.TestCase):
 
                     # test for incomplete coverage
                     uncovered_input_found = False
-                    if (model.model.num_layers == 1):
+                    if model.model.num_layers == 1:
                         continue
                     model.model.num_layers = model.model.num_layers - 1
-                    for i in range(input_length):
+                    for i in rangeinput_length:
                         input_tensor[0, i, 0] = 1
                         curr_output = torch.sum(model.model.forward(input_tensor))
                         if (zero_output != curr_output):
