@@ -164,6 +164,7 @@ class _TCNModule(nn.Module):
         elif num_layers is None:
             num_layers = math.ceil((input_length - 1) / (kernel_size - 1) / 2)
             logger.info("Number of layers chosen: " + str(num_layers))
+        self.num_layers = num_layers
 
         # Building TCN module
         self.res_blocks_list = []

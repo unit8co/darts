@@ -1,5 +1,6 @@
 import unittest
 import logging
+import torch
 
 from ..models.tcn_model import TCNModel
 from ..utils import timeseries_generation as tg
@@ -31,3 +32,38 @@ class TCNModelTestCase(unittest.TestCase):
         model2.fit(small_ts[:98])
         pred2 = model2.predict(n=2).values()[0]
         self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
+
+    def test_coverage(self):
+        input_lengths = [10, 30, 50, 100, 200]
+        kernel_sizes = range(2, 5)
+        dilation_bases = range(2, 5)
+
+        for kernel_size in kernel_sizes:
+            for dilation_base in dilation_bases:
+                if (dilation_base > kernel_size):
+                    continue
+                for input_length in input_lengths:
+                    model = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length)
+                    input_tensor = torch.zeros([1, input_length, 1], dtype=torch.float)
+                    zero_output = torch.sum(model.model.forward(input_tensor))
+
+                    # test for full coverage
+                    for i in range(input_length):
+                        input_tensor[0, i, 0] = 1
+                        curr_output = torch.sum(model.model.forward(input_tensor))
+                        self.assertNotEqual(zero_output, curr_output)
+                        input_tensor[0, i, 0] = 0
+
+                    # test for incomplete coverage
+                    uncovered_input_found = False
+                    if (model.model.num_layers == 1):
+                        continue
+                    model.model.num_layers = model.model.num_layers - 1
+                    for i in range(input_length):
+                        input_tensor[0, i, 0] = 1
+                        curr_output = torch.sum(model.model.forward(input_tensor))
+                        if (zero_output != curr_output):
+                            uncovered_input_found = True
+                            break
+                        input_tensor[0, i, 0] = 0
+                    self.assertTrue(uncovered_input_found)
