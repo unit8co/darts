@@ -59,7 +59,7 @@ class TCNModelTestCase(unittest.TestCase):
                     if model.model.num_layers == 1:
                         continue
                     model.model.num_layers = model.model.num_layers - 1
-                    for i in rangeinput_length:
+                    for i in range(input_length):
                         input_tensor[0, i, 0] = 1
                         curr_output = torch.sum(model.model.forward(input_tensor))
                         if (zero_output != curr_output):
