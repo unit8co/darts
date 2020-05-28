@@ -158,10 +158,11 @@ class _TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
-            num_layers = math.ceil(math.log((input_length - 1) / (kernel_size - 1), dilation_base)) - 1
+            num_layers = math.ceil(math.log((input_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2,
+                                            dilation_base))
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:
-            num_layers = math.ceil((input_length - kernel_size) / 2)
+            num_layers = math.ceil((input_length - 1) / (kernel_size - 1) / 2)
             logger.info("Number of layers chosen: " + str(num_layers))
 
         # Building TCN module
