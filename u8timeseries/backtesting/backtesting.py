@@ -27,7 +27,7 @@ def backtest_forecasting(series: TimeSeries,
                          start: pd.Timestamp,
                          fcast_horizon_n: int,
                          stride: int = 1,
-                         retrain: bool = False,
+                         retrain: bool = True,
                          real_time_plot: bool = False,
                          trim_to_series: bool = True,
                          verbose: bool = False) -> TimeSeries:
@@ -55,6 +55,14 @@ def backtest_forecasting(series: TimeSeries,
         The first prediction time, at which a prediction is computed for a future time
     fcast_horizon_n
         The forecast horizon for the point predictions
+    stride
+        The number of entries between two consecutive predictions.
+    retrain
+        Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
+        instances as `model` argument support setting `retrain` to `False`.
+    real_time_plot
+        If set to `True`, the predictions of the backtesting will be plotted in real-time alongside
+        the ground truth values of the series. Requires `%matplotlib notebook` to be called in the notebook beforehand.
     trim_to_series
         Whether the predicted series has the end trimmed to match the end of the main series
     verbose
