@@ -3,14 +3,11 @@ Temporal Convolutional Network
 ------------------------------
 """
 
-import numpy as np
 import math
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
 
-from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
 from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesDataset1DShifted
 
