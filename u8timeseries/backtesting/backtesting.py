@@ -26,6 +26,9 @@ def backtest_forecasting(series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
                          fcast_horizon_n: int,
+                         stride: int = 1,
+                         retrain: bool = False,
+                         real_time_plot: bool = False,
                          trim_to_series: bool = True,
                          verbose: bool = False) -> TimeSeries:
     """ A function for backtesting `ForecastingModel`'s.
@@ -74,7 +77,7 @@ def backtest_forecasting(series: TimeSeries,
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
     while pred_times[-1] <= last_pred_time:
-        pred_times.append(pred_times[-1] + series.freq())
+        pred_times.append(pred_times[-1] + series.freq() * stride)
 
     # what we'll return
     values = []
@@ -82,12 +85,28 @@ def backtest_forecasting(series: TimeSeries,
 
     iterator = _build_tqdm_iterator(pred_times, verbose)
 
+    if (not retrain):
+        model.fit(series.drop_after(start), verbose=verbose)
+
+    if (real_time_plot):
+        fig, ax = plt.subplots(1, 1)
+        series.plot(ax=ax)
+        l = ax.plot(series.values())
+
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
-        model.fit(train)
-        pred = model.predict(fcast_horizon_n)
+        if (retrain):
+            model.fit(train)
+            pred = model.predict(fcast_horizon_n)
+        else:
+            pred = model.predict(fcast_horizon_n, input_series=train, use_full_output_length=True)
         values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
+
+        if (real_time_plot and len(values) > 3):
+            l[0].set_xdata(np.array(times))
+            l[0].set_ydata(np.array(values))
+            fig.canvas.draw()
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
