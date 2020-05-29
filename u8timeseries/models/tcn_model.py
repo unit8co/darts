@@ -152,7 +152,7 @@ class _TCNModule(nn.Module):
         self.input_length = input_length
         self.n_filters = num_filters
         self.kernel_size = kernel_size
-        self.out_len = output_length
+        self.output_length = output_length
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
 
@@ -233,6 +233,7 @@ class TCNModel(TorchForecastingModel):
 
         self.input_size = 1
         kwargs['input_length'] = input_length
+        kwargs['output_length'] = output_length
 
         self.model = _TCNModule(input_size=self.input_size, input_length=input_length,
                                 kernel_size=kernel_size, num_filters=num_filters,
