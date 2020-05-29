@@ -317,11 +317,18 @@ class TorchForecastingModel(ForecastingModel):
         for i in range(n):
             out = self.model(pred_in)
             pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, 0]
-            test_out.append(out.cpu().detach().numpy()[0, 0])
+            pred_in[:, -1, :] = out[:, self.first_prediction_index]
+            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
+
+    @property
+    def first_prediction_index(self) -> int:
+        """
+        Returns the index of the first predicted within the output of self.model.
+        """
+        return 0
 
     def _train(self,
                train_loader: DataLoader,

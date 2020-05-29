@@ -245,18 +245,6 @@ class TCNModel(TorchForecastingModel):
     def create_dataset(self, series):
         return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length)
 
-    def predict(self, n: int) -> TimeSeries:
-        super().predict(n)
-
-        scaled_series = self.training_series.values()[-self.input_length:]
-        pred_in = torch.from_numpy(scaled_series).float().view(1, -1, 1).to(self.device)
-        test_out = []
-        self.model.eval()
-        for i in range(n):
-            out = self.model(pred_in)
-            pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, -self.output_length]
-            test_out.append(out.cpu().detach().numpy()[0, -self.output_length])
-        test_out = np.stack(test_out)
-
-        return self._build_forecast_series(test_out.squeeze())
+    @property
+    def first_prediction_index(self) -> int:
+        return -self.output_length
