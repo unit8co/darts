@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from typing import Optional, Dict
+import math
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -307,18 +308,35 @@ class TorchForecastingModel(ForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self, n: int, 
+                input_series: Optional[TimeSeries] = None,
+                use_full_output_length: bool = False) -> TimeSeries:
         super().predict(n)
-
-        input_sequence = self.training_series.values()[-self.input_length:]
+        if input_series is None:
+            input_sequence = self.training_series.values()[-self.input_length:]
+        else:
+            raise_if_not(len(input_series) >= self.input_length,
+                         "'input_series' must at least be as long as 'self.input_length'", logger)
+            input_sequence = input_series.values()[-self.input_length:]
+            super().fit(input_series)
         pred_in = torch.from_numpy(input_sequence).float().view(1, -1, 1).to(self.device)
         test_out = []
         self.model.eval()
-        for i in range(n):
-            out = self.model(pred_in)
-            pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, self.first_prediction_index]
-            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+        if (use_full_output_length):
+            num_iterations = math.ceil(n / self.output_length)
+            for i in range(num_iterations):
+                out = self.model(pred_in)
+                pred_in = pred_in.roll(-self.output_length, 1)
+                pred_in[:, -self.output_length:, :] = out[:, -self.output_length:]
+                test_out.append(out.cpu().detach().numpy()[0, -self.output_length:])
+            test_out = np.concatenate(test_out)
+            test_out = test_out[:n]
+        else:
+            for i in range(n):
+                out = self.model(pred_in)
+                pred_in = pred_in.roll(-1, 1)
+                pred_in[:, -1, :] = out[:, self.first_prediction_index]
+                test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
