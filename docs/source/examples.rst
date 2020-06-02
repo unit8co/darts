@@ -36,3 +36,13 @@ You will find below an example Jupyter notebook containing usage of RNN model
    :maxdepth: 1
 
    examples/RNN-examples.ipynb
+
+Temporal Convolutional Networks
+===============================
+
+You will find below an example Jupyter notebook containing usage of TCN model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/TCN-examples.ipynb
