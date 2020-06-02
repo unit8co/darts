@@ -115,6 +115,7 @@ Currently, the library contains the following features:
 * Theta method,
 * FFT (Fast Fourier Transform)
 * Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants).
+* Temporal convolutional network
 
 **Preprocessing:** Transformer tool for easily scaling / normalizing time series.
 
