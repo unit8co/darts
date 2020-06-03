@@ -19,7 +19,7 @@ class Arima(AutoRegressiveModel):
 
     :param p: An integer representing the lag order.
     :param d: An integer for the order of differentiation.
-    :param q: An interger for the size of the moving average window.
+    :param q: An integer for the size of the moving average window.
     """
 
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
