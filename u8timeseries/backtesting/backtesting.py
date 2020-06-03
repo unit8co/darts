@@ -98,13 +98,13 @@ def backtest_forecasting(series: TimeSeries,
 
     iterator = _build_tqdm_iterator(pred_times, verbose)
 
-    if (not retrain):
+    if ((not retrain) and (not model._fit_called)):
         model.fit(series.drop_after(start), verbose=verbose)
 
     if (real_time_plot):
         fig, ax = plt.subplots(1, 1)
-        series.plot(ax=ax)
-        l = ax.plot(series.values())
+        series.drop_before(start).plot(ax=ax)
+        l = ax.plot(series.drop_before(start).values())
 
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
