@@ -166,7 +166,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     TimeSeries
         New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None):
+    if (required_matches is None or len(required_matches) == 0):
         return series
 
     first_ts = series._series.index[0]
