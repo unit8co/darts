@@ -133,7 +133,7 @@ class TimeSeries:
             The last value of this series
         """
         self._assert_univariate()
-        return self._values[0][-1]
+        return self._values[-1][0]
 
     def values(self) -> np.ndarray:
         """
@@ -534,7 +534,7 @@ class TimeSeries:
 
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
-        self._series.plot(*args, **kwargs)
+        self.pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
