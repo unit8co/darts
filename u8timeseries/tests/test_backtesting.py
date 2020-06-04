@@ -76,10 +76,10 @@ class BacktestingTestCase(unittest.TestCase):
         # test zero residuals
         constant_ts = ct(length=20)
         residuals = forecasting_residuals(model, constant_ts)
-        np.testing.assert_almost_equal(residuals.values(), np.zeros(len(residuals)))
+        np.testing.assert_almost_equal(residuals.univariate_values(), np.zeros(len(residuals)))
 
         # test constant, positive residuals
         linear_ts = lt(length=20)
         residuals = forecasting_residuals(model, linear_ts)
-        np.testing.assert_almost_equal(np.diff(residuals.values()), np.zeros(len(residuals) - 1))
-        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.values())
+        np.testing.assert_almost_equal(np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1))
+        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.univariate_values())

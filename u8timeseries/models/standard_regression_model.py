@@ -46,7 +46,7 @@ class StandardRegressionModel(RegressionModel):
 
     @staticmethod
     def _get_features_matrix_from_series(features: List[TimeSeries]):
-        return np.array([s.values() for s in features]).T  # (n_samples x n_features)
+        return np.array([s.univariate_values() for s in features]).T  # (n_samples x n_features)
 
     def fit(self,
             train_features: List[TimeSeries],
@@ -64,7 +64,7 @@ class StandardRegressionModel(RegressionModel):
 
         super().fit(last_n_points_features, last_n_points_target)
 
-        self.model.fit(self._get_features_matrix_from_series(last_n_points_features), last_n_points_target.values())
+        self.model.fit(self._get_features_matrix_from_series(last_n_points_features), last_n_points_target.univariate_values())
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)

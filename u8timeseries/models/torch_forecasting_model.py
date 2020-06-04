@@ -56,7 +56,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
             The length of the target sub-sequences, starting at the end of the training sub-sequence.
         """
 
-        self.series_values = series.values()
+        self.series_values = series.univariate_values()
 
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
         self.len_series = len(series)
@@ -104,7 +104,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
             The number of positions that the target sequence is shifted forward compared to the training sequence.
         """
 
-        self.series_values = series.values()
+        self.series_values = series.univariate_values()
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
@@ -310,7 +310,7 @@ class TorchForecastingModel(ForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
-        input_sequence = self.training_series.values()[-self.input_length:]
+        input_sequence = self.training_series.univariate_values()[-self.input_length:]
         pred_in = torch.from_numpy(input_sequence).float().view(1, -1, 1).to(self.device)
         test_out = []
         self.model.eval()

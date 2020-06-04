@@ -91,9 +91,8 @@ def backtest_forecasting(series: TimeSeries,
         train = series.drop_after(pred_time)  # build the training series
         model.fit(train)
         pred = model.predict(fcast_horizon_n)
-        values.append(pred.values()[-1])  # store the N-th point
+        values.append(pred.univariate_values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
-
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
@@ -172,7 +171,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 
         model.fit(train_features, train_target)
         pred = model.predict(val_features)
-        values.append(pred.values()[-1])  # store the N-th point
+        values.append(pred.univariate_values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
@@ -246,11 +245,11 @@ def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     ax1.set_title('Residual values')
 
     # plot distribution
-    res_mean, res_std = np.mean(residuals.values()), np.std(residuals.values())
-    res_min, res_max = min(residuals.values()), max(residuals.values())
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
+    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
-    ax2.hist(residuals.values(), bins=num_bins)
+    ax2.hist(residuals.univariate_values(), bins=num_bins)
     ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title('Distribution')

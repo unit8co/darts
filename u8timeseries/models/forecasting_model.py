@@ -84,9 +84,7 @@ class ForecastingModel(ABC):
         return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
 
     def _build_forecast_series(self,
-                               points_preds: np.ndarray,
-                               lower_bound: Optional[np.ndarray] = None,
-                               upper_bound: Optional[np.ndarray] = None) -> TimeSeries:
+                               points_preds: np.ndarray) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index.
@@ -94,5 +92,4 @@ class ForecastingModel(ABC):
 
         time_index = self._generate_new_dates(len(points_preds))
 
-        return TimeSeries.from_times_and_values(time_index, points_preds, lower_bound, upper_bound,
-                                                self.training_series.freq())
+        return TimeSeries.from_times_and_values(time_index, points_preds, self.training_series.freq())

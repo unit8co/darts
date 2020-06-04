@@ -144,6 +144,16 @@ class TimeSeries:
         """
         return np.copy(self._values)
 
+    def univariate_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        numpy.ndarray
+            A copy of the values composing the time series guaranteed to be univariate.
+        """
+        self._assert_univariate()
+        return np.copy(self._series.iloc[:, 0].values)
+
     def time_index(self) -> pd.DatetimeIndex:
         """
         Returns

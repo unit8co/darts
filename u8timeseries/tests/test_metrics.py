@@ -27,7 +27,7 @@ class MetricsTestCase(unittest.TestCase):
             metrics.mape(self.series1, self.series1)
 
         with self.assertRaises(ValueError):
-            metrics.ope(self.series1 - self.series1.mean(), self.series1 - self.series1.mean())
+            metrics.ope(self.series1 - self.series1.pd_series().mean(), self.series1 - self.series1.pd_series().mean())
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1 + 1, self.series1 + 1), 0)

@@ -28,7 +28,7 @@ class NaiveMean(ForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.mean_val = np.mean(series.values())
+        self.mean_val = np.mean(series.univariate_values())
 
     def predict(self, n: int):
         super().predict(n)
@@ -63,7 +63,7 @@ class NaiveSeasonal(ForecastingModel):
     def fit(self, series: TimeSeries):
         super().fit(series)
         raise_if_not(len(series) >= self.K, 'The time series requires at least K={} points'.format(self.K), logger)
-        self.last_k_vals = series.values()[-self.K:]
+        self.last_k_vals = series.univariate_values()[-self.K:]
 
     def predict(self, n: int):
         super().predict(n)

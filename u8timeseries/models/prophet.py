@@ -60,7 +60,7 @@ class Prophet(ForecastingModel):
 
         in_df = pd.DataFrame(data={
             'ds': series.time_index(),
-            'y': series.values()
+            'y': series.univariate_values()
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
@@ -89,6 +89,4 @@ class Prophet(ForecastingModel):
         predictions = self.model.predict(new_dates_df)
 
         forecast = predictions['yhat'][-n:].values
-        conf_lo = predictions['yhat_lower'][-n:].values
-        conf_hi = predictions['yhat_upper'][-n:].values
-        return self._build_forecast_series(forecast, conf_lo, conf_hi)
+        return self._build_forecast_series(forecast)

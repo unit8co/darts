@@ -22,7 +22,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for constant value
         constant_ts = constant_timeseries(value=value, length=length)
-        value_set = set(constant_ts._series.values)
+        value_set = set(constant_ts._series.values.flatten())
         self.assertTrue(len(value_set) == 1)
 
     def test_linear_timeseries(self):
@@ -34,9 +34,9 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for start value, end value and delta between two adjacent entries
         linear_ts = linear_timeseries(start_value=start_value, end_value=end_value, length=length)
-        self.assertEqual(linear_ts.values()[0], start_value)
-        self.assertEqual(linear_ts.values()[-1], end_value)
-        self.assertAlmostEqual(linear_ts.values()[-1] - linear_ts.values()[-2],
+        self.assertEqual(linear_ts.values()[0][0], start_value)
+        self.assertEqual(linear_ts.values()[-1][0], end_value)
+        self.assertAlmostEqual(linear_ts.values()[-1][0] - linear_ts.values()[-2][0],
                                (end_value - start_value) / (length - 1))
 
     def test_sine_timeseries(self):
@@ -48,8 +48,8 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for correct value range
         sine_ts = sine_timeseries(length=length, value_amplitude=value_amplitude, value_y_offset=value_y_offset)
-        self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all())
-        self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all())
+        self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all().all())
+        self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all().all())
 
     def test_gaussian_timeseries(self):
 
