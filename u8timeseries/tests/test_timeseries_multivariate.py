@@ -94,4 +94,12 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(seriesA.values().shape, (len(self.dataframe1), 
                                                   len(self.dataframe1.columns) + len(self.dataframe2.columns)))
 
-    
+    def test_univariate_component(self):
+        with self.assertRaises(ValueError):
+            self.series1.univariate_component(-1)
+        with self.assertRaises(ValueError):
+            self.series1.univariate_component(3)
+        seriesA = self.series1.univariate_component(1)
+        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15)))
+        seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
+        self.assertTrue(self.series1 == seriesB)

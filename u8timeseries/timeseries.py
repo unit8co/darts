@@ -675,7 +675,7 @@ class TimeSeries:
             new_series = new_series.astype(self._series.dtypes)
         return TimeSeries(new_series)
 
-    def stack(self, other: 'TimeSeries'):
+    def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same index on top of
         the current one and returns the newly formed multivariate TimeSeries.
@@ -696,6 +696,36 @@ class TimeSeries:
         new_dataframe = pd.concat([self.pd_dataframe(), other.pd_dataframe()], axis=1)
         return TimeSeries(new_dataframe, self.freq())
 
+    @property
+    def width(self) -> int:
+        """
+        Returns
+        -------
+        int
+            The number of components (univariate time series) of the current TimeSeries instance.
+        """
+        return self._series.shape[1] - 1
+
+    def univariate_component(self, index) -> 'TimeSeries':
+        """
+        Retrieves one of the components of the current TimeSeries instance
+        and returns it as new univariate TimeSeries instance.
+
+        Parameters
+        ----------
+        index
+            An zero-indexed integer indicating which component to retrieve.
+
+        Returns
+        -------
+        TimeSeries
+            A new univariate TimeSeries instance.
+        """
+
+        raise_if_not(index >= 0 and index <= self.width, 'The index must be between 0 and the number of components '
+                     'of the current TimeSeries instance - 1, {}'.format(self.width - 1), logger)
+        
+        return TimeSeries(self.pd_dataframe().iloc[:, index])
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
