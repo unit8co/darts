@@ -15,6 +15,7 @@ class TimeSeriesTestCase(unittest.TestCase):
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
     series1: TimeSeries = TimeSeries(pd_series1)
+    series2: TimeSeries = TimeSeries(pd_series2)
     series3: TimeSeries = TimeSeries(pd_series2)
 
     @classmethod
@@ -230,62 +231,52 @@ class TimeSeriesTestCase(unittest.TestCase):
             self.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
                              self.series1)
 
-    """def test_update(self):
+    def test_update(self):
         seriesA: TimeSeries = TimeSeries.from_times_and_values(self.times, [0, 1, 1, 3, 4, 5, 6, 2, 8, 0])
-        seriesB: TimeSeries = TimeSeries.from_times_and_values(self.times, range(10),
-                                                               [5, 1, 7, 3, 9, 5, 11, 2, 13, 14],
-                                                               [15, 16, 1, 18, 4, 20, 6, 22, 8, 24])
+        seriesB: TimeSeries = TimeSeries.from_times_and_values(self.times, range(10))
+
         # change nothing
         seriesC = self.series1.copy()
         with self.assertRaises(ValueError):
             seriesA.update(self.times)
-        seriesC.update(self.times, range(10), inplace=True)
+        seriesC = seriesC.update(self.times, range(10))
         self.assertEqual(seriesC, self.series1)
 
         # different len
         with self.assertRaises(ValueError):
-            seriesA.update(self.times, [], None, None)
+            seriesA.update(self.times, [])
         with self.assertRaises(ValueError):
-            seriesA.update(self.times, None, np.arange(3), None)
+            seriesA.update(self.times, np.arange(3))
         with self.assertRaises(ValueError):
-            seriesA.update(self.times, None, None, np.arange(4))
+            seriesA.update(self.times, np.arange(4))
 
         # change outside
         seriesC = seriesA.copy()
         with self.assertRaises(ValueError):
             seriesC.update(self.times + 100 * seriesC.freq(), range(10))
-        seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
-                       list(range(10)) + [0] * 10, inplace=True)
+        seriesC = seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
+                                 list(range(10)) + [0] * 10)
         self.assertEqual(seriesC, self.series1)
 
         # change random
         seriesC = seriesA.copy()
-        seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2], inplace=True)
+        seriesC = seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2])
         self.assertEqual(seriesC, self.series1)
 
         # change one of each series
         seriesD = seriesB.copy()
-        seriesD.update(self.times, seriesA.pd_series())
-        seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9], inplace=True)
+        seriesD = seriesD.update(self.times, seriesA.pd_series().values)
+        seriesA = seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9])
         self.assertEqual(seriesA, self.series1)
-        seriesB.update(self.times[::2], conf_hi=range(15, 25, 2), inplace=True)
-        self.assertTrue(seriesB.conf_hi_pd_series().equals(self.series2.conf_hi_pd_series()))
+        seriesB = seriesB.update(self.times[::2], range(5))
         self.assertNotEqual(seriesB, self.series2)
-        seriesB.update(self.times[1::2], conf_lo=range(6, 15, 2), inplace=True)
-        self.assertEqual(seriesB, self.series2)
 
-        # use nan to update all series altogether
+        # use nan
         new_series = np.empty(10)
         new_series[:] = np.nan
         new_series[[2, 7, 9]] = [2, 7, 9]
-        new_lo = np.empty(10)
-        new_lo[:] = np.nan
-        new_lo[1::2] = np.arange(6, 15, 2)
-        new_hi = np.empty(10)
-        new_hi[:] = np.nan
-        new_hi[::2] = np.arange(15, 25, 2)
-        seriesD.update(self.times, new_series, new_lo, new_hi, inplace=True)
-        self.assertEqual(seriesD, self.series2)"""
+        seriesD = seriesD.update(self.times, new_series)
+        self.assertEqual(seriesD, self.series1)
 
 
     def test_ops(self):

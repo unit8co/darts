@@ -629,15 +629,11 @@ class TimeSeries:
 
     def update(self,
                index: pd.DatetimeIndex,
-               values: np.ndarray = None,
-               inplace: bool = False) -> 'TimeSeries':
+               values: np.ndarray = None) -> 'TimeSeries':
         """
-        Updates the Series with the new values provided.
+        Updates the TimeSeries instance with the new values provided.
         If indices are not in original TimeSeries, they will be discarded.
-        At least one parameter other than index must be filled.
         Use `numpy.nan` to ignore a specific index in a series.
-
-        It will raise an error if try to update a missing CI series
 
         Parameters
         ----------
@@ -645,14 +641,18 @@ class TimeSeries:
             A `pandas.DateTimeIndex` containing the indices to replace.
         values
             An array containing the values to replace (optional).
-        inplace
-            If True, do operation inplace and return self, defaults to False.
 
         Returns
         -------
         TimeSeries
-            A new TimeSeries (if `inplace = False`) or the same TimeSeries with values updated
+            A new TimeSeries with updated values.
         """
+
+        if isinstance(values, (list, range)):
+            values = np.array(values)
+
+        if values is not None and len(values.shape) == 1:
+            values = values.reshape((len(values), 1))
 
         raise_if_not(not (values is None), "'values' parameter should not be None.", logger)
         raise_if_not(index is not None, "Index must be filled.")
@@ -660,20 +660,21 @@ class TimeSeries:
             raise_if_not(len(values) == len(index), "The number of values must correspond "
                                                     "to the number of indices: {} != {}".format(len(values),
                                                                                                 len(index)), logger)
+            raise_if_not(self._series.shape[1] == values.shape[1], "The number of columns in values must correspond "
+                                                                   "to the number of columns in the current TimeSeries"
+                                                                   "instance: {} != {}".format(self._series.shape[1],
+                                                                                               values.shape[1]))
 
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)  # only contains indices that are present in the TimeSeries instance
         series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices), index=index)
         raise_if_not(len(index) > 0, "Must give at least one correct index.", logger)
-        if inplace:
-            if series is not None:
-                self._series.update(series)
-            return self
-        else:
-            new_series = self.pd_dataframe()
-            if series is not None:
-                new_series.update(series)
-            return TimeSeries(new_series)
+
+        new_series = self.pd_dataframe()
+        if series is not None:
+            new_series.update(series)
+            new_series = new_series.astype(self._series.dtypes)
+        return TimeSeries(new_series)
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
