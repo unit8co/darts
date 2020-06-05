@@ -10,19 +10,25 @@ from ..timeseries import TimeSeries
 
 class TimeSeriesTestCase(unittest.TestCase):
 
-    times = pd.date_range('20130101', '20130110')
+    times1 = pd.date_range('20130101', '20130110')
+    times2 = pd.date_range('20130201', '20130210')
     dataframe1 = pd.DataFrame({
         0: range(10),
         1: range(5, 15),
         2: range(10, 20)
-    }, index=times)
+    }, index=times1)
     dataframe2 = pd.DataFrame({
         0: np.arange(1, 11),
         1: np.arange(1, 11) * 3,
         2: np.arange(1, 11) * 5
-    }, index=times)
+    }, index=times1)
+    dataframe3 = pd.DataFrame({
+        0: np.arange(1, 11),
+        1: np.arange(11, 21),
+    }, index=times2)
     series1 = TimeSeries(dataframe1)
     series2 = TimeSeries(dataframe2)
+    series3 = TimeSeries(dataframe3)
 
     @classmethod
     def setUpClass(cls):
@@ -73,4 +79,19 @@ class TimeSeriesTestCase(unittest.TestCase):
                 2: np.arange(1, 11)
             }, index=self.dataframe2.index).astype(float)
         ))
-        
+    
+    """
+    Testing new multivariate methods.
+    """
+
+    def test_stack(self):
+        with self.assertRaises(ValueError):
+            self.series1.stack(self.series3)
+        seriesA = self.series1.stack(self.series2)
+        dataframeA = pd.concat([self.dataframe1, self.dataframe2], axis=1)
+        dataframeA.columns = range(6)
+        self.assertTrue((seriesA.pd_dataframe() == dataframeA).all().all())
+        self.assertEqual(seriesA.values().shape, (len(self.dataframe1), 
+                                                  len(self.dataframe1.columns) + len(self.dataframe2.columns)))
+
+    

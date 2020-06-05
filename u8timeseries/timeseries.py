@@ -675,6 +675,28 @@ class TimeSeries:
             new_series = new_series.astype(self._series.dtypes)
         return TimeSeries(new_series)
 
+    def stack(self, other: 'TimeSeries'):
+        """
+        Stacks another univariate or multivariate TimeSeries with the same index on top of
+        the current one and returns the newly formed multivariate TimeSeries.
+
+        Parameters
+        ----------
+        other
+            A TimeSeries instance with the same index as the current one.
+
+        Returns
+        -------
+        TimeSeries
+            A new multivariate TimeSeries instance.
+        """
+        raise_if_not((self.time_index() == other.time_index()).all(), 'The indices of the two TimeSeries instances '
+                     'must be equal', logger)
+        
+        new_dataframe = pd.concat([self.pd_dataframe(), other.pd_dataframe()], axis=1)
+        return TimeSeries(new_dataframe, self.freq())
+
+
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
         Creates an reindexed time series with a given frequency.
