@@ -64,7 +64,8 @@ class StandardRegressionModel(RegressionModel):
 
         super().fit(last_n_points_features, last_n_points_target)
 
-        self.model.fit(self._get_features_matrix_from_series(last_n_points_features), last_n_points_target.univariate_values())
+        self.model.fit(self._get_features_matrix_from_series(last_n_points_features), 
+                       last_n_points_target.univariate_values())
 
     def predict(self, features: List[TimeSeries]):
         super().predict(features)

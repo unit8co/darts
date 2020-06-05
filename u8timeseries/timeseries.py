@@ -46,7 +46,7 @@ class TimeSeries:
         raise_if_not(len(series) > 0 and series.shape[1] > 0, 'Series must not be empty.', logger)
         raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
         raise_if_not(series.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Series must'
-                                         ' contain only numerical values.', logger)
+                     ' contain only numerical values.', logger)
         raise_if_not(len(series) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
                      'is not passed', logger)
 
@@ -70,7 +70,6 @@ class TimeSeries:
 
         # The actual values
         self._values: np.ndarray = self._series.values
-
 
     def _assert_univariate(self):
         """

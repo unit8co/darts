@@ -61,7 +61,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesC = TimeSeries(pd.Series(range(10), index=pd.date_range('20130102', '20130111')))
         self.assertFalse(self.series1 == seriesC)
 
-
     def test_dates(self):
         self.assertEqual(self.series1.start_time(), pd.Timestamp('20130101'))
         self.assertEqual(self.series1.end_time(), pd.Timestamp('20130110'))
@@ -277,7 +276,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         new_series[[2, 7, 9]] = [2, 7, 9]
         seriesD = seriesD.update(self.times, new_series)
         self.assertEqual(seriesD, self.series1)
-
 
     def test_ops(self):
         seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
