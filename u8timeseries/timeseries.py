@@ -412,7 +412,7 @@ class TimeSeries:
             have been scaled accordingly.
         """
 
-        raise_if_not(self.values()[0] != 0, 'Cannot rescale with first value 0.', logger)
+        raise_if_not((self.values()[0] != 0).all(), 'Cannot rescale with first value 0.', logger)
 
         coef = value_at_first_step / self.values()[0]  # TODO: should the new TimeSeries have the same dtype?
         new_series = coef * self._series
@@ -454,7 +454,7 @@ class TimeSeries:
                        freq: Optional[str] = None,
                        fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns a TimeSeries built from a DataFrame.
+        Returns a univariate TimeSeries built from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
         and another column has to represent the values for this univariate time series.
 
@@ -475,7 +475,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A TimeSeries constructed from the inputs.
+            A univariate TimeSeries constructed from the inputs.
         """
         if time_col is None:
             times: pd.DatetimeIndex = pd.to_datetime(df.index, errors='raise')
