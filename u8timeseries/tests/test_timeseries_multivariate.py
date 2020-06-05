@@ -1,6 +1,5 @@
 import logging
 import unittest
-import math
 
 import numpy as np
 import pandas as pd
@@ -42,7 +41,6 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertTrue(series_test.pd_dataframe().equals(self.dataframe1))
 
         # Series cannot be lower than three without passing frequency as argument to constructor
-        index = pd.date_range('20130101', '20130102')
         with self.assertRaises(ValueError):
             TimeSeries(self.dataframe1.iloc[:2, :])
         TimeSeries(self.dataframe1.iloc[:2, :], 'D')
@@ -79,7 +77,7 @@ class TimeSeriesTestCase(unittest.TestCase):
                 2: np.arange(1, 11)
             }, index=self.dataframe2.index).astype(float)
         ))
-    
+
     """
     Testing new multivariate methods.
     """
@@ -91,7 +89,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         dataframeA = pd.concat([self.dataframe1, self.dataframe2], axis=1)
         dataframeA.columns = range(6)
         self.assertTrue((seriesA.pd_dataframe() == dataframeA).all().all())
-        self.assertEqual(seriesA.values().shape, (len(self.dataframe1), 
+        self.assertEqual(seriesA.values().shape, (len(self.dataframe1),
                                                   len(self.dataframe1.columns) + len(self.dataframe2.columns)))
 
     def test_univariate_component(self):

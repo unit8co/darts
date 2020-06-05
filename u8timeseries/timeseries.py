@@ -692,7 +692,7 @@ class TimeSeries:
         """
         raise_if_not((self.time_index() == other.time_index()).all(), 'The indices of the two TimeSeries instances '
                      'must be equal', logger)
-        
+
         new_dataframe = pd.concat([self.pd_dataframe(), other.pd_dataframe()], axis=1)
         return TimeSeries(new_dataframe, self.freq())
 
@@ -724,7 +724,7 @@ class TimeSeries:
 
         raise_if_not(index >= 0 and index <= self.width, 'The index must be between 0 and the number of components '
                      'of the current TimeSeries instance - 1, {}'.format(self.width - 1), logger)
-        
+
         return TimeSeries(self.pd_dataframe().iloc[:, index])
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
