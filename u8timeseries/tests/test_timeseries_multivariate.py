@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
+from .test_timeseries import TimeSeriesTestCase
 
 
-class TimeSeriesTestCase(unittest.TestCase):
+class TimeSeriesMultivariateTestCase(unittest.TestCase):
 
     times1 = pd.date_range('20130101', '20130110')
     times2 = pd.date_range('20130201', '20130210')
@@ -62,6 +63,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesC = TimeSeries(dataframeC)
         self.assertFalse(self.series1 == seriesC)
 
+    def test_drop(self):
+        seriesA = self.series1.drop_after(pd.Timestamp('20130105'))
+        self.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - self.series1.freq())
+        self.assertTrue(np.all(seriesA.time_index() < pd.Timestamp('20130105')))
+
     def test_rescale(self):
         with self.assertRaises(ValueError):
             self.series1.rescale_with_value(1)
@@ -77,6 +83,37 @@ class TimeSeriesTestCase(unittest.TestCase):
                 2: np.arange(1, 11)
             }, index=self.dataframe2.index).astype(float)
         ))
+
+    def test_update(self):
+        times = pd.date_range('20130101', '20130103')
+        values = np.array([[1, 2, 3], [2, 4, 6], [3, 6, 9]])
+        seriesA = TimeSeries.from_times_and_values(times, values)
+        seriesA = seriesA.update(pd.date_range('20130101', '20130101'), [[1, 1, 1]])
+        self.assertTrue((seriesA.values()[0] == [1, 1, 1]).all())
+        seriesA = seriesA.update(pd.date_range('20130101', '20130102'), [[np.nan, 0, 0], [np.nan, 1, 1]])
+        self.assertTrue((seriesA.values()[0] == [1, 0, 0]).all())
+        self.assertTrue((seriesA.values()[1] == [2, 1, 1]).all())
+
+    def test_slice(self):
+        TimeSeriesTestCase.helper_test_slice(self, self.series1)
+
+    def test_split(self):
+        TimeSeriesTestCase.helper_test_split(self, self.series1)
+    
+    def test_drop(self):
+        TimeSeriesTestCase.helper_test_drop(self, self.series1)
+
+    def test_intersect(self):
+        TimeSeriesTestCase.helper_test_intersect(self, self.series1)
+
+    def test_shift(self):
+        TimeSeriesTestCase.helper_test_shift(self, self.series1)
+
+    def test_append(self):
+        TimeSeriesTestCase.helper_test_append(self, self.series1)
+
+    def test_append_values(self):
+        TimeSeriesTestCase.helper_test_append_values(self, self.series1)
 
     """
     Testing new multivariate methods.

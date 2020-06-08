@@ -66,84 +66,88 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(self.series1.end_time(), pd.Timestamp('20130110'))
         self.assertEqual(self.series1.duration(), pd.Timedelta(days=9))
 
-    def test_slice(self):
+    @staticmethod
+    def helper_test_slice(test_case, test_series: TimeSeries):
         # base case
-        seriesA = self.series1.slice(pd.Timestamp('20130104'), pd.Timestamp('20130107'))
-        self.assertEqual(seriesA.start_time(), pd.Timestamp('20130104'))
-        self.assertEqual(seriesA.end_time(), pd.Timestamp('20130107'))
+        seriesA = test_series.slice(pd.Timestamp('20130104'), pd.Timestamp('20130107'))
+        test_case.assertEqual(seriesA.start_time(), pd.Timestamp('20130104'))
+        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130107'))
 
         # time stamp not in series
-        seriesB = self.series1.slice(pd.Timestamp('20130104 12:00:00'), pd.Timestamp('20130107'))
-        self.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
-        self.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
+        seriesB = test_series.slice(pd.Timestamp('20130104 12:00:00'), pd.Timestamp('20130107'))
+        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
+        test_case.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
 
         # end timestamp after series
-        seriesC = self.series1.slice(pd.Timestamp('20130108'), pd.Timestamp('20130201'))
-        self.assertEqual(seriesC.start_time(), pd.Timestamp('20130108'))
-        self.assertEqual(seriesC.end_time(), pd.Timestamp('20130110'))
+        seriesC = test_series.slice(pd.Timestamp('20130108'), pd.Timestamp('20130201'))
+        test_case.assertEqual(seriesC.start_time(), pd.Timestamp('20130108'))
+        test_case.assertEqual(seriesC.end_time(), pd.Timestamp('20130110'))
 
         # n points, base case
-        seriesD = self.series1.slice_n_points_after(pd.Timestamp('20130102'), n=3)
-        self.assertEqual(seriesD.start_time(), pd.Timestamp('20130102'))
-        self.assertTrue(len(seriesD.values()) == 3)
-        self.assertEqual(seriesD.end_time(), pd.Timestamp('20130104'))
+        seriesD = test_series.slice_n_points_after(pd.Timestamp('20130102'), n=3)
+        test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130102'))
+        test_case.assertTrue(len(seriesD.values()) == 3)
+        test_case.assertEqual(seriesD.end_time(), pd.Timestamp('20130104'))
 
-        seriesE = self.series1.slice_n_points_after(pd.Timestamp('20130107 12:00:10'), n=10)
-        self.assertEqual(seriesE.start_time(), pd.Timestamp('20130108'))
-        self.assertEqual(seriesE.end_time(), pd.Timestamp('20130110'))
+        seriesE = test_series.slice_n_points_after(pd.Timestamp('20130107 12:00:10'), n=10)
+        test_case.assertEqual(seriesE.start_time(), pd.Timestamp('20130108'))
+        test_case.assertEqual(seriesE.end_time(), pd.Timestamp('20130110'))
 
-        seriesF = self.series1.slice_n_points_before(pd.Timestamp('20130105'), n=3)
-        self.assertEqual(seriesF.end_time(), pd.Timestamp('20130105'))
-        self.assertTrue(len(seriesF.values()) == 3)
-        self.assertEqual(seriesF.start_time(), pd.Timestamp('20130103'))
+        seriesF = test_series.slice_n_points_before(pd.Timestamp('20130105'), n=3)
+        test_case.assertEqual(seriesF.end_time(), pd.Timestamp('20130105'))
+        test_case.assertTrue(len(seriesF.values()) == 3)
+        test_case.assertEqual(seriesF.start_time(), pd.Timestamp('20130103'))
 
-        seriesG = self.series1.slice_n_points_before(pd.Timestamp('20130107 12:00:10'), n=10)
-        self.assertEqual(seriesG.start_time(), pd.Timestamp('20130101'))
-        self.assertEqual(seriesG.end_time(), pd.Timestamp('20130107'))
+        seriesG = test_series.slice_n_points_before(pd.Timestamp('20130107 12:00:10'), n=10)
+        test_case.assertEqual(seriesG.start_time(), pd.Timestamp('20130101'))
+        test_case.assertEqual(seriesG.end_time(), pd.Timestamp('20130107'))
 
-    def test_split(self):
-        seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130104'))
-        self.assertEqual(seriesA.end_time(), pd.Timestamp('20130104'))
-        self.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
+    @staticmethod
+    def helper_test_split(test_case, test_series: TimeSeries):
+        seriesA, seriesB = test_series.split_after(pd.Timestamp('20130104'))
+        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130104'))
+        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
 
-        seriesC, seriesD = self.series1.split_before(pd.Timestamp('20130104'))
-        self.assertEqual(seriesC.end_time(), pd.Timestamp('20130103'))
-        self.assertEqual(seriesD.start_time(), pd.Timestamp('20130104'))
+        seriesC, seriesD = test_series.split_before(pd.Timestamp('20130104'))
+        test_case.assertEqual(seriesC.end_time(), pd.Timestamp('20130103'))
+        test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130104'))
 
-        self.assertEqual(self.series1.freq_str(), seriesA.freq_str())
-        self.assertEqual(self.series1.freq_str(), seriesC.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesC.freq_str())
 
-    def test_drop(self):
-        seriesA = self.series1.drop_after(pd.Timestamp('20130105'))
-        self.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - self.series1.freq())
-        self.assertTrue(np.all(seriesA.time_index() < pd.Timestamp('20130105')))
+    @staticmethod
+    def helper_test_drop(test_case, test_series: TimeSeries):
+        seriesA = test_series.drop_after(pd.Timestamp('20130105'))
+        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - test_series.freq())
+        test_case.assertTrue(np.all(seriesA.time_index() < pd.Timestamp('20130105')))
 
-        seriesB = self.series1.drop_before(pd.Timestamp('20130105'))
-        self.assertEqual(seriesB.start_time(), pd.Timestamp('20130105') + self.series1.freq())
-        self.assertTrue(np.all(seriesB.time_index() > pd.Timestamp('20130105')))
+        seriesB = test_series.drop_before(pd.Timestamp('20130105'))
+        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105') + test_series.freq())
+        test_case.assertTrue(np.all(seriesB.time_index() > pd.Timestamp('20130105')))
 
-        self.assertEqual(self.series1.freq_str(), seriesA.freq_str())
-        self.assertEqual(self.series1.freq_str(), seriesB.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesB.freq_str())
 
-    def test_intersect(self):
+    @staticmethod
+    def helper_test_intersect(test_case, test_series: TimeSeries):
         seriesA = TimeSeries(pd.Series(range(2, 8), index=pd.date_range('20130102', '20130107')))
 
-        seriesB = self.series1.slice_intersect(seriesA)
-        self.assertEqual(seriesB.start_time(), pd.Timestamp('20130102'))
-        self.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
+        seriesB = test_series.slice_intersect(seriesA)
+        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130102'))
+        test_case.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
 
         # Outside of range
-        seriesD = self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
+        seriesD = test_series.slice_intersect(TimeSeries(pd.Series(range(6, 13),
                                                           index=pd.date_range('20130106', '20130112'))))
-        self.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
-        self.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
+        test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
+        test_case.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
-        with self.assertRaises(ValueError):
-            self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
+        with test_case.assertRaises(ValueError):
+            test_series.slice_intersect(TimeSeries(pd.Series(range(6, 13),
                                                     index=pd.date_range('20130116', '20130122'))))
-        with self.assertRaises(ValueError):
-            self.series1.slice_intersect(TimeSeries(pd.Series(range(9, 13),
+        with test_case.assertRaises(ValueError):
+            test_series.slice_intersect(TimeSeries(pd.Series(range(9, 13),
                                                     index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
@@ -162,73 +166,98 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesD = self.series3.rescale_with_value(1e+20)  # TODO: test will fail if value > 1e24 due to num imprecision
         self.assertTrue(self.series3 * 0.2e+20 == seriesD)
 
-    def test_shift(self):
-        seriesA = self.series1.shift(0)
-        self.assertTrue(seriesA == self.series1)
+    @staticmethod
+    def helper_test_shift(test_case, test_series: TimeSeries):
+        seriesA = test_case.series1.shift(0)
+        test_case.assertTrue(seriesA == test_case.series1)
 
-        seriesB = self.series1.shift(1)
-        self.assertTrue(seriesB.time_index().equals(
-                        self.series1.time_index()[1:].append(
-                            pd.DatetimeIndex([self.series1.time_index()[-1] + self.series1.freq()])
+        seriesB = test_series.shift(1)
+        test_case.assertTrue(seriesB.time_index().equals(
+                        test_series.time_index()[1:].append(
+                            pd.DatetimeIndex([test_series.time_index()[-1] + test_series.freq()])
                         )))
 
-        seriesC = self.series1.shift(-1)
-        self.assertTrue(seriesC.time_index().equals(
-            pd.DatetimeIndex([self.series1.time_index()[0] - self.series1.freq()]).append(
-                self.series1.time_index()[:-1])))
+        seriesC = test_series.shift(-1)
+        test_case.assertTrue(seriesC.time_index().equals(
+            pd.DatetimeIndex([test_series.time_index()[0] - test_series.freq()]).append(
+                test_series.time_index()[:-1])))
 
-        with self.assertRaises(OverflowError):
-            self.series1.shift(1e+6)
+        with test_case.assertRaises(OverflowError):
+            test_series.shift(1e+6)
 
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130601', freq='m'), range(5))
-        with self.assertRaises(OverflowError):
+        with test_case.assertRaises(OverflowError):
             seriesM.shift(1e+4)
 
-    def test_append(self):
+    @staticmethod
+    def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
-        seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130106'))
-        self.assertEqual(seriesA.append(seriesB), self.series1)
-        self.assertEqual(seriesA.append(seriesB).freq(), self.series1.freq())
+        seriesA, seriesB = test_series.split_after(pd.Timestamp('20130106'))
+        test_case.assertEqual(seriesA.append(seriesB), test_series)
+        test_case.assertEqual(seriesA.append(seriesB).freq(), test_series.freq())
 
         # Creating a gap is not allowed
-        seriesC = self.series1.drop_before(pd.Timestamp('20130107'))
-        with self.assertRaises(ValueError):
+        seriesC = test_series.drop_before(pd.Timestamp('20130107'))
+        with test_case.assertRaises(ValueError):
             seriesA.append(seriesC)
 
         # Changing frequence is not allowed
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130107', '20130507', freq='30D'), range(5))
-        with self.assertRaises(ValueError):
+        with test_case.assertRaises(ValueError):
             seriesA.append(seriesM)
 
-    def test_append_values(self):
+    @staticmethod
+    def helper_test_append_values(test_case, test_series: TimeSeries):
         # reconstruct series
-        seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130106'))
-        self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()), self.series1)
-        self.assertEqual(seriesA.append_values(seriesB.values()), self.series1)
+        seriesA, seriesB = test_series.split_after(pd.Timestamp('20130106'))
+        test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()), test_series)
+        test_case.assertEqual(seriesA.append_values(seriesB.values()), test_series)
 
-        # add only few element
-        self.assertEqual(self.series1.drop_after(pd.Timestamp('20130110')).append_values([9]), self.series1)
-        self.assertEqual(seriesA.append_values([]), seriesA)
+        # test for equality
+        test_case.assertEqual(test_series.drop_after(pd.Timestamp('20130105'))
+                              .append_values(test_series.drop_before(pd.Timestamp('20130104')).values()), test_series)
+        test_case.assertEqual(seriesA.append_values([]), seriesA)
 
         # randomize order
         rd_order = np.random.permutation(range(len(seriesB.values())))
-        self.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index()[rd_order]),
-                         self.series1)
+        test_case.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index()[rd_order]),
+                         test_series)
 
         # add non consecutive index
-        with self.assertRaises(ValueError):
-            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() + seriesB.freq()),
-                             self.series1)
+        with test_case.assertRaises(ValueError):
+            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() + seriesB.freq()),
+                             test_series)
 
         # add existing indices
-        with self.assertRaises(ValueError):
-            self.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() - 3 * seriesB.freq()),
-                             self.series1)
+        with test_case.assertRaises(ValueError):
+            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() - 3 * seriesB.freq()),
+                             test_series)
 
         # other frequency
-        with self.assertRaises(ValueError):
-            self.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
-                             self.series1)
+        with test_case.assertRaises(ValueError):
+            test_case.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
+                             test_series)
+
+    def test_slice(self):
+        TimeSeriesTestCase.helper_test_slice(self, self.series1)
+
+    def test_split(self):
+        TimeSeriesTestCase.helper_test_split(self, self.series1)
+    
+    def test_drop(self):
+        TimeSeriesTestCase.helper_test_drop(self, self.series1)
+
+    def test_intersect(self):
+        TimeSeriesTestCase.helper_test_intersect(self, self.series1)
+
+    def test_shift(self):
+        TimeSeriesTestCase.helper_test_shift(self, self.series1)
+
+    def test_append(self):
+        TimeSeriesTestCase.helper_test_append(self, self.series1)
+
+    def test_append_values(self):
+        TimeSeriesTestCase.helper_test_append_values(self, self.series1)
 
     def test_update(self):
         seriesA: TimeSeries = TimeSeries.from_times_and_values(self.times, [0, 1, 1, 3, 4, 5, 6, 2, 8, 0])
