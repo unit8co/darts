@@ -704,9 +704,9 @@ class TimeSeries:
         int
             The number of components (univariate time series) of the current TimeSeries instance.
         """
-        return self._series.shape[1] - 1
+        return self._series.shape[1]
 
-    def univariate_component(self, index) -> 'TimeSeries':
+    def univariate_component(self, index: int) -> 'TimeSeries':
         """
         Retrieves one of the components of the current TimeSeries instance
         and returns it as new univariate TimeSeries instance.
@@ -722,10 +722,43 @@ class TimeSeries:
             A new univariate TimeSeries instance.
         """
 
-        raise_if_not(index >= 0 and index <= self.width, 'The index must be between 0 and the number of components '
+        raise_if_not(index >= 0 and index < self.width, 'The index must be between 0 and the number of components '
                      'of the current TimeSeries instance - 1, {}'.format(self.width - 1), logger)
 
         return TimeSeries(self.pd_dataframe().iloc[:, index])
+
+    def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries instance with one (or more) additional dimension(s) that contain an attribute 
+        of the time index of the current series specified with `component`, such as 'weekday', 'day' or 'month'.
+
+        Parameters
+        ----------
+        attribute
+            A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+        one_hot
+            Boolean value indicating whether to add the specified attribute as a one hot encoding (results in more columns).
+
+        Returns
+        -------
+        TimeSeries
+            New TimeSeries instance enhanced by `attribute`.
+        """
+
+        raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
+                    'of pd.DatetimeIndex', logger)
+
+        new_component = getattr(self.time_index(), attribute)
+
+        if one_hot:
+            new_component_df = pd.get_dummies(new_component)
+        else:
+            new_component_df = pd.DataFrame(new_component)
+
+        new_component_df.index = self.time_index()
+        new_component_ts = TimeSeries(new_component_df)
+
+        return self.stack(new_component_ts)
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """

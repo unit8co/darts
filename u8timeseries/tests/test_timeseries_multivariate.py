@@ -101,3 +101,13 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15)))
         seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
         self.assertTrue(self.series1 == seriesB)
+
+    def test_add_datetime_attribute(self):
+        seriesA = self.series1.add_datetime_attribute('day')
+        self.assertEqual(seriesA.width, self.series1.width + 1)
+        self.assertTrue(set(seriesA._series.loc[:, seriesA.width - 1]) == set(range(1, 11)))
+        seriesB = self.series1.add_datetime_attribute('day', True)
+        self.assertEqual(seriesB.width, self.series1.width + 10)
+        self.assertTrue(set(seriesB._series.loc[:, seriesA.width - 1]) == {0, 1})
+        seriesC = self.series1.add_datetime_attribute('month', True)
+        self.assertEqual(seriesC.width, self.series1.width + 1)
