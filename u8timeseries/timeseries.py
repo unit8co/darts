@@ -11,7 +11,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 import holidays
-from typing import Tuple, Optional, Callable, Any, Union
+from typing import Tuple, Optional, Callable, Any, Union, List
 
 from .logging import raise_log, raise_if_not, get_logger
 
@@ -451,13 +451,13 @@ class TimeSeries:
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str],
-                       value_col: str,
+                       value_cols: Union[str, List[str]],
                        freq: Optional[str] = None,
                        fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns a univariate TimeSeries built from a DataFrame.
+        Returns a TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
-        and another column has to represent the values for this univariate time series.
+        and a set of other columns `value_cols` has to represent the values for this time series.
 
         Parameters
         ----------
@@ -466,7 +466,7 @@ class TimeSeries:
         time_col
             The time column name (mandatory). If set to `None`, the DataFrame index will be used.
         value_col
-            The value column name (mandatory).
+            A string representing a single value column or a list of strings for a multivariate TimeSeries.
         freq
             Optionally, a string representing the frequency of the Pandas Series.
         fill_missing_dates
@@ -478,13 +478,13 @@ class TimeSeries:
         TimeSeries
             A univariate TimeSeries constructed from the inputs.
         """
+        series_df = df[value_col]
         if time_col is None:
-            times: pd.DatetimeIndex = pd.to_datetime(df.index, errors='raise')
+            series_df.index = pd.to_datetime(df.index, errors='raise')
         else:
-            times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
-        series: pd.Series = pd.Series(df[value_col].values, index=times)
+            series_df.index = pd.to_datetime(df[time_col], errors='raise')
 
-        return TimeSeries(series, freq, fill_missing_dates)
+        return TimeSeries(series_df, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
@@ -492,7 +492,7 @@ class TimeSeries:
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns a TimeSeries built from an index and values.
+        Returns TimeSeries built from an index and values.
 
         Parameters
         ----------
@@ -511,9 +511,9 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        series = pd.Series(values, index=times)
+        df = pd.DataFrame(values, index=times)
 
-        return TimeSeries(series, freq, fill_missing_dates)
+        return TimeSeries(df, freq, fill_missing_dates)
 
     def plot(self,
              new_plot: bool = False,
