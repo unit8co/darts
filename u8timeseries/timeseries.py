@@ -478,7 +478,7 @@ class TimeSeries:
         TimeSeries
             A univariate TimeSeries constructed from the inputs.
         """
-        series_df = df[value_col]
+        series_df = df[value_cols]
         if time_col is None:
             series_df.index = pd.to_datetime(df.index, errors='raise')
         else:
