@@ -465,7 +465,7 @@ class TimeSeries:
             The DataFrame
         time_col
             The time column name (mandatory). If set to `None`, the DataFrame index will be used.
-        value_col
+        value_cols
             A string representing a single value column or a list of strings for a multivariate TimeSeries.
         freq
             Optionally, a string representing the frequency of the Pandas Series.
