@@ -653,12 +653,11 @@ class TimeSeries:
 
         if values is not None and len(values.shape) == 1:
             values = values.reshape((len(values), 1))
-
         raise_if_not(not (values is None), "'values' parameter should not be None.", logger)
         raise_if_not(index is not None, "Index must be filled.")
         if (values is not None):
-            raise_if_not(len(values) == len(index), "The number of values must correspond "
-                                                    "to the number of indices: {} != {}".format(len(values),
+            raise_if_not(values.shape[0] == len(index), "The number of values must correspond "
+                                                        "to the number of indices: {} != {}".format(len(values),
                                                                                                 len(index)), logger)
             raise_if_not(self._series.shape[1] == values.shape[1], "The number of columns in values must correspond "
                                                                    "to the number of columns in the current TimeSeries"
@@ -667,7 +666,7 @@ class TimeSeries:
 
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)  # only contains indices that are present in the TimeSeries instance
-        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices), index=index)
+        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index)
         raise_if_not(len(index) > 0, "Must give at least one correct index.", logger)
 
         new_series = self.pd_dataframe()
