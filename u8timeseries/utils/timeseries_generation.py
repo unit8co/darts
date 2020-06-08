@@ -21,7 +21,7 @@ def constant_timeseries(value: float = 1,
                         freq: str = 'D',
                         start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a constant TimeSeries with the given value, length, start date and frequency.
+    Creates a constant univariate TimeSeries with the given value, length, start date and frequency.
 
     Parameters
     ----------
@@ -53,7 +53,7 @@ def linear_timeseries(start_value: float = 0,
                       freq: str = 'D',
                       start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a TimeSeries with a starting value of `start_value` that increases linearly such that
+    Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
     it takes on the value `end_value` at the last entry of the TimeSeries. This means that
     the difference between two adjacent entries will be equal to
     (`end_value` - `start_value`) / (`length` - 1).
@@ -90,7 +90,8 @@ def sine_timeseries(value_frequency: float = 0.1,
                     freq: str = 'D',
                     start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a TimeSeries with a sinusoidal value progression with a given frequency, amplitude, phase and y offset.
+    Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
+    phase and y offset.
 
     Parameters
     ----------
@@ -131,7 +132,7 @@ def gaussian_timeseries(length: int = 10,
                         std: Union[float, np.ndarray] = 1.,
                         start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a gaussian TimeSeries by sampling all the series values independently,
+    Creates a gaussian univariate TimeSeries by sampling all the series values independently,
     from a gaussian distribution with mean `mean` and standard deviation `std`.
 
     Parameters
@@ -178,7 +179,7 @@ def random_walk_timeseries(length: int = 10,
                            std: float = 1.,
                            start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a random walk time series, where each step is obtained by sampling a gaussian distribution
+    Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
     with mean `mean` and standard deviation `std`.
 
     Parameters
@@ -211,7 +212,7 @@ def holiday_timeseries(country_code: str,
                        length: int = 10,
                        start_ts: pd.Timestamp = pd.Timestamp('2000-01-01')) -> TimeSeries:
     """
-    Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
+    Creates a binary univariate TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
     and 0 otherwise. The frequency of the TimeSeries is daily.
 
     Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
