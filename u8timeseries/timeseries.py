@@ -657,8 +657,7 @@ class TimeSeries:
         raise_if_not(index is not None, "Index must be filled.")
         if (values is not None):
             raise_if_not(values.shape[0] == len(index), "The number of values must correspond "
-                                                        "to the number of indices: {} != {}".format(len(values),
-                                                                                                len(index)), logger)
+                         "to the number of indices: {} != {}".format(len(values), len(index)), logger)
             raise_if_not(self._series.shape[1] == values.shape[1], "The number of columns in values must correspond "
                                                                    "to the number of columns in the current TimeSeries"
                                                                    "instance: {} != {}".format(self._series.shape[1],

@@ -235,7 +235,7 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # other frequency
         with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), 
+            test_case.assertEqual(seriesA.append_values(seriesB.values(),
                                                         pd.date_range('20130107', '20130113', freq='2d')),
                                   test_series)
 

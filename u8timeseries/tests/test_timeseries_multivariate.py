@@ -63,11 +63,6 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         seriesC = TimeSeries(dataframeC)
         self.assertFalse(self.series1 == seriesC)
 
-    def test_drop(self):
-        seriesA = self.series1.drop_after(pd.Timestamp('20130105'))
-        self.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - self.series1.freq())
-        self.assertTrue(np.all(seriesA.time_index() < pd.Timestamp('20130105')))
-
     def test_rescale(self):
         with self.assertRaises(ValueError):
             self.series1.rescale_with_value(1)
@@ -99,7 +94,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
 
     def test_split(self):
         TimeSeriesTestCase.helper_test_split(self, self.series1)
-    
+
     def test_drop(self):
         TimeSeriesTestCase.helper_test_drop(self, self.series1)
 
