@@ -138,17 +138,17 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         # Outside of range
         seriesD = test_series.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                          index=pd.date_range('20130106', '20130112'))))
+                                                         index=pd.date_range('20130106', '20130112'))))
         test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
         test_case.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
         with test_case.assertRaises(ValueError):
             test_series.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                    index=pd.date_range('20130116', '20130122'))))
+                                                   index=pd.date_range('20130116', '20130122'))))
         with test_case.assertRaises(ValueError):
             test_series.slice_intersect(TimeSeries(pd.Series(range(9, 13),
-                                                    index=pd.date_range('20130109', '20130112'))))
+                                                   index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
         with self.assertRaises(ValueError):
@@ -173,9 +173,9 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         seriesB = test_series.shift(1)
         test_case.assertTrue(seriesB.time_index().equals(
-                        test_series.time_index()[1:].append(
-                            pd.DatetimeIndex([test_series.time_index()[-1] + test_series.freq()])
-                        )))
+            test_series.time_index()[1:].append(
+                pd.DatetimeIndex([test_series.time_index()[-1] + test_series.freq()])
+            )))
 
         seriesC = test_series.shift(-1)
         test_case.assertTrue(seriesC.time_index().equals(
@@ -221,29 +221,30 @@ class TimeSeriesTestCase(unittest.TestCase):
         # randomize order
         rd_order = np.random.permutation(range(len(seriesB.values())))
         test_case.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index()[rd_order]),
-                         test_series)
+                              test_series)
 
         # add non consecutive index
         with test_case.assertRaises(ValueError):
             test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() + seriesB.freq()),
-                             test_series)
+                                  test_series)
 
         # add existing indices
         with test_case.assertRaises(ValueError):
             test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() - 3 * seriesB.freq()),
-                             test_series)
+                                  test_series)
 
         # other frequency
         with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), pd.date_range('20130107', '20130113', freq='2d')),
-                             test_series)
+            test_case.assertEqual(seriesA.append_values(seriesB.values(), 
+                                                        pd.date_range('20130107', '20130113', freq='2d')),
+                                  test_series)
 
     def test_slice(self):
         TimeSeriesTestCase.helper_test_slice(self, self.series1)
 
     def test_split(self):
         TimeSeriesTestCase.helper_test_split(self, self.series1)
-    
+
     def test_drop(self):
         TimeSeriesTestCase.helper_test_drop(self, self.series1)
 
