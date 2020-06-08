@@ -10,6 +10,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
+import holidays
 from typing import Tuple, Optional, Callable, Any, Union
 
 from .logging import raise_log, raise_if_not, get_logger
@@ -759,6 +760,37 @@ class TimeSeries:
         new_component_ts = TimeSeries(new_component_df)
 
         return self.stack(new_component_ts)
+
+    def add_holidays(self, 
+                     country_code: str,
+                     prov: str = None,
+                     state: str = None) -> 'TimeSeries':
+        """
+        Creates a binary univariate TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
+        and 0 otherwise. The frequency of the TimeSeries is daily.
+
+        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+
+        Parameters
+        ----------
+        country_code
+            The country ISO code
+        prov
+            The province
+        state
+            The state
+
+        Returns
+        -------
+        TimeSeries
+            TimeSeries instance enhanced with binary holiday column.
+        """
+
+        country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)
+        scoped_country_holidays = country_holidays[self.time_index()[0]:self.time_index()[-1] + pd.Timedelta(days=1)]
+        index_series = pd.Series(self.time_index(), index=self.time_index())
+        values = index_series.apply(lambda x: x in scoped_country_holidays).astype(int)
+        return self.stack(TimeSeries.from_times_and_values(self.time_index(), values))
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
