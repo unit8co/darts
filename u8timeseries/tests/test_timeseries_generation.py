@@ -1,7 +1,5 @@
 import unittest
 
-import pandas as pd
-
 from u8timeseries.utils.timeseries_generation import (
     constant_timeseries,
     linear_timeseries,
@@ -67,4 +65,3 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
         # testing for correct length
         random_walk_ts = random_walk_timeseries(length=length)
         self.assertEqual(len(random_walk_ts), length)
-

@@ -730,7 +730,7 @@ class TimeSeries:
 
     def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
         """
-        Returns a new TimeSeries instance with one (or more) additional dimension(s) that contain an attribute 
+        Returns a new TimeSeries instance with one (or more) additional dimension(s) that contain an attribute
         of the time index of the current series specified with `component`, such as 'weekday', 'day' or 'month'.
 
         Parameters
@@ -738,7 +738,8 @@ class TimeSeries:
         attribute
             A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
         one_hot
-            Boolean value indicating whether to add the specified attribute as a one hot encoding (results in more columns).
+            Boolean value indicating whether to add the specified attribute as a one hot encoding
+            (results in more columns).
 
         Returns
         -------
@@ -747,7 +748,7 @@ class TimeSeries:
         """
 
         raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
-                    'of pd.DatetimeIndex', logger)
+                     'of pd.DatetimeIndex', logger)
 
         new_component = getattr(self.time_index(), attribute)
 
@@ -761,13 +762,13 @@ class TimeSeries:
 
         return self.stack(new_component_ts)
 
-    def add_holidays(self, 
+    def add_holidays(self,
                      country_code: str,
                      prov: str = None,
                      state: str = None) -> 'TimeSeries':
         """
-        Creates a binary univariate TimeSeries that equals 1 at every index that corresponds to selected country's holiday,
-        and 0 otherwise. The frequency of the TimeSeries is daily.
+        Adds a binary univariate TimeSeries to the current one that equals 1 at every index that
+        corresponds to selected country's holiday, and 0 otherwise. The frequency of the TimeSeries is daily.
 
         Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
 

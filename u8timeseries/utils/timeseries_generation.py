@@ -8,7 +8,6 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import holidays
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
