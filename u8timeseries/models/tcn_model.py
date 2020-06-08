@@ -16,7 +16,16 @@ logger = get_logger(__name__)
 
 class _ResidualBlock(nn.Module):
 
-    def __init__(self, num_filters, kernel_size, dilation_base, dropout, weight_norm, nr_blocks_below, num_layers):
+    def __init__(
+        self,
+        num_filters,
+        kernel_size,
+        dilation_base,
+        dropout,
+        weight_norm,
+        nr_blocks_below,
+        num_layers,
+        input_size):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
@@ -58,7 +67,7 @@ class _ResidualBlock(nn.Module):
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 
-        input_dim = 1 if nr_blocks_below == 0 else num_filters
+        input_dim = input_size if nr_blocks_below == 0 else num_filters
         output_dim = 1 if nr_blocks_below == num_layers - 1 else num_filters
         self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** nr_blocks_below))
@@ -67,7 +76,7 @@ class _ResidualBlock(nn.Module):
 
         if num_layers > 1:
             if nr_blocks_below == 0:
-                self.conv3 = nn.Conv1d(1, num_filters, 1)
+                self.conv3 = nn.Conv1d(input_dim, num_filters, 1)
             elif nr_blocks_below == num_layers - 1:
                 self.conv3 = nn.Conv1d(num_filters, 1, 1)
 
@@ -167,7 +176,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers)
+                                       self.dropout, weight_norm, i, num_layers, self.input_size)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -189,6 +198,7 @@ class TCNModel(TorchForecastingModel):
 
     def __init__(self,
                  input_length: int = 12,
+                 input_size: int = 1,
                  output_length: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
@@ -228,11 +238,11 @@ class TCNModel(TorchForecastingModel):
         raise_if_not(output_length < input_length,
                      "The output length must be strictly smaller than the input length", logger)
 
-        self.input_size = 1
         kwargs['input_length'] = input_length
         kwargs['output_length'] = output_length
+        kwargs['input_size'] = input_size
 
-        self.model = _TCNModule(input_size=self.input_size, input_length=input_length,
+        self.model = _TCNModule(input_size=input_size, input_length=input_length,
                                 kernel_size=kernel_size, num_filters=num_filters,
                                 num_layers=num_layers, dilation_base=dilation_base,
                                 output_length=output_length, dropout=dropout, weight_norm=weight_norm)

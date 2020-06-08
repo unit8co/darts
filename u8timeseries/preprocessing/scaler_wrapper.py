@@ -66,8 +66,7 @@ class ScalerWrapper:
         """
         assert self._fit_called, 'fit() must be called before transform()'
         return TimeSeries.from_times_and_values(series.time_index(),
-                                                self.transformer.transform(series.values().
-                                                                           reshape((-1, 1))).reshape((-1,)))
+                                                self.transformer.transform(series.values()))
 
     def fit_transform(self, series: TimeSeries) -> TimeSeries:
         """

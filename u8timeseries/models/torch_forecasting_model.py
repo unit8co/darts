@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -104,7 +104,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
             The number of positions that the target sequence is shifted forward compared to the training sequence.
         """
 
-        self.series_values = series.univariate_values()
+        self.series_values = series.values()
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
@@ -124,7 +124,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         idx = index % self.__len__()
         data = self.series_values[idx:idx + self.length]
         target = self.series_values[idx + self.shift:idx + self.length + self.shift]
-        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, 0]).float().unsqueeze(1)
 
 
 class TorchForecastingModel(ForecastingModel):
@@ -135,6 +135,7 @@ class TorchForecastingModel(ForecastingModel):
                  batch_size: int = 32,
                  output_length: int = 1,
                  input_length: int = 10,
+                 input_size: int = 1,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -145,7 +146,9 @@ class TorchForecastingModel(ForecastingModel):
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
-                 torch_device_str: Optional[str] = None):
+                 torch_device_str: Optional[str] = None,
+                 datetime_enhancements: List[str] = []):
+
         """ Pytorch-based Forecasting Model.
 
         This class is meant to be inherited to create a new pytorch-based forecasting module.
@@ -158,6 +161,8 @@ class TorchForecastingModel(ForecastingModel):
             Number of time steps to be output by the forecasting module.
         input_length
             Number of past time steps that are fed to the forecasting module.
+        input_size
+            The dimensionality of the input TimeSeries.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -202,7 +207,6 @@ class TorchForecastingModel(ForecastingModel):
         else:
             self.device = torch.device(torch_device_str)
 
-        self.input_size = 1  # We support only univariate time series currently
         self.input_length = input_length
         self.output_length = output_length
         self.log_tensorboard = log_tensorboard
@@ -221,6 +225,9 @@ class TorchForecastingModel(ForecastingModel):
 
         # The tensorboard writer
         self.tb_writer = None
+
+        # Input enhancement components
+        self.datetime_enhancements = datetime_enhancements
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -264,12 +271,16 @@ class TorchForecastingModel(ForecastingModel):
             Optionally, whether to print progress.
         """
 
+        # Prepare training data:
+        for attribute in self.datetime_enhancements:
+            series = series.add_datetime_attribute(attribute, True)
+            val_series = val_series.add_datetime_attribute(attribute, True)
+
         super().fit(series)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        # Prepare training data:
         dataset = self.create_dataset(series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
@@ -310,14 +321,24 @@ class TorchForecastingModel(ForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
-        input_sequence = self.training_series.univariate_values()[-self.input_length:]
-        pred_in = torch.from_numpy(input_sequence).float().view(1, -1, 1).to(self.device)
+        input_sequence = self.training_series.values()[-self.input_length:]
+        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+
+        future_dates = self._generate_new_dates(n)
+
         test_out = []
         self.model.eval()
         for i in range(n):
-            out = self.model(pred_in)
             pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, self.first_prediction_index]
+            out = self.model(pred_in)
+            if (self.datetime_enhancements):
+                out_ts = TimeSeries.from_times_and_values(future_dates[:out.shape[1]] + self.training_series.freq() * i, out.cpu().detach().numpy().reshape(-1, 1))
+                for attribute in self.datetime_enhancements:
+                    out_ts = out_ts.add_datetime_attribute(attribute, True)
+                pred_in[:, -1, :] = torch.from_numpy(out_ts.values()[self.first_prediction_index, :]).float()
+            else:
+                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+            
             test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
         test_out = np.stack(test_out)
 
