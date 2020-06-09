@@ -16,7 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
-from ..utils import _build_tqdm_iterator
+from ..utils import _build_tqdm_iterator, timeseries_generation as tg
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import ForecastingModel
 
@@ -136,6 +136,8 @@ class TorchForecastingModel(ForecastingModel):
                  output_length: int = 1,
                  input_length: int = 10,
                  input_size: int = 1,
+                 datetime_enhancements: List[str] = [],
+                 holiday_enhancement: Optional[str] = None,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -146,8 +148,7 @@ class TorchForecastingModel(ForecastingModel):
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
-                 torch_device_str: Optional[str] = None,
-                 datetime_enhancements: List[str] = []):
+                 torch_device_str: Optional[str] = None):
 
         """ Pytorch-based Forecasting Model.
 
@@ -163,6 +164,12 @@ class TorchForecastingModel(ForecastingModel):
             Number of past time steps that are fed to the forecasting module.
         input_size
             The dimensionality of the input TimeSeries.
+        datetime_enhancement
+            A list of integers representing pd.Datetime attributes which will be included in the
+            form of one-hot time series encodings to serve as additional inputs to the model.
+        holiday_enhancement
+            Optionally, a string representing a country whose holidays will be included
+            in the form of a binary encoding to serve as an additional input to the model
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -229,6 +236,7 @@ class TorchForecastingModel(ForecastingModel):
 
         # Input enhancement components
         self.datetime_enhancements = datetime_enhancements
+        self.holiday_enhancement = holiday_enhancement
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -276,6 +284,9 @@ class TorchForecastingModel(ForecastingModel):
         for attribute in self.datetime_enhancements:
             series = series.add_datetime_attribute(attribute, True)
             val_series = val_series.add_datetime_attribute(attribute, True)
+        if self.holiday_enhancement:
+            series = series.add_holidays(self.holiday_enhancement)
+            val_series = val_series.add_holidays(self.holiday_enhancement)
 
         super().fit(series)
 
@@ -322,24 +333,31 @@ class TorchForecastingModel(ForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
+        # create input sequence for prediction
         input_sequence = self.training_series.values()[-self.input_length:]
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
-        future_dates = self._generate_new_dates(n)
+        # create datetime attribute and holiday series into the future
+        future_dates = self._generate_new_dates(n + 31)
+        if self.datetime_enhancements:
+            datetime_series = tg.datetime_attribute_timeseries(future_dates, self.datetime_enhancements[0], True)
+        for attribute in self.datetime_enhancements[1:]:
+            datetime_series = datetime_series.add_datetime_attribute(attribute, True)
+        if (not self.datetime_enhancements) and self.holiday_enhancement:
+            datetime_series = tg.holidays_timeseries(future_dates, self.holiday_enhancement)
+        elif self.holiday_enhancement:
+            datetime_series = datetime_series.add(tg.holidays_timeseries(self.holiday_enhancement))
 
+        # iterate through predicting output and consuming it again until enough predictions are created
         test_out = []
         self.model.eval()
         for i in range(n):
             pred_in = pred_in.roll(-1, 1)
             out = self.model(pred_in)
-            if (self.datetime_enhancements):
-                out_ts = TimeSeries.from_times_and_values(future_dates[:out.shape[1]] + self.training_series.freq() * i, out.cpu().detach().numpy().reshape(-1, 1), freq=self.training_series.freq())
-                for attribute in self.datetime_enhancements:
-                    out_ts = out_ts.add_datetime_attribute(attribute, True)
-                pred_in[:, -1, :] = torch.from_numpy(out_ts.values()[self.first_prediction_index, :]).float()
-            else:
-                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-            
+            # add datetime attribute/holiday series to input
+            if self.datetime_enhancements or self.holiday_enhancement:
+                pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[self.first_prediction_index + i, :]).float()
+            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
             test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
         test_out = np.stack(test_out)
 
