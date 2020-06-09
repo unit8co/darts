@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 
 from ..timeseries import TimeSeries
-from darts.metrics import metrics
+from ..metrics import metrics
 
 
 class MetricsTestCase(unittest.TestCase):

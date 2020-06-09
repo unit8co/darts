@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from darts.utils.timeseries_generation import (
+from ..utils.timeseries_generation import (
     constant_timeseries,
     linear_timeseries,
     sine_timeseries,
