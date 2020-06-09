@@ -54,7 +54,7 @@ class Theta(ForecastingModel):
         self.theta = theta
         self.is_seasonal = False
         self.seasonality = None
-        self.season_period = seasonality_period
+        self.seasonality_period = seasonality_period
         self.mode = mode
 
         # Remark on the values of the theta parameter:
@@ -68,6 +68,7 @@ class Theta(ForecastingModel):
         super().fit(ts)
 
         self.length = len(ts)
+        self.season_period = self.seasonality_period
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
