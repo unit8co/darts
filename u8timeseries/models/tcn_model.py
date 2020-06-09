@@ -25,7 +25,8 @@ class _ResidualBlock(nn.Module):
         weight_norm,
         nr_blocks_below,
         num_layers,
-        input_size):
+        input_size
+    ):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters

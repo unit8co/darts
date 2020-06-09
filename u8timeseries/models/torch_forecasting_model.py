@@ -356,7 +356,8 @@ class TorchForecastingModel(ForecastingModel):
             out = self.model(pred_in)
             # add datetime attribute/holiday series to input
             if self.datetime_enhancements or self.holiday_enhancement:
-                pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[self.first_prediction_index + i, :]).float()
+                pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[self.first_prediction_index + i,
+                                                                               :]).float()
             pred_in[:, -1, 0] = out[:, self.first_prediction_index]
             test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
         test_out = np.stack(test_out)
