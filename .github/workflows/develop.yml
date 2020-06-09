@@ -41,7 +41,7 @@ jobs:
             tests-${{ runner.os }}-pip-
 
       - name: "5-0. Install torch without cuda on ${{ runner.os }}"
-        if: ${{ runner.os }} == "Linux"
+        if: !contains(runner.os, 'Linux')
         run: |
           # this avoids an unnecessary cuda install on Linux
           pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
