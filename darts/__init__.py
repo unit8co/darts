@@ -1,6 +1,6 @@
 """
 darts
-------------
+-----
 """
 
 from .timeseries import TimeSeries
