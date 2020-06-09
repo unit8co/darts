@@ -10,7 +10,6 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-import holidays
 from typing import Tuple, Optional, Callable, Any, Union, List
 
 from .logging import raise_log, raise_if_not, get_logger
@@ -772,7 +771,7 @@ class TimeSeries:
             TimeSeries instance enhanced with binary holiday column.
         """
         from .utils import timeseries_generation as tg
-        return self.stack(tg.holidays_timeseries(self.index, attribute, one_hot))
+        return self.stack(tg.holidays_timeseries(self.time_index(), country_code, prov, state))
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """

@@ -8,6 +8,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import holidays
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
@@ -234,7 +235,7 @@ def holidays_timeseries(time_index,
     scoped_country_holidays = country_holidays[time_index[0]:time_index[-1] + pd.Timedelta(days=1)]
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in scoped_country_holidays).astype(int)
-    return TimeSeries.from_times_and_values(self.time_index(), values)
+    return TimeSeries.from_times_and_values(time_index, values)
 
 
 def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, one_hot: bool = False) -> TimeSeries:
@@ -259,11 +260,11 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                      'of pd.DatetimeIndex', logger)
 
-    values = getattr(self.time_index(), attribute)
+    values = getattr(time_index, attribute)
     if one_hot:
         values_df = pd.get_dummies(values)
     else:
         values_df = pd.DataFrame(values)
-    values_df.index = self.time_index()
+    values_df.index = time_index
 
     return TimeSeries(values_df)
