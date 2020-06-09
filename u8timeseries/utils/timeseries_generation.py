@@ -212,7 +212,7 @@ def holidays_timeseries(time_index,
                         state: str = None) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
-    (or equals) a selected country's holiday, and 0 otherwise. 
+    (or equals) a selected country's holiday, and 0 otherwise.
 
     Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
 
@@ -258,7 +258,7 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
     """
 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
-                     'of pd.DatetimeIndex', logger)
+                 'of pd.DatetimeIndex', logger)
 
     values = getattr(time_index, attribute)
     if one_hot:
