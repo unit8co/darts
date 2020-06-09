@@ -203,3 +203,67 @@ def random_walk_timeseries(length: int = 10,
     values = np.cumsum(np.random.normal(mean, std, size=length))
 
     return TimeSeries.from_times_and_values(times, values)
+
+
+def holidays_timeseries(time_index,
+                        country_code: str,
+                        prov: str = None,
+                        state: str = None) -> TimeSeries:
+    """
+    Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
+    (or equals) a selected country's holiday, and 0 otherwise. 
+
+    Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+
+    Parameters
+    ----------
+    country_code
+        The country ISO code
+    prov
+        The province
+    state
+        The state
+
+    Returns
+    -------
+    TimeSeries
+        A new binary holiday TimeSeries instance.
+    """
+
+    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)
+    scoped_country_holidays = country_holidays[time_index[0]:time_index[-1] + pd.Timedelta(days=1)]
+    index_series = pd.Series(time_index, index=time_index)
+    values = index_series.apply(lambda x: x in scoped_country_holidays).astype(int)
+    return TimeSeries.from_times_and_values(self.time_index(), values)
+
+
+def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, one_hot: bool = False) -> TimeSeries:
+    """
+    Returns a new TimeSeries with index `time_index` and one or more dimensions containing
+    (optionally one-hot encoded) pd.DatatimeIndex attribute information derived from the index.
+
+    Parameters
+    ----------
+    attribute
+        A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+    one_hot
+        Boolean value indicating whether to add the specified attribute as a one hot encoding
+        (results in more columns).
+
+    Returns
+    -------
+    TimeSeries
+        New datetime attribute TimeSeries instance.
+    """
+
+    raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
+                     'of pd.DatetimeIndex', logger)
+
+    values = getattr(self.time_index(), attribute)
+    if one_hot:
+        values_df = pd.get_dummies(values)
+    else:
+        values_df = pd.DataFrame(values)
+    values_df.index = self.time_index()
+
+    return TimeSeries(values_df)
