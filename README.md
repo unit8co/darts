@@ -3,11 +3,11 @@
 ![darts](https://github.com/unit8co/darts/raw/develop/static/images/logo-72dpi.png "darts") 
 
 ---
-[![PyPI version](https://badge.fury.io/py/darts.svg)](https://badge.fury.io/py/darts)
+[![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/u8darts)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/develop)
 ![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/darts)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 
 **darts** is a python library for easy manipulation and forecasting time series.
