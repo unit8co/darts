@@ -9,7 +9,7 @@
 .. toctree::
    :hidden:
 
-   API Reference<generated_api/u8timeseries>
+   API Reference<generated_api/darts>
 
 
 .. toctree::

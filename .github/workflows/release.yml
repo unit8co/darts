@@ -1,4 +1,4 @@
-name: u8timeseries release workflow
+name: darts release workflow
 
 on:
   push:
@@ -47,7 +47,7 @@ jobs:
 
       - name: "6. Run linter"
           run: |
-            flake8 --config=setup.cfg u8timeseries
+            flake8 --config=setup.cfg darts
 
   release:
     needs: [tests]
@@ -142,7 +142,7 @@ jobs:
       - name: "4. Build and publish docker to docker hub"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
-          name: unit8/u8timeseries
+          name: unit8/darts
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
           tags: "${{ env.DOCKER_TAGS }}"

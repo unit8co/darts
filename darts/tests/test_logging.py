@@ -56,14 +56,14 @@ class LoggingTestCase(unittest.TestCase):
         # test assert error log when trying to construct a TimeSeries that is too short
         empty_series = pd.Series()
         with LogCapture() as lc:
-            get_logger('u8timeseries.timeseries').handlers = []
+            get_logger('darts.timeseries').handlers = []
             try:
                 TimeSeries(empty_series)
             except Exception:
                 pass
 
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must not be empty.')
+            ('darts.timeseries', 'ERROR', 'ValueError: Series must not be empty.')
         )
 
     def test_timeseries_split_error_log(self):
@@ -72,14 +72,14 @@ class LoggingTestCase(unittest.TestCase):
         values = np.array(range(3))
         ts = TimeSeries.from_times_and_values(times, values)
         with LogCapture() as lc:
-            get_logger('u8timeseries.timeseries').handlers = []
+            get_logger('darts.timeseries').handlers = []
             try:
                 ts.split_after(pd.Timestamp('2020-02-01'))
             except Exception:
                 pass
 
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR',
+            ('darts.timeseries', 'ERROR',
              'ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00')
         )
 

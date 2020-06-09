@@ -20,8 +20,8 @@ from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import ForecastingModel
 
-CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
-RUNS_FOLDER = os.path.join('.u8ts', 'runs')
+CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
+RUNS_FOLDER = os.path.join('.darts', 'runs')
 
 logger = get_logger(__name__)
 

@@ -1,12 +1,12 @@
 {% set data = load_setup_py_data() %}
 
 package:
-  name: "u8timeseries"
+  name: "darts"
   version: "dev"
 
 source:
   # root folder, not the package
-  path: "../../../u8timeseries"
+  path: "../../../darts"
 
 build:
   number: 0
