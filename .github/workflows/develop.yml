@@ -40,7 +40,7 @@ jobs:
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
-      - name: "5-0. Install torch without cuda on Linux"
+      - name: "5-0. Install torch without cuda on ${{ runner.os }}"
         if: ${{ runner.os }} == "Linux"
         run: |
           # this avoids an unnecessary cuda install on Linux
