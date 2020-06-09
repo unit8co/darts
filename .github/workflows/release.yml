@@ -53,8 +53,8 @@ jobs:
           python -m unittest
 
       - name: "6. Run linter"
-          run: |
-            flake8 --config=setup.cfg darts
+        run: |
+          flake8 --config=setup.cfg darts
 
   release:
     needs: [tests]
