@@ -56,7 +56,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
             The length of the target sub-sequences, starting at the end of the training sub-sequence.
         """
 
-        self.series_values = series.univariate_values()
+        self.series_values = series.values()
 
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
         self.len_series = len(series)
@@ -78,7 +78,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, 0]).float().unsqueeze(1)
 
 
 class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
@@ -208,6 +208,7 @@ class TorchForecastingModel(ForecastingModel):
             self.device = torch.device(torch_device_str)
 
         self.input_length = input_length
+        self.input_size = input_size
         self.output_length = output_length
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
@@ -332,7 +333,7 @@ class TorchForecastingModel(ForecastingModel):
             pred_in = pred_in.roll(-1, 1)
             out = self.model(pred_in)
             if (self.datetime_enhancements):
-                out_ts = TimeSeries.from_times_and_values(future_dates[:out.shape[1]] + self.training_series.freq() * i, out.cpu().detach().numpy().reshape(-1, 1))
+                out_ts = TimeSeries.from_times_and_values(future_dates[:out.shape[1]] + self.training_series.freq() * i, out.cpu().detach().numpy().reshape(-1, 1), freq=self.training_series.freq())
                 for attribute in self.datetime_enhancements:
                     out_ts = out_ts.add_datetime_attribute(attribute, True)
                 pred_in[:, -1, :] = torch.from_numpy(out_ts.values()[self.first_prediction_index, :]).float()
