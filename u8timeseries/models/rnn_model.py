@@ -102,6 +102,7 @@ class RNNModel(TorchForecastingModel):
 
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
+                 input_size: int = 1,
                  output_length: int = 1,
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
@@ -137,13 +138,13 @@ class RNNModel(TorchForecastingModel):
             Fraction of neurons afected by Dropout.
         """
 
-        self.input_size = 1
         kwargs['output_length'] = output_length
+        kwargs['input_size'] = input_size
 
         # set self.model
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
-            self.model = _RNNModule(name=model, input_size=self.input_size, hidden_dim=hidden_size,
+            self.model = _RNNModule(name=model, input_size=input_size, hidden_dim=hidden_size,
                                     num_layers=n_rnn_layers, output_length=output_length,
                                     num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
