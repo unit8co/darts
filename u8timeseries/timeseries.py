@@ -10,7 +10,6 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-import holidays
 from typing import Tuple, Optional, Callable, Any, Union, List
 
 from .logging import raise_log, raise_if_not, get_logger
@@ -744,21 +743,8 @@ class TimeSeries:
         TimeSeries
             New TimeSeries instance enhanced by `attribute`.
         """
-
-        raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
-                     'of pd.DatetimeIndex', logger)
-
-        new_component = getattr(self.time_index(), attribute)
-
-        if one_hot:
-            new_component_df = pd.get_dummies(new_component)
-        else:
-            new_component_df = pd.DataFrame(new_component)
-
-        new_component_df.index = self.time_index()
-        new_component_ts = TimeSeries(new_component_df)
-
-        return self.stack(new_component_ts)
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index(), attribute, one_hot))
 
     def add_holidays(self,
                      country_code: str,
@@ -784,12 +770,8 @@ class TimeSeries:
         TimeSeries
             TimeSeries instance enhanced with binary holiday column.
         """
-
-        country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)
-        scoped_country_holidays = country_holidays[self.time_index()[0]:self.time_index()[-1] + pd.Timedelta(days=1)]
-        index_series = pd.Series(self.time_index(), index=self.time_index())
-        values = index_series.apply(lambda x: x in scoped_country_holidays).astype(int)
-        return self.stack(TimeSeries.from_times_and_values(self.time_index(), values))
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.holidays_timeseries(self.time_index(), country_code, prov, state))
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
