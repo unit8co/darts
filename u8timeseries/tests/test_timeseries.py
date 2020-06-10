@@ -14,9 +14,9 @@ class TimeSeriesTestCase(unittest.TestCase):
     pd_series1 = pd.Series(range(10), index=times)
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
-    series1: TimeSeries = TimeSeries(pd_series1)
-    series2: TimeSeries = TimeSeries(pd_series2)
-    series3: TimeSeries = TimeSeries(pd_series2)
+    series1: TimeSeries = TimeSeries.from_series(pd_series1)
+    series2: TimeSeries = TimeSeries.from_series(pd_series2)
+    series3: TimeSeries = TimeSeries.from_series(pd_series2)
 
     @classmethod
     def setUpClass(cls):
@@ -25,8 +25,8 @@ class TimeSeriesTestCase(unittest.TestCase):
     def test_creation(self):
         with self.assertRaises(ValueError):
             # Index is dateTimeIndex
-            TimeSeries(pd.Series(range(10), range(10)))
-        series_test = TimeSeries(self.pd_series1)
+            TimeSeries.from_series(pd.Series(range(10), range(10)))
+        series_test = TimeSeries.from_series(self.pd_series1)
         self.assertTrue(series_test.pd_series().equals(self.pd_series1))
 
     def test_alt_creation(self):
@@ -53,12 +53,12 @@ class TimeSeriesTestCase(unittest.TestCase):
     # TODO test over to_dataframe when multiple features choice is decided
 
     def test_eq(self):
-        seriesA: TimeSeries = TimeSeries(self.pd_series1)
+        seriesA: TimeSeries = TimeSeries.from_series(self.pd_series1)
         self.assertTrue(self.series1 == seriesA)
         self.assertFalse(self.series1 != seriesA)
 
         # with different dates
-        seriesC = TimeSeries(pd.Series(range(10), index=pd.date_range('20130102', '20130111')))
+        seriesC = TimeSeries.from_series(pd.Series(range(10), index=pd.date_range('20130102', '20130111')))
         self.assertFalse(self.series1 == seriesC)
 
     def test_dates(self):
@@ -126,25 +126,25 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(self.series1.freq_str(), seriesB.freq_str())
 
     def test_intersect(self):
-        seriesA = TimeSeries(pd.Series(range(2, 8), index=pd.date_range('20130102', '20130107')))
+        seriesA = TimeSeries.from_series(pd.Series(range(2, 8), index=pd.date_range('20130102', '20130107')))
 
         seriesB = self.series1.slice_intersect(seriesA)
         self.assertEqual(seriesB.start_time(), pd.Timestamp('20130102'))
         self.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
 
         # Outside of range
-        seriesD = self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                          index=pd.date_range('20130106', '20130112'))))
+        seriesD = self.series1.slice_intersect(TimeSeries.from_series(pd.Series(range(6, 13),
+                                                                      index=pd.date_range('20130106', '20130112'))))
         self.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
         self.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
         # No intersect or too small intersect
         with self.assertRaises(ValueError):
-            self.series1.slice_intersect(TimeSeries(pd.Series(range(6, 13),
-                                                    index=pd.date_range('20130116', '20130122'))))
+            self.series1.slice_intersect(TimeSeries.from_series(pd.Series(range(6, 13),
+                                                                index=pd.date_range('20130116', '20130122'))))
         with self.assertRaises(ValueError):
-            self.series1.slice_intersect(TimeSeries(pd.Series(range(9, 13),
-                                                    index=pd.date_range('20130109', '20130112'))))
+            self.series1.slice_intersect(TimeSeries.from_series(pd.Series(range(9, 13),
+                                                                index=pd.date_range('20130109', '20130112'))))
 
     def test_rescale(self):
         with self.assertRaises(ValueError):
@@ -278,12 +278,12 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(seriesD, self.series1)
 
     def test_ops(self):
-        seriesA = TimeSeries(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
-        targetAdd = TimeSeries(pd.Series(range(2, 12), index=self.pd_series1.index))
-        targetSub = TimeSeries(pd.Series(range(-2, 8), index=self.pd_series1.index))
-        targetMul = TimeSeries(pd.Series(range(0, 20, 2), index=self.pd_series1.index))
-        targetDiv = TimeSeries(pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index))
-        targetPow = TimeSeries(pd.Series([float(i ** 2) for i in range(10)], index=self.pd_series1.index))
+        seriesA = TimeSeries.from_series(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
+        targetAdd = TimeSeries.from_series(pd.Series(range(2, 12), index=self.pd_series1.index))
+        targetSub = TimeSeries.from_series(pd.Series(range(-2, 8), index=self.pd_series1.index))
+        targetMul = TimeSeries.from_series(pd.Series(range(0, 20, 2), index=self.pd_series1.index))
+        targetDiv = TimeSeries.from_series(pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index))
+        targetPow = TimeSeries.from_series(pd.Series([float(i ** 2) for i in range(10)], index=self.pd_series1.index))
 
         self.assertEqual(self.series1 + seriesA, targetAdd)
         self.assertEqual(self.series1 + 2, targetAdd)
@@ -325,20 +325,20 @@ class TimeSeriesTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Series cannot have date holes without automatic filling
             range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
-            TimeSeries(pd.Series(range(9), index=range_), fill_missing_dates=False)
+            TimeSeries.from_series(pd.Series(range(9), index=range_), fill_missing_dates=False)
 
         with self.assertRaises(ValueError):
             # Main series should have explicit frequency in case of date holes
             range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110', freq='2D'))
-            TimeSeries(pd.Series(range(7), index=range_))
+            TimeSeries.from_series(pd.Series(range(7), index=range_))
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
-        series_test = TimeSeries(pd.Series(range(9), index=range_))
+        series_test = TimeSeries.from_series(pd.Series(range(9), index=range_))
         self.assertEqual(series_test.freq_str(), 'D')
 
         range_ = pd.date_range('20130101', '20130104', freq='2D') \
             .append(pd.date_range('20130107', '20130111', freq='2D'))
-        series_test = TimeSeries(pd.Series(range(5), index=range_))
+        series_test = TimeSeries.from_series(pd.Series(range(5), index=range_))
         self.assertEqual(series_test.freq_str(), '2D')
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
@@ -347,7 +347,7 @@ class TimeSeriesTestCase(unittest.TestCase):
     def test_resample_timeseries(self):
         times = pd.date_range('20130101', '20130110')
         pd_series = pd.Series(range(10), index=times)
-        timeseries = TimeSeries(pd_series)
+        timeseries = TimeSeries.from_series(pd_series)
 
         resampled_timeseries = timeseries.resample('H')
         self.assertEqual(resampled_timeseries.freq_str(), 'H')

@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class TimeSeries:
     def __init__(self,
-                 series: Union[pd.Series, pd.DataFrame],
+                 series: pd.DataFrame,
                  freq: Optional[str] = None,
                  fill_missing_dates: Optional[bool] = True):
         """
@@ -30,7 +30,7 @@ class TimeSeries:
         Parameters
         ----------
         series
-            The actual time series, as a pandas Series or DataFrame with a proper time index.
+            The actual time series, as a pandas DataFrame with a proper time index.
         freq
             Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
@@ -38,9 +38,11 @@ class TimeSeries:
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
         """
-        # create dataframes
-        if (isinstance(series, pd.Series)):
-            series = pd.DataFrame(series)
+
+        raise_if_not(isinstance(series, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
+                                logger)
+
+        # consistent column names
         series.columns = range(series.shape[1])
 
         raise_if_not(len(series) > 0 and series.shape[1] > 0, 'Series must not be empty.', logger)
@@ -448,6 +450,30 @@ class TimeSeries:
         return TimeSeries(new_series)
 
     @staticmethod
+    def from_series(pd_series: pd.Series,
+                    freq: Optional[str] = None,
+                    fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+        """
+        Returns a TimeSeries built from a pandas Series.
+
+        Parameters
+        ----------
+        pd_series
+            The pandas Series instance.
+        freq
+            Optionally, a string representing the frequency of the Pandas Series.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series` cannot be inferred.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed from the inputs.
+        """
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
+
+    @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str],
                        value_col: str,
@@ -483,7 +509,7 @@ class TimeSeries:
             times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
         series: pd.Series = pd.Series(df[value_col].values, index=times)
 
-        return TimeSeries(series, freq, fill_missing_dates)
+        return TimeSeries.from_series(series, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
@@ -512,7 +538,7 @@ class TimeSeries:
         """
         series = pd.Series(values, index=times)
 
-        return TimeSeries(series, freq, fill_missing_dates)
+        return TimeSeries.from_series(series, freq, fill_missing_dates)
 
     def plot(self,
              new_plot: bool = False,
