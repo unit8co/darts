@@ -8,11 +8,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest #${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [macos-latest, ubuntu-latest]
-#        python-version: [3.6, 3.7, 3.8]
+    runs-on: ubuntu-latest
 
     steps:
       - name: "1. Clone repository"
@@ -39,12 +35,6 @@ jobs:
           key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
             tests-${{ runner.os }}-pip-
-
-#      - name: "5-0. Install torch without cuda on ${{ runner.os }}"
-#        if: contains(runner.os, 'Linux')
-#        run: |
-#          # this avoids an unnecessary cuda install on Linux
-#          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: "5. Install main and dev dependencies"
         run: |
