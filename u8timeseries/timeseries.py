@@ -10,7 +10,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, Union
+from typing import Tuple, Optional, Callable, Any
 
 from .logging import raise_log, raise_if_not, get_logger
 
@@ -40,7 +40,7 @@ class TimeSeries:
         """
 
         raise_if_not(isinstance(series, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
-                                logger)
+                     logger)
 
         # consistent column names
         series.columns = range(series.shape[1])
