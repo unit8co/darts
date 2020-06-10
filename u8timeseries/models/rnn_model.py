@@ -126,6 +126,8 @@ class RNNModel(TorchForecastingModel):
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             `u8timeseries.models.rnn_model.RNNModule`.
+        input_size
+            The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_length
             Number of time steps to be output by the forecasting module.
         hidden_size
@@ -138,6 +140,7 @@ class RNNModel(TorchForecastingModel):
             Fraction of neurons afected by Dropout.
         """
 
+        input_size = TorchForecastingModel.get_effective_input_size(input_size, kwargs)
         kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
 

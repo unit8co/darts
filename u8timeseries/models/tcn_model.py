@@ -218,6 +218,8 @@ class TCNModel(TorchForecastingModel):
         ----------
         input_length
             Number of past time steps that are fed to the forecasting module.
+        input_size
+            The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_length
             Number of time steps the torch module will predict into the future at once.
         kernel_size
@@ -239,6 +241,7 @@ class TCNModel(TorchForecastingModel):
         raise_if_not(output_length < input_length,
                      "The output length must be strictly smaller than the input length", logger)
 
+        input_size = TorchForecastingModel.get_effective_input_size(input_size, kwargs)
         kwargs['input_length'] = input_length
         kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
