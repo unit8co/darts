@@ -6,6 +6,7 @@ Torch Forecasting Model
 import numpy as np
 import os
 import re
+import math
 from glob import glob
 import shutil
 import pickle
@@ -163,8 +164,8 @@ class TorchForecastingModel(ForecastingModel):
         input_length
             Number of past time steps that are fed to the forecasting module.
         input_size
-            The dimensionality of the input TimeSeries.
-        datetime_enhancement
+            The dimensionality of the TimeSeries instances that will be fed to the fit function.
+        datetime_enhancements
             A list of integers representing pd.Datetime attributes which will be included in the
             form of one-hot time series encodings to serve as additional inputs to the model.
         holiday_enhancement
@@ -281,6 +282,7 @@ class TorchForecastingModel(ForecastingModel):
         """
 
         # Prepare training data:
+        self.original_series_width = series.width
         for attribute in self.datetime_enhancements:
             series = series.add_datetime_attribute(attribute, True)
             val_series = val_series.add_datetime_attribute(attribute, True)
@@ -330,8 +332,12 @@ class TorchForecastingModel(ForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
         super().predict(n)
+
+        raise_if_not(use_full_output_length or self.original_series_width == 1, "Please set 'use_full_output_length'"
+                     "to 'True' and 'n' smaller or equal to 'output_length' when predicting a multivariate"
+                     "TimeSeries.", logger)
 
         # create input sequence for prediction
         input_sequence = self.training_series.values()[-self.input_length:]
@@ -351,15 +357,33 @@ class TorchForecastingModel(ForecastingModel):
         # iterate through predicting output and consuming it again until enough predictions are created
         test_out = []
         self.model.eval()
-        for i in range(n):
-            pred_in = pred_in.roll(-1, 1)
-            out = self.model(pred_in)
-            # add datetime attribute/holiday series to input
-            if self.datetime_enhancements or self.holiday_enhancement:
-                pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[self.first_prediction_index + i,
-                                                                               :]).float()
-            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+        if (use_full_output_length):
+            num_iterations = math.ceil(n / self.output_length)
+            for i in range(num_iterations):
+                raise_if_not(self.original_series_width == 1 or num_iterations == 1, "Only univariate time series"
+                             " support predictions with n > output_length", logger)
+                out = self.model(pred_in)
+                if (num_iterations > 1):
+                    pred_in = pred_in.roll(-self.output_length, 1)
+                    if self.datetime_enhancements or self.holiday_enhancement:
+                        pred_in[:, -self.output_length:, 1:] = (
+                            torch.from_numpy(datetime_series.values()[i*self.output_length:(i + 1) * self.output_length,:]).float()
+                        )
+                    pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
+                test_out.append(out.cpu().detach().numpy()[0, -self.output_length:])
+            test_out = np.concatenate(test_out)
+            test_out = test_out[:n]
+        else:
+            for i in range(n):
+                out = self.model(pred_in)
+                pred_in = pred_in.roll(-1, 1)
+                
+                # add datetime attribute/holiday series to input
+                if self.datetime_enhancements or self.holiday_enhancement:
+                    pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[i, :]).float()
+                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+                test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+
         test_out = np.stack(test_out)
 
         return self._build_forecast_series(test_out.squeeze())
@@ -550,3 +574,24 @@ class TorchForecastingModel(ForecastingModel):
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
             return p['lr']
+
+    @staticmethod
+    def get_effective_input_size(input_size: int, kwargs):
+        if 'datetime_enhancements' in kwargs.keys():
+            for attribute in kwargs['datetime_enhancements']:
+                if attribute == 'day':
+                    input_size += 31
+                elif attribute == 'weekday':
+                    input_size += 7
+                elif attribute == 'month':
+                    input_size += 12
+                elif attribute == 'hour':
+                    input_size += 24
+                elif attribute == 'quarter':
+                    input_size += 4
+                else:
+                    raise_log(ValueError('Datetime attribute {} not supported.').format(attribute), logger)
+        if 'holiday_enhancement' in kwargs.keys():
+            input_size += 1
+
+        return input_size
