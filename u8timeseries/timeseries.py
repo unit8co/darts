@@ -575,7 +575,7 @@ class TimeSeries:
         kwargs
             some keyword arguments for the `plot()` method
         """
-
+        raise_if(self.width > 15, "Current TimeSeries instance contains too many components to plot.", logger)
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
         if 'label' in kwargs:
