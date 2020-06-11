@@ -170,3 +170,8 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         last_column = seriesB._df.iloc[:, seriesB.width - 1]
         self.assertEqual(last_column.at[pd.Timestamp('2020-12-25 01:00:00')], 1)
         self.assertEqual(last_column.at[pd.Timestamp('2020-12-24 23:00:00')], 0)
+
+    def test_assert_univariate(self):
+        with self.assertRaises(AssertionError):
+            self.series1._assert_univariate()
+        self.series1.univariate_component(0)._assert_univariate()
