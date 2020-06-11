@@ -54,7 +54,7 @@ class LoggingTestCase(unittest.TestCase):
 
     def test_timeseries_constructor_error_log(self):
         # test assert error log when trying to construct a TimeSeries that is too short
-        empty_series = pd.Series()
+        empty_series = pd.DataFrame()
         with LogCapture() as lc:
             get_logger('u8timeseries.timeseries').handlers = []
             try:
@@ -63,7 +63,7 @@ class LoggingTestCase(unittest.TestCase):
                 pass
 
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must not be empty.')
+            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Time series must not be empty.')
         )
 
     def test_timeseries_split_error_log(self):

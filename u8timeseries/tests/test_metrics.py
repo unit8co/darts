@@ -12,11 +12,11 @@ class MetricsTestCase(unittest.TestCase):
     pd_series1 = pd.Series(range(10), index=pd.date_range('20130101', '20130110'))
     pd_series2 = pd.Series(np.random.rand(10) * 10, index=pd.date_range('20130101', '20130110'))
     pd_series3 = pd.Series(np.sin(np.pi * np.arange(20) / 4), index=pd.date_range('20130101', '20130120'))
-    series1: TimeSeries = TimeSeries(pd_series1)
+    series1: TimeSeries = TimeSeries.from_series(pd_series1)
     pd_series1[:] = pd_series1.mean()
-    series0: TimeSeries = TimeSeries(pd_series1)
-    series2: TimeSeries = TimeSeries(pd_series2)
-    series3: TimeSeries = TimeSeries(pd_series3)
+    series0: TimeSeries = TimeSeries.from_series(pd_series1)
+    series2: TimeSeries = TimeSeries.from_series(pd_series2)
+    series3: TimeSeries = TimeSeries.from_series(pd_series3)
 
     @classmethod
     def setUpClass(cls):

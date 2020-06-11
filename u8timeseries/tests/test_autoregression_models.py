@@ -23,7 +23,7 @@ class AutoregressionModelsTestCase(unittest.TestCase):
 
     # real timeseries for functionality tests
     df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
-    ts_passengers = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+    ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
 
     # autoregressive models - maximum error tuples

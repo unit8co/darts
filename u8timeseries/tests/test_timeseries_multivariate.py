@@ -137,10 +137,10 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
     def test_add_datetime_attribute(self):
         seriesA = self.series1.add_datetime_attribute('day')
         self.assertEqual(seriesA.width, self.series1.width + 1)
-        self.assertTrue(set(seriesA._series.loc[:, seriesA.width - 1]) == set(range(1, 11)))
+        self.assertTrue(set(seriesA._df.loc[:, seriesA.width - 1]) == set(range(1, 11)))
         seriesB = self.series1.add_datetime_attribute('day', True)
         self.assertEqual(seriesB.width, self.series1.width + 10)
-        self.assertTrue(set(seriesB._series.loc[:, seriesA.width - 1]) == {0, 1})
+        self.assertTrue(set(seriesB._df.loc[:, seriesA.width - 1]) == {0, 1})
         seriesC = self.series1.add_datetime_attribute('month', True)
         self.assertEqual(seriesC.width, self.series1.width + 1)
 
@@ -150,14 +150,14 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
 
         # testing for christmas and non-holiday in US
         seriesA = seriesA.add_holidays('US')
-        last_column = seriesA._series.iloc[:, seriesA.width - 1]
+        last_column = seriesA._df.iloc[:, seriesA.width - 1]
         self.assertEqual(last_column.at[pd.Timestamp('20201225')], 1)
         self.assertEqual(last_column.at[pd.Timestamp('20201210')], 0)
         self.assertEqual(last_column.at[pd.Timestamp('20201226')], 0)
 
         # testing for christmas and non-holiday in PL
         seriesA = seriesA.add_holidays('PL')
-        last_column = seriesA._series.iloc[:, seriesA.width - 1]
+        last_column = seriesA._df.iloc[:, seriesA.width - 1]
         self.assertEqual(last_column.at[pd.Timestamp('20201225')], 1)
         self.assertEqual(last_column.at[pd.Timestamp('20201210')], 0)
         self.assertEqual(last_column.at[pd.Timestamp('20201226')], 1)
@@ -167,6 +167,6 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         times = pd.date_range(start=pd.Timestamp('20201224'), periods=50, freq='H')
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays('US')
-        last_column = seriesB._series.iloc[:, seriesB.width - 1]
+        last_column = seriesB._df.iloc[:, seriesB.width - 1]
         self.assertEqual(last_column.at[pd.Timestamp('2020-12-25 01:00:00')], 1)
         self.assertEqual(last_column.at[pd.Timestamp('2020-12-24 23:00:00')], 0)

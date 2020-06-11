@@ -10,7 +10,7 @@ class DatasetTestCase(unittest.TestCase):
     __test__ = True
     times = pd.date_range('20130101', '20130410')
     pd_series = pd.Series(range(100), index=times)
-    series: TimeSeries = TimeSeries(pd_series)
+    series: TimeSeries = TimeSeries.from_series(pd_series)
 
     def test_creation(self):
         # Cannot have train window <= 0
