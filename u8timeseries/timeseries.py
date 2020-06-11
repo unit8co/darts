@@ -32,7 +32,7 @@ class TimeSeries:
         df
             The actual time series, as a pandas DataFrame with a proper time index.
         freq
-            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
+            Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
@@ -45,11 +45,12 @@ class TimeSeries:
         # consistent column names
         df.columns = range(df.shape[1])
 
-        raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Series must not be empty.', logger)
-        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
-        raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Series must'
+        raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
+        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
+                     logger)
+        raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
                      ' contain only numerical values.', logger)
-        raise_if_not(len(df) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
+        raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      'is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time
@@ -84,7 +85,7 @@ class TimeSeries:
         Returns
         -------
         pandas.Series
-            A copy of the Pandas Series underlying this time series
+            A Pandas Series representation of this univariate time series.
         """
         self._assert_univariate()
         return self._df.iloc[:, 0].copy()
@@ -121,7 +122,7 @@ class TimeSeries:
         Returns
         -------
         float
-            The first value of this series
+            The first value of this univariate time series
         """
         self._assert_univariate()
         return self._values[0][0]
@@ -131,7 +132,7 @@ class TimeSeries:
         Returns
         -------
         float
-            The last value of this series
+            The last value of this univariate time series
         """
         self._assert_univariate()
         return self._values[-1][0]
@@ -160,7 +161,7 @@ class TimeSeries:
         Returns
         -------
         pandas.DatetimeIndex
-            The time index of this series.
+            The time index of this time series.
         """
         return deepcopy(self._df.index)
 
@@ -169,7 +170,7 @@ class TimeSeries:
         Returns
         -------
         pandas.DateOffset
-            The frequency of this series
+            The frequency of this time series
         """
         return to_offset(self._freq)
 
@@ -178,7 +179,7 @@ class TimeSeries:
         Returns
         -------
         str
-            A string representation of the frequency of this series
+            A string representation of the frequency of this time series
         """
         return self._freq
 
@@ -187,7 +188,7 @@ class TimeSeries:
         Returns
         -------
         pandas.Timedelta
-            The duration of this series.
+            The duration of this time series.
         """
         return self._df.index[-1] - self._df.index[0]
 
@@ -198,7 +199,7 @@ class TimeSeries:
         Parameters
         ----------
         deep
-            Make a deep copy. If False, the underlying pandas Series will be the same
+            Make a deep copy. If False, the underlying pandas DataFrame will be the same
 
         Returns
         -------
@@ -230,7 +231,7 @@ class TimeSeries:
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two series. The first series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
         """
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
@@ -252,7 +253,7 @@ class TimeSeries:
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two series. The first series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
         """
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
@@ -322,7 +323,7 @@ class TimeSeries:
         raise_if_not(start_ts <= self.end_time(),
                      'Start timestamp must be after the end of the time series when slicing.', logger)
 
-        def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
+        def _slice_not_none(s: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
             if s is not None:
                 s_a = s[s.index >= start_ts]
                 return s_a[s_a.index <= end_ts]
@@ -493,7 +494,7 @@ class TimeSeries:
         value_col
             The value column name (mandatory).
         freq
-            Optionally, a string representing the frequency of the Pandas Series.
+            Optionally, a string representing the frequency of the Pandas DataFrame.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
@@ -507,9 +508,9 @@ class TimeSeries:
             times: pd.DatetimeIndex = pd.to_datetime(df.index, errors='raise')
         else:
             times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
-        series: pd.Series = pd.Series(df[value_col].values, index=times)
+        pd_series: pd.Series = pd.Series(df[value_col].values, index=times)
 
-        return TimeSeries.from_series(series, freq, fill_missing_dates)
+        return TimeSeries.from_series(pd_series, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
@@ -526,7 +527,7 @@ class TimeSeries:
         values
             An array of values for the TimeSeries.
         freq
-            Optionally, a string representing the frequency of the Pandas Series.
+            Optionally, a string representing the frequency of the time series.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
@@ -747,50 +748,50 @@ class TimeSeries:
         return index[0] <= ts <= index[-1]
 
     @staticmethod
-    def _combine_or_none(series_a: Optional[pd.Series],
-                         series_b: Optional[pd.Series],
-                         combine_fn: Callable[[pd.Series, pd.Series], Any]) -> Optional[pd.Series]:
+    def _combine_or_none(df_a: Optional[pd.DataFrame],
+                         df_b: Optional[pd.DataFrame],
+                         combine_fn: Callable[[pd.DataFrame, pd.DataFrame], Any]) -> Optional[pd.DataFrame]:
         """
-        Combines two Pandas Series `series_a and `series_b` using `combine_fn` if neither is `None`.
+        Combines two Pandas DataFrames `df_a and `df_b` using `combine_fn` if neither is `None`.
 
         Parameters
         ----------
-        series_a
-            the first series
-        series_b
-            the second series
+        df_a
+            the first DataFrame
+        df_b
+            the second DataFrame
         combine_fn
-            An operation with input two Pandas Series and output one Pandas Series.
+            An operation with input two Pandas DataFrames and output one Pandas DataFrame.
 
         Returns
         -------
-        Optional[pandas.Series]
-            A new Pandas Series, the result of [combine_fn], or None.
+        Optional[pandas.DataFrame]
+            A new Pandas DataFrame, the result of [combine_fn], or None.
         """
-        if series_a is not None and series_b is not None:
-            return combine_fn(series_a, series_b)
+        if df_a is not None and df_b is not None:
+            return combine_fn(df_a, df_b)
         return None
 
     @staticmethod
-    def _op_or_none(series: Optional[pd.Series], op: Callable[[pd.Series], Any]):
-        return op(series) if series is not None else None
+    def _op_or_none(df: Optional[pd.DataFrame], op: Callable[[pd.DataFrame], Any]):
+        return op(df) if df is not None else None
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
-                             combine_fn: Callable[[pd.Series, pd.Series], pd.Series]) -> 'TimeSeries':
+                             combine_fn: Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]) -> 'TimeSeries':
         """
-        Combines this TimeSeries with another one, using the `combine_fn` on the underlying Pandas Series.
+        Combines this TimeSeries with another one, using the `combine_fn` on the underlying Pandas DataFrame.
 
         Parameters
         ----------
         other
             A second TimeSeries.
         combine_fn
-            An operation with input two Pandas Series and output one Pandas Series.
+            An operation with input two Pandas DataFrames and output one Pandas DataFrame.
 
         Returns
         -------
         TimeSeries
-            A new TimeSeries, with underlying Pandas Series the series obtained with `combine_fn`.
+            A new TimeSeries, with underlying Pandas DataFrame the series obtained with `combine_fn`.
         """
         raise_if_not(self.has_same_time_as(other), 'The two TimeSeries must have the same time index.', logger)
         raise_if_not(self._df.shape == other._df.shape, 'The two TimeSeries must have the same shape.', logger)
@@ -799,7 +800,7 @@ class TimeSeries:
         return TimeSeries(series)
 
     @staticmethod
-    def _fill_missing_dates(series: pd.Series) -> pd.Series:
+    def _fill_missing_dates(series: pd.DataFrame) -> pd.DataFrame:
         """
         Tries to fill missing dates in series with NaN.
         Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.
@@ -807,12 +808,12 @@ class TimeSeries:
         Parameters
         ----------
         series
-            The actual time series, as a pandas Series with a proper time index.
+            The actual time series, as a pandas DataFrame with a proper time index.
 
         Returns
         -------
         pandas.Series
-            A new Pandas Series without missing dates.
+            A new Pandas DataFrame without missing dates.
         """
         date_axis = series.index
         samples_size = 3
@@ -868,7 +869,7 @@ class TimeSeries:
     def autocorr(self, lag=1) -> float:
         return self._df.autocorr(lag)
 
-    def describe(self, percentiles=None, include=None, exclude=None) -> pd.Series:
+    def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
         return self._df.describe(percentiles, include, exclude)
 
     """
