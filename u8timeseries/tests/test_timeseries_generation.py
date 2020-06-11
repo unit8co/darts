@@ -22,7 +22,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
 
         # testing for constant value
         constant_ts = constant_timeseries(value=value, length=length)
-        value_set = set(constant_ts._series.values.flatten())
+        value_set = set(constant_ts._df.values.flatten())
         self.assertTrue(len(value_set) == 1)
 
     def test_linear_timeseries(self):
