@@ -63,7 +63,7 @@ class LoggingTestCase(unittest.TestCase):
                 pass
 
         lc.check(
-            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Series must not be empty.')
+            ('u8timeseries.timeseries', 'ERROR', 'ValueError: Time series must not be empty.')
         )
 
     def test_timeseries_split_error_log(self):
