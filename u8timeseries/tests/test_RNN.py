@@ -11,7 +11,7 @@ class RNNModelTestCase(unittest.TestCase):
     __test__ = True
     times = pd.date_range('20130101', '20130410')
     pd_series = pd.Series(range(100), index=times)
-    series: TimeSeries = TimeSeries(pd_series)
+    series: TimeSeries = TimeSeries.from_series(pd_series)
     module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
                         num_layers=1, num_layers_out_fc=[], dropout=0)
 
