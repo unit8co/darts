@@ -175,3 +175,9 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.series1._assert_univariate()
         self.series1.univariate_component(0)._assert_univariate()
+
+    def test_first_last_values(self):
+        self.assertEqual(self.series1.first_values().tolist(), [0, 5, 10])
+        self.assertEqual(self.series3.last_values().tolist(), [10, 20])
+        self.assertEqual(self.series1.univariate_component(1).first_values().tolist(), [5])
+        self.assertEqual(self.series3.univariate_component(1).last_values().tolist(), [20])

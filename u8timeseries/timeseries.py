@@ -137,6 +137,24 @@ class TimeSeries:
         self._assert_univariate()
         return self._values[-1][0]
 
+    def first_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The first values of every component of this time series
+        """
+        return self._values[0]
+
+    def last_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The last values of every component of this time series
+        """
+        return self._values[-1]
+
     def values(self) -> np.ndarray:
         """
         Returns
@@ -560,7 +578,14 @@ class TimeSeries:
 
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
-        self.pd_series().plot(*args, **kwargs)
+        if 'label' in kwargs:
+            label = kwargs['label']
+        for i in range(self.width):
+            if i > 0:
+                kwargs['figure'] = plt.gcf()
+                if 'label' in kwargs:
+                    kwargs['label'] = label + '_' + str(i)
+            self.univariate_component(i).pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
