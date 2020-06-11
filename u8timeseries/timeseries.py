@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any
 
-from .logging import raise_log, raise_if_not, get_logger
+from .logging import raise_log, raise_if_not, raise_if, get_logger
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,7 @@ class TimeSeries:
                  freq: Optional[str] = None,
                  fill_missing_dates: Optional[bool] = True):
         """
-        A TimeSeries is an object representing a time series.
+        A TimeSeries is an object representing a univariate or multivariate time series.
 
         TimeSeries are meant to be immutable.
 
@@ -679,8 +679,8 @@ class TimeSeries:
         if values is not None and len(values.shape) == 1:
             values = values.reshape((len(values), 1))
 
-        raise_if_not(not (values is None), "'values' parameter should not be None.", logger)
-        raise_if_not(index is not None, "Index must be filled.")
+        raise_if(values is None, "'values' parameter should not be None.", logger)
+        raise_if(index is None, "Index must be filled.")
         if (values is not None):
             raise_if_not(len(values) == len(index), "The number of values must correspond "
                                                     "to the number of indices: {} != {}".format(len(values),
