@@ -260,9 +260,24 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                  'of pd.DatetimeIndex', logger)
 
+    num_values_dict = {
+        'month': 12,
+        'day': 31,
+        'weekday': 7,
+        'hour': 24,
+        'quarter': 4
+    }
+
+    raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported.", logger)
+
     values = getattr(time_index, attribute)
     if one_hot:
         values_df = pd.get_dummies(values)
+        # fill missing columns (in case not all values appear in time_index)
+        for i in range(1, num_values_dict[attribute] + 1):
+            if not (i in values_df.columns):
+                values_df[i] = 0
+        values_df = values_df[range(1, num_values_dict[attribute] + 1)]
     else:
         values_df = pd.DataFrame(values)
     values_df.index = time_index

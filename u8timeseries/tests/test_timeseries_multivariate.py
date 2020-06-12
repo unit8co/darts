@@ -11,7 +11,7 @@ from .test_timeseries import TimeSeriesTestCase
 class TimeSeriesMultivariateTestCase(unittest.TestCase):
 
     times1 = pd.date_range('20130101', '20130110')
-    times2 = pd.date_range('20130201', '20130210')
+    times2 = pd.date_range('20130206', '20130215')
     dataframe1 = pd.DataFrame({
         0: range(10),
         1: range(5, 15),
@@ -137,12 +137,18 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
     def test_add_datetime_attribute(self):
         seriesA = self.series1.add_datetime_attribute('day')
         self.assertEqual(seriesA.width, self.series1.width + 1)
-        self.assertTrue(set(seriesA._df.loc[:, seriesA.width - 1]) == set(range(1, 11)))
-        seriesB = self.series1.add_datetime_attribute('day', True)
-        self.assertEqual(seriesB.width, self.series1.width + 10)
-        self.assertTrue(set(seriesB._df.loc[:, seriesA.width - 1]) == {0, 1})
+        self.assertTrue(set(seriesA._df.iloc[:, seriesA.width - 1].values.flatten()) == set(range(1, 11)))
+        seriesB = self.series3.add_datetime_attribute('day', True)
+        self.assertEqual(seriesB.width, self.series3.width + 31)
+        self.assertEqual(set(seriesB._df.iloc[:, self.series3.width:].values.flatten()), {0, 1})
         seriesC = self.series1.add_datetime_attribute('month', True)
-        self.assertEqual(seriesC.width, self.series1.width + 1)
+        self.assertEqual(seriesC.width, self.series1.width + 12)
+        seriesD = TimeSeries.from_times_and_values(pd.date_range('20130206', '20130430'), range(84))
+        seriesD = seriesD.add_datetime_attribute('month', True)
+        self.assertEqual(seriesD.width, 13)
+        self.assertEqual(sum(seriesD.values().flatten()), sum(range(84)) + 84)
+        self.assertEqual(sum(seriesD.values()[:, 1 + 3]), 30)
+        self.assertEqual(sum(seriesD.values()[:, 1 + 1]), 23)
 
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp('20201201'), periods=30, freq='D')
