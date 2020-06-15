@@ -67,6 +67,7 @@ class _RNNModule(nn.Module):
         # Defining parameters
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers
+        self.output_size = output_size
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.out_len = output_length
         self.name = name
@@ -78,7 +79,7 @@ class _RNNModule(nn.Module):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [output_length]:
+        for feature in num_layers_out_fc + [output_length * output_size]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -95,7 +96,7 @@ class _RNNModule(nn.Module):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(batch_size, self.out_len, 1)
+        predictions = predictions.view(batch_size, self.out_len, self.output_size)
 
         # predictions is of size (batch_size, output_length, 1)
         return predictions
