@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from ..utils import timeseries_generation as tg
-from ..metrics import mape
+from ..metrics import r2_score
 from u8timeseries.models import StandardRegressionModel
 
 
@@ -41,7 +41,10 @@ class RegressionModelsTestCase(unittest.TestCase):
     # dummy feature and target TimeSeries instances
     ts_periodic = tg.sine_timeseries(length=500)
     ts_gaussian = tg.gaussian_timeseries(length=500)
+    ts_random_walk = tg.random_walk_timeseries(length=500)
     ts_sum = ts_periodic + ts_gaussian
+    ts_random_multi = ts_gaussian.stack(ts_random_walk)
+    ts_sum_2 = ts_sum + ts_random_walk
 
     # default regression models
     models = [
@@ -56,14 +59,27 @@ class RegressionModelsTestCase(unittest.TestCase):
             self.assertTrue(len(prediction) == len(self.ts_periodic))
 
     def test_models_denoising(self):
-        # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_periodic as inputs
+        # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
         train_f, train_t, test_f, test_t = train_test_split([self.ts_gaussian, self.ts_sum], self.ts_periodic,
                                                             pd.Timestamp('20010101'))
-        max_mape = 2.3
+        min_r2 = 1.0
 
         for model in self.models:
             model.fit(train_f, train_t)
             prediction = model.predict(test_f)
-            current_mape = mape(prediction, test_t)
-            self.assertTrue(current_mape < max_mape, "{} model was not able to denoise data."
-                            "A MAPE of {} was recorded.".format(str(model), current_mape))
+            current_r2 = r2_score(prediction, test_t)
+            self.assertTrue(current_r2 >= min_r2, "{} model was not able to denoise data."
+                            "A r2 score of {} was recorded.".format(str(model), current_r2))
+
+    def test_models_denoising_multivariate(self):
+        # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
+        train_f, train_t, test_f, test_t = train_test_split([self.ts_random_multi, self.ts_sum_2], self.ts_periodic,
+                                                            pd.Timestamp('20010101'))
+        min_r2 = 1.0
+
+        for model in self.models:
+            model.fit(train_f, train_t)
+            prediction = model.predict(test_f)
+            current_r2 = r2_score(prediction, test_t)
+            self.assertTrue(current_r2 >= min_r2, "{} model was not able to denoise data."
+                            "A r2 score of {} was recorded.".format(str(model), current_r2))

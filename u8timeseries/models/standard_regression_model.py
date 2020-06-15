@@ -46,7 +46,7 @@ class StandardRegressionModel(RegressionModel):
 
     @staticmethod
     def _get_features_matrix_from_series(features: List[TimeSeries]):
-        return np.array([s.univariate_values() for s in features]).T  # (n_samples x n_features)
+        return np.concatenate([s.values() for s in features], axis=1) # (n_samples x n_features)
 
     def fit(self,
             train_features: List[TimeSeries],
