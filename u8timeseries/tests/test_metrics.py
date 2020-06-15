@@ -6,6 +6,7 @@ import logging
 from ..timeseries import TimeSeries
 from u8timeseries.metrics import metrics
 
+
 class MetricsTestCase(unittest.TestCase):
 
     pd_series1 = pd.Series(range(10), index=pd.date_range('20130101', '20130110'))
@@ -43,7 +44,7 @@ class MetricsTestCase(unittest.TestCase):
         self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
 
     def helper_test_shape_equality(self, metric):
-        self.assertEqual(metric(self.series12, self.series21),
+        self.assertAlmostEqual(metric(self.series12, self.series21),
                          metric(self.series1.append(self.series2b), self.series2.append(self.series1b)))
 
     def test_r2(self):
