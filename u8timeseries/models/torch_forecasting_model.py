@@ -289,10 +289,11 @@ class TorchForecastingModel(MultivariateForecastingModel):
         verbose
             Optionally, whether to print progress.
         """
-        
-        raise_if_not(len(target_indices) == self.output_size, "The number of target components must be equal to "
-                     "the `output_size` defined when instantiating the current model.", logger)
+
         super().fit(series, target_indices)
+
+        raise_if_not(len(self.target_indices) == self.output_size, "The number of target components must be equal to "
+                     "the `output_size` defined when instantiating the current model.", logger)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
@@ -499,7 +500,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def create_dataset(self):
+    def create_dataset(self, series):
         return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length, self.target_indices)
 
     @staticmethod
