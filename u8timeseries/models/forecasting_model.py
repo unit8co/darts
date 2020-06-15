@@ -140,7 +140,7 @@ class MultivariateForecastingModel(ForecastingModel):
             as targets for forecasting.
         """
         raise_if_not(series.width == 1 or len(target_indices) > 0, "If a multivariate series is given"
-                     "as input to this multivariate model, please provide a list of integers indices `target_indices`"
+                     " as input to this multivariate model, please provide a list of integer indices `target_indices`"
                      " that indicate which components of this series should be predicted", logger)
 
         if series.width == 1:

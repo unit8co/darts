@@ -25,7 +25,8 @@ class _ResidualBlock(nn.Module):
         weight_norm,
         nr_blocks_below,
         num_layers,
-        input_size
+        input_size,
+        output_size
     ):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
@@ -45,20 +46,24 @@ class _ResidualBlock(nn.Module):
             The number of residual blocks before the current one.
         num_layers
             The number of convolutional layers.
+        input_size
+            The dimensionality of the input time series of the whole network.
+        output_size
+            The dimensionality of the output time series of the whole network.
 
         Inputs
         ------
         x of shape `(batch_size, in_dimension, input_length)`
             Tensor containing the features of the input sequence.
-            in_dimension is equal to 1 if this is the first residual block (nr_blocks_below = 0),
-            in all other cases it is equal to num_filters.
+            in_dimension is equal to `input_size` if this is the first residual block,
+            in all other cases it is equal to `num_filters`.
 
         Outputs
         -------
         y of shape `(batch_size, out_dimension, input_length)`
             Tensor containing the output sequence of the residual block.
-            out_dimension is equal to 1 if this is the last residual block (nr_blocks_below = num_layers - 1),
-            in all other cases it is equal to num_filters.
+            out_dimension is equal to `output_size` if this is the last residual block,
+            in all other cases it is equal to `num_filters`.
         """
         super(_ResidualBlock, self).__init__()
 
@@ -69,7 +74,7 @@ class _ResidualBlock(nn.Module):
         self.nr_blocks_below = nr_blocks_below
 
         input_dim = input_size if nr_blocks_below == 0 else num_filters
-        output_dim = 1 if nr_blocks_below == num_layers - 1 else num_filters
+        output_dim = output_size if nr_blocks_below == num_layers - 1 else num_filters
         self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         if weight_norm:
@@ -112,6 +117,7 @@ class _TCNModule(nn.Module):
                  num_layers: Optional[int],
                  dilation_base: int,
                  weight_norm: bool,
+                 output_size: int,
                  output_length: int,
                  dropout: float):
 
@@ -122,6 +128,8 @@ class _TCNModule(nn.Module):
         ----------
         input_size
             The dimensionality of the input time series.
+        output_size
+            The dimensionality of the output time series.
         input_length
             The length of the input time series.
         output_length
@@ -160,6 +168,7 @@ class _TCNModule(nn.Module):
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.output_length = output_length
+        self.output_size = output_size
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
 
@@ -177,7 +186,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, self.input_size)
+                                       self.dropout, weight_norm, i, num_layers, self.input_size, output_size)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -190,7 +199,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_length, 1)
+        x = x.view(batch_size, self.input_length, self.output_size)
 
         return x
 
@@ -201,6 +210,7 @@ class TCNModel(TorchForecastingModel):
                  input_length: int = 12,
                  input_size: int = 1,
                  output_length: int = 1,
+                 output_size: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -222,6 +232,8 @@ class TCNModel(TorchForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_length
             Number of time steps the torch module will predict into the future at once.
+        output_size
+            The dimensionality of the output time series.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -241,12 +253,12 @@ class TCNModel(TorchForecastingModel):
         raise_if_not(output_length < input_length,
                      "The output length must be strictly smaller than the input length", logger)
 
-        input_size = TorchForecastingModel.get_effective_input_size(input_size, kwargs)
         kwargs['input_length'] = input_length
         kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
+        kwargs['output_size'] = output_size
 
-        self.model = _TCNModule(input_size=input_size, input_length=input_length,
+        self.model = _TCNModule(input_size=input_size, input_length=input_length, output_size=output_size,
                                 kernel_size=kernel_size, num_filters=num_filters,
                                 num_layers=num_layers, dilation_base=dilation_base,
                                 output_length=output_length, dropout=dropout, weight_norm=weight_norm)
@@ -254,7 +266,7 @@ class TCNModel(TorchForecastingModel):
         super().__init__(**kwargs)
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length)
+        return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length, self.target_indices)
 
     @property
     def first_prediction_index(self) -> int:

@@ -19,7 +19,7 @@ from typing import Optional, Dict, List
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator, timeseries_generation as tg
 from ..logging import raise_if_not, get_logger, raise_log
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import MultivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
@@ -40,7 +40,8 @@ class _TimeSeriesDataset1DSequential(Dataset):
     def __init__(self,
                  series: TimeSeries,
                  data_length: int = 1,
-                 target_length: int = 1):
+                 target_length: int = 1,
+                 target_indices: List[int] = [0]):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -63,6 +64,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         self.len_series = len(series)
         self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
+        self.target_indices = target_indices
 
         raise_if_not(self.data_length > 0,
                      "The input sequence length must be positive. It is {}".format(self.data_length),
@@ -79,7 +81,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, 0]).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
 class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
@@ -87,7 +89,8 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
     def __init__(self,
                  series: TimeSeries,
                  length: int = 3,
-                 shift: int = 1):
+                 shift: int = 1,
+                 target_indices: List[int] = [0]):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -109,6 +112,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
+        self.target_indices = target_indices
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
@@ -125,10 +129,10 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         idx = index % self.__len__()
         data = self.series_values[idx:idx + self.length]
         target = self.series_values[idx + self.shift:idx + self.length + self.shift]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, 0]).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
-class TorchForecastingModel(UnivariateForecastingModel):
+class TorchForecastingModel(MultivariateForecastingModel):
     # TODO: add init seed
     # TODO: add is_stochastic & reset methods
     # TODO: transparent support for multivariate time series
@@ -137,6 +141,7 @@ class TorchForecastingModel(UnivariateForecastingModel):
                  output_length: int = 1,
                  input_length: int = 10,
                  input_size: int = 1,
+                 output_size: int = 1,
                  datetime_enhancements: List[str] = [],
                  holiday_enhancement: Optional[str] = None,
                  n_epochs: int = 800,
@@ -165,6 +170,8 @@ class TorchForecastingModel(UnivariateForecastingModel):
             Number of past time steps that are fed to the forecasting module.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
+        output_size
+            The dimensionality of the output time series.
         datetime_enhancements
             A list of integers representing pd.Datetime attributes which will be included in the
             form of one-hot time series encodings to serve as additional inputs to the model.
@@ -218,6 +225,7 @@ class TorchForecastingModel(UnivariateForecastingModel):
         self.input_length = input_length
         self.input_size = input_size
         self.output_length = output_length
+        self.output_size = output_size
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -268,7 +276,7 @@ class TorchForecastingModel(UnivariateForecastingModel):
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False,
-            component_index: Optional[int] = None) -> None:
+            target_indices: List[int] = []) -> None:
         """ Fit method for torch modules
 
         Parameters
@@ -281,17 +289,10 @@ class TorchForecastingModel(UnivariateForecastingModel):
         verbose
             Optionally, whether to print progress.
         """
-
-        # Prepare training data:
-        self.original_series_width = series.width
-        for attribute in self.datetime_enhancements:
-            series = series.add_datetime_attribute(attribute, True)
-            val_series = val_series.add_datetime_attribute(attribute, True)
-        if self.holiday_enhancement:
-            series = series.add_holidays(self.holiday_enhancement)
-            val_series = val_series.add_holidays(self.holiday_enhancement)
-
-        super().fit(series)
+        
+        raise_if_not(len(target_indices) == self.output_size, "The number of target components must be equal to "
+                     "the `output_size` defined when instantiating the current model.", logger)
+        super().fit(series, target_indices)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
@@ -336,24 +337,13 @@ class TorchForecastingModel(UnivariateForecastingModel):
     def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
         super().predict(n)
 
-        raise_if_not(use_full_output_length or self.original_series_width == 1, "Please set 'use_full_output_length'"
-                     "to 'True' and 'n' smaller or equal to 'output_length' when predicting a multivariate"
-                     "TimeSeries.", logger)
+        raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
+                     "to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
+                     "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
         input_sequence = self.training_series.values()[-self.input_length:]
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
-
-        # create datetime attribute and holiday series into the future
-        future_dates = self._generate_new_dates(n + 31)
-        if self.datetime_enhancements:
-            datetime_series = tg.datetime_attribute_timeseries(future_dates, self.datetime_enhancements[0], True)
-        for attribute in self.datetime_enhancements[1:]:
-            datetime_series = datetime_series.add_datetime_attribute(attribute, True)
-        if (not self.datetime_enhancements) and self.holiday_enhancement:
-            datetime_series = tg.holidays_timeseries(future_dates, self.holiday_enhancement)
-        elif self.holiday_enhancement:
-            datetime_series = datetime_series.add(tg.holidays_timeseries(self.holiday_enhancement))
 
         # iterate through predicting output and consuming it again until enough predictions are created
         test_out = []
@@ -361,27 +351,19 @@ class TorchForecastingModel(UnivariateForecastingModel):
         if (use_full_output_length):
             num_iterations = math.ceil(n / self.output_length)
             for i in range(num_iterations):
-                raise_if_not(self.original_series_width == 1 or num_iterations == 1, "Only univariate time series"
+                raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
                              " support predictions with n > output_length", logger)
                 out = self.model(pred_in)
                 if (num_iterations > 1):
                     pred_in = pred_in.roll(-self.output_length, 1)
-                    if self.datetime_enhancements or self.holiday_enhancement:
-                        pred_in[:, -self.output_length:, 1:] = (
-                            torch.from_numpy(datetime_series.values()[i*self.output_length:(i + 1) * self.output_length,:]).float()
-                        )
                     pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
-                test_out.append(out.cpu().detach().numpy()[0, -self.output_length:])
+                test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
             test_out = np.concatenate(test_out)
             test_out = test_out[:n]
         else:
             for i in range(n):
                 out = self.model(pred_in)
                 pred_in = pred_in.roll(-1, 1)
-                
-                # add datetime attribute/holiday series to input
-                if self.datetime_enhancements or self.holiday_enhancement:
-                    pred_in[:, -1, 1:] = torch.from_numpy(datetime_series.values()[i, :]).float()
                 pred_in[:, -1, 0] = out[:, self.first_prediction_index]
                 test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
 
@@ -517,8 +499,8 @@ class TorchForecastingModel(UnivariateForecastingModel):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def create_dataset(self, series):
-        return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length)
+    def create_dataset(self):
+        return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length, self.target_indices)
 
     @staticmethod
     def load_from_checkpoint(model_name: str,
@@ -575,24 +557,3 @@ class TorchForecastingModel(UnivariateForecastingModel):
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
             return p['lr']
-
-    @staticmethod
-    def get_effective_input_size(input_size: int, kwargs):
-        if 'datetime_enhancements' in kwargs.keys():
-            for attribute in kwargs['datetime_enhancements']:
-                if attribute == 'day':
-                    input_size += 31
-                elif attribute == 'weekday':
-                    input_size += 7
-                elif attribute == 'month':
-                    input_size += 12
-                elif attribute == 'hour':
-                    input_size += 24
-                elif attribute == 'quarter':
-                    input_size += 4
-                else:
-                    raise_log(ValueError('Datetime attribute {} not supported.').format(attribute), logger)
-        if 'holiday_enhancement' in kwargs.keys():
-            input_size += 1
-
-        return input_size
