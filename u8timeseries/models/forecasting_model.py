@@ -9,9 +9,11 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
+from typing import Optional, List
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
 
@@ -92,3 +94,56 @@ class ForecastingModel(ABC):
         time_index = self._generate_new_dates(len(points_preds))
 
         return TimeSeries.from_times_and_values(time_index, points_preds, self.training_series.freq())
+
+
+class UnivariateForecastingModel(ForecastingModel):
+    """ The base class for univariate forecasting models.
+    """
+
+    @abstractmethod
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None) -> None:
+        """ Fits/trains the univariate model on selected univariate series.
+
+        Parameters
+        ----------
+        series
+            The training time series on which to fit the model.
+        component_index
+            Optionally, a zero-indexed integer indicating the component to use if a multivariate
+            time series is passed.
+        """
+
+        raise_if_not(series.width == 1 or (component_index is not None), "If a multivariate series is given"
+                     "as input to this univariate model, please provide a `component_index` integer indicating"
+                     " which component to use.", logger)
+
+        if series.width == 1:
+            super().fit(series)
+        else:
+            super().fit(series.univariate_component(component_index))
+
+
+class MultivariateForecastingModel(ForecastingModel):
+    """ The base class for multivariate forecasting models.
+    """
+
+    @abstractmethod
+    def fit(self, series: TimeSeries, target_indices: List[int] = []) -> None:
+        """ Fits/trains the multivariate model on the provided series with selected target components.
+
+        Parameters
+        ----------
+        series
+            The training time series on which to fit the model.
+        target_indices
+            A list of integers indicating which component(s) of the time series should be used
+            as targets for forecasting.
+        """
+        raise_if_not(series.width == 1 or len(target_indices) > 0, "If a multivariate series is given"
+                     "as input to this multivariate model, please provide a list of integers indices `target_indices`"
+                     " that indicate which components of this series should be predicted", logger)
+        
+        if series.width == 1:
+            target_indices = [0]
+        self.target_indices = target_indices
+        super().fit(series)
