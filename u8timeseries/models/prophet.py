@@ -3,19 +3,21 @@ Facebook Prophet
 ----------------
 """
 
-from ..timeseries import TimeSeries
-from .forecasting_model import ForecastingModel
-import pandas as pd
-from ..logging import get_logger, execute_and_suppress_output
 from typing import Optional
 import fbprophet
 import logging
+
+from ..timeseries import TimeSeries
+from .forecasting_model import UnivariateForecastingModel
+import pandas as pd
+from ..logging import get_logger, execute_and_suppress_output
+
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
-class Prophet(ForecastingModel):
+class Prophet(UnivariateForecastingModel):
     def __init__(self,
                  frequency: Optional[int] = None,
                  country_holidays: Optional[str] = None,
@@ -55,8 +57,9 @@ class Prophet(ForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries) -> None:
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        series = self.training_series
 
         in_df = pd.DataFrame(data={
             'ds': series.time_index(),

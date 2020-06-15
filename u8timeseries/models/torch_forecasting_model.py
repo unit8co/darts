@@ -19,7 +19,7 @@ from typing import Optional, Dict, List
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator, timeseries_generation as tg
 from ..logging import raise_if_not, get_logger, raise_log
-from .forecasting_model import ForecastingModel
+from .forecasting_model import UnivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.u8ts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.u8ts', 'runs')
@@ -128,7 +128,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         return torch.from_numpy(data).float(), torch.from_numpy(target[:, 0]).float().unsqueeze(1)
 
 
-class TorchForecastingModel(ForecastingModel):
+class TorchForecastingModel(UnivariateForecastingModel):
     # TODO: add init seed
     # TODO: add is_stochastic & reset methods
     # TODO: transparent support for multivariate time series
@@ -267,7 +267,8 @@ class TorchForecastingModel(ForecastingModel):
     def fit(self,
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
-            verbose: bool = False) -> None:
+            verbose: bool = False,
+            component_index: Optional[int] = None) -> None:
         """ Fit method for torch modules
 
         Parameters

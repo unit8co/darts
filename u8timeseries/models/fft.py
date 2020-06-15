@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import UnivariateForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
@@ -185,7 +185,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     return series
 
 
-class FFT(ForecastingModel):
+class FFT(UnivariateForecastingModel):
     def __init__(self,
                  nr_freqs_to_keep: Optional[int] = 10,
                  required_matches: Optional[set] = None,
@@ -231,8 +231,9 @@ class FFT(ForecastingModel):
     def __str__(self):
         return 'FFT(nr_freqs_to_keep=' + str(self.nr_freqs_to_keep) + ', trend=' + str(self.trend) + ')'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        series = self.training_series
 
         # determine trend
         if (self.trend == 'poly'):
