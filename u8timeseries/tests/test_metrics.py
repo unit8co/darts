@@ -45,7 +45,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def helper_test_shape_equality(self, metric):
         self.assertAlmostEqual(metric(self.series12, self.series21),
-                         metric(self.series1.append(self.series2b), self.series2.append(self.series1b)))
+                               metric(self.series1.append(self.series2b), self.series2.append(self.series1b)))
 
     def test_r2(self):
         from sklearn.metrics import r2_score
