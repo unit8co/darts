@@ -30,16 +30,17 @@ def train_test_split(features, target, split_ts):
 
     return (train_features, train_target, test_features, test_target)
 
+
 def test_models_accuracy(test_case, models, features, target, min_r2):
     # for every model, test whether it predicts the target with a minimum r2 score of `min_r2`
-        train_f, train_t, test_f, test_t = train_test_split(features, target, pd.Timestamp('20010101'))
+    train_f, train_t, test_f, test_t = train_test_split(features, target, pd.Timestamp('20010101'))
 
-        for model in models:
-            model.fit(train_f, train_t)
-            prediction = model.predict(test_f)
-            current_r2 = r2_score(prediction, test_t)
-            test_case.assertTrue(current_r2 >= min_r2, "{} model was not able to denoise data."
-                            "A r2 score of {} was recorded.".format(str(model), current_r2))
+    for model in models:
+        model.fit(train_f, train_t)
+        prediction = model.predict(test_f)
+        current_r2 = r2_score(prediction, test_t)
+        test_case.assertTrue(current_r2 >= min_r2, "{} model was not able to denoise data."
+                             "A r2 score of {} was recorded.".format(str(model), current_r2))
 
 
 class RegressionModelsTestCase(unittest.TestCase):
