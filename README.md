@@ -1,6 +1,6 @@
 # darts: Easy manipulation and forecasting of time series
 
-![darts](https://github.com/unit8co/darts/raw/develop/static/images/logo-72dpi.png "darts") 
+![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts") 
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/u8darts)
