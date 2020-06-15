@@ -1,16 +1,16 @@
-name: darts develop workflow
+name: darts PR merge workflow
 
 on:
   push:
-    branches-ignore:
-      - master
+    branches:
       - develop
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [macos-latest, ubuntu-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
@@ -35,10 +35,14 @@ jobs:
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
-      - name: "5. Install main and dev dependencies"
+      - name: "5-0. Install torch without cuda on ${{ runner.os }}"
+        if: contains(runner.os, 'Linux')
         run: |
           # this avoids an unnecessary cuda install on Linux
           pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: "5. Install main and dev dependencies"
+        run: |
           pip install -q .
           pip install -q -r requirements/dev.txt
 
@@ -50,46 +54,6 @@ jobs:
       - name: "6. Run linter"
         run: |
           flake8 --config=setup.cfg darts
-
-  check-examples:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        example-name: [FFT-examples.ipynb, TCN-examples.ipynb, RNN-examples.ipynb, darts-intro.ipynb]
-    steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
-
-      - name: "2. Set up Python 3.6"
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.6
-
-      - name: "3. Update pip"
-        run: |
-          python -m pip install --upgrade pip
-
-      - name: "4. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: examples-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
-          restore-keys: |
-            examples-${{ runner.os }}-pip-
-
-      - name: "5. Install main and release dependencies"
-        run: |
-          pip install -q .
-          pip install -q -r requirements/release.txt
-
-      - name: "5. Run examples ${{matrix.example-name}}"
-        run: |
-          (cd examples; papermill ${{matrix.example-name}} ${{matrix.example-name}})
-
-      - name: "7. Check example ${{matrix.example-name}}"
-        run: |
-          git diff --exit-code
 
   docs:
     runs-on: ubuntu-latest

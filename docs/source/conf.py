@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'u8timeseries'
+project = 'darts'
 copyright = '2020, Unit8 SA'
 author = 'Unit8 SA'
 version = 'dev'
@@ -38,7 +38,6 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
-    'sphinx_autodoc_typehints',
     'nbsphinx',
     'm2r'
 ]
@@ -61,8 +60,8 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',
-    '**/modules.rst', '**/u8timeseries.tests.*',
-    '**/*custom_logging.rst'
+    '**/modules.rst', '**/darts.tests.*',
+    '**/*logging.rst'
 ]
 
 

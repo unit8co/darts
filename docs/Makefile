@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS    ?=
+SPHINXOPTS    ?= -W
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
@@ -15,16 +15,13 @@ help:
 .PHONY: help Makefile
 
 generate:
-	@sphinx-apidoc -e -f --templatedir templates -o source/generated_api ../u8timeseries
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
 
 readme:
-	@m2r ../README.md; mv ../README.rst source
+	@m2r ../README.md; mv ../README.rst "$(SOURCEDIR)"
 
 copy-examples:
-	@cp -r ../examples source
-
-copy-static:
-	@cp -r ../static source
+	@cp -r ../examples "$(SOURCEDIR)/examples"
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

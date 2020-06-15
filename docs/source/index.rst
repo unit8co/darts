@@ -3,13 +3,13 @@
 .. toctree::
    :hidden:
 
-   Home <README>
+   Home<README>
 
 
 .. toctree::
    :hidden:
 
-   API<generated_api/u8timeseries>
+   API Reference<generated_api/darts>
 
 
 .. toctree::

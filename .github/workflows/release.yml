@@ -1,4 +1,4 @@
-name: u8timeseries release workflow
+name: darts release workflow
 
 on:
   push:
@@ -7,9 +7,10 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [macos-latest, ubuntu-latest]
         python-version: [3.6, 3.7, 3.8]
 
     steps:
@@ -34,6 +35,12 @@ jobs:
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
+      - name: "5-0. Install torch without cuda on ${{ runner.os }}"
+        if: contains(runner.os, 'Linux')
+        run: |
+          # this avoids an unnecessary cuda install on Linux
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
       - name: "5. Install main and dev dependencies"
         run: |
           # this avoids an unnecessary cuda install on Linux
@@ -46,8 +53,8 @@ jobs:
           python -m unittest
 
       - name: "6. Run linter"
-          run: |
-            flake8 --config=setup.cfg u8timeseries
+        run: |
+          flake8 --config=setup.cfg darts
 
   release:
     needs: [tests]
@@ -142,7 +149,7 @@ jobs:
       - name: "4. Build and publish docker to docker hub"
         uses: elgohr/Publish-Docker-Github-Action@2.14
         with:
-          name: unit8/u8timeseries
+          name: unit8/darts
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
           tags: "${{ env.DOCKER_TAGS }}"
@@ -151,7 +158,6 @@ jobs:
 
   deploy-docs:
     runs-on: ubuntu-latest
-    if: !contains(github.event.head_commit.message, '#hotfix')
     needs: [release]
     steps:
       - name: "1. Clone repository"
@@ -191,19 +197,15 @@ jobs:
         run: |
           make --directory ./docs generate
 
-      - name: "8. Copy static files"
-        run: |
-          make --directory ./docs copy-static
-
-      - name: "9. Build readme"
+      - name: "8. Generate readme"
         run: |
           make --directory ./docs readme
 
-      - name: "10. Build documentation"
+      - name: "9. Build documentation"
         run: |
           make --directory ./docs html
 
-      - name: "11. Publish documentation to gh-pages"
+      - name: "10. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self

@@ -10,18 +10,18 @@ with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 
-URL = 'https://unit8co.github.io/u8timeseries/'
+URL = 'https://unit8co.github.io/darts/'
 
 
 PROJECT_URLS = {
-    'Bug Tracker': 'https://github.com/unit8co/u8timeseries/issues',
+    'Bug Tracker': 'https://github.com/unit8co/darts/issues',
     'Documentation': URL,
-    'Source Code': 'https://github.com/unit8co/u8timeseries'
+    'Source Code': 'https://github.com/unit8co/darts'
 }
 
 
 setup(
-      name='u8timeseries',
+      name='u8darts',
       version="dev",
       description='A python library for easy manipulation and forecasting time series.',
       long_description=LONG_DESCRIPTION,
