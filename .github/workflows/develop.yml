@@ -65,6 +65,9 @@ jobs:
         with:
           python-version: 3.6
 
+      - name: "2.1. Set up conda"
+        uses: s-weigand/setup-conda@v1
+
       - name: "3. Update pip"
         run: |
           python -m pip install --upgrade pip
@@ -83,7 +86,7 @@ jobs:
           pip install -q .
           pip install -q -r requirements/release.txt
 
-      - name: "5. Run examples ${{matrix.example-name}}"
+      - name: "6. Run examples ${{matrix.example-name}}"
         run: |
           (cd examples; papermill ${{matrix.example-name}} ${{matrix.example-name}})
 
