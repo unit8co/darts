@@ -71,6 +71,8 @@ jobs:
       
       - name: "2.1. Set up conda"
         uses: s-weigand/setup-conda@v1
+        with:
+          activate-conda: false
 
       - name: "3. Update pip"
         run: |
