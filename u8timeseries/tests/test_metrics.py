@@ -71,5 +71,11 @@ class MetricsTestCase(unittest.TestCase):
     def test_rmse(self):
         self.helper_test_shape_equality(metrics.rmse)
 
+    def test_rmsle(self):
+        self.helper_test_shape_equality(metrics.rmsle)
+
+    def test_coefficient_of_variation(self):
+        self.helper_test_shape_equality(metrics.coefficient_of_variation)
+
     def test_mae(self):
         self.helper_test_shape_equality(metrics.mae)

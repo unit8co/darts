@@ -172,7 +172,7 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
         The Coefficient of Variation
     """
 
-    return 100 * rmse(actual_series, pred_series, intersect) / actual_series.mean()
+    return 100 * rmse(actual_series, pred_series, intersect) / actual_series.mean().mean()
 
 
 def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
