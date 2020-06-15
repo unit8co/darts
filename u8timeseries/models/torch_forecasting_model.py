@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
-from ..utils import _build_tqdm_iterator, timeseries_generation as tg
+from ..utils import _build_tqdm_iterator
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import MultivariateForecastingModel
 
