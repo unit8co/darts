@@ -89,7 +89,7 @@ class BacktestingTestCase(unittest.TestCase):
 
         # multivariate target
         with self.assertRaises(ValueError):
-            backtest_regression(features_multivariate, target.stack(target), 
+            backtest_regression(features_multivariate, target.stack(target),
                                 StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
 
     def test_backtest_gridsearch(self):
