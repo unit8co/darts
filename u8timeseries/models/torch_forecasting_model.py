@@ -289,6 +289,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
         verbose
             Optionally, whether to print progress.
         """
+        raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
+                     "the `input_size` defined when instantiating the current model.", logger)
 
         super().fit(series, target_indices)
 
@@ -339,7 +341,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         super().predict(n)
 
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
-                     "to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
+                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
