@@ -54,6 +54,22 @@ class RNNModelTestCase(unittest.TestCase):
         shutil.rmtree('.u8ts')
 
     @staticmethod
+    def helper_test_use_full_output_length(test_case, pytorch_model, series):
+        model = pytorch_model(n_epochs=2, output_length=3)
+        model.fit(series)
+        pred = model.predict(7, True)
+        test_case.assertEqual(len(pred), 7)
+        pred = model.predict(2, True)
+        test_case.assertEqual(len(pred), 2)
+        test_case.assertEqual(pred.width, 1)
+        pred = model.predict(4, True)
+        test_case.assertEqual(len(pred), 4)
+        test_case.assertEqual(pred.width, 1)
+
+    def test_use_full_output_length(self):
+        RNNModelTestCase.helper_test_use_full_output_length(self, RNNModel, self.series)
+
+    @staticmethod
     def helper_test_multivariate(test_case, pytorch_model, series_multivariate):
         model = pytorch_model(n_epochs=2)
         # missing target_indices
@@ -62,7 +78,7 @@ class RNNModelTestCase(unittest.TestCase):
         # trying to fit multivariate series with input_size=1
         with test_case.assertRaises(ValueError):
             model.fit(series_multivariate, target_indices=[0])
-        model = pytorch_model(n_epochs=2, input_size=2, output_length=2)
+        model = pytorch_model(n_epochs=2, input_size=2, output_length=3)
         # missing target_indices
         with test_case.assertRaises(ValueError):
             model.fit(series_multivariate)
@@ -73,10 +89,13 @@ class RNNModelTestCase(unittest.TestCase):
             pred = model.predict(n=1)
         # n > output_length
         with test_case.assertRaises(ValueError):
-            pred = model.predict(3, True)
+            pred = model.predict(4, True)
         # predict called with valid parameters
-        pred = model.predict(2, True)
+        pred = model.predict(3, True)
         test_case.assertEqual(pred.width, 1)
+        test_case.assertEqual(len(pred), 3)
+        pred = model.predict(2, True)
+        test_case.assertEqual(len(pred), 2)
         # len(target_indices) != output_size
         with test_case.assertRaises(ValueError):
             model.fit(series_multivariate, target_indices=[0, 1])

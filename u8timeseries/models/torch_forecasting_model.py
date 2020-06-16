@@ -361,8 +361,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
                     pred_in = pred_in.roll(-self.output_length, 1)
                     pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
                 test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
-            test_out = np.concatenate(test_out)
-            test_out = test_out[:n]
+            test_out = np.concatenate(test_out, axis=1)
+            test_out = test_out[:, :n, :]
         else:
             for i in range(n):
                 out = self.model(pred_in)
@@ -371,7 +371,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
 
         test_out = np.stack(test_out)
-
         return self._build_forecast_series(test_out.squeeze())
 
     @property
