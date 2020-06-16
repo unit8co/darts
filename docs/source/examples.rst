@@ -6,15 +6,15 @@ Here you will find some example notebooks to get more familiar with the API.
 
 
 
-u8timeseries intro
-=======================
+darts intro
+===========
 
-You will find below an example Jupyter notebook containing an intro to usage of u8timeseries.
+You will find below an example Jupyter notebook containing an intro to usage of darts.
 
 .. toctree::
    :maxdepth: 1
 
-   examples/u8timeseries-intro.ipynb
+   examples/darts-intro.ipynb
 
 
 Fast Fourier Transform
