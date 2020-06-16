@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'u8timeseries'
+project = 'darts'
 copyright = '2020, Unit8 SA'
 author = 'Unit8 SA'
 version = 'dev'
@@ -60,7 +60,7 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',
-    '**/modules.rst', '**/u8timeseries.tests.*',
+    '**/modules.rst', '**/darts.tests.*',
     '**/*logging.rst'
 ]
 

@@ -1,6 +1,6 @@
 """
-u8timeseries
-------------
+darts
+-----
 """
 
 from .timeseries import TimeSeries
