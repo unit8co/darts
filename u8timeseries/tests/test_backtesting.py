@@ -1,17 +1,24 @@
 import unittest
 import numpy as np
+import pandas as pd
 import random
 import logging
 
-from ..backtesting import backtest_gridsearch, backtest_forecasting, forecasting_residuals
-from ..metrics import mape
+from ..backtesting import (
+    backtest_gridsearch,
+    backtest_forecasting,
+    forecasting_residuals,
+    backtest_regression
+)
+from ..metrics import mape, r2_score
 from ..utils.timeseries_generation import (
     linear_timeseries as lt,
     sine_timeseries as st,
     random_walk_timeseries as rt,
-    constant_timeseries as ct
+    constant_timeseries as ct,
+    gaussian_timeseries as gt
 )
-from ..models import Theta, FFT, ExponentialSmoothing, NaiveSeasonal
+from ..models import Theta, FFT, ExponentialSmoothing, NaiveSeasonal, StandardRegressionModel, NaiveDrift
 
 
 def compare_best_against_random(model_class, params, series):
@@ -52,6 +59,38 @@ class BacktestingTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
+
+    def test_backtest_forecasting(self):
+        linear_series = lt(length=50)
+
+        # univariate series
+        pred = backtest_forecasting(linear_series, NaiveDrift(), pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, linear_series), 1.0)
+
+        # multivariate series
+        with self.assertRaises(AssertionError):
+            backtest_forecasting(linear_series.stack(linear_series), NaiveDrift(), pd.Timestamp('20000201'), 3)
+
+    def test_backtest_regression(self):
+        gaussian_series = gt(mean=2, length=50)
+        sine_series = st(length=50)
+        features = [gaussian_series + sine_series, gaussian_series]
+        features_multivariate = [(gaussian_series + sine_series).stack(gaussian_series), gaussian_series]
+        target = st(length=50)
+
+        # univariate feature test
+        pred = backtest_regression(features, target, StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # multivariate feature test
+        pred = backtest_regression(features_multivariate, target, StandardRegressionModel(15),
+                                   pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # multivariate target
+        with self.assertRaises(ValueError):
+            backtest_regression(features_multivariate, target.stack(target), 
+                                StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
 
     def test_backtest_gridsearch(self):
 

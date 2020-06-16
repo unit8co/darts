@@ -10,7 +10,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from typing import Optional
 
 logger = get_logger(__name__)
 
@@ -18,7 +17,7 @@ logger = get_logger(__name__)
 class StandardRegressionModel(RegressionModel):
 
     def __init__(self,
-                 train_n_points: Optional[int],
+                 train_n_points: int,
                  model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
         Simple wrapper for regression models implementing a fit() predict() functions models
