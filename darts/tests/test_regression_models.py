@@ -5,7 +5,7 @@ import pandas as pd
 
 from ..utils import timeseries_generation as tg
 from ..metrics import r2_score
-from u8timeseries.models import StandardRegressionModel
+from ..models import StandardRegressionModel
 
 
 def train_test_split(features, target, split_ts):

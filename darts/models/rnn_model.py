@@ -130,7 +130,7 @@ class RNNModel(TorchForecastingModel):
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
-            `u8timeseries.models.rnn_model.RNNModule`.
+            `darts.models.rnn_model.RNNModule`.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_size
