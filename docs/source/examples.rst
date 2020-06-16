@@ -46,3 +46,13 @@ You will find below an example Jupyter notebook containing usage of TCN model
    :maxdepth: 1
 
    examples/TCN-examples.ipynb
+
+Multivariate Examples
+=====================
+
+You will find below an example Jupyter notebook containing usage of multivariate TimeSeries instances
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/multivariate-examples.ipynb
