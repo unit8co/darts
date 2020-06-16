@@ -1,6 +1,7 @@
 import shutil
 import unittest
 
+import logging
 import pandas as pd
 
 from ..models.rnn_model import _RNNModule, RNNModel
@@ -12,8 +13,13 @@ class RNNModelTestCase(unittest.TestCase):
     times = pd.date_range('20130101', '20130410')
     pd_series = pd.Series(range(100), index=times)
     series: TimeSeries = TimeSeries.from_series(pd_series)
+    series_multivariate = series.stack(series * 2)
     module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
                         num_layers=1, num_layers_out_fc=[], dropout=0)
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_creation(self):
         with self.assertRaises(ValueError):
@@ -46,3 +52,39 @@ class RNNModelTestCase(unittest.TestCase):
         self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
 
         shutil.rmtree('.u8ts')
+
+    @staticmethod
+    def helper_test_multivariate(test_case, pytorch_model, series_multivariate):
+        model = pytorch_model(n_epochs=2)
+        # missing target_indices
+        with test_case.assertRaises(ValueError):
+            model.fit(series_multivariate)
+        # trying to fit multivariate series with input_size=1
+        with test_case.assertRaises(ValueError):
+            model.fit(series_multivariate, target_indices=[0])
+        model = pytorch_model(n_epochs=2, input_size=2, output_length=2)
+        # missing target_indices
+        with test_case.assertRaises(ValueError):
+            model.fit(series_multivariate)
+        # fit function called with valid parameters
+        model.fit(series_multivariate, target_indices=[0])
+        # use_full_output_length not set to True
+        with test_case.assertRaises(ValueError):
+            pred = model.predict(n=1)
+        # n > output_length
+        with test_case.assertRaises(ValueError):
+            pred = model.predict(3, True)
+        # predict called with valid parameters
+        pred = model.predict(2, True)
+        test_case.assertEqual(pred.width, 1)
+        # len(target_indices) != output_size
+        with test_case.assertRaises(ValueError):
+            model.fit(series_multivariate, target_indices=[0, 1])
+        model = pytorch_model(n_epochs=2, input_size=2, output_length=2, output_size=2)
+        # fit and predict called with valid parameters
+        model.fit(series_multivariate, target_indices=[0, 1])
+        pred = model.predict(2, True)
+        test_case.assertEqual(pred.width, 2)
+
+    def test_multivariate(self):
+        RNNModelTestCase.helper_test_multivariate(self, RNNModel, self.series_multivariate)
