@@ -13,3 +13,4 @@ twine>=3.0.0
 bump2version
 ipykernel
 papermill
+ipywidgets
