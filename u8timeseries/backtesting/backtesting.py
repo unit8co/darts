@@ -50,7 +50,7 @@ def backtest_forecasting(series: TimeSeries,
     Parameters
     ----------
     series
-        The time series on which to backtest
+        The univariate time series on which to backtest
     model
         The forecasting model to be backtested
     start
@@ -69,6 +69,7 @@ def backtest_forecasting(series: TimeSeries,
         the specified model with the specified forecast horizon.
     """
 
+    series._assert_univariate()
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
@@ -123,7 +124,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
     feature_series
         A list of time series representing the features for the regression model (independent variables)
     target_series
-        The target time series for the regression model (dependent variable)
+        The univariate target time series for the regression model (dependent variable)
     model
         The regression model to be backtested
     start
@@ -142,6 +143,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         the specified model with the specified forecast horizon.
     """
 
+    raise_if_not(target_series.width == 1, "'target_series' must be univariate.", logger)
     raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                  'have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
@@ -181,7 +183,7 @@ def forecasting_residuals(model: ForecastingModel,
                           series: TimeSeries,
                           fcast_horizon_n: int = 1,
                           verbose: bool = True) -> TimeSeries:
-    """ A function for computing the residuals produced by a given model and time series.
+    """ A function for computing the residuals produced by a given model and univariate time series.
 
     This function computes the difference between the actual observations from `series`
     and the fitted values vector p obtained by training `model` on `series`.
@@ -197,7 +199,7 @@ def forecasting_residuals(model: ForecastingModel,
     model
         Instance of ForecastingModel used to compute the fitted values p.
     series
-        The TimeSeries instance which the residuals will be computed for.
+        The univariate TimeSeries instance which the residuals will be computed for.
     fcast_horizon_n
         The forecasting horizon used to predict each fitted value.
     verbose
@@ -207,6 +209,8 @@ def forecasting_residuals(model: ForecastingModel,
     TimeSeries
         The vector of residuals.
     """
+
+    series._assert_univariate()
 
     # get first index not contained in the first training set
     first_index = series.time_index()[model.min_train_series_length]
@@ -224,16 +228,18 @@ def forecasting_residuals(model: ForecastingModel,
 def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     """ Plots data relevant to residuals.
 
-    This function takes a TimeSeries instance of residuals and plots their values,
+    This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
 
     Parameters
     ----------
     residuals
-        TimeSeries instance representing residuals.
+        Univariate TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
     """
+
+    residuals._assert_univariate()
 
     fig = plt.figure(constrained_layout=True, figsize=(8, 6))
     gs = fig.add_gridspec(2, 2)
@@ -302,9 +308,9 @@ def backtest_gridsearch(model_class: type,
         A dictionary containing as keys hyperparameter names, and as values lists of values for the
         respective hyperparameter.
     train_series
-        The TimeSeries instance used for training (and also validation in split mode).
+        The univariate TimeSeries instance used for training (and also validation in split mode).
     test_series
-        The TimeSeries instance used for validation in split mode.
+        The univariate TimeSeries instance used for validation in split mode.
     fcast_horizon_n
         The integer value of the forecasting horizon used in expanding window mode.
     num_predictions:
@@ -319,6 +325,10 @@ def backtest_gridsearch(model_class: type,
     ForecastingModel
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
+
+    train_series._assert_univariate()
+    if (val_series is not None):
+        val_series._assert_univariate()
 
     raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
                  "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
@@ -372,11 +382,11 @@ def explore_models(train_series: TimeSeries,
     Parameters
     ----------
     train_series
-        A TimeSeries instance used for training during model tuning and evaluation.
+        A univariate TimeSeries instance used for training during model tuning and evaluation.
     val_series
-        A TimeSeries instance used for validation during model tuning and for training during evaluation.
+        A univariate TimeSeries instance used for validation during model tuning and for training during evaluation.
     test_series
-        A TimeSeries instance used for validation when evaluating a model.
+        A univariate TimeSeries instance used for validation when evaluating a model.
     metric:
         A function that takes two TimeSeries instances as inputs and returns a float error value.
     model_parameter_tuples:
@@ -387,6 +397,10 @@ def explore_models(train_series: TimeSeries,
     verbose:
         Whether to print progress.
     """
+
+    train_series._assert_univariate()
+    val_series._assert_univariate()
+    test_series._assert_univariate()
 
     raise_if_not(plot_width > 1, "Please choose an integer 'plot_width' value larger than 1", logger)
 
