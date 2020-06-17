@@ -24,6 +24,9 @@ def _get_values_or_raise(series_a: TimeSeries,
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
     """
 
+    raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
+                 logger)
+
     series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
     series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
 

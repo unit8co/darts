@@ -80,3 +80,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_mae(self):
         self.helper_test_shape_equality(metrics.mae)
+
+    def test_different_width(self):
+        with self.assertRaises(ValueError):
+            metrics.mape(self.series1, self.series12)
