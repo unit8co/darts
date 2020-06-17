@@ -212,9 +212,9 @@ class TimeSeries:
             A copy of this time series.
         """
         if deep:
-            return TimeSeries(self.pd_series(), self.conf_lo_pd_series(), self.conf_hi_pd_series())
+            return TimeSeries(self.pd_series(), self.conf_lo_pd_series(), self.conf_hi_pd_series(), self.freq())
         else:
-            return TimeSeries(self._series, self._confidence_lo, self._confidence_hi)
+            return TimeSeries(self._series, self._confidence_lo, self._confidence_hi, self.freq())
 
     def _raise_if_not_within(self, ts: pd.Timestamp):
         if (ts < self.start_time()) or (ts > self.end_time()):
@@ -322,7 +322,7 @@ class TimeSeries:
         TimeSeries
             A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
         """
-        raise_if_not(end_ts > start_ts, 'End timestamp must be strictly after start timestamp when slicing.', logger)
+        raise_if_not(end_ts >= start_ts, 'End timestamp must be after start timestamp when slicing.', logger)
         raise_if_not(end_ts >= self.start_time(),
                      'End timestamp must be after the start of the time series when slicing.', logger)
         raise_if_not(start_ts <= self.end_time(),
@@ -336,7 +336,8 @@ class TimeSeries:
 
         return TimeSeries(_slice_not_none(self._series),
                           _slice_not_none(self._confidence_lo),
-                          _slice_not_none(self._confidence_hi))
+                          _slice_not_none(self._confidence_hi),
+                          self.freq())
 
     def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
@@ -429,7 +430,7 @@ class TimeSeries:
         new_series = coef * self._series
         new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
         new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * coef)
-        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
+        return TimeSeries(new_series, new_conf_lo, new_conf_hi, self.freq())
 
     def shift(self, n: int) -> 'TimeSeries':
         """
@@ -466,7 +467,7 @@ class TimeSeries:
         if self._confidence_hi is not None:
             new_conf_hi = self._confidence_hi.copy()
             new_conf_hi.index = new_time_index
-        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
+        return TimeSeries(new_series, new_conf_lo, new_conf_hi, self.freq())
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
@@ -627,7 +628,7 @@ class TimeSeries:
             conf_lo = self._confidence_lo.append(other.conf_lo_pd_series())
         if self._confidence_hi is not None and other.conf_hi_pd_series() is not None:
             conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, self.freq())
 
     def append_values(self,
                       values: np.ndarray,
@@ -689,7 +690,7 @@ class TimeSeries:
             conf_hi = conf_hi[new_indices]
             conf_hi = self._confidence_hi.append(pd.Series(conf_hi, index=index))
 
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, self.freq())
 
     def update(self,
                index: pd.DatetimeIndex,
@@ -763,7 +764,7 @@ class TimeSeries:
                 new_lo.update(conf_lo)
             if conf_hi is not None:
                 new_hi.update(conf_hi)
-            return TimeSeries(new_series, new_lo, new_hi)
+            return TimeSeries(new_series, new_lo, new_hi, self.freq())
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
@@ -795,8 +796,7 @@ class TimeSeries:
         new_conf_lo_series = self.conf_lo_pd_series()
         if new_conf_lo_series is not None:
             new_conf_lo_series = new_conf_lo_series.asfreq(freq, method=method)
-
-        return TimeSeries(series=new_series, confidence_hi=new_conf_hi_series, confidence_lo=new_conf_lo_series)
+        return TimeSeries(new_series, new_conf_lo_series, new_conf_hi_series, freq)
 
     def is_within_range(self,
                         ts: pd.Timestamp) -> bool:
@@ -868,7 +868,7 @@ class TimeSeries:
         series = combine_fn(self._series, other.pd_series())
         conf_lo = self._combine_or_none(self._confidence_lo, other.conf_lo_pd_series(), combine_fn)
         conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, self.freq())
 
     @staticmethod
     def _fill_missing_dates(series: pd.Series) -> pd.Series:
@@ -973,7 +973,7 @@ class TimeSeries:
             new_series = self._series + other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s + other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s + other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            return TimeSeries(new_series, conf_lo, conf_hi, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
         else:
@@ -988,7 +988,7 @@ class TimeSeries:
             new_series = self._series - other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            return TimeSeries(new_series, conf_lo, conf_hi, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
         else:
@@ -1003,7 +1003,7 @@ class TimeSeries:
             new_series = self._series * other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            return TimeSeries(new_series, conf_lo, conf_hi, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
         else:
@@ -1021,7 +1021,7 @@ class TimeSeries:
             new_series = self._series ** float(n)
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s ** float(n))
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** float(n))
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            return TimeSeries(new_series, conf_lo, conf_hi, self.freq())
         else:
             raise_log(TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(n).__name__)), logger)
@@ -1052,13 +1052,13 @@ class TimeSeries:
         series = abs(self._series)
         conf_lo = self._op_or_none(self._confidence_lo, lambda s: abs(s))
         conf_hi = self._op_or_none(self._confidence_hi, lambda s: abs(s))
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, self.freq())
 
     def __neg__(self):
         series = -self._series
         conf_lo = self._op_or_none(self._confidence_lo, lambda s: -s)
         conf_hi = self._op_or_none(self._confidence_hi, lambda s: -s)
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, conf_lo, conf_hi, self.freq())
 
     def __contains__(self, ts: pd.Timestamp) -> bool:
         return ts in self._series.index
@@ -1067,7 +1067,7 @@ class TimeSeries:
         series = self._series.round(n)
         confidence_lo = self._op_or_none(self._confidence_lo, lambda s: s.round(n))
         confidence_hi = self._op_or_none(self._confidence_hi, lambda s: s.round(n))
-        return TimeSeries(series, confidence_lo, confidence_hi)
+        return TimeSeries(series, confidence_lo, confidence_hi, self.freq())
 
     # TODO: Ignoring confidence series for now
     def __lt__(self, other):
@@ -1154,10 +1154,11 @@ class TimeSeries:
             try:
                 return TimeSeries(self._series[item],
                                   self._op_or_none(self._confidence_lo, lambda s: s[item]),
-                                  self._op_or_none(self._confidence_hi, lambda s: s[item]))
+                                  self._op_or_none(self._confidence_hi, lambda s: s[item]),
+                                  self.freq())
             except ValueError:
                 # return only main series if nb of values < 3
-                return TimeSeries(self._series[item])
+                return TimeSeries(self._series[item], freq=self.freq())
         elif isinstance(item, str):
             return self._series[[pd.Timestamp(item)]]
         else:
