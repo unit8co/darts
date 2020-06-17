@@ -239,7 +239,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130601', freq='m'), range(5))
         with self.assertRaises(OverflowError):
             seriesM.shift(1e+4)
-        
+
         seriesD = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130101'), range(1),
                                                    freq='D')
         seriesE = seriesD.shift(1)
