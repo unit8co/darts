@@ -142,13 +142,16 @@ class TimeSeriesTestCase(unittest.TestCase):
         test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130106'))
         test_case.assertEqual(seriesD.end_time(), pd.Timestamp('20130110'))
 
-        # No intersect or too small intersect
+        # Small intersect
+        seriesE = test_series.slice_intersect(TimeSeries.from_series(
+            pd.Series(range(9, 13), index=pd.date_range('20130109', '20130112')))
+        )
+        test_case.assertEqual(len(seriesE), 2)
+
+        # No intersect
         with test_case.assertRaises(ValueError):
-            test_series.slice_intersect(TimeSeries.from_series(pd.Series(range(6, 13),
-                                                               index=pd.date_range('20130116', '20130122'))))
-        with test_case.assertRaises(ValueError):
-            test_series.slice_intersect(TimeSeries.from_series(pd.Series(range(9, 13),
-                                                               index=pd.date_range('20130109', '20130112'))))
+            test_series.slice_intersect(TimeSeries(pd.Series(range(6, 13),
+                                        index=pd.date_range('20130116', '20130122'))))
 
     def test_rescale(self):
         with self.assertRaises(ValueError):
@@ -188,6 +191,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130601', freq='m'), range(5))
         with test_case.assertRaises(OverflowError):
             seriesM.shift(1e+4)
+
+        seriesD = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130101'), range(1),
+                                                   freq='D')
+        seriesE = seriesD.shift(1)
+        test_case.assertEqual(seriesE.time_index()[0], pd.Timestamp('20130102'))
 
     @staticmethod
     def helper_test_append(test_case, test_series: TimeSeries):
@@ -405,3 +413,21 @@ class TimeSeriesTestCase(unittest.TestCase):
             TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
         # test successful instantiation of TimeSeries with length 2
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
+
+    def test_short_series_slice(self):
+        seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))
+        self.assertEqual(len(seriesA), 8)
+        self.assertEqual(len(seriesB), 2)
+        seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130109'))
+        self.assertEqual(len(seriesA), 9)
+        self.assertEqual(len(seriesB), 1)
+        self.assertEqual(seriesB.time_index()[0], self.series1.time_index()[-1])
+        seriesA, seriesB = self.series1.split_before(pd.Timestamp('20130103'))
+        self.assertEqual(len(seriesA), 2)
+        self.assertEqual(len(seriesB), 8)
+        seriesA, seriesB = self.series1.split_before(pd.Timestamp('20130102'))
+        self.assertEqual(len(seriesA), 1)
+        self.assertEqual(len(seriesB), 9)
+        self.assertEqual(seriesA.time_index()[-1], self.series1.time_index()[0])
+        seriesC = self.series1.slice(pd.Timestamp('20130105'), pd.Timestamp('20130105'))
+        self.assertEqual(len(seriesC), 1)
