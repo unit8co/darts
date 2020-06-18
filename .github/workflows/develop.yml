@@ -93,10 +93,6 @@ jobs:
         run: |
           (cd examples; papermill ${{matrix.example-name}} ${{matrix.example-name}})
 
-      - name: "7. Check example ${{matrix.example-name}}"
-        run: |
-          git diff --exit-code
-
   docs:
     runs-on: ubuntu-latest
 
