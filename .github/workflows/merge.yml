@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - fix/release-workflow-fix
 
 jobs:
   tests:
