@@ -80,11 +80,16 @@ class _ResidualBlock(nn.Module):
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
+<<<<<<< HEAD
         if num_layers > 1:
             if nr_blocks_below == 0:
                 self.conv3 = nn.Conv1d(input_dim, num_filters, 1)
             elif nr_blocks_below == num_layers - 1:
                 self.conv3 = nn.Conv1d(num_filters, 1, 1)
+=======
+        if nr_blocks_below == 0 or nr_blocks_below == num_layers - 1:
+            self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
+>>>>>>> multivariate-2
 
     def forward(self, x):
         residual = x
@@ -101,7 +106,7 @@ class _ResidualBlock(nn.Module):
         x = self.dropout((self.conv2(x)))
 
         # add residual
-        if self.num_layers > 1 and self.nr_blocks_below in {0, self.num_layers - 1}:
+        if self.nr_blocks_below in {0, self.num_layers - 1}:
             residual = self.conv3(residual)
         x += residual
 
@@ -174,7 +179,7 @@ class _TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
-            num_layers = math.ceil(math.log((input_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2,
+            num_layers = math.ceil(math.log((input_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2 + 1,
                                             dilation_base))
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:

@@ -35,7 +35,7 @@ class TCNModelTestCase(unittest.TestCase):
         self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
 
     def test_coverage(self):
-        input_lengths = [10, 30, 50, 100, 200]
+        input_lengths = range(20, 50)
         kernel_sizes = range(2, 5)
         dilation_bases = range(2, 5)
 
@@ -44,26 +44,44 @@ class TCNModelTestCase(unittest.TestCase):
                 if dilation_base > kernel_size:
                     continue
                 for input_length in input_lengths:
-                    model = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length)
+
+                    # create model with all weights set to one
+                    model = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length,
+                                     weight_norm=False)
+                    for res_block in model.model.res_blocks:
+                        res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
+                        res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
+
+                    model.model.eval()
                     input_tensor = torch.zeros([1, input_length, 1], dtype=torch.float)
-                    zero_output = torch.sum(model.model.forward(input_tensor))
+                    zero_output = model.model.forward(input_tensor).float()[0, -1, 0]
 
                     # test for full coverage
                     for i in range(input_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = torch.sum(model.model.forward(input_tensor))
+                        curr_output = model.model.forward(input_tensor).float()[0, -1, 0]
                         self.assertNotEqual(zero_output, curr_output)
                         input_tensor[0, i, 0] = 0
 
+                    # create model with all weights set to one and one layer less than is automatically detected
+                    model_2 = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length,
+                                       weight_norm=False, num_layers=model.model.num_layers - 1)
+                    for res_block in model_2.model.res_blocks:
+                        res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
+                        res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
+
+                    model_2.model.eval()
+                    input_tensor = torch.zeros([1, input_length, 1], dtype=torch.float)
+                    zero_output = model_2.model.forward(input_tensor).float()[0, -1, 0]
+
                     # test for incomplete coverage
                     uncovered_input_found = False
-                    if model.model.num_layers == 1:
+                    if model_2.model.num_layers == 1:
                         continue
-                    model.model.num_layers = model.model.num_layers - 1
                     for i in range(input_length):
                         input_tensor[0, i, 0] = 1
-                        curr_output = torch.sum(model.model.forward(input_tensor))
-                        if (zero_output != curr_output):
+                        curr_output = model_2.model.forward(input_tensor).float()[0, -1, 0]
+                        if (zero_output == curr_output):
                             uncovered_input_found = True
                             break
                         input_tensor[0, i, 0] = 0
