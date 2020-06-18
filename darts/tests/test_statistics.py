@@ -16,3 +16,6 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         self.assertEqual((True, 6), check_seasonality(series))
         self.assertEqual((False, 3), check_seasonality(series, m=3))
+
+        with self.assertRaises(AssertionError):
+            check_seasonality(series.stack(series))
