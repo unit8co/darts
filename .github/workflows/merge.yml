@@ -68,7 +68,7 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
-      
+
       - name: "3. Update pip"
         run: |
           python -m pip install --upgrade pip
@@ -86,6 +86,7 @@ jobs:
         run: |
           pip install -q .
           pip install -q -r requirements/release.txt
+          jupyter nbextension enable --py widgetsnbextension
 
       - name: "6. Run examples ${{matrix.example-name}}"
         run: |
