@@ -1,8 +1,9 @@
 import unittest
 import pandas as pd
 
-from ..utils import timeseries_generation as tg, retain_period_common_to_all
+from ..utils import retain_period_common_to_all
 from ..timeseries import TimeSeries
+
 
 class UtilsTestCase(unittest.TestCase):
 
