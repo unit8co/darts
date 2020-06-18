@@ -1,15 +1,19 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Examples &mdash; u8timeseries  documentation</title>
+  <title>Examples &mdash; darts  documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
 
   
   
@@ -17,7 +21,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -26,19 +32,16 @@
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Read data" href="examples/Air-passengers-example.html" />
-    <link rel="prev" title="Timeseries" href="generated_api/u8timeseries.timeseries.html" /> 
+    <link rel="next" title="Introduction to darts" href="examples/darts-intro.html" />
+    <link rel="prev" title="Timeseries" href="generated_api/darts.timeseries.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -52,7 +55,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> u8timeseries
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> darts
           
 
           
@@ -62,7 +65,7 @@
             
             
               <div class="version">
-                0.0.2
+                dev
               </div>
             
           
@@ -79,6 +82,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -87,25 +91,27 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="generated_api/u8timeseries.html">u8timeseries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Home</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated_api/darts.html">API Reference</a></li>
 </ul>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#air-passenger-example">Air Passenger Example</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html">Read data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Exploration">Exploration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Build-three-models">Build three models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Try-one-of-the-models">Try one of the models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#The-Theta-method">The Theta method</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Simulate-historical-forecasting">Simulate historical forecasting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Backtest-the-models-on-the-data-using-a-user-defined-metric">Backtest the models on the data using a user-defined metric</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Ensembling-several-predictions">Ensembling several predictions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/Air-passengers-example.html#Example-of-forecasting-using-a-regressive-model-and-extra-features">Example of forecasting using a regressive model and extra features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#darts-intro">darts intro</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#u8timeseries-intro">u8timeseries intro</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="examples/u8timeseries-intro.html"><code class="docutils literal notranslate"><span class="pre">u8timeseries</span></code> Intro</a></li>
-<li class="toctree-l3"><a class="reference internal" href="examples/u8timeseries-intro.html#Auto-regressive-Models">Auto-regressive Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fast-fourier-transform">Fast Fourier Transform</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/FFT-examples.html">Fast Fourier Transform Model (FFT)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#recurrent-neural-networks">Recurrent Neural Networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#temporal-convolutional-networks">Temporal Convolutional Networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 </li>
 </ul>
@@ -115,6 +121,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -124,7 +131,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">u8timeseries</a>
+          <a href="index.html">darts</a>
         
       </nav>
 
@@ -153,7 +160,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Examples</li>
     
@@ -201,30 +208,39 @@
 <div class="section" id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <p>Here you will find some example notebooks to get more familiar with the API.</p>
-<div class="section" id="air-passenger-example">
-<h2>Air Passenger Example<a class="headerlink" href="#air-passenger-example" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook containing an analysis of the well-known Air Passenger Dataset.</p>
+<div class="section" id="darts-intro">
+<h2>darts intro<a class="headerlink" href="#darts-intro" title="Permalink to this headline">¶</a></h2>
+<p>You will find below an example Jupyter notebook containing an intro to usage of darts.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html">Read data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Exploration">Exploration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Build-three-models">Build three models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Try-one-of-the-models">Try one of the models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#The-Theta-method">The Theta method</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Simulate-historical-forecasting">Simulate historical forecasting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Backtest-the-models-on-the-data-using-a-user-defined-metric">Backtest the models on the data using a user-defined metric</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Ensembling-several-predictions">Ensembling several predictions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/Air-passengers-example.html#Example-of-forecasting-using-a-regressive-model-and-extra-features">Example of forecasting using a regressive model and extra features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
 </ul>
 </div>
 </div>
-<div class="section" id="u8timeseries-intro">
-<h2>u8timeseries intro<a class="headerlink" href="#u8timeseries-intro" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook containing an intro to usage of u8timeseries.</p>
+<div class="section" id="fast-fourier-transform">
+<h2>Fast Fourier Transform<a class="headerlink" href="#fast-fourier-transform" title="Permalink to this headline">¶</a></h2>
+<p>You will find below an example Jupyter notebook containing usage of FFT model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/u8timeseries-intro.html"><code class="docutils literal notranslate"><span class="pre">u8timeseries</span></code> Intro</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/u8timeseries-intro.html#Auto-regressive-Models">Auto-regressive Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/FFT-examples.html">Fast Fourier Transform Model (FFT)</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="recurrent-neural-networks">
+<h2>Recurrent Neural Networks<a class="headerlink" href="#recurrent-neural-networks" title="Permalink to this headline">¶</a></h2>
+<p>You will find below an example Jupyter notebook containing usage of RNN model</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="temporal-convolutional-networks">
+<h2>Temporal Convolutional Networks<a class="headerlink" href="#temporal-convolutional-networks" title="Permalink to this headline">¶</a></h2>
+<p>You will find below an example Jupyter notebook containing usage of TCN model</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 </div>
 </div>
@@ -238,10 +254,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="examples/Air-passengers-example.html" class="btn btn-neutral float-right" title="Read data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="examples/darts-intro.html" class="btn btn-neutral float-right" title="Introduction to darts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="generated_api/u8timeseries.timeseries.html" class="btn btn-neutral float-left" title="Timeseries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="generated_api/darts.timeseries.html" class="btn btn-neutral float-left" title="Timeseries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -250,11 +266,19 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, Unit8
+        
+        &copy; Copyright 2020, Unit8 SA
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -265,7 +289,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

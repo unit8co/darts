@@ -1,5 +1,0 @@
-
-.. automodule:: u8timeseries.models.prophet
-   :members:
-   :undoc-members:
-   :show-inheritance:

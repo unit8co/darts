@@ -1,0 +1,421 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Utils for time series generation &mdash; darts  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Additional util functions" href="darts.utils.utils.html" />
+    <link rel="prev" title="Utils for time series statistics" href="darts.utils.statistics.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> darts
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Home</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="darts.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="darts.backtesting.html">Backtesting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.preprocessing.html">Preprocessing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="darts.utils.html">Utils</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.missing_values.html">Utils for filling missing values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.statistics.html">Utils for time series statistics</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Utils for time series generation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.utils.html">Additional util functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">darts</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="darts.html">darts</a> &raquo;</li>
+        
+          <li><a href="darts.utils.html">Utils</a> &raquo;</li>
+        
+      <li>Utils for time series generation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/generated_api/darts.utils.timeseries_generation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<span class="target" id="module-darts.utils.timeseries_generation"></span><div class="section" id="utils-for-time-series-generation">
+<h1>Utils for time series generation<a class="headerlink" href="#utils-for-time-series-generation" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.constant_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">constant_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'D'</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#constant_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.constant_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a constant TimeSeries with the given value, length, start date and frequency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – The constant value that the TimeSeries object will assume at every index.</p></li>
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>freq</strong> – The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
+see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p></li>
+<li><p><strong>start_ts</strong> – The time index of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A constant TimeSeries with value ‘value’.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.gaussian_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">gaussian_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'D'</span></em>, <em class="sig-param"><span class="n">mean</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">std</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#gaussian_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.gaussian_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a gaussian TimeSeries by sampling all the series values independently,
+from a gaussian distribution with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>freq</strong> – The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</p></li>
+<li><p><strong>mean</strong> – The mean of the gaussian distribution that is sampled at each step.
+If a float value is given, the same mean is used at every step.
+If a numpy.ndarray of floats with the same length as <cite>length</cite> is
+given, a different mean is used at each time step.</p></li>
+<li><p><strong>std</strong> – The standard deviation of the gaussian distribution that is sampled at each step.
+If a float value is given, the same standard deviation is used at every step.
+If an array of dimension <cite>(length, length)</cite> is given, it will
+be used as covariance matrix for a multivariate gaussian distribution.</p></li>
+<li><p><strong>start_ts</strong> – The time index of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A white noise TimeSeries created as indicated above.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.holiday_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">holiday_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">country_code</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">prov</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holiday_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holiday_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a binary TimeSeries that equals 1 at every index that corresponds to selected country’s holiday,
+and 0 otherwise. The frequency of the TimeSeries is daily.</p>
+<p>Available countries can be found <a class="reference external" href="https://github.com/dr-prodigy/python-holidays#available-countries">here</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>country_code</strong> – The country ISO code</p></li>
+<li><p><strong>prov</strong> – The province</p></li>
+<li><p><strong>state</strong> – The state</p></li>
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>start_ts</strong> – The timestamp of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Binary daily TimeSeries for country’s holidays.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.linear_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">linear_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start_value</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end_value</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'D'</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#linear_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.linear_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a TimeSeries with a starting value of <cite>start_value</cite> that increases linearly such that
+it takes on the value <cite>end_value</cite> at the last entry of the TimeSeries. This means that
+the difference between two adjacent entries will be equal to
+(<cite>end_value</cite> - <cite>start_value</cite>) / (<cite>length</cite> - 1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_value</strong> – The value of the first entry in the TimeSeries.</p></li>
+<li><p><strong>end_value</strong> – The value of the last entry in the TimeSeries.</p></li>
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>freq</strong> – The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</p></li>
+<li><p><strong>start_ts</strong> – The time index of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A linear TimeSeries created as indicated above.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.random_walk_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">random_walk_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'D'</span></em>, <em class="sig-param"><span class="n">mean</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">std</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#random_walk_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.random_walk_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a random walk time series, where each step is obtained by sampling a gaussian distribution
+with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>freq</strong> – The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</p></li>
+<li><p><strong>mean</strong> – The mean of the gaussian distribution that is sampled at each step.</p></li>
+<li><p><strong>std</strong> – The standard deviation of the gaussian distribution that is sampled at each step.</p></li>
+<li><p><strong>start_ts</strong> – The time index of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A random walk TimeSeries created as indicated above.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.utils.timeseries_generation.sine_timeseries">
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">sine_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value_frequency</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">value_amplitude</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">value_phase</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">value_y_offset</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'D'</span></em>, <em class="sig-param"><span class="n">start_ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span> <span class="o">=</span> <span class="default_value">Timestamp('2000-01-01 00:00:00')</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#sine_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.sine_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a TimeSeries with a sinusoidal value progression with a given frequency, amplitude, phase and y offset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value_frequency</strong> – The number of periods that take place within one time unit given in <cite>freq</cite>.</p></li>
+<li><p><strong>value_amplitude</strong> – The maximum  difference between any value of the returned TimeSeries and <cite>y_offset</cite>.</p></li>
+<li><p><strong>value_phase</strong> – The relative position within one period of the first value of the returned TimeSeries (in radians).</p></li>
+<li><p><strong>value_y_offset</strong> – The shift of the sine function along the y axis.</p></li>
+<li><p><strong>length</strong> – The length of the returned TimeSeries.</p></li>
+<li><p><strong>freq</strong> – The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.</p></li>
+<li><p><strong>start_ts</strong> – The time index of the first entry in the returned TimeSeries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A sinusoidal TimeSeries parametrized as indicated above.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="darts.utils.utils.html" class="btn btn-neutral float-right" title="Additional util functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="darts.utils.statistics.html" class="btn btn-neutral float-left" title="Utils for time series statistics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unit8 SA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>darts: Easy manipulation and forecasting of time series &mdash; darts  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="darts" href="generated_api/darts.html" />
+    <link rel="prev" title="darts: Easy manipulation and forecasting of time series" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> darts
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Home</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install">Install</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#preconditions">Preconditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mac">MAC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#linux-and-windows">Linux and Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Install darts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-the-examples-only-without-installing">Running the examples only, without installing:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contribute">Contribute</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="generated_api/darts.html">API Reference</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">darts</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>darts: Easy manipulation and forecasting of time series</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/README.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="darts-easy-manipulation-and-forecasting-of-time-series">
+<h1>darts: Easy manipulation and forecasting of time series<a class="headerlink" href="#darts-easy-manipulation-and-forecasting-of-time-series" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png" /></a>
+<hr class="docutils" />
+<a class="reference external image-reference" href="https://badge.fury.io/py/u8darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/github/workflow/status/unit8co/darts/merge"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/unit8co/darts/merge" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.6+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.6+-blue.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/pypi/dm/u8darts"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/u8darts" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
+<p><strong>darts</strong> is a python library for easy manipulation and forecasting time series.
+It contains a variety of models, from classics such as ARIMA to neural networks.
+The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
+similar to scikit-learn. The library also makes it easy to backtest models,
+and combine the predictions of several models and external regressors.</p>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="preconditions">
+<h3>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this headline">¶</a></h3>
+<p>Our direct dependencies include <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code> which have non-Python dependencies.
+A Conda environment is thus recommended because it will handle all of those in one go.</p>
+<p>The following steps assume running inside a conda environment.
+If that’s not possible, first follow the official instructions to install
+<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">fbprophet</a>
+and <a class="reference external" href="https://pytorch.org/get-started/locally/">torch</a>, then skip to
+<a class="reference external" href="#install-darts">Install darts</a></p>
+<p>To create a conda environment for Python 3.7
+(after installing <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">conda</a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
+</pre></div>
+</div>
+<p>Don’t forget to activate your virtual environment</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="mac">
+<h4>MAC<a class="headerlink" href="#mac" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="linux-and-windows">
+<h4>Linux and Windows<a class="headerlink" href="#linux-and-windows" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id1">
+<h3>Install darts<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">u8darts</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-the-examples-only-without-installing">
+<h3>Running the examples only, without installing:<a class="headerlink" href="#running-the-examples-only-without-installing" title="Permalink to this headline">¶</a></h3>
+<p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
+To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">scripts</span>
+<span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span> <span class="o">&amp;&amp;</span> <span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
+<p>For this setup to work you need to have a Docker service installed. You can get it at <a class="reference external" href="https://docs.docker.com/get-docker/">Docker website</a>.</p>
+</div>
+</div>
+<div class="section" id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<p>Create <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object from a Pandas DataFrame, and split in train/validation series:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Fit an exponential smoothing model, and make a prediction over the validation series’ duration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Plot:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="https://github.com/unit8co/darts/raw/develop/static/images/example.png:target:https://github.com/unit8co/darts/raw/develop/static/images/example.png:alt:example{width=100%}" src="https://github.com/unit8co/darts/raw/develop/static/images/example.png:target:https://github.com/unit8co/darts/raw/develop/static/images/example.png:alt:example{width=100%}" />
+<p>We invite you to go over the example notebooks in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> directory.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>The documentation of the API and models is available <a class="reference external" href="https://unit8co.github.io/darts/">here</a>.</p>
+</div>
+<div class="section" id="features">
+<h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p>Currently, the library contains the following features:</p>
+<p><strong>Forecasting Models:</strong></p>
+<ul class="simple">
+<li><p>Exponential smoothing,</p></li>
+<li><p>ARIMA &amp; auto-ARIMA,</p></li>
+<li><p>Facebook Prophet,</p></li>
+<li><p>Theta method,</p></li>
+<li><p>FFT (Fast Fourier Transform),</p></li>
+<li><p>Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),</p></li>
+<li><p>Temporal convolutional network.</p></li>
+</ul>
+<p><strong>Preprocessing:</strong> Transformer tool for easily scaling / normalizing time series.</p>
+<p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
+from R2-scores to Mean Absolute Scaled Error.</p>
+<p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
+<p><strong>Regressive Models:</strong> Possibility to predict a time series from several other time series
+(e.g., external regressors), using arbitrary regressive models.</p>
+</div>
+<div class="section" id="contribute">
+<h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
+<p>The development is ongoing, and there are many new features that we want to add.
+We welcome pull requests and issues on github.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="generated_api/darts.html" class="btn btn-neutral float-right" title="darts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="darts: Easy manipulation and forecasting of time series" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unit8 SA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

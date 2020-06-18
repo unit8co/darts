@@ -1,0 +1,453 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Backtesting Functions &mdash; darts  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Metrics" href="darts.metrics.html" />
+    <link rel="prev" title="Backtesting" href="darts.backtesting.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> darts
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Home</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="darts.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="darts.backtesting.html">Backtesting</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Backtesting Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.models.html">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.preprocessing.html">Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">darts</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="darts.html">darts</a> &raquo;</li>
+        
+          <li><a href="darts.backtesting.html">Backtesting</a> &raquo;</li>
+        
+      <li>Backtesting Functions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/generated_api/darts.backtesting.backtesting.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<span class="target" id="module-darts.backtesting.backtesting"></span><div class="section" id="backtesting-functions">
+<h1>Backtesting Functions<a class="headerlink" href="#backtesting-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.backtest_forecasting">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">backtest_forecasting</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em>, <em class="sig-param"><span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#backtest_forecasting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.backtest_forecasting" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for backtesting <cite>ForecastingModel</cite>’s.</p>
+<p>This function computes the time series of historical predictions
+that would have been obtained, if <cite>model</cite> had been used to predict <cite>series</cite>
+with a certain time horizon.</p>
+<p>To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>.
+It trains <cite>model</cite> on the training set, emits a (point) prediction for a fixed
+forecast horizon, and then moves the end of the training set forward by one
+time step. The resulting predictions are then returned.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expending window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The time series on which to backtest</p></li>
+<li><p><strong>model</strong> – The forecasting model to be backtested</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>fcast_horizon_n</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A time series containing the forecast values for <cite>series</cite>, when successively applying
+the specified model with the specified forecast horizon.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.backtest_gridsearch">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">backtest_gridsearch</code><span class="sig-paren">(</span><em class="sig-param">model_class: type, parameters: dict, train_series: darts.timeseries.TimeSeries, fcast_horizon_n: Optional[int] = None, val_series: Optional[darts.timeseries.TimeSeries] = None, num_predictions: int = 10, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#backtest_gridsearch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.backtest_gridsearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for finding the best hyperparameters.</p>
+<p>This function has 2 modes of operation: Expanding window mode and split mode.
+Both modes of operation evaluate every possible combination of hyperparameter values
+provided in the <cite>parameters</cite> dictionary by instantiating the <cite>model_class</cite> subclass
+of ForecastingModel with each combination, and returning the best-performing model with regards
+to the <cite>metric</cite> function. The <cite>metric</cite> function is expected to return an error value,
+thus the model resulting in the smallest <cite>metric</cite> output will be chosen.
+The relationship of the training data and test data depends on the mode of operation.</p>
+<p>Expanding window mode (activated when <cite>fcast_horizon_n</cite> is passed):
+For every hyperparameter combination, the model is repeatedly trained and evaluated on different
+splits of <cite>train_series</cite>. The number of splits is equal to <cite>num_predictions</cite>, and the
+forecasting horizon used when making a prediction is <cite>fcast_horizon_n</cite>.
+Note that the model is retrained for every single prediction, thus this mode is slower.</p>
+<p>Split window mode (activated when <cite>val_series</cite> is passed):
+This mode will be used when the <cite>val_series</cite> argument is passed.
+For every hyperparameter combination, the model is trained on <cite>train_series</cite> and
+evaluated on <cite>val_series</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The ForecastingModel subclass to be tuned for ‘series’.</p></li>
+<li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
+respective hyperparameter.</p></li>
+<li><p><strong>train_series</strong> – The TimeSeries instance used for training (and also validation in split mode).</p></li>
+<li><p><strong>test_series</strong> – The TimeSeries instance used for validation in split mode.</p></li>
+<li><p><strong>fcast_horizon_n</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
+<li><p><strong>num_predictions</strong> – The number of train/prediction cycles performed in one iteration of expanding window mode.</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An untrained ‘model_class’ instance with the best-performing hyperparameters from the given selection.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">ForecastingModel</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.backtest_regression">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">backtest_regression</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.models.regression_model.html#darts.models.regression_model.RegressionModel" title="darts.models.regression_model.RegressionModel">darts.models.regression_model.RegressionModel</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em>, <em class="sig-param"><span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#backtest_regression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.backtest_regression" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for backtesting <cite>RegressionModel</cite>’s.</p>
+<p>This function computes the time series of historical predictions
+that would have been obtained, if the <cite>model</cite> had been used to predict <cite>series</cite>
+using the <cite>feature_series</cite>, with a certain time horizon.</p>
+<p>To this end, it repeatedly builds a training set composed of both features and targets,
+from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
+It trains <cite>model</cite> on the training set, emits a (point) prediction for a fixed
+forecast horizon, and then moves the end of the training set forward by one
+time step. The resulting predictions are then returned.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expending window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_series</strong> – A list of time series representing the features for the regression model (independent variables)</p></li>
+<li><p><strong>target_series</strong> – The target time series for the regression model (dependent variable)</p></li>
+<li><p><strong>model</strong> – The regression model to be backtested</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>fcast_horizon_n</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A time series containing the forecast values when successively applying
+the specified model with the specified forecast horizon.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.explore_models">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">explore_models</code><span class="sig-paren">(</span><em class="sig-param">train_series: darts.timeseries.TimeSeries, val_series: darts.timeseries.TimeSeries, test_series: darts.timeseries.TimeSeries, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, model_parameter_tuples: Optional[list] = None, plot_width: int = 3, verbose: bool = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#explore_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.explore_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for exploring the suitability of multiple models on a given train/validation/test split.</p>
+<p>This funtion iterates through a list of models, training each on <cite>train_series</cite> and <cite>val_series</cite>
+and evaluating them on <cite>test_series</cite>. Models with free hyperparameters are first
+tuned by trying out a ‘reasonable’ set of hyperparameter combinations. A model for
+each combination is trained on <cite>train_series</cite> and evaluated on <cite>val_series</cite>.
+The best-performing combination of hyperparameters (the one resulting in the lowest output of the <cite>metric</cite>
+function) is then chosen for that type of model. This way, none of the models have ‘looked at’ the test set
+before the final evaluation.</p>
+<p>The performance of every model type is then plotted against the series of actual observations.
+Additionally, the <cite>metric</cite> values and the runtimes of every model type are plotted in bar charts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_series</strong> – A TimeSeries instance used for training during model tuning and evaluation.</p></li>
+<li><p><strong>val_series</strong> – A TimeSeries instance used for validation during model tuning and for training during evaluation.</p></li>
+<li><p><strong>test_series</strong> – A TimeSeries instance used for validation when evaluating a model.</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>model_parameter_tuples</strong> – Optionally, a custom list of (model class, hyperparameter dictionary) tuples that will be
+explored instead of the default selection.</p></li>
+<li><p><strong>plot_width</strong> – An integer indicating the number of plots that are displayed in one row.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.forecasting_residuals">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">forecasting_residuals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a></span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#forecasting_residuals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.forecasting_residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for computing the residuals produced by a given model and time series.</p>
+<p>This function computes the difference between the actual observations from <cite>series</cite>
+and the fitted values vector p obtained by training <cite>model</cite> on <cite>series</cite>.
+For every index i in <cite>series</cite>, p[i] is computed by training <cite>model</cite> on
+series[:(i - <cite>fcast_horizon_n</cite>)] and forecasting <cite>fcast_horizon_n</cite> into the future.
+(p[i] will be set to the last value of the predicted vector.)
+The vector of residuals will be shorter than <cite>series</cite> due to the minimum
+training series length required by <cite>model</cite> and the gap introduced by <cite>fcast_horizon_n</cite>.
+Note that the common usage of the term residuals implies a value for <cite>fcast_horizon_n</cite> of 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – Instance of ForecastingModel used to compute the fitted values p.</p></li>
+<li><p><strong>series</strong> – The TimeSeries instance which the residuals will be computed for.</p></li>
+<li><p><strong>fcast_horizon_n</strong> – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The vector of residuals.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.backtesting.backtesting.plot_residuals_analysis">
+<code class="sig-prename descclassname">darts.backtesting.backtesting.</code><code class="sig-name descname">plot_residuals_analysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">residuals</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">num_bins</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">20</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/backtesting/backtesting.html#plot_residuals_analysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.backtesting.backtesting.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots data relevant to residuals.</p>
+<p>This function takes a TimeSeries instance of residuals and plots their values,
+their distribution and their ACF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>residuals</strong> – TimeSeries instance representing residuals.</p></li>
+<li><p><strong>num_bins</strong> – Optionally, an integer value determining the number of bins in the histogram.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="darts.metrics.html" class="btn btn-neutral float-right" title="Metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="darts.backtesting.html" class="btn btn-neutral float-left" title="Backtesting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unit8 SA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

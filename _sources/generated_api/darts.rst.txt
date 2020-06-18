@@ -1,0 +1,17 @@
+
+
+.. automodule:: darts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        darts.backtesting
+        darts.metrics
+        darts.models
+        darts.preprocessing
+        darts.utils
+        
+        darts.timeseries

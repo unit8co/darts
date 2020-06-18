@@ -1,0 +1,5 @@
+
+.. automodule:: darts.preprocessing.scaler_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:

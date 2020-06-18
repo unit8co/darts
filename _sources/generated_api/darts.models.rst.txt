@@ -1,0 +1,23 @@
+
+
+.. automodule:: darts.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.models.arima
+        darts.models.baselines
+        darts.models.exponential_smoothing
+        darts.models.fft
+        darts.models.forecasting_model
+        darts.models.prophet
+        darts.models.regression_model
+        darts.models.rnn_model
+        darts.models.standard_regression_model
+        darts.models.tcn_model
+        darts.models.theta
+        darts.models.torch_forecasting_model

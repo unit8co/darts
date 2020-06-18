@@ -1,0 +1,683 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>darts.backtesting.backtesting &mdash; darts  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> darts
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../README.html">Home</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../generated_api/darts.html">API Reference</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">darts</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>darts.backtesting.backtesting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for darts.backtesting.backtesting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Backtesting Functions</span>
+<span class="sd">---------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..models.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span> <span class="nn">..models.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span> <span class="nn">..models</span> <span class="kn">import</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">FFT</span><span class="p">,</span> <span class="n">Prophet</span><span class="p">,</span> <span class="n">Theta</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">metrics</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span>
+<span class="kn">from</span> <span class="nn">..utils.statistics</span> <span class="kn">import</span> <span class="n">plot_acf</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># TODO parameterize the moving window</span>
+
+<div class="viewcode-block" id="backtest_forecasting"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.backtest_forecasting">[docs]</a><span class="k">def</span> <span class="nf">backtest_forecasting</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                         <span class="n">model</span><span class="p">:</span> <span class="n">ForecastingModel</span><span class="p">,</span>
+                         <span class="n">start</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span>
+                         <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">trim_to_series</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; A function for backtesting `ForecastingModel`&#39;s.</span>
+
+<span class="sd">    This function computes the time series of historical predictions</span>
+<span class="sd">    that would have been obtained, if `model` had been used to predict `series`</span>
+<span class="sd">    with a certain time horizon.</span>
+
+<span class="sd">    To this end, it repeatedly builds a training set from the beginning of `series`.</span>
+<span class="sd">    It trains `model` on the training set, emits a (point) prediction for a fixed</span>
+<span class="sd">    forecast horizon, and then moves the end of the training set forward by one</span>
+<span class="sd">    time step. The resulting predictions are then returned.</span>
+
+<span class="sd">    This always re-trains the models on the entire available history,</span>
+<span class="sd">    corresponding an expending window strategy.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        The time series on which to backtest</span>
+<span class="sd">    model</span>
+<span class="sd">        The forecasting model to be backtested</span>
+<span class="sd">    start</span>
+<span class="sd">        The first prediction time, at which a prediction is computed for a future time</span>
+<span class="sd">    fcast_horizon_n</span>
+<span class="sd">        The forecast horizon for the point predictions</span>
+<span class="sd">    trim_to_series</span>
+<span class="sd">        Whether the predicted series has the end trimmed to match the end of the main series</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Whether to print progress</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TimeSeries</span>
+<span class="sd">        A time series containing the forecast values for `series`, when successively applying</span>
+<span class="sd">        the specified model with the specified forecast horizon.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">fcast_horizon_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;The provided forecasting horizon must be a positive integer.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="n">last_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
+    <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+    <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">last_pred_time</span><span class="p">:</span>
+        <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+    <span class="c1"># what we&#39;ll return</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">fcast_horizon_n</span><span class="p">)</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="backtest_regression"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.backtest_regression">[docs]</a><span class="k">def</span> <span class="nf">backtest_regression</span><span class="p">(</span><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                        <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                        <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span><span class="p">,</span>
+                        <span class="n">start</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span>
+                        <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">trim_to_series</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; A function for backtesting `RegressionModel`&#39;s.</span>
+
+<span class="sd">    This function computes the time series of historical predictions</span>
+<span class="sd">    that would have been obtained, if the `model` had been used to predict `series`</span>
+<span class="sd">    using the `feature_series`, with a certain time horizon.</span>
+
+<span class="sd">    To this end, it repeatedly builds a training set composed of both features and targets,</span>
+<span class="sd">    from `feature_series` and `target_series`, respectively.</span>
+<span class="sd">    It trains `model` on the training set, emits a (point) prediction for a fixed</span>
+<span class="sd">    forecast horizon, and then moves the end of the training set forward by one</span>
+<span class="sd">    time step. The resulting predictions are then returned.</span>
+
+<span class="sd">    This always re-trains the models on the entire available history,</span>
+<span class="sd">    corresponding an expending window strategy.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    feature_series</span>
+<span class="sd">        A list of time series representing the features for the regression model (independent variables)</span>
+<span class="sd">    target_series</span>
+<span class="sd">        The target time series for the regression model (dependent variable)</span>
+<span class="sd">    model</span>
+<span class="sd">        The regression model to be backtested</span>
+<span class="sd">    start</span>
+<span class="sd">        The first prediction time, at which a prediction is computed for a future time</span>
+<span class="sd">    fcast_horizon_n</span>
+<span class="sd">        The forecast horizon for the point predictions</span>
+<span class="sd">    trim_to_series</span>
+<span class="sd">        Whether the predicted series has the end trimmed to match the end of the main series</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Whether to print progress</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TimeSeries</span>
+<span class="sd">        A time series containing the forecast values when successively applying</span>
+<span class="sd">        the specified model with the specified forecast horizon.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span>
+                 <span class="s1">&#39;have the same time index&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">!=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the &#39;</span>
+                 <span class="s1">&#39;last timestamp of the time series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="n">last_pred_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="n">fcast_horizon_n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">trim_to_series</span>
+                      <span class="k">else</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
+    <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+    <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">last_pred_time</span><span class="p">:</span>
+        <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+    <span class="c1"># what we&#39;ll return</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="c1"># build train/val series</span>
+        <span class="n">train_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
+        <span class="n">train_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
+        <span class="n">val_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">pred_time</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">(),</span> <span class="n">fcast_horizon_n</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_features</span><span class="p">,</span> <span class="n">train_target</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_features</span><span class="p">)</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="forecasting_residuals"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.forecasting_residuals">[docs]</a><span class="k">def</span> <span class="nf">forecasting_residuals</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">ForecastingModel</span><span class="p">,</span>
+                          <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                          <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                          <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; A function for computing the residuals produced by a given model and time series.</span>
+
+<span class="sd">    This function computes the difference between the actual observations from `series`</span>
+<span class="sd">    and the fitted values vector p obtained by training `model` on `series`.</span>
+<span class="sd">    For every index i in `series`, p[i] is computed by training `model` on</span>
+<span class="sd">    series[:(i - `fcast_horizon_n`)] and forecasting `fcast_horizon_n` into the future.</span>
+<span class="sd">    (p[i] will be set to the last value of the predicted vector.)</span>
+<span class="sd">    The vector of residuals will be shorter than `series` due to the minimum</span>
+<span class="sd">    training series length required by `model` and the gap introduced by `fcast_horizon_n`.</span>
+<span class="sd">    Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model</span>
+<span class="sd">        Instance of ForecastingModel used to compute the fitted values p.</span>
+<span class="sd">    series</span>
+<span class="sd">        The TimeSeries instance which the residuals will be computed for.</span>
+<span class="sd">    fcast_horizon_n</span>
+<span class="sd">        The forecasting horizon used to predict each fitted value.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Whether to print progress.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TimeSeries</span>
+<span class="sd">        The vector of residuals.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get first index not contained in the first training set</span>
+    <span class="n">first_index</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">]</span>
+
+    <span class="c1"># compute fitted values</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">backtest_forecasting</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">first_index</span><span class="p">,</span> <span class="n">fcast_horizon_n</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+    <span class="c1"># compute residuals</span>
+    <span class="n">series_trimmed</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">residuals</span> <span class="o">=</span> <span class="n">series_trimmed</span> <span class="o">-</span> <span class="n">p</span>
+
+    <span class="k">return</span> <span class="n">residuals</span></div>
+
+
+<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span><span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Plots data relevant to residuals.</span>
+
+<span class="sd">    This function takes a TimeSeries instance of residuals and plots their values,</span>
+<span class="sd">    their distribution and their ACF.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    residuals</span>
+<span class="sd">        TimeSeries instance representing residuals.</span>
+<span class="sd">    num_bins</span>
+<span class="sd">        Optionally, an integer value determining the number of bins in the histogram.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">gs</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># plot values</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[:</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">residuals</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Residual values&#39;</span><span class="p">)</span>
+
+    <span class="c1"># plot distribution</span>
+    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">norm</span><span class="p">(</span><span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span><span class="p">)</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">res_max</span> <span class="o">-</span> <span class="n">res_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Distribution&#39;</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;count&#39;</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+
+    <span class="c1"># plot ACF</span>
+    <span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plot_acf</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax3</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;ACF value&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;lag&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;ACF&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="backtest_gridsearch"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.backtest_gridsearch">[docs]</a><span class="k">def</span> <span class="nf">backtest_gridsearch</span><span class="p">(</span><span class="n">model_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+                        <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+                        <span class="n">train_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                        <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">num_predictions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                        <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
+                        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A function for finding the best hyperparameters.</span>
+
+<span class="sd">    This function has 2 modes of operation: Expanding window mode and split mode.</span>
+<span class="sd">    Both modes of operation evaluate every possible combination of hyperparameter values</span>
+<span class="sd">    provided in the `parameters` dictionary by instantiating the `model_class` subclass</span>
+<span class="sd">    of ForecastingModel with each combination, and returning the best-performing model with regards</span>
+<span class="sd">    to the `metric` function. The `metric` function is expected to return an error value,</span>
+<span class="sd">    thus the model resulting in the smallest `metric` output will be chosen.</span>
+<span class="sd">    The relationship of the training data and test data depends on the mode of operation.</span>
+
+<span class="sd">    Expanding window mode (activated when `fcast_horizon_n` is passed):</span>
+<span class="sd">    For every hyperparameter combination, the model is repeatedly trained and evaluated on different</span>
+<span class="sd">    splits of `train_series`. The number of splits is equal to `num_predictions`, and the</span>
+<span class="sd">    forecasting horizon used when making a prediction is `fcast_horizon_n`.</span>
+<span class="sd">    Note that the model is retrained for every single prediction, thus this mode is slower.</span>
+
+<span class="sd">    Split window mode (activated when `val_series` is passed):</span>
+<span class="sd">    This mode will be used when the `val_series` argument is passed.</span>
+<span class="sd">    For every hyperparameter combination, the model is trained on `train_series` and</span>
+<span class="sd">    evaluated on `val_series`.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model</span>
+<span class="sd">        The ForecastingModel subclass to be tuned for &#39;series&#39;.</span>
+<span class="sd">    parameters</span>
+<span class="sd">        A dictionary containing as keys hyperparameter names, and as values lists of values for the</span>
+<span class="sd">        respective hyperparameter.</span>
+<span class="sd">    train_series</span>
+<span class="sd">        The TimeSeries instance used for training (and also validation in split mode).</span>
+<span class="sd">    test_series</span>
+<span class="sd">        The TimeSeries instance used for validation in split mode.</span>
+<span class="sd">    fcast_horizon_n</span>
+<span class="sd">        The integer value of the forecasting horizon used in expanding window mode.</span>
+<span class="sd">    num_predictions:</span>
+<span class="sd">        The number of train/prediction cycles performed in one iteration of expanding window mode.</span>
+<span class="sd">    metric:</span>
+<span class="sd">        A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
+<span class="sd">    verbose:</span>
+<span class="sd">        Whether to print progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ForecastingModel</span>
+<span class="sd">        An untrained &#39;model_class&#39; instance with the best-performing hyperparameters from the given selection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">((</span><span class="n">fcast_horizon_n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span>
+                 <span class="s2">&quot;Please pass exactly one of the arguments &#39;forecast_horizon_n&#39; or &#39;val_series&#39;.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">backtest_start_time</span> <span class="o">=</span> <span class="n">train_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="n">num_predictions</span> <span class="o">+</span> <span class="n">fcast_horizon_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">train_series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>
+    <span class="n">min_error</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+    <span class="n">best_param_combination</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># compute all hyperparameter combinations from selection</span>
+    <span class="n">params_cross_product</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+    <span class="c1"># iterate through all combinations of the provided parameters and choose the best one</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">param_combination</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="n">param_combination_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">param_combination</span><span class="p">)))</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">param_combination_dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># expanding window mode</span>
+            <span class="n">backtest_forecast</span> <span class="o">=</span> <span class="n">backtest_forecasting</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">backtest_start_time</span><span class="p">,</span> <span class="n">fcast_horizon_n</span><span class="p">)</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">backtest_forecast</span><span class="p">,</span> <span class="n">train_series</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># split mode</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val_series</span><span class="p">)),</span> <span class="n">val_series</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">error</span> <span class="o">&lt;</span> <span class="n">min_error</span><span class="p">:</span>
+            <span class="n">min_error</span> <span class="o">=</span> <span class="n">error</span>
+            <span class="n">best_param_combination</span> <span class="o">=</span> <span class="n">param_combination_dict</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Chosen parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">best_param_combination</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">best_param_combination</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="explore_models"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.explore_models">[docs]</a><span class="k">def</span> <span class="nf">explore_models</span><span class="p">(</span><span class="n">train_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                   <span class="n">val_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                   <span class="n">test_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                   <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
+                   <span class="n">model_parameter_tuples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">plot_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A function for exploring the suitability of multiple models on a given train/validation/test split.</span>
+
+<span class="sd">    This funtion iterates through a list of models, training each on `train_series` and `val_series`</span>
+<span class="sd">    and evaluating them on `test_series`. Models with free hyperparameters are first</span>
+<span class="sd">    tuned by trying out a &#39;reasonable&#39; set of hyperparameter combinations. A model for</span>
+<span class="sd">    each combination is trained on `train_series` and evaluated on `val_series`.</span>
+<span class="sd">    The best-performing combination of hyperparameters (the one resulting in the lowest output of the `metric`</span>
+<span class="sd">    function) is then chosen for that type of model. This way, none of the models have &#39;looked at&#39; the test set</span>
+<span class="sd">    before the final evaluation.</span>
+
+<span class="sd">    The performance of every model type is then plotted against the series of actual observations.</span>
+<span class="sd">    Additionally, the `metric` values and the runtimes of every model type are plotted in bar charts.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    train_series</span>
+<span class="sd">        A TimeSeries instance used for training during model tuning and evaluation.</span>
+<span class="sd">    val_series</span>
+<span class="sd">        A TimeSeries instance used for validation during model tuning and for training during evaluation.</span>
+<span class="sd">    test_series</span>
+<span class="sd">        A TimeSeries instance used for validation when evaluating a model.</span>
+<span class="sd">    metric:</span>
+<span class="sd">        A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
+<span class="sd">    model_parameter_tuples:</span>
+<span class="sd">        Optionally, a custom list of (model class, hyperparameter dictionary) tuples that will be</span>
+<span class="sd">        explored instead of the default selection.</span>
+<span class="sd">    plot_width</span>
+<span class="sd">        An integer indicating the number of plots that are displayed in one row.</span>
+<span class="sd">    verbose:</span>
+<span class="sd">        Whether to print progress.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">plot_width</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Please choose an integer &#39;plot_width&#39; value larger than 1&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="c1"># list of tuples containing model classes and hyperparameter selection, if required</span>
+    <span class="k">if</span> <span class="n">model_parameter_tuples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model_parameter_tuples</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;trend&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;additive&#39;</span><span class="p">,</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;seasonal&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;additive&#39;</span><span class="p">,</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;seasonal_periods&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+            <span class="p">}),</span>
+            <span class="p">(</span><span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;K&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">31</span><span class="p">))</span>
+            <span class="p">}),</span>
+            <span class="p">(</span><span class="n">FFT</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;nr_freqs_to_keep&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span>
+                <span class="s1">&#39;trend&#39;</span><span class="p">:</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;poly&#39;</span><span class="p">,</span> <span class="s1">&#39;exp&#39;</span><span class="p">]</span>
+            <span class="p">}),</span>
+            <span class="p">(</span><span class="n">Theta</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;theta&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">51</span><span class="p">),</span> <span class="mi">30</span><span class="p">)</span>
+            <span class="p">}),</span>
+            <span class="p">(</span><span class="n">Prophet</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="p">(</span><span class="n">AutoARIMA</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="p">]</span>
+
+    <span class="c1"># set up plot grid</span>
+    <span class="n">plot_height</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model_parameter_tuples</span><span class="p">)</span> <span class="o">/</span> <span class="n">plot_width</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">plot_width</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">plot_height</span> <span class="o">*</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">gs</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="n">plot_height</span><span class="p">,</span> <span class="n">plot_width</span><span class="p">)</span>
+
+    <span class="c1"># arrays to store data for bar charts</span>
+    <span class="n">metric_vals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># iterate through model type selection</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">model_parameter_tuples</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator</span><span class="p">):</span>
+
+        <span class="c1"># if necessary, tune hyperparameters using train_series and val_series</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">backtest_gridsearch</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_series</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">()</span>
+
+        <span class="c1"># fit on train and val series, predict test series</span>
+        <span class="n">train_and_val_series</span> <span class="o">=</span> <span class="n">train_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_series</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_and_val_series</span><span class="p">)</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">runtime</span> <span class="o">=</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_series</span><span class="p">))</span>
+
+        <span class="c1"># plot predictions against observations</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="n">plot_width</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="n">y</span> <span class="o">*</span> <span class="n">plot_width</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span>
+        <span class="n">metric_val</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">test_series</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">, runtime: </span><span class="si">{}</span><span class="s2">s&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">metric</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">metric_val</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                                                       <span class="nb">round</span><span class="p">(</span><span class="n">runtime</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span>
+
+        <span class="n">train_and_val_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train and val&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">test_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">predictions</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;pred&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="c1"># record data for bar charts</span>
+        <span class="n">metric_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_val</span><span class="p">)</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">runtime</span><span class="p">)</span>
+        <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;..&quot;</span><span class="p">)</span>
+
+    <span class="c1"># plot bar charts</span>
+    <span class="n">ax_metrics</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">ax_metrics</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Performance&quot;</span><span class="p">)</span>
+    <span class="n">ax_metrics</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">metric</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39; value&#39;</span><span class="p">)</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">metric_vals</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax_metrics</span><span class="p">,</span> <span class="n">rot</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ax_times</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax_times</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Runtime&quot;</span><span class="p">)</span>
+    <span class="n">ax_times</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax_times</span><span class="p">,</span> <span class="n">rot</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unit8 SA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -6,24 +6,43 @@ Here you will find some example notebooks to get more familiar with the API.
 
 
 
-Air Passenger Example
-=======================
+darts intro
+===========
 
-You will find below an example Jupyter notebook containing an analysis of the well-known Air Passenger Dataset.
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/Air-passengers-example.ipynb
-
-
-u8timeseries intro
-=======================
-
-You will find below an example Jupyter notebook containing an intro to usage of u8timeseries.
+You will find below an example Jupyter notebook containing an intro to usage of darts.
 
 .. toctree::
    :maxdepth: 1
 
-   examples/u8timeseries-intro.ipynb
+   examples/darts-intro.ipynb
 
+
+Fast Fourier Transform
+======================
+
+You will find below an example Jupyter notebook containing usage of FFT model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/FFT-examples.ipynb
+
+Recurrent Neural Networks
+=========================
+
+You will find below an example Jupyter notebook containing usage of RNN model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/RNN-examples.ipynb
+
+Temporal Convolutional Networks
+===============================
+
+You will find below an example Jupyter notebook containing usage of TCN model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/TCN-examples.ipynb

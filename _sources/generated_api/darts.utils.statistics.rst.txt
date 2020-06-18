@@ -1,0 +1,5 @@
+
+.. automodule:: darts.utils.statistics
+   :members:
+   :undoc-members:
+   :show-inheritance:

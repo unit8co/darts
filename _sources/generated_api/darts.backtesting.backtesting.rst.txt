@@ -1,0 +1,5 @@
+
+.. automodule:: darts.backtesting.backtesting
+   :members:
+   :undoc-members:
+   :show-inheritance:

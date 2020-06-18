@@ -1,0 +1,12 @@
+
+
+.. automodule:: darts.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.preprocessing.scaler_wrapper

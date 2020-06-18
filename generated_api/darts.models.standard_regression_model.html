@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Standard Regression model &mdash; darts  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Temporal Convolutional Network" href="darts.models.tcn_model.html" />
+    <link rel="prev" title="Recurrent Neural Networks" href="darts.models.rnn_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> darts
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Home</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="darts.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="darts.backtesting.html">Backtesting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="darts.models.html">Models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="darts.models.arima.html">ARIMA and Auto-ARIMA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.baselines.html">Baseline Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.exponential_smoothing.html">Exponential Smoothing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.fft.html">Fast Fourier Transform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting_model.html">Forecasting Model Base Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.prophet.html">Facebook Prophet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.regression_model.html">Regression Model Base Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.rnn_model.html">Recurrent Neural Networks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Standard Regression model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.tcn_model.html">Temporal Convolutional Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.theta.html">Theta Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.torch_forecasting_model.html">Torch Forecasting Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="darts.preprocessing.html">Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">darts</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="darts.html">darts</a> &raquo;</li>
+        
+          <li><a href="darts.models.html">Models</a> &raquo;</li>
+        
+      <li>Standard Regression model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/generated_api/darts.models.standard_regression_model.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<span class="target" id="module-darts.models.standard_regression_model"></span><div class="section" id="standard-regression-model">
+<h1>Standard Regression model<a class="headerlink" href="#standard-regression-model" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.models.standard_regression_model.StandardRegressionModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.standard_regression_model.</code><code class="sig-name descname">StandardRegressionModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_n_points</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">LinearRegression(fit_intercept=False, n_jobs=- 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.regression_model.html#darts.models.regression_model.RegressionModel" title="darts.models.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.regression_model.RegressionModel</span></code></a></p>
+<p>Simple wrapper for regression models implementing a fit() predict() functions models
+(e.g., scikit-learn regression).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_n_points</strong> – The number of most recent points from the training (features and target) time series that
+will be used to train the regression model. If this is <cite>None</cite>, or if the provided training series
+contain fewer points, the maximum possible number of time steps will be used for training.</p></li>
+<li><p><strong>model</strong> – A regression model that implements <cite>fit()</cite> and <cite>predict()</cite> methods.
+Default: <cite>sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)</cite></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="darts.models.standard_regression_model.StandardRegressionModel.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model using the provided list of features time series and the target time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_features</strong> – A list of features time series, all of the same length as the target series</p></li>
+<li><p><strong>train_target</strong> – A target time series, of the same length as the features series</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.standard_regression_model.StandardRegressionModel.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predicts values of the target time series, given a list of features time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>features</strong> – The list of features time series, of the same length</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A series containing the predicted targets, of the same length as the features series</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="darts.models.tcn_model.html" class="btn btn-neutral float-right" title="Temporal Convolutional Network" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="darts.models.rnn_model.html" class="btn btn-neutral float-left" title="Recurrent Neural Networks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unit8 SA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

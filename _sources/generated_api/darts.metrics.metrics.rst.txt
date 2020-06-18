@@ -1,0 +1,5 @@
+
+.. automodule:: darts.metrics.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

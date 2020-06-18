@@ -1,5 +1,0 @@
-
-.. automodule:: u8timeseries.backtesting.backtesting_udf
-   :members:
-   :undoc-members:
-   :show-inheritance:
