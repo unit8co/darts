@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/release-workflow-fix
 
 jobs:
   tests:
@@ -39,12 +40,12 @@ jobs:
         if: contains(runner.os, 'Linux')
         run: |
           # this avoids an unnecessary cuda install on Linux
-          pip install -q torch
+          pip install -q torch==1.5.0
 
       - name: "5. Install main and dev dependencies"
         run: |
           # this avoids an unnecessary cuda install on Linux
-          pip install -q torch
+          pip install -q torch==1.5.0
           pip install -q .
           pip install -q -r requirements/dev.txt
 
@@ -86,7 +87,7 @@ jobs:
       - name: "5. Install release dependencies"
         run: |
           # this avoids an unnecessary cuda install on Linux
-          pip install -q torch
+          pip install -q torch==1.5.0
           pip install -q -r requirements/release.txt
 
       - name: "6. Determine next version"
@@ -185,7 +186,7 @@ jobs:
       - name: "5. Install main and release dependencies"
         run: |
           # this avoids an unnecessary cuda install on Linux
-          pip install -q torch
+          pip install -q torch==1.5.0
           pip install -q .
           pip install -q -r requirements/release.txt
 
