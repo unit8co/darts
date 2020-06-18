@@ -69,11 +69,6 @@ jobs:
         with:
           python-version: 3.7
       
-      - name: "2.1. Set up conda"
-        uses: s-weigand/setup-conda@v1
-        with:
-          activate-conda: false
-
       - name: "3. Update pip"
         run: |
           python -m pip install --upgrade pip
@@ -95,10 +90,6 @@ jobs:
       - name: "6. Run examples ${{matrix.example-name}}"
         run: |
           (cd examples; papermill ${{matrix.example-name}} ${{matrix.example-name}})
-
-      - name: "7. Check example ${{matrix.example-name}}"
-        run: |
-          git diff --exit-code
 
   docs:
     runs-on: ubuntu-latest
