@@ -80,16 +80,8 @@ class _ResidualBlock(nn.Module):
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
-<<<<<<< HEAD
-        if num_layers > 1:
-            if nr_blocks_below == 0:
-                self.conv3 = nn.Conv1d(input_dim, num_filters, 1)
-            elif nr_blocks_below == num_layers - 1:
-                self.conv3 = nn.Conv1d(num_filters, 1, 1)
-=======
         if nr_blocks_below == 0 or nr_blocks_below == num_layers - 1:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
->>>>>>> multivariate-2
 
     def forward(self, x):
         residual = x
