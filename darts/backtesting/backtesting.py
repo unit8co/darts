@@ -31,6 +31,9 @@ def backtest_forecasting(series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
                          fcast_horizon_n: int,
+                         stride: int = 1,
+                         retrain: bool = True,
+                         real_time_plot: bool = False,
                          trim_to_series: bool = True,
                          verbose: bool = False) -> TimeSeries:
     """ A function for backtesting `ForecastingModel`'s.
@@ -57,6 +60,14 @@ def backtest_forecasting(series: TimeSeries,
         The first prediction time, at which a prediction is computed for a future time
     fcast_horizon_n
         The forecast horizon for the point predictions
+    stride
+        The number of entries between two consecutive predictions.
+    retrain
+        Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
+        instances as `model` argument support setting `retrain` to `False`.
+    real_time_plot
+        If set to `True`, the predictions of the backtesting will be plotted in real-time alongside
+        the ground truth values of the series. Requires `%matplotlib notebook` to be called in the notebook beforehand.
     trim_to_series
         Whether the predicted series has the end trimmed to match the end of the main series
     verbose
@@ -69,8 +80,7 @@ def backtest_forecasting(series: TimeSeries,
         the specified model with the specified forecast horizon.
     """
 
-    series._assert_univariate()
-    raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
+    #raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
@@ -80,7 +90,7 @@ def backtest_forecasting(series: TimeSeries,
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
     while pred_times[-1] <= last_pred_time:
-        pred_times.append(pred_times[-1] + series.freq())
+        pred_times.append(pred_times[-1] + series.freq() * stride)
 
     # what we'll return
     values = []
@@ -88,12 +98,29 @@ def backtest_forecasting(series: TimeSeries,
 
     iterator = _build_tqdm_iterator(pred_times, verbose)
 
+    if ((not retrain) and (not model._fit_called)):
+        model.fit(series.drop_after(start), verbose=verbose)
+
+    if (real_time_plot):
+        fig, ax = plt.subplots(1, 1)
+        series.drop_before(start).plot(ax=ax)
+        l = ax.plot(series.drop_before(start).values())
+
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
-        model.fit(train)
-        pred = model.predict(fcast_horizon_n)
-        values.append(pred.univariate_values()[-1])  # store the N-th point
+        if (retrain):
+            model.fit(train)
+            pred = model.predict(fcast_horizon_n)
+        else:
+            pred = model.predict(fcast_horizon_n, input_series=train, use_full_output_length=True)
+        values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
+
+        if (real_time_plot and len(values) > 3):
+            l[0].set_xdata(np.array(times))
+            l[0].set_ydata(np.array(values))
+            fig.canvas.draw()
+
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 

@@ -128,7 +128,7 @@ class MultivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, series: TimeSeries, target_indices: List[int] = []) -> None:
+    def fit(self, series: TimeSeries, target_indices: List[int] = [0]) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
 
         Parameters
