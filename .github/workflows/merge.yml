@@ -39,7 +39,7 @@ jobs:
         if: contains(runner.os, 'Linux')
         run: |
           # this avoids an unnecessary cuda install on Linux
-          pip install -q torch==1.5.0
+          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: "5. Install main and dev dependencies"
         run: |
