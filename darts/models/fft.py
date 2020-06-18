@@ -196,6 +196,7 @@ class FFT(ForecastingModel):
         (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods
         (controlled by the `required_matches` argument).
+        Please note that the training sequence must not contain any NaN values for the model to produce useful output.
 
         Examples:
 
