@@ -142,7 +142,7 @@ class MultivariateForecastingModel(ForecastingModel):
         raise_if_not(series.width == 1 or len(target_indices) > 0, "If a multivariate series is given"
                      " as input to this multivariate model, please provide a list of integer indices `target_indices`"
                      " that indicate which components of this series should be predicted", logger)
-        
+
         raise_if_not(all(idx >= 0 and idx < series.width for idx in target_indices), "The target indices "
                      "must all be between 0 and the width of the TimeSeries instance used for fitting - 1.", logger)
 
