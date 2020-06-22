@@ -25,7 +25,6 @@ from ..models import (
     NaiveSeasonal,
     StandardRegressionModel,
     NaiveDrift,
-    RNNModel,
     TCNModel
 )
 

@@ -337,12 +337,12 @@ class TorchForecastingModel(MultivariateForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int, 
+    def predict(self, n: int,
                 use_full_output_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
         super().predict(n)
 
-        raise_if_not(input_series is None or input_series.width == self.training_series.width, 
+        raise_if_not(input_series is None or input_series.width == self.training_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"

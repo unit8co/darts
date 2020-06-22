@@ -13,7 +13,7 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from ..timeseries import TimeSeries
-from ..models.forecasting_model import ForecastingModel, UnivariateForecastingModel, MultivariateForecastingModel
+from ..models.forecasting_model import ForecastingModel, UnivariateForecastingModel
 from ..models.torch_forecasting_model import TorchForecastingModel
 from ..models.regression_model import RegressionModel
 from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
@@ -93,7 +93,7 @@ def backtest_forecasting(series: TimeSeries,
         the specified model with the specified forecast horizon.
     """
 
-    #raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
+    raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
