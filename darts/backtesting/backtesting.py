@@ -40,6 +40,7 @@ def _create_parameter_dicts(model, target_indices, component_index, use_full_out
 
     return fit_kwargs, predict_kwargs
 
+
 def backtest_forecasting(series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
@@ -387,7 +388,7 @@ def backtest_gridsearch(model_class: type,
     raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
                  "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
 
-    fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index, 
+    fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index,
                                                          use_full_output_length)
 
     if val_series is None:
