@@ -3,7 +3,7 @@ Backtesting Functions
 ---------------------
 """
 
-from typing import Iterable, Optional, Callable
+from typing import Iterable, Optional, Callable, List
 from itertools import product
 import math
 import time
@@ -13,7 +13,8 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from ..timeseries import TimeSeries
-from ..models.forecasting_model import ForecastingModel
+from ..models.forecasting_model import ForecastingModel, UnivariateForecastingModel, MultivariateForecastingModel
+from ..models.torch_forecasting_model import TorchForecastingModel
 from ..models.regression_model import RegressionModel
 from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
@@ -31,9 +32,11 @@ def backtest_forecasting(series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
                          fcast_horizon_n: int,
+                         target_indices: List[int] = [0],
+                         component_index: Optional[int] = None,
+                         use_full_output_length: bool = True,
                          stride: int = 1,
                          retrain: bool = True,
-                         real_time_plot: bool = False,
                          trim_to_series: bool = True,
                          verbose: bool = False) -> TimeSeries:
     """ A function for backtesting `ForecastingModel`'s.
@@ -65,9 +68,6 @@ def backtest_forecasting(series: TimeSeries,
     retrain
         Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
         instances as `model` argument support setting `retrain` to `False`.
-    real_time_plot
-        If set to `True`, the predictions of the backtesting will be plotted in real-time alongside
-        the ground truth values of the series. Requires `%matplotlib notebook` to be called in the notebook beforehand.
     trim_to_series
         Whether the predicted series has the end trimmed to match the end of the main series
     verbose
@@ -86,6 +86,18 @@ def backtest_forecasting(series: TimeSeries,
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
     last_pred_time = series.time_index()[-fcast_horizon_n - 1] if trim_to_series else series.time_index()[-1]
+    raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
+                 " support the option 'retrain=False'.", logger)
+
+    # specify the correct fit and predict keyword arguments for the given model
+    predict_kwargs = {}
+    fit_kwargs = {}
+    if isinstance(model, UnivariateForecastingModel):
+        fit_kwargs['component_index'] = component_index
+    else:
+        fit_kwargs['target_indices'] = target_indices
+    if isinstance(model, TorchForecastingModel):
+        predict_kwargs['use_full_output_length'] = use_full_output_length
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -99,27 +111,17 @@ def backtest_forecasting(series: TimeSeries,
     iterator = _build_tqdm_iterator(pred_times, verbose)
 
     if ((not retrain) and (not model._fit_called)):
-        model.fit(series.drop_after(start), verbose=verbose)
-
-    if (real_time_plot):
-        fig, ax = plt.subplots(1, 1)
-        series.drop_before(start).plot(ax=ax)
-        l = ax.plot(series.drop_before(start).values())
+        model.fit(series.drop_after(start), verbose=verbose, **fit_kwargs)
 
     for pred_time in iterator:
         train = series.drop_after(pred_time)  # build the training series
         if (retrain):
-            model.fit(train)
-            pred = model.predict(fcast_horizon_n)
+            model.fit(train, **fit_kwargs)
+            pred = model.predict(fcast_horizon_n, **predict_kwargs)
         else:
-            pred = model.predict(fcast_horizon_n, input_series=train, use_full_output_length=True)
+            pred = model.predict(fcast_horizon_n, input_series=train, **predict_kwargs)
         values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
-
-        if (real_time_plot and len(values) > 3):
-            l[0].set_xdata(np.array(times))
-            l[0].set_ydata(np.array(values))
-            fig.canvas.draw()
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
@@ -209,7 +211,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 def forecasting_residuals(model: ForecastingModel,
                           series: TimeSeries,
                           fcast_horizon_n: int = 1,
-                          verbose: bool = True) -> TimeSeries:
+                          verbose: bool = False) -> TimeSeries:
     """ A function for computing the residuals produced by a given model and univariate time series.
 
     This function computes the difference between the actual observations from `series`
@@ -392,7 +394,7 @@ def explore_models(train_series: TimeSeries,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    model_parameter_tuples: Optional[list] = None,
                    plot_width: int = 3,
-                   verbose: bool = True):
+                   verbose: bool = False):
     """ A function for exploring the suitability of multiple models on a given train/validation/test split.
 
     This funtion iterates through a list of models, training each on `train_series` and `val_series`
