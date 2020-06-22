@@ -4,6 +4,7 @@ sphinx-automodapi
 sphinx_autodoc_typehints
 nbsphinx
 sphinx-rtd-theme
+pydata-sphinx-theme
 recommonmark
 # Do not change it due to https://github.com/sphinx-doc/sphinx/issues/7420
 m2r @ git+https://github.com/crossnox/m2r@dev#egg=m2r
