@@ -129,9 +129,9 @@ class BacktestingTestCase(unittest.TestCase):
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate target
-        with self.assertRaises(ValueError):
-            backtest_regression(features_multivariate, target.stack(target),
-                                StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        pred = backtest_regression(features_multivariate, target.stack(target),
+                                   StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
 
     def test_backtest_gridsearch(self):
 

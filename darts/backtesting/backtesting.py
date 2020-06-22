@@ -185,7 +185,6 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         the specified model with the specified forecast horizon.
     """
 
-    raise_if_not(target_series.width == 1, "'target_series' must be univariate.", logger)
     raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                  'have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
@@ -215,7 +214,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 
         model.fit(train_features, train_target)
         pred = model.predict(val_features)
-        values.append(pred.univariate_values()[-1])  # store the N-th point
+        values.append(pred.values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
