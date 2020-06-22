@@ -99,15 +99,19 @@ class BacktestingTestCase(unittest.TestCase):
         # multivariate model + multivariate series
         with self.assertRaises(ValueError):
             backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
-        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2)
+        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
         with self.assertRaises(ValueError):
-            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
+            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                 use_full_output_length=False)
         pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 1, verbose=False)
         self.assertEqual(pred.width, 1)
         pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
                                     use_full_output_length=True, target_indices=[1])
         self.assertEqual(pred.width, 1)
-        self.assertEqual(len(pred), len(linear_series))
+        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                    use_full_output_length=True, target_indices=[0, 1])
+        self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):
         gaussian_series = gt(mean=2, length=50)
