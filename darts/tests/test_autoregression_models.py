@@ -7,7 +7,7 @@ import pandas as pd
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA
+from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA, TCNModel
 from ..models.theta import Theta
 from ..models.fft import FFT
 
@@ -58,3 +58,22 @@ class AutoregressionModelsTestCase(unittest.TestCase):
             current_mape = mape(prediction, self.ts_pass_val)
             self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
                             "with a MAPE of {}".format(str(model), max_mape, current_mape))
+
+    def test_multivariate_input(self):
+        es_model = ExponentialSmoothing()
+        ts_passengers_enhanced = self.ts_passengers.add_datetime_attribute('month')
+        with self.assertRaises(ValueError):
+            es_model.fit(ts_passengers_enhanced)
+        es_model.fit(ts_passengers_enhanced, component_index=0)
+        with self.assertRaises(ValueError):
+            es_model.fit(ts_passengers_enhanced, component_index=2)
+        tcn_model = TCNModel(n_epochs=1, input_size=2)
+        with self.assertRaises(ValueError):
+            tcn_model.fit(ts_passengers_enhanced)
+        tcn_model.fit(ts_passengers_enhanced, target_indices=[1])
+        with self.assertRaises(ValueError):
+            tcn_model.fit(ts_passengers_enhanced, target_indices=[2])
+        tcn_model = TCNModel(n_epochs=1, input_size=2, output_size=2)
+        with self.assertRaises(ValueError):
+            tcn_model.fit(ts_passengers_enhanced, target_indices=[0, 2])
+        tcn_model.fit(ts_passengers_enhanced, target_indices=[0, 1])
