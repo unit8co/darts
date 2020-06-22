@@ -38,7 +38,12 @@ class TCNModelTestCase(unittest.TestCase):
         pred2 = model2.predict(n=2).values()[0]
         self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
 
+        # test short predict
+        pred3 = model2.predict(n=1)
+        self.assertEqual(len(pred3), 1)
+
     def test_coverage(self):
+        torch.manual_seed(0)
         input_lengths = range(20, 50)
         kernel_sizes = range(2, 5)
         dilation_bases = range(2, 5)
