@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from ..utils.missing_values import auto_fillna
+from ..utils.missing_values import auto_fillna, na_ratio
 
 
 class MissingValuesTestCase(unittest.TestCase):
@@ -54,3 +54,21 @@ class MissingValuesTestCase(unittest.TestCase):
         seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.cub[:10] + [np.nan] * 10 + self.cub[-10:]))
         self.assertEqual(self.series5, round(auto_fillna(seriesE, method='quadratic'), 7))
+
+    def test_multivariate_fill(self):
+        seriesA: TimeSeries = TimeSeries.from_times_and_values(
+            self.time,
+            np.array([np.nan] * 5 + [2.0] * 5 + [np.nan] * 5 + [2.0] * 10 + [np.nan] * 5)
+        )
+        seriesB: TimeSeries = TimeSeries.from_times_and_values(self.time,
+                                                               np.array(self.lin[:10] + [np.nan] * 10 + self.lin[-10:]))
+        self.assertEqual(self.series1.stack(self.series2), auto_fillna(seriesA.stack(seriesB)))
+
+    def test__na_ratio(self):
+        seriesF = TimeSeries.from_times_and_values(self.time, list(range(27)) + [np.nan] * 3)
+
+        # univariate case
+        self.assertEqual(na_ratio(seriesF), 0.1)
+
+        # multivariate case
+        self.assertEqual(na_ratio(seriesF.stack(seriesF)), 0.1)
