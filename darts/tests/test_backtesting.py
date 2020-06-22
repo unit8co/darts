@@ -102,7 +102,10 @@ class BacktestingTestCase(unittest.TestCase):
         tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2)
         with self.assertRaises(ValueError):
             backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
-        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 1, verbose=False,)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 1, verbose=False)
+        self.assertEqual(pred.width, 1)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                    use_full_output_length=True, target_indices=[1])
         self.assertEqual(pred.width, 1)
         self.assertEqual(len(pred), len(linear_series))
 
