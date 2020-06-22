@@ -150,6 +150,19 @@ class BacktestingTestCase(unittest.TestCase):
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
+    def test_backtest_gridsearch_multi(self):
+        dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
+        tcn_params = {
+            'n_epochs': [1],
+            'batch_size': [1],
+            'input_size': [2],
+            'output_length': [3],
+            'output_size': [2],
+            'kernel_size': [2, 3, 4]
+        }
+        backtest_gridsearch(TCNModel, tcn_params, dummy_series, fcast_horizon_n=3, metric=mape, use_full_output_length=True,
+                            target_indices=[0, 1])
+
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)
 

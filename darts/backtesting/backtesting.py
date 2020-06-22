@@ -28,6 +28,18 @@ logger = get_logger(__name__)
 
 # TODO parameterize the moving window
 
+def _create_parameter_dicts(model, target_indices, component_index, use_full_output_length):
+    fit_kwargs = {}
+    predict_kwargs = {}
+    if isinstance(model, UnivariateForecastingModel):
+        fit_kwargs['component_index'] = component_index
+    else:
+        fit_kwargs['target_indices'] = target_indices
+    if isinstance(model, TorchForecastingModel):
+        predict_kwargs['use_full_output_length'] = use_full_output_length
+
+    return fit_kwargs, predict_kwargs
+
 def backtest_forecasting(series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
@@ -103,14 +115,7 @@ def backtest_forecasting(series: TimeSeries,
                  " support the option 'retrain=False'.", logger)
 
     # specify the correct fit and predict keyword arguments for the given model
-    predict_kwargs = {}
-    fit_kwargs = {}
-    if isinstance(model, UnivariateForecastingModel):
-        fit_kwargs['component_index'] = component_index
-    else:
-        fit_kwargs['target_indices'] = target_indices
-    if isinstance(model, TorchForecastingModel):
-        predict_kwargs['use_full_output_length'] = use_full_output_length
+    fit_kwargs, predict_kwargs = _create_parameter_dicts(model, target_indices, component_index, use_full_output_length)
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
@@ -315,6 +320,9 @@ def backtest_gridsearch(model_class: type,
                         parameters: dict,
                         train_series: TimeSeries,
                         fcast_horizon_n: Optional[int] = None,
+                        target_indices: List[int] = [0],
+                        component_index: Optional[int] = None,
+                        use_full_output_length: bool = True,
                         val_series: Optional[TimeSeries] = None,
                         num_predictions: int = 10,
                         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -354,6 +362,15 @@ def backtest_gridsearch(model_class: type,
         The univariate TimeSeries instance used for validation in split mode.
     fcast_horizon_n
         The integer value of the forecasting horizon used in expanding window mode.
+    target_indices
+        In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
+        a list of indices of components of `series` to be predicted by `model`.
+    component_index
+        In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
+        an integer index of the component of `series` to be predicted by `model`.
+    use_full_output_length
+        In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+        as argument to the predict method of `model`.
     num_predictions:
         The number of train/prediction cycles performed in one iteration of expanding window mode.
     metric:
@@ -367,12 +384,11 @@ def backtest_gridsearch(model_class: type,
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
-    train_series._assert_univariate()
-    if (val_series is not None):
-        val_series._assert_univariate()
-
     raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
                  "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
+
+    fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index, 
+                                                         use_full_output_length)
 
     if val_series is None:
         backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
@@ -388,11 +404,12 @@ def backtest_gridsearch(model_class: type,
         param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
         model = model_class(**param_combination_dict)
         if val_series is None:  # expanding window mode
-            backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n)
+            backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n,
+                                                     target_indices, component_index, use_full_output_length)
             error = metric(backtest_forecast, train_series)
         else:  # split mode
-            model.fit(train_series)
-            error = metric(model.predict(len(val_series)), val_series)
+            model.fit(train_series, **fit_kwargs)
+            error = metric(model.predict(len(val_series)), val_series, **predict_kwargs)
         if error < min_error:
             min_error = error
             best_param_combination = param_combination_dict
@@ -407,7 +424,8 @@ def explore_models(train_series: TimeSeries,
                    model_parameter_tuples: Optional[list] = None,
                    plot_width: int = 3,
                    verbose: bool = False):
-    """ A function for exploring the suitability of multiple models on a given train/validation/test split.
+    """ A function for exploring the suitability of multiple models on a given train/validation/test split
+    of a univariate series.
 
     This funtion iterates through a list of models, training each on `train_series` and `val_series`
     and evaluating them on `test_series`. Models with free hyperparameters are first
