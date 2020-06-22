@@ -51,6 +51,10 @@ class RNNModelTestCase(unittest.TestCase):
         pred3 = model3.predict(n=6)
         self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
 
+        # test short predict
+        pred4 = model3.predict(n=1)
+        self.assertEqual(len(pred4), 1)
+
         shutil.rmtree('.darts')
 
     @staticmethod

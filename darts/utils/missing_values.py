@@ -20,7 +20,7 @@ def na_ratio(ts: TimeSeries) -> float:
         The ratio of missing values
     """
 
-    return ts.pd_series().isnull().sum() / len(ts)
+    return ts.pd_dataframe().isnull().sum().mean() / len(ts)
 
 
 def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
@@ -40,7 +40,7 @@ def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `ts` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts.pd_series().fillna(value=fill))
+    return TimeSeries.from_times_and_values(ts.time_index(), ts.pd_dataframe().fillna(value=fill))
 
 
 def auto_fillna(ts: TimeSeries,
@@ -64,7 +64,7 @@ def auto_fillna(ts: TimeSeries,
         A new TimeSeries with all missing values filled according to the rules above.
     """
 
-    ts_temp = ts.pd_series()
+    ts_temp = ts.pd_dataframe()
 
     # pandas interpolate wrapper, with chosen `method`
     if 'limit_direction' not in interpolate_kwargs:

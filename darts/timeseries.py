@@ -780,7 +780,7 @@ class TimeSeries:
         raise_if_not(index >= 0 and index < self.width, 'The index must be between 0 and the number of components '
                      'of the current TimeSeries instance - 1, {}'.format(self.width - 1), logger)
 
-        return TimeSeries.from_series(self.pd_dataframe().iloc[:, index])
+        return TimeSeries.from_series(self.pd_dataframe().iloc[:, index], self.freq())
 
     def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
         """

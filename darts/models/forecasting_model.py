@@ -143,6 +143,9 @@ class MultivariateForecastingModel(ForecastingModel):
                      " as input to this multivariate model, please provide a list of integer indices `target_indices`"
                      " that indicate which components of this series should be predicted", logger)
 
+        raise_if_not(all(idx >= 0 and idx < series.width for idx in target_indices), "The target indices "
+                     "must all be between 0 and the width of the TimeSeries instance used for fitting - 1.", logger)
+
         if series.width == 1:
             target_indices = [0]
         self.target_indices = target_indices
