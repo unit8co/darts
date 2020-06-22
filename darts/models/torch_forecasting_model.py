@@ -371,7 +371,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
 
         test_out = np.stack(test_out)
-        return self._build_forecast_series(test_out.squeeze())
+        return self._build_forecast_series(test_out.reshape(n, -1))
 
     @property
     def first_prediction_index(self) -> int:
