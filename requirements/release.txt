@@ -3,7 +3,6 @@ sphinx
 sphinx-automodapi
 sphinx_autodoc_typehints
 nbsphinx
-sphinx-rtd-theme
 pydata-sphinx-theme
 recommonmark
 # Do not change it due to https://github.com/sphinx-doc/sphinx/issues/7420
