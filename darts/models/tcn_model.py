@@ -16,18 +16,16 @@ logger = get_logger(__name__)
 
 class _ResidualBlock(nn.Module):
 
-    def __init__(
-        self,
-        num_filters,
-        kernel_size,
-        dilation_base,
-        dropout,
-        weight_norm,
-        nr_blocks_below,
-        num_layers,
-        input_size,
-        output_size
-    ):
+    def __init__(self,
+                 num_filters: int,
+                 kernel_size: int,
+                 dilation_base: int,
+                 dropout: float,
+                 weight_norm: bool,
+                 nr_blocks_below: int,
+                 num_layers: int,
+                 input_size: int,
+                 output_size: int):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
