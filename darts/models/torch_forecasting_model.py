@@ -343,7 +343,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         test_out = []
         self.model.eval()
         if (use_full_output_length):
-            num_iterations = math.ceil(n / self.output_length)
+            num_iterations = int(math.ceil(n / self.output_length))
             for i in range(num_iterations):
                 raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
                              " support predictions with n > output_length", logger)
