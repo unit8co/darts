@@ -19,6 +19,7 @@ from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophe
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..utils.statistics import plot_acf
+from ..utils.missing_values import auto_fillna
 from ..logging import raise_if_not, get_logger
 
 
@@ -221,11 +222,16 @@ def forecasting_residuals(model: ForecastingModel,
     return residuals
 
 
-def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
+def plot_residuals_analysis(residuals: TimeSeries,
+                            num_bins: int = 20,
+                            fill_nan: bool = True):
     """ Plots data relevant to residuals.
 
     This function takes a TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
+    Please note that if the residual TimeSeries instance contains NaN values while, the plots
+    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    be interpolated.
 
     Parameters
     ----------
@@ -233,10 +239,15 @@ def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
         TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
+    fill_nan:
+        A boolean value indicating whether NaN values should be filled in the residuals.
     """
 
     fig = plt.figure(constrained_layout=True, figsize=(8, 6))
     gs = fig.add_gridspec(2, 2)
+
+    if fill_nan:
+        residuals = auto_fillna(residuals)
 
     # plot values
     ax1 = fig.add_subplot(gs[:1, :])
