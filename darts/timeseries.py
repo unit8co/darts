@@ -11,7 +11,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, Union, List
+from typing import Tuple, Optional, Callable, Any, List
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -498,7 +498,7 @@ class TimeSeries:
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str],
-                       value_cols: Union[str, List[str]],
+                       value_cols: List[str],
                        freq: Optional[str] = None,
                        fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
@@ -539,7 +539,7 @@ class TimeSeries:
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns TimeSeries built from an index and values.
+        Returns a TimeSeries built from an index and values.
 
         Parameters
         ----------
@@ -733,7 +733,8 @@ class TimeSeries:
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same index on top of
-        the current one and returns the newly formed multivariate TimeSeries.
+        the current one and returns the newly formed multivariate TimeSeries that includes
+        all the components of `self` and of `other`.
 
         Parameters
         ----------
