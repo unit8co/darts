@@ -35,7 +35,7 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-class _TimeSeriesDataset1DSequential(Dataset):
+class _TimeSeriesSequentialDataset(Dataset):
 
     def __init__(self,
                  series: TimeSeries,
@@ -84,7 +84,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
-class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
+class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
     def __init__(self,
                  series: TimeSeries,
@@ -502,7 +502,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                     os.remove(chkpt)
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length, self.target_indices)
+        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
 
     @staticmethod
     def load_from_checkpoint(model_name: str,

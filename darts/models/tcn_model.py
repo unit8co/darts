@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from typing import Optional
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesDataset1DShifted
+from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesShiftedDataset
 
 logger = get_logger(__name__)
 
@@ -261,7 +261,7 @@ class TCNModel(TorchForecastingModel):
         super().__init__(**kwargs)
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length, self.target_indices)
+        return _TimeSeriesShiftedDataset(series, self.input_length, self.output_length, self.target_indices)
 
     @property
     def first_prediction_index(self) -> int:
