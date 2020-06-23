@@ -51,12 +51,11 @@ class MetricsTestCase(unittest.TestCase):
         series11 = self.series1.stack(self.series1) + 1
         series22 = self.series2.stack(self.series2)
         series33 = self.series3.stack(self.series3)
-        first_element_f = lambda x: x[0]
         self.assertAlmostEqual(metric(series11, series22), metric(self.series1 + 1, self.series2))
         self.assertAlmostEqual(metric(series11, series33), metric(self.series1 + 1, self.series3))
         self.assertAlmostEqual(metric(series22, series33), metric(self.series2, self.series3))
-        self.assertAlmostEqual(metric(series22, series33, reduction=first_element_f),
-                               metric(self.series2, self.series3, reduction=first_element_f))
+        self.assertAlmostEqual(metric(series22, series33, reduction=(lambda x: x[0])),
+                               metric(self.series2, self.series3, reduction=(lambda x: x[0])))
 
     def test_r2(self):
         from sklearn.metrics import r2_score
@@ -68,6 +67,7 @@ class MetricsTestCase(unittest.TestCase):
     def test_marre(self):
         self.assertAlmostEqual(metrics.marre(self.series1, self.series2),
                                metrics.marre(self.series1 + 100, self.series2 + 100))
+        self.helper_test_multivariate_duplication_equality(metrics.marre)
 
     def test_season(self):
         with self.assertRaises(ValueError):
@@ -100,9 +100,5 @@ class MetricsTestCase(unittest.TestCase):
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
 
-    def test_marre(self):
-        self.helper_test_multivariate_duplication_equality(metrics.marre)
-
     def test_r2_score(self):
         self.helper_test_multivariate_duplication_equality(metrics.r2_score)
-
