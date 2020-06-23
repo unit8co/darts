@@ -1,4 +1,5 @@
 import unittest
+import logging
 
 import numpy as np
 import pandas as pd
@@ -64,6 +65,10 @@ class RegressionModelsTestCase(unittest.TestCase):
         StandardRegressionModel(regression_window)
     ]
 
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
+
     def test_models_runnability(self):
         for model in self.models:
             # training and predicting on same features, since only runnability is tested
@@ -82,3 +87,13 @@ class RegressionModelsTestCase(unittest.TestCase):
     def test_models_denoising_multi_target(self):
         # for every model, test whether it correctly denoises ts_sum_multi using ts_random_multi and ts_sum_2 as inputs
         test_models_accuracy(self, self.models, [self.ts_random_multi, self.ts_sum_2], self.ts_sum_multi, 1.0)
+
+    def test_wrong_dimensionality(self):
+        train_f, train_t, _, _ = train_test_split([self.ts_periodic, self.ts_sum_multi],
+                                                  self.ts_sum, pd.Timestamp('20010101'))
+        self.models[0].fit(train_f, train_t)
+        _, _, test_f, _ = train_test_split([self.ts_sum_multi, self.ts_periodic],
+                                           self.ts_sum, pd.Timestamp('20010101'))
+
+        with self.assertRaises(ValueError):
+            self.models[0].predict(test_f)
