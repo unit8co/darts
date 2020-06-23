@@ -333,7 +333,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
         In the case of univariate training series, `n` can assume any integer value greater than 0.
         If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
-        the first predicted value is kept as output while at the same time being fed into the input for 
+        the first predicted value is kept as output while at the same time being fed into the input for
         the next prediction (the first value of the previous input is discarded). This way, the input sequence
         'rolls over' by 1 step for every prediction in 'n'.
         If `use_full_output_length` is set to `True`, the model will predict not one, but `self.output_length` values
@@ -341,7 +341,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
         `self.output_length` entries in the input sequence will correspond to the prediction of the previous
         iteration.
-        
+
         In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_output_length`
         has to be set to `True`. In this case, only one iteration of predictions will be performed.
 

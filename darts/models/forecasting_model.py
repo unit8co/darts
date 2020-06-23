@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, List, Union
+from typing import Optional, List
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
