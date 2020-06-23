@@ -70,12 +70,15 @@ For this setup to work you need to have a Docker service installed. You can get 
 Create `TimeSeries` object from a Pandas DataFrame, and split in train/validation series:
 
 ```python
+import pandas as pd
 from darts import TimeSeries
 
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
 train, val = series.split_after(pd.Timestamp('19590101'))
 ```
+
+>The dataset used in this example can be downloaded from this [link](https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv).
 
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
 
@@ -89,13 +92,15 @@ prediction = model.predict(len(val))
 
 Plot:
 ```python
+import matplotlib.pyplot as plt
+
 series.plot(label='actual', lw=3)
 prediction.plot(label='forecast', lw=3)
 plt.legend()
 plt.xlabel('Year')
 ```
 
-![example](https://github.com/unit8co/darts/raw/develop/static/images/example.png "example") { width=100% }
+<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" width="100%"/>
 
 We invite you to go over the example notebooks in the `examples` directory.
 
