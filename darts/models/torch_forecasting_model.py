@@ -329,6 +329,35 @@ class TorchForecastingModel(MultivariateForecastingModel):
             tb_writer.close()
 
     def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
+        """ Predicts values for a certain number of time steps after the end of the training series
+
+        In the case of univariate training series, `n` can assume any integer value greater than 0.
+        If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
+        the first predicted value is kept as output while at the same time being fed into the input for 
+        the next prediction (the first value of the previous input is discarded). This way, the input sequence
+        'rolls over' by 1 step for every prediction in 'n'.
+        If `use_full_output_length` is set to `True`, the model will predict not one, but `self.output_length` values
+        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
+        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
+        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
+        iteration.
+        
+        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_output_length`
+        has to be set to `True`. In this case, only one iteration of predictions will be performed.
+
+        Parameters
+        ----------
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        use_full_output_length
+            Boolean value indicating whether or not the full output sequence of the model prediction should be
+            used to produce the output of this function.
+
+        Returns
+        -------
+        TimeSeries
+            A time series containing the `n` next points, starting after the end of the training time series
+        """
         super().predict(n)
 
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
