@@ -18,7 +18,17 @@ and combine the predictions of several models and external regressors.
 
 ## Install
 
-### Preconditions
+We recommend to first setup a clean python environment for your project with at least python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
+
+### Quick Install
+
+Once your environement is setup you can install darts using the pip package:
+
+    pip install u8darts
+
+### Step-by-step Install
+
+#### Preconditions
 
 Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
@@ -47,7 +57,7 @@ Don't forget to activate your virtual environment
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
 
-### Install darts
+#### Install darts
 
     pip install u8darts
 
@@ -56,7 +66,6 @@ Don't forget to activate your virtual environment
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 ```
-
 cd scripts
 ./build_docker.sh && ./run_docker.sh
 ```
