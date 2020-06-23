@@ -264,7 +264,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False,
-            target_indices: List[int] = []) -> None:
+            target_indices: Optional[List[int]] = None) -> None:
         """ Fit method for torch modules
 
         Parameters
@@ -276,6 +276,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
             throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
+        target_indices
+            A list of integers indicating which component(s) of the time series should be used
+            as targets for forecasting.
         """
         raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
                      "the `input_size` defined when instantiating the current model.", logger)
