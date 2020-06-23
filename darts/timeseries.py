@@ -498,7 +498,7 @@ class TimeSeries:
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str],
-                       value_cols: Union[str, List[str]],
+                       value_cols: List[str],
                        freq: Optional[str] = None,
                        fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
