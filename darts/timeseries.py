@@ -733,7 +733,8 @@ class TimeSeries:
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same index on top of
-        the current one and returns the newly formed multivariate TimeSeries.
+        the current one and returns the newly formed multivariate TimeSeries that includes
+        all the components of `self` and of `other`.
 
         Parameters
         ----------
