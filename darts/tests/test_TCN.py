@@ -1,3 +1,4 @@
+import shutil
 import unittest
 import logging
 import torch
@@ -12,6 +13,10 @@ class TCNModelTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
 
     def test_creation(self):
         with self.assertRaises(ValueError):
