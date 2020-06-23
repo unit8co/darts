@@ -539,7 +539,7 @@ class TimeSeries:
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns TimeSeries built from an index and values.
+        Returns a TimeSeries built from an index and values.
 
         Parameters
         ----------
