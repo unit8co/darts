@@ -80,7 +80,7 @@ train, val = series.split_after(pd.Timestamp('19590101'))
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
 
 ```python
-from darts import ExponentialSmoothing
+from darts.models import ExponentialSmoothing
 
 model = ExponentialSmoothing()
 model.fit(train)
