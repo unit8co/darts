@@ -11,7 +11,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, Union, List
+from typing import Tuple, Optional, Callable, Any, List
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
