@@ -142,8 +142,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
                  input_length: int = 10,
                  input_size: int = 1,
                  output_size: int = 1,
-                 datetime_enhancements: List[str] = [],
-                 holiday_enhancement: Optional[str] = None,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -172,12 +170,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_size
             The dimensionality of the output time series.
-        datetime_enhancements
-            A list of integers representing pd.Datetime attributes which will be included in the
-            form of one-hot time series encodings to serve as additional inputs to the model.
-        holiday_enhancement
-            Optionally, a string representing a country whose holidays will be included
-            in the form of a binary encoding to serve as an additional input to the model
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -242,10 +234,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
         # The tensorboard writer
         self.tb_writer = None
-
-        # Input enhancement components
-        self.datetime_enhancements = datetime_enhancements
-        self.holiday_enhancement = holiday_enhancement
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
