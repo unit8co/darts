@@ -16,6 +16,24 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
+## Table of Content
+
+- [Darts: Easy manipulation and forecasting of time series.](#darts-easy-manipulation-and-forecasting-of-time-series)
+  - [Table of Content](#table-of-content)
+  - [Install](#install)
+    - [Quick Install](#quick-install)
+    - [Step-by-step Install](#step-by-step-install)
+      - [Preconditions](#preconditions)
+      - [MAC](#mac)
+      - [Linux and Windows](#linux-and-windows)
+      - [Install darts](#install-darts)
+    - [Running the examples only, without installing:](#running-the-examples-only-without-installing)
+  - [Example Usage](#example-usage)
+  - [Documentation](#documentation)
+  - [Features](#features)
+  - [Contribute](#contribute)
+  - [Contact Us](#contact-us)
+
 ## Install
 
 We recommend to first setup a clean python environment for your project with at least python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
@@ -145,3 +163,5 @@ from R2-scores to Mean Absolute Scaled Error.
 
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.
+
+## Contact Us
