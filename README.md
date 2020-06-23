@@ -1,4 +1,4 @@
-# darts: Easy manipulation and forecasting of time series
+# Darts: Easy manipulation and forecasting of time series.
 
 ![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts") 
 
