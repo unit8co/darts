@@ -10,7 +10,7 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 
-**darts** is a python library for easy manipulation and forecasting time series.
+**darts** is a python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
