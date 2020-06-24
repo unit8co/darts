@@ -159,6 +159,8 @@ from R2-scores to Mean Absolute Scaled Error.
 **Regressive Models:** Possibility to predict a time series from several other time series 
 (e.g., external regressors), using arbitrary regressive models.
 
+**Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
+
 ## Contribute
 
 The development is ongoing, and there are many new features that we want to add. 
