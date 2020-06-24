@@ -26,11 +26,18 @@ def multivariate_support(func):
     """
 
     def wrapper_multivariate_support(*args, **kwargs):
-        raise_if_not(args[0].width == args[1].width, "The two TimeSeries instances must have the same width.", logger)
+        series1 = kwargs['series1'] if 'series1' in kwargs else args[0]
+        series2 = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs else args[1]
+
+        raise_if_not(series1.width == series2.width, "The two TimeSeries instances must have the same width.", logger)
+
+        num_series_in_args = int('series1' not in kwargs) + int('series2' not in kwargs)
+        kwargs.pop('series1', 0)
+        kwargs.pop('series2', 0)
         value_list = []
-        for i in range(args[0].width):
-            value_list.append(func(args[0].univariate_component(i), args[1].univariate_component(i),
-                              *args[2:], **kwargs))
+        for i in range(series1.width):
+            value_list.append(func(series1.univariate_component(i), series2.univariate_component(i),
+                              *args[num_series_in_args:], **kwargs))
         if 'reduction' in kwargs:
             return kwargs['reduction'](value_list)
         else:

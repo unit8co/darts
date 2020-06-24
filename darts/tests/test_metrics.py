@@ -102,3 +102,14 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_r2_score(self):
         self.helper_test_multivariate_duplication_equality(metrics.r2_score)
+
+    def test_metrics_arguments(self):
+        series00 = self.series0.stack(self.series0)
+        series11 = self.series1.stack(self.series1)
+        self.assertEqual(metrics.r2_score(series11, series00, np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, series2=series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series00, series1=series11, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(np.mean, series2=series00, series1=series11), 0)
+        self.assertEqual(metrics.r2_score(series00, np.mean, series1=series11), 0)
+        self.assertEqual(metrics.r2_score(series11, np.mean, series2=series00), 0)
