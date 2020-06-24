@@ -4,17 +4,16 @@ Exponential Smoothing
 """
 
 from typing import Optional
-
 import statsmodels.tsa.holtwinters as hw
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import UnivariateForecastingModel
 from ..logging import get_logger
 from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class ExponentialSmoothing(ForecastingModel):
+class ExponentialSmoothing(UnivariateForecastingModel):
     def __init__(self,
                  trend: Optional[str] = 'additive',
                  damped: Optional[bool] = False,
@@ -57,8 +56,9 @@ class ExponentialSmoothing(ForecastingModel):
     def __str__(self):
         return 'Exponential smoothing'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        series = self.training_series
         hw_model = hw.ExponentialSmoothing(series.values(),
                                            trend=self.trend,
                                            damped=self.damped,

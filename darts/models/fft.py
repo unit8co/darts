@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import UnivariateForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
@@ -50,7 +50,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
         return False
 
     # compute relevant autocorrelation values
-    r = acf(series.values(), nlags=int(seasonality_period * (1 + frac)))
+    r = acf(series.univariate_values(), nlags=int(seasonality_period * (1 + frac)))
 
     # compute the approximate autocorrelation value for the given period
     left_bound = seasonality_period - period_error_margin
@@ -166,12 +166,12 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     TimeSeries
         New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None):
+    if (required_matches is None or len(required_matches) == 0):
         return series
 
-    first_ts = series._series.index[0]
+    first_ts = series.time_index()[0]
     freq = first_ts.freq
-    pred_ts = series._series.index[-1] + freq
+    pred_ts = series.time_index()[-1] + freq
 
     # start at first timestamp of given series and move forward until a matching timestamp is found
     curr_ts = first_ts
@@ -185,7 +185,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     return series
 
 
-class FFT(ForecastingModel):
+class FFT(UnivariateForecastingModel):
     def __init__(self,
                  nr_freqs_to_keep: Optional[int] = 10,
                  required_matches: Optional[set] = None,
@@ -232,22 +232,23 @@ class FFT(ForecastingModel):
     def __str__(self):
         return 'FFT(nr_freqs_to_keep=' + str(self.nr_freqs_to_keep) + ', trend=' + str(self.trend) + ')'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        series = self.training_series
 
         # determine trend
         if (self.trend == 'poly'):
-            trend_coefficients = np.polyfit(range(len(series)), series.values(), self.trend_poly_degree)
+            trend_coefficients = np.polyfit(range(len(series)), series.univariate_values(), self.trend_poly_degree)
             self.trend_function = np.poly1d(trend_coefficients)
         elif (self.trend == 'exp'):
-            trend_coefficients = np.polyfit(range(len(series)), np.log(series.values()), 1)
+            trend_coefficients = np.polyfit(range(len(series)), np.log(series.univariate_values()), 1)
             self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
         else:
             self.trend_function = lambda x: 0
 
         # subtract trend
-        detrended_values = series.values() - self.trend_function(range(len(series)))
-        detrended_series = TimeSeries.from_times_and_values(series._series.index, detrended_values)
+        detrended_values = series.univariate_values() - self.trend_function(range(len(series)))
+        detrended_series = TimeSeries.from_times_and_values(series.time_index(), detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
         if (self.required_matches is None):
@@ -257,7 +258,7 @@ class FFT(ForecastingModel):
         cropped_series = _crop_to_match_seasons(detrended_series, required_matches=curr_required_matches)
 
         # perform dft
-        self.fft_values = np.fft.fft(cropped_series.values())
+        self.fft_values = np.fft.fft(cropped_series.univariate_values())
 
         # get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array

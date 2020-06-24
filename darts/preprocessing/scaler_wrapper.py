@@ -44,7 +44,7 @@ class ScalerWrapper:
         series
             The time series to fit the transformer on
         """
-        self.transformer.fit(series.values().reshape((-1, 1)))
+        self.transformer.fit(series.values().reshape((-1, series.width)))
         self.train_series = series
         self._fit_called = True
         return self
@@ -67,7 +67,7 @@ class ScalerWrapper:
         assert self._fit_called, 'fit() must be called before transform()'
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.transform(series.values().
-                                                                           reshape((-1, 1))).reshape((-1,)))
+                                                                           reshape((-1, series.width))))
 
     def fit_transform(self, series: TimeSeries) -> TimeSeries:
         """
@@ -99,4 +99,4 @@ class ScalerWrapper:
         """
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.inverse_transform(series.values().
-                                                                                   reshape((-1, 1))).reshape((-1,)))
+                                                                                   reshape((-1, series.width))))

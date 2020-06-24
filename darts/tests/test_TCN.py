@@ -5,6 +5,7 @@ import torch
 
 from ..models.tcn_model import TCNModel
 from ..utils import timeseries_generation as tg
+from .test_RNN import RNNModelTestCase
 
 
 class TCNModelTestCase(unittest.TestCase):
@@ -95,3 +96,11 @@ class TCNModelTestCase(unittest.TestCase):
                             break
                         input_tensor[0, i, 0] = 0
                     self.assertTrue(uncovered_input_found)
+
+    def test_use_full_output_length(self):
+        series = tg.linear_timeseries(length=100)
+        RNNModelTestCase.helper_test_use_full_output_length(self, TCNModel, series)
+
+    def test_multivariate(self):
+        series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100))
+        RNNModelTestCase.helper_test_multivariate(self, TCNModel, series_multivariate)
