@@ -54,6 +54,28 @@ def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = ge
         raise ValueError(message)
 
 
+def raise_if(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+    """
+    Checks provided boolean condition and raises a ValueError if it evaluates to True.
+    It logs the error to the provided logger before raising it.
+
+    Parameters
+    ----------
+    condition
+        The boolean condition to be checked.
+    message
+        The message of the ValueError.
+    logger
+        The logger instance to log the error message if 'condition' is True.
+
+    Raises
+    ------
+    ValueError
+        if `condition` is satisfied
+    """
+    raise_if_not(not condition, message, logger)
+
+
 def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_logger')):
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging

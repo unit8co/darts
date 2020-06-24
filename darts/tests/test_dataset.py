@@ -3,26 +3,26 @@ import pandas as pd
 import torch
 
 from ..timeseries import TimeSeries
-from ..models.torch_forecasting_model import _TimeSeriesDataset1DSequential
+from ..models.torch_forecasting_model import _TimeSeriesSequentialDataset
 
 
 class DatasetTestCase(unittest.TestCase):
     __test__ = True
     times = pd.date_range('20130101', '20130410')
     pd_series = pd.Series(range(100), index=times)
-    series: TimeSeries = TimeSeries(pd_series)
+    series: TimeSeries = TimeSeries.from_series(pd_series)
 
     def test_creation(self):
         # Cannot have train window <= 0
         with self.assertRaises(ValueError):
-            _TimeSeriesDataset1DSequential(self.series, -1)
+            _TimeSeriesSequentialDataset(self.series, -1)
         # Cannot have label window <= 0
         with self.assertRaises(ValueError):
-            _TimeSeriesDataset1DSequential(self.series, 1, -1)
+            _TimeSeriesSequentialDataset(self.series, 1, -1)
 
     def test_content(self):
         # Can have no transformation
-        dataset = _TimeSeriesDataset1DSequential(self.series, 12, 4)
+        dataset = _TimeSeriesSequentialDataset(self.series, 12, 4)
         self.assertEqual(len(dataset), 100 - 12 - 4 + 1)
         # correct types
         self.assertEqual(type(dataset[0][0]), torch.Tensor)
