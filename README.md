@@ -127,7 +127,9 @@ plt.legend()
 plt.xlabel('Year')
 ```
 
-<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" width="100%"/>
+<div style="text-align:center;">
+<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
+</div>
 
 We invite you to go over the example notebooks in the `examples` directory.
 
