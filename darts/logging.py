@@ -71,7 +71,7 @@ def raise_if(condition: bool, message: str = "", logger: logging.Logger = get_lo
     Raises
     ------
     ValueError
-        if `condition` is not satisfied
+        if `condition` is satisfied
     """
     raise_if_not(not condition, message, logger)
 

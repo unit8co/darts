@@ -47,7 +47,7 @@ def multivariate_support(func):
 
 def _get_values_or_raise(series_a: TimeSeries,
                          series_b: TimeSeries,
-                         intersect: bool) -> Tuple[np.ndarray, np.ndarray, ]:
+                         intersect: bool) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
