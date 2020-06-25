@@ -108,7 +108,7 @@ We welcome pull requests and issues on github.
 
 Before working on a contribution (a new feature or a fix) make sure you can't find anything related in [issues](https://github.com/unit8co/darts/issues). If there is no on-going effort on what you plan to do then we recommend to do the following:
 
-1. Create an issue.
+1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
