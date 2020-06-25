@@ -1,4 +1,4 @@
-# Darts: Time Series Made Easy in Python
+# Time Series Made Easy in Python
 
 ![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts") 
 
