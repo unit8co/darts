@@ -22,7 +22,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "3. Tests"
+      - name: "3. Setup pip"
+        run: |
+          ./gradlew setupPip
+
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          restore-keys: |
+            tests-${{ runner.os }}-pip-
+
+      - name: "5. Tests"
         run: |
           ./gradlew test
 
@@ -42,6 +55,20 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
 
-      - name: "4. Build docs"
+      - name: "4. Setup pip"
+        run: |
+          ./gradlew setupPip
+
+      - name: "5. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          restore-keys: |
+            release-${{ runner.os }}-pip-
+
+      - name: "6. Build docs"
         run: |
           ./gradlew buildDocs
+
