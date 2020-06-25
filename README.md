@@ -119,6 +119,15 @@ from R2-scores to Mean Absolute Scaled Error.
 The development is ongoing, and there are many new features that we want to add. 
 We welcome pull requests and issues on github.
 
+Before working on a contribution (a new feature or a fix) make sure you can't find anything related in [issues](https://github.com/unit8co/darts/issues). If there is no on-going effort on what you plan to do then we recommend to do the following:
+
+1. Create an issue.
+2. Fork the repository.
+3. Clone the forked repository locally.
+4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
+5. Create a new branch with your fix / feature from the **develop** branch.
+6. Create a pull request from your new branch to the **develop** branch.
+
 ## Contact Us
 
 If what you want to tell us is not a suitable github issue, feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other inquiries.
