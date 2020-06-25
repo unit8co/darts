@@ -170,4 +170,4 @@ We welcome pull requests and issues on github.
 
 ## Contact Us
 
-If you feel that what you want to tell us is not a suitable github issue, feel free to shoot us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other inquiries.
+If what you want to tell us is not a suitable github issue, feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other inquiries.
