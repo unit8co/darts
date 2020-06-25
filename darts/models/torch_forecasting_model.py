@@ -380,7 +380,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             raise_if_not(len(input_series) >= self.input_length,
                          "'input_series' must at least be as long as 'self.input_length'", logger)
             input_sequence = input_series.values()[-self.input_length:]
-            super().fit(input_series)
+            super().fit(input_series, self.target_indices)
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
         # iterate through predicting output and consuming it again until enough predictions are created
