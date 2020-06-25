@@ -11,9 +11,38 @@ from ..timeseries import TimeSeries
 from ..utils.statistics import check_seasonality
 from ..logging import raise_if_not, get_logger
 from warnings import warn
-from typing import Optional
+from typing import Optional, Callable
+from inspect import signature
 
 logger = get_logger(__name__)
+
+
+def multivariate_support(func):
+    """
+    This decorator transforms a metric function that takes as input two univariate TimeSeries instances
+    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
+    metrics for components with the same indices, and returns a float value that is computed as a function of all the
+    univariate metrics using a `reduction` subroutine passed as argument to the metric function.
+    """
+
+    def wrapper_multivariate_support(*args, **kwargs):
+        series1 = kwargs['series1'] if 'series1' in kwargs else args[0]
+        series2 = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs else args[1]
+
+        raise_if_not(series1.width == series2.width, "The two TimeSeries instances must have the same width.", logger)
+
+        num_series_in_args = int('series1' not in kwargs) + int('series2' not in kwargs)
+        kwargs.pop('series1', 0)
+        kwargs.pop('series2', 0)
+        value_list = []
+        for i in range(series1.width):
+            value_list.append(func(series1.univariate_component(i), series2.univariate_component(i),
+                              *args[num_series_in_args:], **kwargs))
+        if 'reduction' in kwargs:
+            return kwargs['reduction'](value_list)
+        else:
+            return signature(func).parameters['reduction'].default(value_list)
+    return wrapper_multivariate_support
 
 
 def _get_values_or_raise(series_a: TimeSeries,
@@ -36,10 +65,14 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index(), series_b.time_index()),
                  logger)
 
-    return series_a_common.values(), series_b_common.values()
+    return series_a_common.univariate_values(), series_b_common.univariate_values()
 
 
-def mae(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def mae(series1: TimeSeries,
+        series2: TimeSeries,
+        intersect: bool = True,
+        reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -55,6 +88,9 @@ def mae(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> flo
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -66,7 +102,11 @@ def mae(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> flo
     return np.mean(np.abs(y1 - y2))
 
 
-def mse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def mse(series1: TimeSeries,
+        series2: TimeSeries,
+        intersect: bool = True,
+        reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -82,6 +122,9 @@ def mse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> flo
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -93,7 +136,11 @@ def mse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> flo
     return np.mean((y_true - y_pred)**2)
 
 
-def rmse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def rmse(series1: TimeSeries,
+         series2: TimeSeries,
+         intersect: bool = True,
+         reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -109,6 +156,9 @@ def rmse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> fl
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -118,7 +168,11 @@ def rmse(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> fl
     return np.sqrt(mse(series1, series2, intersect))
 
 
-def rmsle(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def rmsle(series1: TimeSeries,
+          series2: TimeSeries,
+          intersect: bool = True,
+          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Root Mean Squared Log Error (RMSLE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -136,6 +190,9 @@ def rmsle(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> f
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -148,7 +205,11 @@ def rmsle(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> f
     return np.sqrt(np.mean((y1 - y2)**2))
 
 
-def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def coefficient_of_variation(actual_series: TimeSeries,
+                             pred_series: TimeSeries,
+                             intersect: bool = True,
+                             reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -168,6 +229,9 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -178,7 +242,11 @@ def coefficient_of_variation(actual_series: TimeSeries, pred_series: TimeSeries,
     return 100 * rmse(actual_series, pred_series, intersect) / actual_series.mean().mean()
 
 
-def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def mape(actual_series: TimeSeries,
+         pred_series: TimeSeries,
+         intersect: bool = True,
+         reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -198,6 +266,9 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = T
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Raises
     ------
@@ -215,7 +286,12 @@ def mape(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = T
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
 
-def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 1, intersect: bool = True) -> float:
+@multivariate_support
+def mase(actual_series: TimeSeries,
+         pred_series: TimeSeries,
+         m: Optional[int] = 1,
+         intersect: bool = True,
+         reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Absolute Scaled Error (MASE).
 
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -235,6 +311,9 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------
@@ -255,7 +334,11 @@ def mase(actual_series: TimeSeries, pred_series: TimeSeries, m: Optional[int] = 
     return errors / scale
 
 
-def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def ope(actual_series: TimeSeries,
+        pred_series: TimeSeries,
+        intersect: bool = True,
+        reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -273,6 +356,9 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = Tr
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Raises
     ------
@@ -291,7 +377,11 @@ def ope(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = Tr
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
 
 
-def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def marre(actual_series: TimeSeries,
+          pred_series: TimeSeries,
+          intersect: bool = True,
+          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -309,6 +399,9 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Raises
     ------
@@ -328,7 +421,11 @@ def marre(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool = 
     return 100. * np.mean(np.abs((y_true - y_hat) / true_range))
 
 
-def r2_score(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -> float:
+@multivariate_support
+def r2_score(series1: TimeSeries,
+             series2: TimeSeries,
+             intersect: bool = True,
+             reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Coefficient of Determination :math:`R^2`.
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
@@ -343,6 +440,9 @@ def r2_score(series1: TimeSeries, series2: TimeSeries, intersect: bool = True) -
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
 
     Returns
     -------

@@ -47,16 +47,16 @@ def auto_fillna(ts: TimeSeries,
                 **interpolate_kwargs) -> TimeSeries:
     """
     This function fills the missing value in the TimeSeries `ts`,
-    using the `pandas.Series.interpolate()` method.
+    using the `pandas.Dataframe.interpolate()` method.
 
     Parameters
     ----------
     ts
         The time series
     interpolate_kwargs
-        Keyword arguments  `pandas.Series.interpolate()`.
+        Keyword arguments  `pandas.Dataframe.interpolate()`.
         See `the documentation
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.interpolate.html>`_
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`_
         for the list of supported parameters.
     Returns
     -------

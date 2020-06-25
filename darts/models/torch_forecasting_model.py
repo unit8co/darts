@@ -35,7 +35,7 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-class _TimeSeriesDataset1DSequential(Dataset):
+class _TimeSeriesSequentialDataset(Dataset):
 
     def __init__(self,
                  series: TimeSeries,
@@ -84,7 +84,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
-class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
+class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
     def __init__(self,
                  series: TimeSeries,
@@ -142,8 +142,11 @@ class TorchForecastingModel(MultivariateForecastingModel):
                  input_length: int = 10,
                  input_size: int = 1,
                  output_size: int = 1,
+<<<<<<< HEAD
                  datetime_enhancements: List[str] = [],
                  holiday_enhancement: Optional[str] = None,
+=======
+>>>>>>> develop
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -172,12 +175,15 @@ class TorchForecastingModel(MultivariateForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         output_size
             The dimensionality of the output time series.
+<<<<<<< HEAD
         datetime_enhancements
             A list of integers representing pd.Datetime attributes which will be included in the
             form of one-hot time series encodings to serve as additional inputs to the model.
         holiday_enhancement
             Optionally, a string representing a country whose holidays will be included
             in the form of a binary encoding to serve as an additional input to the model
+=======
+>>>>>>> develop
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -276,7 +282,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False,
-            target_indices: List[int] = []) -> None:
+            target_indices: Optional[List[int]] = None) -> None:
         """ Fit method for torch modules
 
         Parameters
@@ -288,6 +294,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
             throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
+        target_indices
+            A list of integers indicating which component(s) of the time series should be used
+            as targets for forecasting.
         """
         raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
                      "the `input_size` defined when instantiating the current model.", logger)
@@ -337,6 +346,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
+<<<<<<< HEAD
     def predict(self, n: int,
                 use_full_output_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
@@ -345,11 +355,46 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if_not(input_series is None or input_series.width == self.training_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
+=======
+    def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
+        """ Predicts values for a certain number of time steps after the end of the training series
+
+        In the case of univariate training series, `n` can assume any integer value greater than 0.
+        If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
+        the first predicted value is kept as output while at the same time being fed into the input for
+        the next prediction (the first value of the previous input is discarded). This way, the input sequence
+        'rolls over' by 1 step for every prediction in 'n'.
+        If `use_full_output_length` is set to `True`, the model will predict not one, but `self.output_length` values
+        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
+        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
+        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
+        iteration.
+
+        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_output_length`
+        has to be set to `True`. In this case, only one iteration of predictions will be performed.
+
+        Parameters
+        ----------
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        use_full_output_length
+            Boolean value indicating whether or not the full output sequence of the model prediction should be
+            used to produce the output of this function.
+
+        Returns
+        -------
+        TimeSeries
+            A time series containing the `n` next points, starting after the end of the training time series
+        """
+        super().predict(n)
+
+>>>>>>> develop
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
                      " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
+<<<<<<< HEAD
         if input_series is None:
             input_sequence = self.training_series.values()[-self.input_length:]
         else:
@@ -357,13 +402,20 @@ class TorchForecastingModel(MultivariateForecastingModel):
                          "'input_series' must at least be as long as 'self.input_length'", logger)
             input_sequence = input_series.values()[-self.input_length:]
             super().fit(input_series)
+=======
+        input_sequence = self.training_series.values()[-self.input_length:]
+>>>>>>> develop
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
         # iterate through predicting output and consuming it again until enough predictions are created
         test_out = []
         self.model.eval()
         if (use_full_output_length):
+<<<<<<< HEAD
             num_iterations = math.ceil(n / self.output_length)
+=======
+            num_iterations = int(math.ceil(n / self.output_length))
+>>>>>>> develop
             for i in range(num_iterations):
                 raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
                              " support predictions with n > output_length", logger)
@@ -513,7 +565,11 @@ class TorchForecastingModel(MultivariateForecastingModel):
                     os.remove(chkpt)
 
     def create_dataset(self, series):
+<<<<<<< HEAD
         return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length, self.target_indices)
+=======
+        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
+>>>>>>> develop
 
     @staticmethod
     def load_from_checkpoint(model_name: str,

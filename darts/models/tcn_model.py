@@ -9,13 +9,14 @@ import torch.nn.functional as F
 from typing import Optional
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesDataset1DShifted
+from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesShiftedDataset
 
 logger = get_logger(__name__)
 
 
 class _ResidualBlock(nn.Module):
 
+<<<<<<< HEAD
     def __init__(
         self,
         num_filters,
@@ -28,6 +29,18 @@ class _ResidualBlock(nn.Module):
         input_size,
         output_size
     ):
+=======
+    def __init__(self,
+                 num_filters: int,
+                 kernel_size: int,
+                 dilation_base: int,
+                 dropout: float,
+                 weight_norm: bool,
+                 nr_blocks_below: int,
+                 num_layers: int,
+                 input_size: int,
+                 output_size: int):
+>>>>>>> develop
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
@@ -263,7 +276,7 @@ class TCNModel(TorchForecastingModel):
         super().__init__(**kwargs)
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DShifted(series, self.input_length, self.output_length, self.target_indices)
+        return _TimeSeriesShiftedDataset(series, self.input_length, self.output_length, self.target_indices)
 
     @property
     def first_prediction_index(self) -> int:

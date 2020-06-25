@@ -11,7 +11,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, Union, List
+from typing import Tuple, Optional, Callable, Any, List, Union
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -498,7 +498,7 @@ class TimeSeries:
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str],
-                       value_cols: Union[str, List[str]],
+                       value_cols: Union[List[str], str],
                        freq: Optional[str] = None,
                        fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
@@ -513,7 +513,7 @@ class TimeSeries:
         time_col
             The time column name (mandatory). If set to `None`, the DataFrame index will be used.
         value_cols
-            A a list of strings representing the value columns to be extracted from the DataFrame
+            A string or list of strings representing the value column(s) to be extracted from the DataFrame.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame.
         fill_missing_dates
@@ -525,7 +525,12 @@ class TimeSeries:
         TimeSeries
             A univariate TimeSeries constructed from the inputs.
         """
+
+        if isinstance(value_cols, str):
+            value_cols = [value_cols]
+
         series_df = df[value_cols]
+
         if time_col is None:
             series_df.index = pd.to_datetime(df.index, errors='raise')
         else:
@@ -733,7 +738,8 @@ class TimeSeries:
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same index on top of
-        the current one and returns the newly formed multivariate TimeSeries.
+        the current one and returns the newly formed multivariate TimeSeries that includes
+        all the components of `self` and of `other`.
 
         Parameters
         ----------
