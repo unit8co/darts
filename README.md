@@ -101,7 +101,7 @@ import pandas as pd
 from darts import TimeSeries
 
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
-series = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
+series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
 train, val = series.split_after(pd.Timestamp('19590101'))
 ```
 
