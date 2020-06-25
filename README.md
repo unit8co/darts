@@ -41,7 +41,7 @@ Once your environement is setup you can install darts using the pip package:
 
 ### Step-by-step Install
 
-For more detailed install instructions you can refer to our [installation guide](https://github.com/unit8co/darts/blob/master/INSTALL.md).
+For more detailed install instructions you can refer to our [installation guide](INSTALL.md).
 
 ## Example Usage
 
