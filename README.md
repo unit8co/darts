@@ -16,19 +16,6 @@ The models can all be used in the same way, using `fit()` and `predict()` functi
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors.
 
-## Table of Content
-
-- [Darts: Time Series Made Easy in Python](#darts-time-series-made-easy-in-python)
-  - [Table of Content](#table-of-content)
-  - [Install](#install)
-    - [Quick Install](#quick-install)
-    - [Step-by-step Install](#step-by-step-install)
-  - [Example Usage](#example-usage)
-  - [Documentation](#documentation)
-  - [Features](#features)
-  - [Contribute](#contribute)
-  - [Contact Us](#contact-us)
-
 ## Install
 
 We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
