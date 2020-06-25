@@ -408,9 +408,9 @@ class TimeSeriesTestCase(unittest.TestCase):
         # test empty pandas series error
         with self.assertRaises(ValueError):
             TimeSeries.from_series(pd.Series(), freq='D')
-        # test frequency mismatch error
-        with self.assertRaises(ValueError):
-            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
+        # test frequency mismatch case
+        seriesA = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
+        self.assertEqual(seriesA.freq(), 'D')
         # test successful instantiation of TimeSeries with length 2
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
 
