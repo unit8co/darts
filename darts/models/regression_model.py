@@ -72,10 +72,12 @@ class RegressionModel(ABC):
 
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
-        raise_if_not(len(features) == len(self.train_features),
-                     'Provided features must have same dimensionality as training features. '
-                     'There were {} training features and the function has been called with {} features'
-                     .format(len(self.train_features), len(features)), logger)
+
+        length_ok = len(features) == len(self.train_features)
+        dimensions_ok = all(features[i].width == self.train_features[i].width for i in range(len(features)))
+        raise_if_not(length_ok and dimensions_ok,
+                     'The number and dimensionalities of all given features must correspond to those used for'
+                     ' training.', logger)
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series

@@ -46,6 +46,8 @@ def check_seasonality(ts: TimeSeries,
         and `m` is the seasonality period.
     """
 
+    ts._assert_univariate()
+
     if m is not None and (m < 2 or not isinstance(m, int)):
         raise_log(ValueError('m must be an integer greater than 1.'), logger)
 
@@ -149,6 +151,8 @@ def extract_trend_and_seasonality(ts: TimeSeries,
         A tuple of (trend, seasonal) time series.
     """
 
+    ts._assert_univariate()
+
     decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model, extrapolate_trend='freq')
 
     season = TimeSeries.from_times_and_values(ts.time_index(), decomp.seasonal)
@@ -179,6 +183,8 @@ def remove_from_series(ts: TimeSeries,
         A TimeSeries defined by removing `other` from `ts`.
     """
 
+    ts._assert_univariate()
+
     if model == 'multiplicative':
         new_ts = ts / other
     elif model == 'additive':
@@ -208,6 +214,8 @@ def remove_seasonality(ts: TimeSeries,
         A new time series that is the adjusted original time series
     """
 
+    ts._assert_univariate()
+
     _, seasonality = extract_trend_and_seasonality(ts, freq, model)
     new_ts = remove_from_series(ts, seasonality, model)
     return new_ts
@@ -229,6 +237,8 @@ def remove_trend(ts: TimeSeries,
     TimeSeries
         A new time series that is the adjusted original time series
     """
+
+    ts._assert_univariate()
 
     trend, _ = extract_trend_and_seasonality(ts, model=model)
     new_ts = remove_from_series(ts, trend, model)
@@ -259,6 +269,8 @@ def plot_acf(ts: TimeSeries,
     axis
         Optionally, an axis object to plot the ACF on.
     """
+
+    ts._assert_univariate()
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
 
