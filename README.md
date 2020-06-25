@@ -1,4 +1,4 @@
-# Darts: Easy manipulation and forecasting of time series.
+# Darts: Time Series Made Easy in Python
 
 ![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts") 
 
@@ -18,7 +18,7 @@ and combine the predictions of several models and external regressors.
 
 ## Table of Content
 
-- [Darts: Easy manipulation and forecasting of time series.](#darts-easy-manipulation-and-forecasting-of-time-series)
+- [Darts: Time Series Made Easy in Python](#darts-time-series-made-easy-in-python)
   - [Table of Content](#table-of-content)
   - [Install](#install)
     - [Quick Install](#quick-install)
