@@ -68,8 +68,8 @@ class TimeSeries:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
                                         'Try specifying `fill_missing_dates=True`.', logger)
             self._freq: str = self._df.index.inferred_freq  # Infer frequency
-            raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
-                         'value of the "freq" argument.', logger)
+            if (freq is not None and self._freq != freq):
+                logger.warn('The inferred frequency does not match the value of the "freq" argument.')
 
         self._df.index.freq = self._freq  # Set the inferred frequency in the Pandas dataframe
 
