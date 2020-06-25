@@ -49,23 +49,23 @@ task setupPip(type: Exec) {
     commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
 }
 
-void pipInstallSteps() {
-    exec {
-        commandLine "pip", "install", "-q", "-r", "requirements/main.txt"
-    }
-    exec {
-        commandLine "pip", "install", "-q", "-r", "requirements/dev.txt"
-    }
-    exec {
-        commandLine "pip", "install", "-q", "-r", "requirements/release.txt"
-    }
+task pipMain(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/main.txt"
+}
+
+task pipDev(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/dev.txt"
+}
+
+task pipRelease(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/release.txt"
 }
 
 task pipInstall() {
-    dependsOn setupPip
-    doLast {
-        pipInstallSteps()
+    doFirst {
+        setupPip
     }
+    dependsOn pipMain, pipDev, pipRelease
 }
 
 task installLocally(type:Exec) {
@@ -84,18 +84,19 @@ void coverageTestSteps() {
 }
 
 task unitTest(type: Exec) {
-    dependsOn pipInstall
+    dependsOn pipMain, pipDev
     commandLine "python", "-m", "unittest"
 }
 
 task coverageTest() {
-    dependsOn pipInstall
+    dependsOn pipMain, pipDev
     doLast {
         coverageTestSteps()
     }
 }
 
 task lint(type: Exec) {
+    dependsOn pipDev
     commandLine "flake8", "--config=setup.cfg", "darts"
 }
 
