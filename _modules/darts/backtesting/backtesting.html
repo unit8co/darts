@@ -1,164 +1,137 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>darts.backtesting.backtesting &mdash; darts  documentation</title>
-  
 
-  
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-  
-  
-
-  
-  <!--[if lt IE 9]>
-    <script src="../../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-    
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
-    
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>darts.backtesting.backtesting &#8212; darts  documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="../../../_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
-</head>
-
-<body class="wy-body-for-nav">
-
-   
-  <div class="wy-grid-for-nav">
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-          
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
 
-          
-            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> darts
-          
+    
+    <a class="navbar-brand" href="../../../index.html">
+      <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                dev
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
         
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../README.html">Home</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../generated_api/darts.html">API Reference</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
-</ul>
-
-            
-          
-        </div>
         
-      </div>
-    </nav>
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
+      <form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
       
-      <nav class="wy-nav-top" aria-label="top navigation">
+
+      <ul class="navbar-nav">
         
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">darts</a>
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
         
-      </nav>
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar">
 
 
-      <div class="wy-nav-content">
-        
-        <div class="rst-content">
-        
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+  <div class="bd-toc-item active">
+  
+
+  <ul class="nav bd-sidenav">
+      
+      
+      
+      
+      
+      
+      
+    </ul>
+
+</nav>
+          </div>
           
 
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
-  <ul class="wy-breadcrumbs">
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
     
-      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-          <li><a href="../../index.html">Module code</a> &raquo;</li>
-        
-      <li>darts.backtesting.backtesting</li>
-    
-    
-      <li class="wy-breadcrumbs-aside">
-        
-      </li>
-    
-  </ul>
+    </ul>
+</nav>
 
-  
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
   <h1>Source code for darts.backtesting.backtesting</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Backtesting Functions</span>
@@ -181,6 +154,7 @@
 <span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">metrics</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span>
 <span class="kn">from</span> <span class="nn">..utils.statistics</span> <span class="kn">import</span> <span class="n">plot_acf</span>
+<span class="kn">from</span> <span class="nn">..utils.missing_values</span> <span class="kn">import</span> <span class="n">auto_fillna</span>
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
 
 
@@ -212,7 +186,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    series</span>
-<span class="sd">        The time series on which to backtest</span>
+<span class="sd">        The univariate time series on which to backtest</span>
 <span class="sd">    model</span>
 <span class="sd">        The forecasting model to be backtested</span>
 <span class="sd">    start</span>
@@ -231,6 +205,7 @@
 <span class="sd">        the specified model with the specified forecast horizon.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;The provided start timestamp is the last timestamp of the time series&#39;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
@@ -253,9 +228,8 @@
         <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
         <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
         <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">fcast_horizon_n</span><span class="p">)</span>
-        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
         <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
-
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span></div>
 
 
@@ -286,7 +260,7 @@
 <span class="sd">    feature_series</span>
 <span class="sd">        A list of time series representing the features for the regression model (independent variables)</span>
 <span class="sd">    target_series</span>
-<span class="sd">        The target time series for the regression model (dependent variable)</span>
+<span class="sd">        The univariate target time series for the regression model (dependent variable)</span>
 <span class="sd">    model</span>
 <span class="sd">        The regression model to be backtested</span>
 <span class="sd">    start</span>
@@ -305,6 +279,7 @@
 <span class="sd">        the specified model with the specified forecast horizon.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">target_series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;&#39;target_series&#39; must be univariate.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span>
                  <span class="s1">&#39;have the same time index&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">,</span> <span class="s1">&#39;The provided start timestamp is not in the time series.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -334,7 +309,7 @@
 
         <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_features</span><span class="p">,</span> <span class="n">train_target</span><span class="p">)</span>
         <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_features</span><span class="p">)</span>
-        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
+        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># store the N-th point</span>
         <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>  <span class="c1"># store the N-th timestamp</span>
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">))</span></div>
@@ -344,7 +319,7 @@
                           <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
                           <span class="n">fcast_horizon_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                           <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; A function for computing the residuals produced by a given model and time series.</span>
+    <span class="sd">&quot;&quot;&quot; A function for computing the residuals produced by a given model and univariate time series.</span>
 
 <span class="sd">    This function computes the difference between the actual observations from `series`</span>
 <span class="sd">    and the fitted values vector p obtained by training `model` on `series`.</span>
@@ -360,7 +335,7 @@
 <span class="sd">    model</span>
 <span class="sd">        Instance of ForecastingModel used to compute the fitted values p.</span>
 <span class="sd">    series</span>
-<span class="sd">        The TimeSeries instance which the residuals will be computed for.</span>
+<span class="sd">        The univariate TimeSeries instance which the residuals will be computed for.</span>
 <span class="sd">    fcast_horizon_n</span>
 <span class="sd">        The forecasting horizon used to predict each fitted value.</span>
 <span class="sd">    verbose</span>
@@ -370,6 +345,8 @@
 <span class="sd">    TimeSeries</span>
 <span class="sd">        The vector of residuals.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
     <span class="c1"># get first index not contained in the first training set</span>
     <span class="n">first_index</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">]</span>
@@ -384,22 +361,34 @@
     <span class="k">return</span> <span class="n">residuals</span></div>
 
 
-<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span><span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.backtesting.backtesting.html#darts.backtesting.backtesting.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span><span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                            <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+                            <span class="n">fill_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Plots data relevant to residuals.</span>
 
-<span class="sd">    This function takes a TimeSeries instance of residuals and plots their values,</span>
+<span class="sd">    This function takes a univariate TimeSeries instance of residuals and plots their values,</span>
 <span class="sd">    their distribution and their ACF.</span>
+<span class="sd">    Please note that if the residual TimeSeries instance contains NaN values while, the plots</span>
+<span class="sd">    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will</span>
+<span class="sd">    be interpolated.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    residuals</span>
-<span class="sd">        TimeSeries instance representing residuals.</span>
+<span class="sd">        Univariate TimeSeries instance representing residuals.</span>
 <span class="sd">    num_bins</span>
 <span class="sd">        Optionally, an integer value determining the number of bins in the histogram.</span>
+<span class="sd">    fill_nan:</span>
+<span class="sd">        A boolean value indicating whether NaN values should be filled in the residuals.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">residuals</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
     <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
     <span class="n">gs</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fill_nan</span><span class="p">:</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">auto_fillna</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span>
 
     <span class="c1"># plot values</span>
     <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[:</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
@@ -408,11 +397,11 @@
     <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Residual values&#39;</span><span class="p">)</span>
 
     <span class="c1"># plot distribution</span>
-    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
+    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
     <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
-    <span class="n">ax2</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">)</span>
     <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">norm</span><span class="p">(</span><span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span><span class="p">)</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">res_max</span> <span class="o">-</span> <span class="n">res_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_bins</span><span class="p">)</span>
     <span class="n">ax2</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
     <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Distribution&#39;</span><span class="p">)</span>
@@ -465,9 +454,9 @@
 <span class="sd">        A dictionary containing as keys hyperparameter names, and as values lists of values for the</span>
 <span class="sd">        respective hyperparameter.</span>
 <span class="sd">    train_series</span>
-<span class="sd">        The TimeSeries instance used for training (and also validation in split mode).</span>
+<span class="sd">        The univariate TimeSeries instance used for training (and also validation in split mode).</span>
 <span class="sd">    test_series</span>
-<span class="sd">        The TimeSeries instance used for validation in split mode.</span>
+<span class="sd">        The univariate TimeSeries instance used for validation in split mode.</span>
 <span class="sd">    fcast_horizon_n</span>
 <span class="sd">        The integer value of the forecasting horizon used in expanding window mode.</span>
 <span class="sd">    num_predictions:</span>
@@ -482,6 +471,10 @@
 <span class="sd">    ForecastingModel</span>
 <span class="sd">        An untrained &#39;model_class&#39; instance with the best-performing hyperparameters from the given selection.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">train_series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">val_series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
     <span class="n">raise_if_not</span><span class="p">((</span><span class="n">fcast_horizon_n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span><span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span>
                  <span class="s2">&quot;Please pass exactly one of the arguments &#39;forecast_horizon_n&#39; or &#39;val_series&#39;.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -535,11 +528,11 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    train_series</span>
-<span class="sd">        A TimeSeries instance used for training during model tuning and evaluation.</span>
+<span class="sd">        A univariate TimeSeries instance used for training during model tuning and evaluation.</span>
 <span class="sd">    val_series</span>
-<span class="sd">        A TimeSeries instance used for validation during model tuning and for training during evaluation.</span>
+<span class="sd">        A univariate TimeSeries instance used for validation during model tuning and for training during evaluation.</span>
 <span class="sd">    test_series</span>
-<span class="sd">        A TimeSeries instance used for validation when evaluating a model.</span>
+<span class="sd">        A univariate TimeSeries instance used for validation when evaluating a model.</span>
 <span class="sd">    metric:</span>
 <span class="sd">        A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
 <span class="sd">    model_parameter_tuples:</span>
@@ -550,6 +543,10 @@
 <span class="sd">    verbose:</span>
 <span class="sd">        Whether to print progress.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">train_series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">val_series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">test_series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">plot_width</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Please choose an integer &#39;plot_width&#39; value larger than 1&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
@@ -634,50 +631,28 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
 </pre></div>
 
-           </div>
-           
-          </div>
-          <footer>
-  
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
 
-  <hr/>
+              </div>
+              
+          </main>
+          
 
-  <div role="contentinfo">
+      </div>
+    </div>
+
+    <script src="../../../_static/js/index.js"></script>
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
     <p>
-        
-        &copy; Copyright 2020, Unit8 SA
-
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.1.<br/>
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
 </footer>
-
-        </div>
-      </div>
-
-    </section>
-
-  </div>
-  
-
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script>
-
-  
-  
-    
-   
-
-</body>
+  </body>
 </html>

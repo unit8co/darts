@@ -1,224 +1,235 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Exponential Smoothing &mdash; darts  documentation</title>
-  
 
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
-
-  
-  
-  
-  
-
-  
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exponential Smoothing &#8212; darts  documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="../_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Fast Fourier Transform" href="darts.models.fft.html" />
-    <link rel="prev" title="Baseline Models" href="darts.models.baselines.html" /> 
-</head>
-
-<body class="wy-body-for-nav">
-
-   
-  <div class="wy-grid-for-nav">
+    <link rel="prev" title="Baseline Models" href="darts.models.baselines.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-          
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
 
-          
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> darts
-          
+    
+    <a class="navbar-brand" href="../index.html">
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                dev
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
         
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Home</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="darts.html">API Reference</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="darts.backtesting.html">Backtesting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="darts.models.html">Models</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="darts.models.arima.html">ARIMA and Auto-ARIMA</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.baselines.html">Baseline Models</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Exponential Smoothing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.fft.html">Fast Fourier Transform</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting_model.html">Forecasting Model Base Class</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.prophet.html">Facebook Prophet</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.regression_model.html">Regression Model Base Class</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.rnn_model.html">Recurrent Neural Networks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.standard_regression_model.html">Standard Regression model</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.tcn_model.html">Temporal Convolutional Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.theta.html">Theta Method</a></li>
-<li class="toctree-l3"><a class="reference internal" href="darts.models.torch_forecasting_model.html">Torch Forecasting Model</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="darts.preprocessing.html">Preprocessing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="darts.utils.html">Utils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
-</ul>
-</li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
-</ul>
-
-            
-          
-        </div>
         
-      </div>
-    </nav>
+        <li class="nav-item ">
+            <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
+      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
       
-      <nav class="wy-nav-top" aria-label="top navigation">
+
+      <ul class="navbar-nav">
         
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">darts</a>
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
         
-      </nav>
-
-
-      <div class="wy-nav-content">
         
-        <div class="rst-content">
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
         
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
-  <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-          <li><a href="darts.html">darts</a> &raquo;</li>
-        
-          <li><a href="darts.models.html">Models</a> &raquo;</li>
-        
-      <li>Exponential Smoothing</li>
-    
-    
-      <li class="wy-breadcrumbs-aside">
-        
-            
-            <a href="../_sources/generated_api/darts.models.exponential_smoothing.rst.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-    
-  </ul>
-
-  
-  <hr/>
+      </ul>
+    </div>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar">
+
+
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+  <div class="bd-toc-item active">
   
-<style>
-/* CSS overrides for sphinx_rtd_theme */
 
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
+  <ul class="nav bd-sidenav">
+      
+      
+      
+      
+        
+          
+              <li class="">
+                  <a href="darts.backtesting.html">Backtesting</a>
+              </li>
+          
+        
+          
+              <li class="">
+                  <a href="darts.metrics.html">Metrics</a>
+              </li>
+          
+        
+          
 
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
+              <li class="active">
+                  <a href="darts.models.html">Models</a>
+                  <ul>
+                  
+                      <li class="">
+                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.baselines.html">Baseline Models</a>
+                      </li>
+                  
+                      <li class="active">
+                          <a href="">Exponential Smoothing</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.fft.html">Fast Fourier Transform</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.forecasting_model.html">Forecasting Model Base Class</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.prophet.html">Facebook Prophet</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.regression_model.html">Regression Model Base Class</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.rnn_model.html">Recurrent Neural Networks</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.tcn_model.html">Temporal Convolutional Network</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.theta.html">Theta Method</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.torch_forecasting_model.html">Torch Forecasting Model</a>
+                      </li>
+                  
+                  </ul>
+              </li>
+          
+        
+          
+              <li class="">
+                  <a href="darts.preprocessing.html">Preprocessing</a>
+              </li>
+          
+        
+          
+              <li class="">
+                  <a href="darts.utils.html">Utils</a>
+              </li>
+          
+        
+          
+              <li class="">
+                  <a href="darts.timeseries.html">Timeseries</a>
+              </li>
+          
+        
+      
+      
+      
+      
+    </ul>
 
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
+</nav>
+          </div>
+          
 
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<span class="target" id="module-darts.models.exponential_smoothing"></span><div class="section" id="exponential-smoothing">
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.models.exponential_smoothing"></span><div class="section" id="exponential-smoothing">
 <h1>Exponential Smoothing<a class="headerlink" href="#exponential-smoothing" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.models.exponential_smoothing.ExponentialSmoothing">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.exponential_smoothing.</code><code class="sig-name descname">ExponentialSmoothing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">trend</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'additive'</span></em>, <em class="sig-param"><span class="n">damped</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">seasonal</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'additive'</span></em>, <em class="sig-param"><span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">fit_kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.exponential_smoothing.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting_model.ForecastingModel</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.UnivariateForecastingModel" title="darts.models.forecasting_model.UnivariateForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting_model.UnivariateForecastingModel</span></code></a></p>
 <p>Exponential Smoothing</p>
 <p>This is a wrapper around
 <a class="reference external" href="https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html">statsmodels  Holt-Winters’ Exponential Smoothing</a>.</p>
@@ -239,11 +250,15 @@ See <a class="reference external" href="https://www.statsmodels.org/stable/gener
 </dl>
 <dl class="py method">
 <dt id="darts.models.exponential_smoothing.ExponentialSmoothing.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/exponential_smoothing.html#ExponentialSmoothing.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.exponential_smoothing.ExponentialSmoothing.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits/trains the model on the provided series</p>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">component_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/exponential_smoothing.html#ExponentialSmoothing.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.exponential_smoothing.ExponentialSmoothing.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the univariate model on selected univariate series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – the training time series on which to fit the model</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
+<li><p><strong>component_index</strong> – Optionally, a zero-indexed integer indicating the component to use if a multivariate
+time series is passed.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -277,59 +292,30 @@ This function/property should be overridden if a value higher than 3 is required
 </div>
 
 
-           </div>
-           
-          </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="darts.models.fft.html" class="btn btn-neutral float-right" title="Fast Fourier Transform" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="darts.models.baselines.html" class="btn btn-neutral float-left" title="Baseline Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="darts.models.baselines.html" title="previous page">Baseline Models</a>
+    <a class='right-next' id="next-link" href="darts.models.fft.html" title="next page">Fast Fourier Transform</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
     </div>
-  
 
-  <hr/>
-
-  <div role="contentinfo">
+    <script src="../_static/js/index.js"></script>
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
     <p>
-        
-        &copy; Copyright 2020, Unit8 SA
-
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.1.<br/>
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
 </footer>
-
-        </div>
-      </div>
-
-    </section>
-
-  </div>
-  
-
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script>
-
-  
-  
-    
-   
-
-</body>
+  </body>
 </html>

@@ -1,184 +1,172 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Fast Fourier Transform Model (FFT) &mdash; darts  documentation</title>
-  
 
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
-
-  
-  
-  
-  
-
-  
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Fourier Transform Forecasting Model (FFT) &#8212; darts  documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="../_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Recurrent Neural Networks Models" href="RNN-examples.html" />
-    <link rel="prev" title="Introduction to darts" href="darts-intro.html" /> 
-</head>
-
-<body class="wy-body-for-nav">
-
-   
-  <div class="wy-grid-for-nav">
+    <link rel="prev" title="Introduction to darts" href="darts-intro.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-          
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
 
-          
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> darts
-          
+    
+    <a class="navbar-brand" href="../index.html">
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
 
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                dev
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
         
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../README.html">Home</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../generated_api/darts.html">API Reference</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../examples.html#darts-intro">darts intro</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../examples.html#fast-fourier-transform">Fast Fourier Transform</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Fast Fourier Transform Model (FFT)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Read-data-and-fill-holes">Read data and fill holes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Constructing-a-TimeSeries-instance,-and-split-train-and-validation-sets">Constructing a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance, and split train and validation sets</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Let's-try-out-a-different-data-set-that-has-a-global-upward-trend">Let’s try out a different data set that has a global upward trend</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../examples.html#recurrent-neural-networks">Recurrent Neural Networks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../examples.html#temporal-convolutional-networks">Temporal Convolutional Networks</a></li>
-</ul>
-</li>
-</ul>
-
-            
-          
-        </div>
         
-      </div>
-    </nav>
+        <li class="nav-item ">
+            <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
+      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
       
-      <nav class="wy-nav-top" aria-label="top navigation">
+
+      <ul class="navbar-nav">
         
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">darts</a>
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
         
-      </nav>
-
-
-      <div class="wy-nav-content">
         
-        <div class="rst-content">
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
         
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
-  <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-          <li><a href="../examples.html">Examples</a> &raquo;</li>
-        
-      <li>Fast Fourier Transform Model (FFT)</li>
-    
-    
-      <li class="wy-breadcrumbs-aside">
-        
-            
-            <a href="../_sources/examples/FFT-examples.ipynb.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-    
-  </ul>
-
-  
-  <hr/>
+      </ul>
+    </div>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar">
+
+
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+  <div class="bd-toc-item active">
+  
+
+  <ul class="nav bd-sidenav">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+    </ul>
+
+</nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Read-and-format" class="nav-link">Read and format</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Constructing-TimeSeries-instances-for-training-and-validation" class="nav-link">Constructing TimeSeries instances for training and validation</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Basic-FFT-model" class="nav-link">Basic FFT model</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Improvement-1:-Crop-the-training-set" class="nav-link">Improvement 1: Crop the training set</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Improvement-2:-Filtering-out-low-amplitude-waves" class="nav-link">Improvement 2: Filtering out low-amplitude waves</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Improvement-3:-Detrending" class="nav-link">Improvement 3: Detrending</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#New-Data:-Hourly-Nuclear-Energy-Generation" class="nav-link">New Data: Hourly Nuclear Energy Generation</a>
+        </li>
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
   
 <style>
 /* CSS for nbsphinx extension */
@@ -411,31 +399,9 @@ div.rendered_html tbody tr:nth-child(odd) {
 div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
-
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
 </style>
-<div class="section" id="Fast-Fourier-Transform-Model-(FFT)">
-<h1>Fast Fourier Transform Model (FFT)<a class="headerlink" href="#Fast-Fourier-Transform-Model-(FFT)" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Fast-Fourier-Transform-Forecasting-Model-(FFT)">
+<h1>Fast Fourier Transform Forecasting Model (FFT)<a class="headerlink" href="#Fast-Fourier-Transform-Forecasting-Model-(FFT)" title="Permalink to this headline">¶</a></h1>
 <p>The following is a brief demonstration of the FFT forecasting model. This model is especially suited for data that is very seasonal. The datasets chosen for this demonstration were selected accordingly.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -468,9 +434,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Read-data-and-fill-holes">
-<h2>Read data and fill holes<a class="headerlink" href="#Read-data-and-fill-holes" title="Permalink to this headline">¶</a></h2>
-<p>Here we simply read the CSV file containing daily temperatures, and fill the missing dates with the mean temperature:</p>
+<div class="section" id="Read-and-format">
+<h2>Read and format<a class="headerlink" href="#Read-and-format" title="Permalink to this headline">¶</a></h2>
+<p>Here we simply read the CSV file containing daily temperatures, and transform the values into the desired format.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -482,14 +448,14 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 </div>
-<div class="section" id="Constructing-a-TimeSeries-instance,-and-split-train-and-validation-sets">
-<h2>Constructing a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance, and split train and validation sets<a class="headerlink" href="#Constructing-a-TimeSeries-instance,-and-split-train-and-validation-sets" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Constructing-TimeSeries-instances-for-training-and-validation">
+<h2>Constructing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances for training and validation<a class="headerlink" href="#Constructing-TimeSeries-instances-for-training-and-validation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">auto_fillna</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="s1">&#39;Date&#39;</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="s1">&#39;temps&#39;</span><span class="p">))</span>
+<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">auto_fillna</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Date&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;temps&#39;</span><span class="p">]))</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19850701&#39;</span><span class="p">))</span>
 <span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -503,8 +469,9 @@ div.rendered_html tbody tr:hover {
 <img alt="../_images/examples_FFT-examples_5_0.png" src="../_images/examples_FFT-examples_5_0.png" />
 </div>
 </div>
+</div>
 <div class="section" id="Basic-FFT-model">
-<h3>Basic FFT model<a class="headerlink" href="#Basic-FFT-model" title="Permalink to this headline">¶</a></h3>
+<h2>Basic FFT model<a class="headerlink" href="#Basic-FFT-model" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -516,10 +483,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Results:">
-<h3>Results:<a class="headerlink" href="#Results:" title="Permalink to this headline">¶</a></h3>
-<p>The plot below shows us that a simple DFT with a random train-test split will most likely lead to bad results. Upon closer inspection we can see that the prediction (in green) simply repeats the training set (blue). This is the standard behavior of the DFT, and by itself it is quite useless, since repeating our training set could be done much more efficiently. Two improvements were made to this approach.</p>
+<p>The plot below shows us that a simple DFT with a random train-test split will most likely lead to bad results. Upon closer inspection we can see that the prediction (in green) simply repeats the training set (blue). This is the standard behavior of the DFT, and by itself it is quite useless, since repeating our training set could be done much more efficiently. Three improvements were made to this approach.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -537,7 +501,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 5197745514916836.0
+MAPE: 416130884490747.6
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -549,7 +513,7 @@ MAPE: 5197745514916836.0
 </div>
 </div>
 <div class="section" id="Improvement-1:-Crop-the-training-set">
-<h3>Improvement 1: Crop the training set<a class="headerlink" href="#Improvement-1:-Crop-the-training-set" title="Permalink to this headline">¶</a></h3>
+<h2>Improvement 1: Crop the training set<a class="headerlink" href="#Improvement-1:-Crop-the-training-set" title="Permalink to this headline">¶</a></h2>
 <p>The first improvement consists of cropping the training set before feeding it to the FFT algorithm such that the first timestamp in the cropped series matches the first timestamp to be predicted in terms of seasonality, i.e. it has the same month, day, weekday, time of day, etc. We can achieve this by passing the optional argument ‘required_matches’ to the FFT constructor that explicitly tells our model which timestamp attributes are relevant. If we don’t set it manually, the model will attempt
 to automatically find the pd.Timestamp attributes that are relevant and crop the training set accordingly (which we will do here).</p>
 <div class="nbinput nblast docutils container">
@@ -563,9 +527,6 @@ to automatically find the pd.Timestamp attributes that are relevant and crop the
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="id1">
-<h3>Results:<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>We can see that the results look like the seasonality of the predictions nicely aligns with the seasonality of the validation set. However, we are still just repeating the training set, including all of the noise. Looking at the error we can see that this is still a pretty bad forecast.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -596,7 +557,7 @@ MAPE: 300841486646235.06
 </div>
 </div>
 <div class="section" id="Improvement-2:-Filtering-out-low-amplitude-waves">
-<h3>Improvement 2: Filtering out low-amplitude waves<a class="headerlink" href="#Improvement-2:-Filtering-out-low-amplitude-waves" title="Permalink to this headline">¶</a></h3>
+<h2>Improvement 2: Filtering out low-amplitude waves<a class="headerlink" href="#Improvement-2:-Filtering-out-low-amplitude-waves" title="Permalink to this headline">¶</a></h2>
 <p>The decomposition of the DFT into the frequency domain allows us to selectively filter out waves with low amplitudes. This allows us to keep strong seasonal trends while discarding some noise. This is achieved in the FFT model by passing the optional argument <code class="docutils literal notranslate"><span class="pre">nr_freqs_to_keep</span></code>. This argument represents the total number of frequencies that will be kept. For instance, if a value of 20 is passed, only the 20 frequencies with the highest amplitudes will be utilized. The default value is set to
 10.</p>
 <div class="nbinput nblast docutils container">
@@ -610,9 +571,6 @@ MAPE: 300841486646235.06
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="id2">
-<h3>Results:<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>We get a signal that is less noisy. Depending on the data set, this might be a better forecast. Looking at the error metric, we can see that this model performs significantly better than the previous models.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -642,19 +600,16 @@ MAPE: 23.280281955513267
 </div>
 </div>
 </div>
-<div class="section" id="New-Data:-Monthly-Air-Passengers">
-<h3>New Data: Monthly Air Passengers<a class="headerlink" href="#New-Data:-Monthly-Air-Passengers" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
-<div class="section" id="Let's-try-out-a-different-data-set-that-has-a-global-upward-trend">
-<h2>Let’s try out a different data set that has a global upward trend<a class="headerlink" href="#Let's-try-out-a-different-data-set-that-has-a-global-upward-trend" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Improvement-3:-Detrending">
+<h2>Improvement 3: Detrending<a class="headerlink" href="#Improvement-3:-Detrending" title="Permalink to this headline">¶</a></h2>
+<p>Let’s try out a different data set that has a global upward trend</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-<span class="n">ts_2</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
+<span class="n">ts_2</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;#Passengers&#39;</span><span class="p">])</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19551201&#39;</span><span class="p">))</span>
 <span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -710,8 +665,6 @@ MAPE: 23.280281955513267
 </pre></div>
 </div>
 </div>
-<div class="section" id="Result:">
-<h3>Result:<a class="headerlink" href="#Result:" title="Permalink to this headline">¶</a></h3>
 <p>We have a much better prediction now.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -733,7 +686,7 @@ MAPE: 23.280281955513267
 </div>
 </div>
 <div class="section" id="New-Data:-Hourly-Nuclear-Energy-Generation">
-<h3>New Data: Hourly Nuclear Energy Generation<a class="headerlink" href="#New-Data:-Hourly-Nuclear-Energy-Generation" title="Permalink to this headline">¶</a></h3>
+<h2>New Data: Hourly Nuclear Energy Generation<a class="headerlink" href="#New-Data:-Hourly-Nuclear-Energy-Generation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
@@ -743,7 +696,7 @@ MAPE: 23.280281955513267
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
-<span class="n">ts_3</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;generation nuclear&#39;</span><span class="p">)</span>
+<span class="n">ts_3</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;generation nuclear&#39;</span><span class="p">])</span>
 <span class="n">ts_3</span> <span class="o">=</span> <span class="n">auto_fillna</span><span class="p">(</span><span class="n">ts_3</span><span class="p">)</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_3</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2017-07-01&#39;</span><span class="p">))</span>
 <span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -758,9 +711,6 @@ MAPE: 23.280281955513267
 <img alt="../_images/examples_FFT-examples_28_0.png" src="../_images/examples_FFT-examples_28_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Forecasting-Performance:">
-<h3>Forecasting Performance:<a class="headerlink" href="#Forecasting-Performance:" title="Permalink to this headline">¶</a></h3>
 <p>Instead of simply looking at the performance of the FFT model, we can also look at how a bunch of other forecasting models performs on this new data set in terms of MAPE. Surprisingly, on this dataset, the FFT model outperforms all of the others (at least with their default parameters). Granted, this dataset was specifically chosen because of its highly seasonal nature. However, this shows us that there definitely are use cases for FFT. Furthermore, the FFT model has a much shorter running time
 than the other models!</p>
 <div class="nbinput docutils container">
@@ -798,62 +748,32 @@ FFT(nr_freqs_to_keep=10, trend=None) MAPE: 10.263184839655274
 </div>
 </div>
 </div>
-</div>
 
 
-           </div>
-           
-          </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="RNN-examples.html" class="btn btn-neutral float-right" title="Recurrent Neural Networks Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="darts-intro.html" class="btn btn-neutral float-left" title="Introduction to darts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="darts-intro.html" title="previous page">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a>
+    <a class='right-next' id="next-link" href="RNN-examples.html" title="next page">Recurrent Neural Networks Models</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
     </div>
-  
 
-  <hr/>
-
-  <div role="contentinfo">
+    <script src="../_static/js/index.js"></script>
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
     <p>
-        
-        &copy; Copyright 2020, Unit8 SA
-
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.1.<br/>
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
 </footer>
-
-        </div>
-      </div>
-
-    </section>
-
-  </div>
-  
-
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script>
-
-  
-  
-    
-   
-
-</body>
+  </body>
 </html>
