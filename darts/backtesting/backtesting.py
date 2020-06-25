@@ -112,7 +112,9 @@ def backtest_forecasting(series: TimeSeries,
                  logger)
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    last_pred_time = series.time_index()[-fcast_horizon_n - stride] if trim_to_series else series.time_index()[-stride - 1]
+    last_pred_time = (
+        series.time_index()[-fcast_horizon_n - stride] if trim_to_series else series.time_index()[-stride - 1]
+    )
     raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
                  " support the option 'retrain=False'.", logger)
 
