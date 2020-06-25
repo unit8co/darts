@@ -29,7 +29,7 @@ setup(
       project_urls=PROJECT_URLS,
       url=URL,
       maintainer='Unit8 SA',
-      maintainer_email='info@unit8.co',
+      maintainer_email='darts@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=read_requirements('requirements/main.txt'),
