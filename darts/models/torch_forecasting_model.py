@@ -512,6 +512,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                          logger)
         else:
             val_loader = None
+        return val_loader
 
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
@@ -525,6 +526,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
         else:
             tb_writer = None
+        return tb_writer
 
     def _create_predict_input(self, input_series):
         if input_series is None:
