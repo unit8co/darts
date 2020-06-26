@@ -291,6 +291,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
+        # Prepare training data
         dataset = self.create_dataset(series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
@@ -298,32 +299,16 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      'The provided training time series is too short for obtaining even one training point.',
                      logger)
 
-        # Prepare validation data:
-        if val_series is not None:
-            val_dataset = self.create_dataset(val_series)
-            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
-                                    num_workers=0, pin_memory=True, drop_last=False)
-            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
-                         'The provided validation time series is too short for this model output length.',
-                         logger)
-        else:
-            val_loader = None
+        # Prepare validation data
+        val_loader = self._prepare_validation_data(val_series)
 
-        # Tensorboard
-        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
-        if self.log_tensorboard:
-            if self.from_scratch:
-                shutil.rmtree(runs_folder, ignore_errors=True)
-                tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
-                tb_writer.add_graph(self.model, dummy_input)
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
-        else:
-            tb_writer = None
+        # Prepare tensorboard writer
+        tb_writer = self._prepare_tensorboard_writer()
 
+        # Train model
         self._train(train_loader, val_loader, tb_writer, verbose)
 
+        # Close tensorboard writer
         if tb_writer is not None:
             tb_writer.flush()
             tb_writer.close()
@@ -516,6 +501,30 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 # remove older files
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
+
+    def _prepare_validation_data(self, val_series):
+        if val_series is not None:
+            val_dataset = self.create_dataset(val_series)
+            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                    num_workers=0, pin_memory=True, drop_last=False)
+            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                         'The provided validation time series is too short for this model output length.',
+                         logger)
+        else:
+            val_loader = None
+
+    def _prepare_tensorboard_writer(self):
+        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
+        if self.log_tensorboard:
+            if self.from_scratch:
+                shutil.rmtree(runs_folder, ignore_errors=True)
+                tb_writer = SummaryWriter(runs_folder)
+                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
+                tb_writer.add_graph(self.model, dummy_input)
+            else:
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
+        else:
+            tb_writer = None
 
     def _create_predict_input(self, input_series):
         if input_series is None:
