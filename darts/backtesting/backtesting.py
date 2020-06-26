@@ -64,12 +64,13 @@ def backtest_forecasting(series: TimeSeries,
     forecast horizon, and then moves the end of the training set forward by one
     time step. The resulting predictions are then returned.
 
-    Unless `retrain` is set to False, his always re-trains the models on the entire available history,
+    Unless `retrain` is set to False, this always re-trains the models on the entire available history,
     corresponding an expending window strategy.
 
     If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances),
-    the model will only be trained at the beginning, and only if it has not been trained before. Then, at every
-    iteration, the newly expanded 'training sequence' will be fed to the model to produce the new output.
+    the model will only be trained only on the initial training window (up to `start` time stamp),
+    and only if it has not been trained before. Then, at every iteration, the newly expanded 'training sequence'
+    will be fed to the model to produce the new output.
 
     Parameters
     ----------
@@ -91,7 +92,7 @@ def backtest_forecasting(series: TimeSeries,
         In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
         as argument to the predict method of `model`.
     stride
-        The number of time steps corresponding to the frequency of `series` between two consecutive predictions.
+        The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
     retrain
         Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
         instances as `model` argument support setting `retrain` to `False`.
