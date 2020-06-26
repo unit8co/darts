@@ -361,7 +361,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         # create input sequence for prediction
         pred_in = self._create_predict_input(input_series)
 
-        # iterate through predicting output and consuming it again until enough predictions are created
+        # produce output
         self.model.eval()
         if (use_full_output_length):
             test_out = self._produce_predict_output_with_full_output_length(pred_in, n)
