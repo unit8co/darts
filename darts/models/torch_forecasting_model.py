@@ -328,6 +328,42 @@ class TorchForecastingModel(MultivariateForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
+    def _create_predict_input(self, input_series):
+        if input_series is None:
+            input_sequence = self.training_series.values()[-self.input_length:]
+        else:
+            raise_if_not(len(input_series) >= self.input_length,
+                         "'input_series' must at least be as long as 'self.input_length'", logger)
+            input_sequence = input_series.values()[-self.input_length:]
+            super().fit(input_series, self.target_indices)
+        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+
+        return pred_in
+
+    def _produce_predict_output_with_full_output_length(self, pred_in, n):
+        test_out = []
+        num_iterations = int(math.ceil(n / self.output_length))
+        for i in range(num_iterations):
+            raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
+                            " support predictions with n > output_length", logger)
+            out = self.model(pred_in)
+            if (num_iterations > 1):
+                pred_in = pred_in.roll(-self.output_length, 1)
+                pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
+            test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
+        test_out = np.concatenate(test_out, axis=1)
+        test_out = test_out[:, :n, :]
+        return test_out
+
+    def _produce_predict_output_with_single_output_steps(self, pred_in, n):
+        test_out = []
+        for i in range(n):
+            out = self.model(pred_in)
+            pred_in = pred_in.roll(-1, 1)
+            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+        return test_out
+
     def predict(self, n: int,
                 use_full_output_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
@@ -374,36 +410,14 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
-        if input_series is None:
-            input_sequence = self.training_series.values()[-self.input_length:]
-        else:
-            raise_if_not(len(input_series) >= self.input_length,
-                         "'input_series' must at least be as long as 'self.input_length'", logger)
-            input_sequence = input_series.values()[-self.input_length:]
-            super().fit(input_series, self.target_indices)
-        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+        pred_in = self._create_predict_input(input_series)
 
         # iterate through predicting output and consuming it again until enough predictions are created
-        test_out = []
         self.model.eval()
         if (use_full_output_length):
-            num_iterations = int(math.ceil(n / self.output_length))
-            for i in range(num_iterations):
-                raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
-                             " support predictions with n > output_length", logger)
-                out = self.model(pred_in)
-                if (num_iterations > 1):
-                    pred_in = pred_in.roll(-self.output_length, 1)
-                    pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
-                test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
-            test_out = np.concatenate(test_out, axis=1)
-            test_out = test_out[:, :n, :]
+            test_out = self._produce_predict_output_with_full_output_length(pred_in, n)
         else:
-            for i in range(n):
-                out = self.model(pred_in)
-                pred_in = pred_in.roll(-1, 1)
-                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-                test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+            test_out = self._produce_predict_output_with_single_output_steps(pred_in, n)
 
         test_out = np.stack(test_out)
         return self._build_forecast_series(test_out.reshape(n, -1))
