@@ -21,6 +21,10 @@ class RNNModelTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
+
     def test_creation(self):
         with self.assertRaises(ValueError):
             # cannot choose any string
@@ -54,8 +58,6 @@ class RNNModelTestCase(unittest.TestCase):
         # test short predict
         pred4 = model3.predict(n=1)
         self.assertEqual(len(pred4), 1)
-
-        shutil.rmtree('.darts')
 
     @staticmethod
     def helper_test_use_full_output_length(test_case, pytorch_model, series):
