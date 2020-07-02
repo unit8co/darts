@@ -40,12 +40,12 @@ class RandomMethodTestCase(unittest.TestCase):
     def test_model_is_reproducible_when_seed_specified(self):
         model1 = TorchModelMock(random_state=42)
         model2 = TorchModelMock(random_state=42)
-        RandomMethodTestCase.helper_test_reproducibility(model1, model2)
+        self.helper_test_reproducibility(model1, model2)
 
     def test_model_is_reproducible_when_random_instance_specified(self):
         model1 = TorchModelMock(random_state=RandomState(42))
         model2 = TorchModelMock(random_state=RandomState(42))
-        RandomMethodTestCase.helper_test_reproducibility(model1, model2)
+        self.helper_test_reproducibility(model1, model2)
 
     def test_model_is_different_for_different_seeds(self):
         model1 = TorchModelMock(random_state=42)
@@ -69,11 +69,11 @@ class RandomMethodTestCase(unittest.TestCase):
 
     def test_successive_call_to_rng_are_different_when_seed_specified(self):
         model = TorchModelMock(random_state=42)
-        RandomMethodTestCase.helper_test_successive_call_are_different(model)
+        self.helper_test_successive_call_are_different(model)
 
     def test_successive_call_to_rng_are_different_when_random_instance_specified(self):
         model = TorchModelMock(random_state=RandomState(42))
-        RandomMethodTestCase.helper_test_successive_call_are_different(model)
+        self.helper_test_successive_call_are_different(model)
 
     def test_no_side_effect_between_rng_with_seeds(self):
         model = TorchModelMock(random_state=42)
