@@ -30,6 +30,11 @@ class RandomMethodTestCase(unittest.TestCase):
         model2 = TorchModelMock()
         self.assertFalse(torch.equal(model1.model, model2.model))
 
+    def test_model_is_random_when_None_random_state_specified(self):
+        model1 = TorchModelMock(random_state=None)
+        model2 = TorchModelMock(random_state=None)
+        self.assertFalse(torch.equal(model1.model, model2.model))
+
     def helper_test_reproducibility(self, model1, model2):
         self.assertTrue(torch.equal(model1.model, model2.model))
 
