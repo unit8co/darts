@@ -158,11 +158,34 @@ Don't forget to activate your virtual environment
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
-```
-cd scripts
-./build_docker.sh && ./run_docker.sh
+```bash
+./gradlew docker && ./gradlew dockerRun
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
 For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
+
+### Tests
+
+Gradle setup works best with python env, but it requires only that pip is for python3.
+
+To run all tests at once just run
+```bash
+./gradlew test
+```
+
+alternatively you can run
+```bash
+./gradlew unitTest     # to run only unittests
+./gradlew coverageTest # to run coverage
+./gradlew lint         # to run linter
+```
+
+### Documentation
+
+To build documantation locally just run
+```bash
+./gradlew buildDocs
+```
+After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.

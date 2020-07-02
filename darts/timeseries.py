@@ -2,8 +2,7 @@
 Timeseries
 ----------
 
-`TimeSeries` is the main class in `darts`. It represents a univariate time series,
-possibly with lower and upper confidence bounds.
+`TimeSeries` is the main class in `darts`. It represents a univariate or multivariate time series.
 """
 
 import pandas as pd
@@ -523,7 +522,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A univariate TimeSeries constructed from the inputs.
+            A univariate or multivariate TimeSeries constructed from the inputs.
         """
 
         if isinstance(value_cols, str):
