@@ -1,8 +1,8 @@
 """
 utils related to Pytorch and its usage.
 """
-from typing import Callable, TypeVar
-from inspect import getargspec
+from typing import Callable, TypeVar, Any
+from inspect import signature
 
 from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
@@ -13,6 +13,26 @@ T = TypeVar('T')
 logger = get_logger(__name__)
 
 MAX_TORCH_SEED_VALUE = (1 << 63) - 1
+
+
+def _is_method(func: Callable[..., Any]) -> bool:
+    """ Check if the specified function is a method.
+
+    Parameters
+    ----------
+    func
+        the function to inspect.
+
+    Returns
+    -------
+    bool
+        true if `func` is a method, false otherwise.
+    """
+    spec = signature(func)
+    if len(spec.parameters) > 0:
+        if list(spec.parameters.keys())[0] == 'self':
+            return True
+    return False
 
 
 def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
@@ -27,9 +47,7 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
     """
     # check that @random_method has been applied to a method.
-    spec = getargspec(decorated)
-    is_method = spec.args and spec.args[0] == 'self'
-    raise_if_not(is_method, "@random_method can only be used on methods.", logger)
+    raise_if_not(_is_method(decorated), "@random_method can only be used on methods.", logger)
 
     def decorator(self, *args, **kwargs) -> T:
         if "random_state" in kwargs.keys() or hasattr(self, "_random_instance"):
