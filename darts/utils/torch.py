@@ -2,7 +2,12 @@
 utils related to Pytorch and its usage.
 """
 from typing import Callable, TypeVar
+from inspect import getargspec
+
+from ..logging import raise_if_not, get_logger
+
 T = TypeVar('T')
+logger = get_logger(__name__)
 
 
 def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
@@ -16,7 +21,10 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
         A method to be run in an isolated torch random context.
 
     """
-    # TODO: add a check for the decorated to be a method!!!
+    # check that @random_method has been applied to a method.
+    spec = getargspec(decorated)
+    is_method = spec.args and spec.args[0] == 'self'
+    raise_if_not(is_method, "@random_method can only be used on methods.", logger)
 
     def decorator(self, *args, **kwargs) -> T:
         return decorated(self, *args, **kwargs)
