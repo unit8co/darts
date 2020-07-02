@@ -1,5 +1,6 @@
 """
-utils related to Pytorch and its usage.
+Utils for Pytorch and its usage
+-------------------------------
 """
 from typing import Callable, TypeVar, Any
 from inspect import signature
