@@ -4,12 +4,11 @@ Recurrent Neural Networks
 """
 
 import torch.nn as nn
-from typing import List, Optional, Union
 from numpy.random import RandomState
-from sklearn.utils import check_random_state
-from torch import manual_seed
+from typing import List, Optional, Union
 
 from ..logging import raise_if_not, get_logger
+from ..utils.torch import random_method
 from .torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
@@ -106,7 +105,7 @@ class _RNNModule(nn.Module):
 
 
 class RNNModel(TorchForecastingModel):
-
+    @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  input_size: int = 1,
@@ -157,13 +156,6 @@ class RNNModel(TorchForecastingModel):
         kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = output_size
-
-        # TODO : make it a util function? -> reusable in other torch models that needs fixed seed...
-        # set the random seed
-        MAX_SEED_VALUE = (1 << 63) - 1  # see https://discuss.pytorch.org/t/initial-seed-too-large/28832/2
-        random_instance = check_random_state(random_state)
-        seed = random_instance.randint(0, high=MAX_SEED_VALUE)
-        manual_seed(seed)
 
         # set self.model
         if model in ['RNN', 'LSTM', 'GRU']:
