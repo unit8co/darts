@@ -94,7 +94,7 @@ def backtest_forecasting(series: TimeSeries,
     stride
         The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
     retrain
-        Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
+        Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
         instances as `model` argument support setting `retrain` to `False`.
     trim_to_series
         Whether the predicted series has the end trimmed to match the end of the main series
