@@ -78,7 +78,7 @@ def backtest_forecasting(series: TimeSeries,
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
-    while pred_times[-1] <= last_pred_time:
+    while pred_times[-1] < last_pred_time:
         pred_times.append(pred_times[-1] + series.freq())
 
     # what we'll return
@@ -305,7 +305,7 @@ def backtest_gridsearch(model_class: type,
     train_series
         The TimeSeries instance used for training (and also validation in split mode).
     test_series
-        The TimeSeries instance used for validation in split mode.
+        The TimeSeries instance used for validation in split mode. Use `train` to compare with model.fitted_values
     fcast_horizon_n
         The integer value of the forecasting horizon used in expanding window mode.
     num_predictions:
@@ -340,6 +340,10 @@ def backtest_gridsearch(model_class: type,
         if val_series is None:  # expanding window mode
             backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n)
             error = metric(backtest_forecast, train_series)
+        elif val_series == 'train':
+            model.fit(train_series)
+            # Use ndarray because casting to TimeSeries takes too much time
+            error = metric(model.fitted_values, train_series.values())
         else:  # split mode
             model.fit(train_series)
             error = metric(model.predict(len(val_series)), val_series)
