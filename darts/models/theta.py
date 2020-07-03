@@ -78,7 +78,8 @@ class Theta(UnivariateForecastingModel):
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
             logger.info('Theta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
-            self.is_seasonal = self.season_period > 1  # force the user-defined seasonality to be considered as a true seasonal period.
+            # force the user-defined seasonality to be considered as a true seasonal period.
+            self.is_seasonal = self.season_period > 1
 
         new_ts = ts
 
@@ -138,14 +139,13 @@ class FourTheta(UnivariateForecastingModel):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
-        See M4 competition
-        <https://github.com/Mcompetitions/M4-methods/blob/master/005%20-%20vangspiliot/Method-Description-4Theta.pdf>`_
-        solution.
+        See M4 competition solution
+        <https://github.com/Mcompetitions/M4-methods/blob/master/005%20-%20vangspiliot/Method-Description-4Theta.pdf>`_.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        This model is similar to Theta, with theta=2-theta, `mode`=additive and `trend`=linear
+        This model is similar to Theta, with theta=2-theta, `mode`=additive and `trend`=linear.
 
         Parameters
         ----------
@@ -177,7 +177,7 @@ class FourTheta(UnivariateForecastingModel):
         self.model_mode = model_mode
         self.season_mode = season_mode
         self.trend_mode = trend_mode
-        self.wses = 0 if self.theta == 0 else 1/theta
+        self.wses = 0 if self.theta == 0 else (1 / theta)
         self.wdrift = 1 - self.wses
         self.fitted_values = None
 
@@ -191,7 +191,7 @@ class FourTheta(UnivariateForecastingModel):
         self.length = len(ts)
         # normalization of data
         self.mean = ts.mean()
-        new_ts = ts/self.mean
+        new_ts = ts / self.mean
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
@@ -230,7 +230,7 @@ class FourTheta(UnivariateForecastingModel):
         if self.model_mode == 'additive':
             theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
         elif self.model_mode == 'multiplicative' and (theta0_in > 0).all():
-            theta_t = (new_ts.values()**self.theta) * (theta0_in**(1-self.theta))
+            theta_t = (new_ts.values() ** self.theta) * (theta0_in ** (1-self.theta))
         else:
             self.model_mode = 'additive'
             theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
@@ -261,7 +261,6 @@ class FourTheta(UnivariateForecastingModel):
         self.fitted_values *= self.mean
         # takes too much time to create a time series for fitted_values
         # self.fitted_values = TimeSeries.from_times_and_values(ts.time_index(), self.fitted_values)
-
 
     def predict(self, n: int) -> 'TimeSeries':
         super().predict(n)
