@@ -77,7 +77,7 @@ class Theta(ForecastingModel):
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
             logger.info('Theta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
-            self.is_seasonal = True  # force the user-defined seasonality to be considered as a true seasonal period.
+            self.is_seasonal = self.season_period > 1  # force the user-defined seasonality to be considered as a true seasonal period.
 
         new_ts = ts
 
@@ -87,13 +87,13 @@ class Theta(ForecastingModel):
             new_ts = remove_seasonality(ts, self.season_period, model=self.mode)
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
+        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=0.2)
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
 
         # Normalization of the coefficient b_theta.
-        self.coef = b_theta / (2.0 - self.theta)
+        self.coef = b_theta / (2.0 - self.theta)  # change to b_theta / (-self.theta) if classical theta
 
         self.alpha = self.model.params["smoothing_level"]
 
