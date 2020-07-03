@@ -139,8 +139,7 @@ class FourTheta(UnivariateForecastingModel):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
-        See M4 competition solution
-        <https://github.com/Mcompetitions/M4-methods/blob/master/005%20-%20vangspiliot/Method-Description-4Theta.pdf>`_.
+        See M4 competition solution <https://github.com/Mcompetitions/M4-methods/blob/master/005%20-%20vangspiliot/Method-Description-4Theta.pdf>`_.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
@@ -230,7 +229,7 @@ class FourTheta(UnivariateForecastingModel):
         if self.model_mode == 'additive':
             theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
         elif self.model_mode == 'multiplicative' and (theta0_in > 0).all():
-            theta_t = (new_ts.values() ** self.theta) * (theta0_in ** (1-self.theta))
+            theta_t = (new_ts.values() ** self.theta) * (theta0_in ** (1 - self.theta))
         else:
             self.model_mode = 'additive'
             theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
