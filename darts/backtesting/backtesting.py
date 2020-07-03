@@ -19,6 +19,7 @@ from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophe
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..utils.statistics import plot_acf
+from ..utils.missing_values import auto_fillna
 from ..logging import raise_if_not, get_logger
 
 
@@ -50,7 +51,7 @@ def backtest_forecasting(series: TimeSeries,
     Parameters
     ----------
     series
-        The time series on which to backtest
+        The univariate time series on which to backtest
     model
         The forecasting model to be backtested
     start
@@ -69,6 +70,7 @@ def backtest_forecasting(series: TimeSeries,
         the specified model with the specified forecast horizon.
     """
 
+    series._assert_univariate()
     raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
@@ -91,9 +93,8 @@ def backtest_forecasting(series: TimeSeries,
         train = series.drop_after(pred_time)  # build the training series
         model.fit(train)
         pred = model.predict(fcast_horizon_n)
-        values.append(pred.values()[-1])  # store the N-th point
+        values.append(pred.univariate_values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
-
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
@@ -124,7 +125,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
     feature_series
         A list of time series representing the features for the regression model (independent variables)
     target_series
-        The target time series for the regression model (dependent variable)
+        The univariate target time series for the regression model (dependent variable)
     model
         The regression model to be backtested
     start
@@ -143,6 +144,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
         the specified model with the specified forecast horizon.
     """
 
+    raise_if_not(target_series.width == 1, "'target_series' must be univariate.", logger)
     raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                  'have the same time index', logger)
     raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
@@ -172,7 +174,7 @@ def backtest_regression(feature_series: Iterable[TimeSeries],
 
         model.fit(train_features, train_target)
         pred = model.predict(val_features)
-        values.append(pred.values()[-1])  # store the N-th point
+        values.append(pred.univariate_values()[-1])  # store the N-th point
         times.append(pred.end_time())  # store the N-th timestamp
 
     return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
@@ -182,7 +184,7 @@ def forecasting_residuals(model: ForecastingModel,
                           series: TimeSeries,
                           fcast_horizon_n: int = 1,
                           verbose: bool = True) -> TimeSeries:
-    """ A function for computing the residuals produced by a given model and time series.
+    """ A function for computing the residuals produced by a given model and univariate time series.
 
     This function computes the difference between the actual observations from `series`
     and the fitted values vector p obtained by training `model` on `series`.
@@ -198,7 +200,7 @@ def forecasting_residuals(model: ForecastingModel,
     model
         Instance of ForecastingModel used to compute the fitted values p.
     series
-        The TimeSeries instance which the residuals will be computed for.
+        The univariate TimeSeries instance which the residuals will be computed for.
     fcast_horizon_n
         The forecasting horizon used to predict each fitted value.
     verbose
@@ -208,6 +210,8 @@ def forecasting_residuals(model: ForecastingModel,
     TimeSeries
         The vector of residuals.
     """
+
+    series._assert_univariate()
 
     # get first index not contained in the first training set
     first_index = series.time_index()[model.min_train_series_length]
@@ -222,22 +226,34 @@ def forecasting_residuals(model: ForecastingModel,
     return residuals
 
 
-def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
+def plot_residuals_analysis(residuals: TimeSeries,
+                            num_bins: int = 20,
+                            fill_nan: bool = True):
     """ Plots data relevant to residuals.
 
-    This function takes a TimeSeries instance of residuals and plots their values,
+    This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
+    Please note that if the residual TimeSeries instance contains NaN values while, the plots
+    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    be interpolated.
 
     Parameters
     ----------
     residuals
-        TimeSeries instance representing residuals.
+        Univariate TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
+    fill_nan:
+        A boolean value indicating whether NaN values should be filled in the residuals.
     """
+
+    residuals._assert_univariate()
 
     fig = plt.figure(constrained_layout=True, figsize=(8, 6))
     gs = fig.add_gridspec(2, 2)
+
+    if fill_nan:
+        residuals = auto_fillna(residuals)
 
     # plot values
     ax1 = fig.add_subplot(gs[:1, :])
@@ -246,11 +262,11 @@ def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20):
     ax1.set_title('Residual values')
 
     # plot distribution
-    res_mean, res_std = np.mean(residuals.values()), np.std(residuals.values())
-    res_min, res_max = min(residuals.values()), max(residuals.values())
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
+    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
-    ax2.hist(residuals.values(), bins=num_bins)
+    ax2.hist(residuals.univariate_values(), bins=num_bins)
     ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title('Distribution')
@@ -297,15 +313,16 @@ def backtest_gridsearch(model_class: type,
 
     Parameters
     ----------
-    model
+    model_class
         The ForecastingModel subclass to be tuned for 'series'.
     parameters
         A dictionary containing as keys hyperparameter names, and as values lists of values for the
         respective hyperparameter.
     train_series
-        The TimeSeries instance used for training (and also validation in split mode).
-    test_series
-        The TimeSeries instance used for validation in split mode. Use `train` to compare with model.fitted_values
+        The univariate TimeSeries instance used for training (and also validation in split mode).
+    val_series
+        The univariate TimeSeries instance used for validation in split mode.
+        Use `train` to compare with model.fitted_values
     fcast_horizon_n
         The integer value of the forecasting horizon used in expanding window mode.
     num_predictions:
@@ -320,6 +337,10 @@ def backtest_gridsearch(model_class: type,
     ForecastingModel
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
+
+    train_series._assert_univariate()
+    if (val_series is not None):
+        val_series._assert_univariate()
 
     raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
                  "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
@@ -377,11 +398,11 @@ def explore_models(train_series: TimeSeries,
     Parameters
     ----------
     train_series
-        A TimeSeries instance used for training during model tuning and evaluation.
+        A univariate TimeSeries instance used for training during model tuning and evaluation.
     val_series
-        A TimeSeries instance used for validation during model tuning and for training during evaluation.
+        A univariate TimeSeries instance used for validation during model tuning and for training during evaluation.
     test_series
-        A TimeSeries instance used for validation when evaluating a model.
+        A univariate TimeSeries instance used for validation when evaluating a model.
     metric:
         A function that takes two TimeSeries instances as inputs and returns a float error value.
     model_parameter_tuples:
@@ -392,6 +413,10 @@ def explore_models(train_series: TimeSeries,
     verbose:
         Whether to print progress.
     """
+
+    train_series._assert_univariate()
+    val_series._assert_univariate()
+    test_series._assert_univariate()
 
     raise_if_not(plot_width > 1, "Please choose an integer 'plot_width' value larger than 1", logger)
 

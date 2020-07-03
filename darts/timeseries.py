@@ -2,8 +2,7 @@
 Timeseries
 ----------
 
-`TimeSeries` is the main class in `darts`. It represents a univariate time series,
-possibly with lower and upper confidence bounds.
+`TimeSeries` is the main class in `darts`. It represents a univariate or multivariate time series.
 """
 
 import pandas as pd
@@ -11,110 +10,96 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any
+from typing import Tuple, Optional, Callable, Any, List, Union
 
-from .logging import raise_log, raise_if_not, get_logger
+from .logging import raise_log, raise_if_not, raise_if, get_logger
 
 logger = get_logger(__name__)
 
 
 class TimeSeries:
     def __init__(self,
-                 series: pd.Series,
-                 confidence_lo: Optional[pd.Series] = None,
-                 confidence_hi: Optional[pd.Series] = None,
+                 df: pd.DataFrame,
                  freq: Optional[str] = None,
                  fill_missing_dates: Optional[bool] = True):
         """
-        A TimeSeries is an object representing a univariate time series, and optional confidence intervals.
+        A TimeSeries is an object representing a univariate or multivariate time series.
 
         TimeSeries are meant to be immutable.
 
         Parameters
         ----------
-        series
-            The actual time series, as a pandas Series with a proper time index.
-        confidence_lo
-            Optionally, a Pandas Series representing lower confidence interval.
-        confidence_hi
-            Optionally, a Pandas Series representing upper confidence interval.
+        df
+            The actual time series, as a pandas DataFrame with a proper time index.
         freq
-            Optionally, a string representing the frequency of the Pandas Series. When creating a TimeSeries
+            Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
         """
 
-        raise_if_not(len(series) > 0, 'Series must not be empty.', logger)
-        raise_if_not(isinstance(series.index, pd.DatetimeIndex), 'Series must be indexed with a DatetimeIndex.', logger)
-        raise_if_not(np.issubdtype(series.dtype, np.number), 'Series must contain numerical values.', logger)
-        raise_if_not(len(series) >= 3 or freq is not None, 'Series must have at least 3 values if the "freq" argument'
+        raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
+                     logger)
+
+        # consistent column names
+        df.columns = range(df.shape[1])
+
+        raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
+        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
+                     logger)
+        raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
+                     ' contain only numerical values.', logger)
+        raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      'is not passed', logger)
 
-        self._series = series.sort_index()  # Sort by time
+        self._df = df.sort_index()  # Sort by time
 
-        if (len(series) < 3):
+        if (len(df) < 3):
             self._freq: str = freq
+            logger.info('A TimeSeries with length below 3 is being created. Please note that this can lead to'
+                        ' unexpected behavior.')
         else:
-            if not series.index.inferred_freq:
+            if not df.index.inferred_freq:
                 if fill_missing_dates:
-                    self._series = self._fill_missing_dates(self._series)
+                    self._df = self._fill_missing_dates(self._df)
                 else:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
                                         'Try specifying `fill_missing_dates=True`.', logger)
-            self._freq: str = self._series.index.inferred_freq  # Infer frequency
+            self._freq: str = self._df.index.inferred_freq  # Infer frequency
             raise_if_not(freq is None or self._freq == freq, 'The inferred frequency does not match the'
                          'value of the "freq" argument.', logger)
 
-        # TODO: are there some pandas Series where the line below causes issues?
-        self._series.index.freq = self._freq  # Set the inferred frequency in the Pandas series
+        self._df.index.freq = self._freq  # Set the inferred frequency in the Pandas dataframe
 
         # The actual values
-        self._values: np.ndarray = self._series.values
+        self._values: np.ndarray = self._df.values
 
-        # Handle confidence intervals:
-        self._confidence_lo = None
-        self._confidence_hi = None
-        if confidence_lo is not None:
-            self._confidence_lo = confidence_lo.sort_index()
-            raise_if_not(len(self._confidence_lo) == len(self._series),
-                         'Lower confidence interval must have same size as the main time series.', logger)
-            raise_if_not((self._confidence_lo.index == self._series.index).all(),
-                         'Lower confidence interval and main series must have the same time index.', logger)
-        if confidence_hi is not None:
-            self._confidence_hi = confidence_hi.sort_index()
-            raise_if_not(len(self._confidence_hi) == len(self._series),
-                         'Upper confidence interval must have same size as the main time series.', logger)
-            raise_if_not((self._confidence_hi.index == self._series.index).all(),
-                         'Upper confidence interval and main series must have the same time index.', logger)
+    def _assert_univariate(self):
+        """
+        Raises an error if the current TimeSeries instance is not univariate.
+        """
+        if (self._df.shape[1] != 1):
+            raise_log(AssertionError('Only univariate TimeSeries instances support this method'), logger)
 
     def pd_series(self) -> pd.Series:
         """
         Returns
         -------
         pandas.Series
-            A copy of the Pandas Series underlying this time series
+            A Pandas Series representation of this univariate time series.
         """
-        return self._series.copy()
+        self._assert_univariate()
+        return self._df.iloc[:, 0].copy()
 
-    def conf_lo_pd_series(self) -> Optional[pd.Series]:
+    def pd_dataframe(self) -> pd.DataFrame:
         """
         Returns
         -------
-        pandas.Series
-             The underlying Pandas Series of the lower confidence interval if it exists.
+        pandas.DataFrame
+            A copy of the Pandas Dataframe underlying this time series
         """
-        return self._confidence_lo.copy() if self._confidence_lo is not None else None
-
-    def conf_hi_pd_series(self) -> Optional[pd.Series]:
-        """
-        Returns
-        -------
-        pandas.Series
-             The underlying Pandas Series of the upper confidence interval if it exists.
-        """
-        return self._confidence_hi.copy() if self._confidence_hi is not None else None
+        return self._df.copy()
 
     def start_time(self) -> pd.Timestamp:
         """
@@ -123,7 +108,7 @@ class TimeSeries:
         pandas.Timestamp
             A timestamp containing the first time of the TimeSeries.
         """
-        return self._series.index[0]
+        return self._df.index[0]
 
     def end_time(self) -> pd.Timestamp:
         """
@@ -132,23 +117,43 @@ class TimeSeries:
         pandas.Timestamp
             A timestamp containing the last time of the TimeSeries.
         """
-        return self._series.index[-1]
+        return self._df.index[-1]
 
     def first_value(self) -> float:
         """
         Returns
         -------
         float
-            The first value of this series
+            The first value of this univariate time series
         """
-        return self._values[0]
+        self._assert_univariate()
+        return self._values[0][0]
 
     def last_value(self) -> float:
         """
         Returns
         -------
         float
-            The last value of this series
+            The last value of this univariate time series
+        """
+        self._assert_univariate()
+        return self._values[-1][0]
+
+    def first_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The first values of every component of this time series
+        """
+        return self._values[0]
+
+    def last_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The last values of every component of this time series
         """
         return self._values[-1]
 
@@ -161,21 +166,31 @@ class TimeSeries:
         """
         return np.copy(self._values)
 
+    def univariate_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        numpy.ndarray
+            A copy of the values composing the time series guaranteed to be univariate.
+        """
+        self._assert_univariate()
+        return np.copy(self._df.iloc[:, 0].values)
+
     def time_index(self) -> pd.DatetimeIndex:
         """
         Returns
         -------
         pandas.DatetimeIndex
-            The time index of this series.
+            The time index of this time series.
         """
-        return deepcopy(self._series.index)
+        return deepcopy(self._df.index)
 
     def freq(self) -> pd.DateOffset:
         """
         Returns
         -------
         pandas.DateOffset
-            The frequency of this series
+            The frequency of this time series
         """
         return to_offset(self._freq)
 
@@ -184,7 +199,7 @@ class TimeSeries:
         Returns
         -------
         str
-            A string representation of the frequency of this series
+            A string representation of the frequency of this time series
         """
         return self._freq
 
@@ -193,9 +208,9 @@ class TimeSeries:
         Returns
         -------
         pandas.Timedelta
-            The duration of this series.
+            The duration of this time series.
         """
-        return self._series.index[-1] - self._series.index[0]
+        return self._df.index[-1] - self._df.index[0]
 
     def copy(self, deep: bool = True) -> 'TimeSeries':
         """
@@ -204,7 +219,7 @@ class TimeSeries:
         Parameters
         ----------
         deep
-            Make a deep copy. If False, the underlying pandas Series will be the same
+            Make a deep copy. If False, the underlying pandas DataFrame will be the same
 
         Returns
         -------
@@ -212,9 +227,9 @@ class TimeSeries:
             A copy of this time series.
         """
         if deep:
-            return TimeSeries(self.pd_series(), self.conf_lo_pd_series(), self.conf_hi_pd_series())
+            return TimeSeries(self.pd_dataframe(), self.freq())
         else:
-            return TimeSeries(self._series, self._confidence_lo, self._confidence_hi)
+            return TimeSeries(self._df, self.freq())
 
     def _raise_if_not_within(self, ts: pd.Timestamp):
         if (ts < self.start_time()) or (ts > self.end_time()):
@@ -236,7 +251,7 @@ class TimeSeries:
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two series. The first series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
         """
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
@@ -258,7 +273,7 @@ class TimeSeries:
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two series. The first series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
         """
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
@@ -322,21 +337,18 @@ class TimeSeries:
         TimeSeries
             A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
         """
-        raise_if_not(end_ts > start_ts, 'End timestamp must be strictly after start timestamp when slicing.', logger)
+        raise_if_not(end_ts >= start_ts, 'End timestamp must be after start timestamp when slicing.', logger)
         raise_if_not(end_ts >= self.start_time(),
                      'End timestamp must be after the start of the time series when slicing.', logger)
         raise_if_not(start_ts <= self.end_time(),
                      'Start timestamp must be after the end of the time series when slicing.', logger)
 
-        def _slice_not_none(s: Optional[pd.Series]) -> Optional[pd.Series]:
+        def _slice_not_none(s: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
             if s is not None:
                 s_a = s[s.index >= start_ts]
                 return s_a[s_a.index <= end_ts]
             return None
-
-        return TimeSeries(_slice_not_none(self._series),
-                          _slice_not_none(self._confidence_lo),
-                          _slice_not_none(self._confidence_hi))
+        return TimeSeries(_slice_not_none(self._df), self.freq())
 
     def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
         """
@@ -423,13 +435,11 @@ class TimeSeries:
             have been scaled accordingly.
         """
 
-        raise_if_not(self.values()[0] != 0, 'Cannot rescale with first value 0.', logger)
+        raise_if_not((self.values()[0] != 0).all(), 'Cannot rescale with first value 0.', logger)
 
         coef = value_at_first_step / self.values()[0]  # TODO: should the new TimeSeries have the same dtype?
-        new_series = coef * self._series
-        new_conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * coef)
-        new_conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * coef)
-        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
+        new_series = coef * self._df
+        return TimeSeries(new_series, self.freq())
 
     def shift(self, n: int) -> 'TimeSeries':
         """
@@ -455,44 +465,22 @@ class TimeSeries:
         except pd.errors.OutOfBoundsDatetime:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq(), self.time_index()[-1])), logger)
-        new_time_index = self._series.index.map(lambda ts: ts + n * self.freq())
-        new_series = self._series.copy()
+        new_time_index = self._df.index.map(lambda ts: ts + n * self.freq())
+        new_series = self._df.copy()
         new_series.index = new_time_index
-        new_conf_lo = None
-        new_conf_hi = None
-        if self._confidence_lo is not None:
-            new_conf_lo = self._confidence_lo.copy()
-            new_conf_lo.index = new_time_index
-        if self._confidence_hi is not None:
-            new_conf_hi = self._confidence_hi.copy()
-            new_conf_hi.index = new_time_index
-        return TimeSeries(new_series, new_conf_lo, new_conf_hi)
+        return TimeSeries(new_series, self.freq())
 
     @staticmethod
-    def from_dataframe(df: pd.DataFrame,
-                       time_col: Optional[str],
-                       value_col: str,
-                       conf_lo_col: str = None,
-                       conf_hi_col: str = None,
-                       freq: Optional[str] = None,
-                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+    def from_series(pd_series: pd.Series,
+                    freq: Optional[str] = None,
+                    fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns a TimeSeries built from a DataFrame.
-        One column (or the DataFrame index) has to represent the time,
-        and another column has to represent the values for this univariate time series.
+        Returns a TimeSeries built from a pandas Series.
 
         Parameters
         ----------
-        df
-            The DataFrame
-        time_col
-            The time column name (mandatory). If set to `None`, the DataFrame index will be used.
-        value_col
-            The value column name (mandatory).
-        conf_lo_col
-            The lower confidence interval column name (optional).
-        conf_hi_col
-            The upper confidence interval column name (optional).
+        pd_series
+            The pandas Series instance.
         freq
             Optionally, a string representing the frequency of the Pandas Series.
         fill_missing_dates
@@ -504,22 +492,54 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
+
+    @staticmethod
+    def from_dataframe(df: pd.DataFrame,
+                       time_col: Optional[str],
+                       value_cols: Union[List[str], str],
+                       freq: Optional[str] = None,
+                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+        """
+        Returns a TimeSeries instance built from a selection of columns of a DataFrame.
+        One column (or the DataFrame index) has to represent the time,
+        and a list of columns `value_cols` has to represent the values for this time series.
+
+        Parameters
+        ----------
+        df
+            The DataFrame
+        time_col
+            The time column name (mandatory). If set to `None`, the DataFrame index will be used.
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the DataFrame.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values
+            in case the frequency of `series` cannot be inferred.
+
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate TimeSeries constructed from the inputs.
+        """
+
+        if isinstance(value_cols, str):
+            value_cols = [value_cols]
+
+        series_df = df[value_cols]
+
         if time_col is None:
-            times: pd.DatetimeIndex = pd.to_datetime(df.index, errors='raise')
+            series_df.index = pd.to_datetime(df.index, errors='raise')
         else:
-            times: pd.Series = pd.to_datetime(df[time_col], errors='raise')
-        series: pd.Series = pd.Series(df[value_col].values, index=times)
+            series_df.index = pd.to_datetime(df[time_col], errors='raise')
 
-        conf_lo = pd.Series(df[conf_lo_col], index=times) if conf_lo_col is not None else None
-        conf_hi = pd.Series(df[conf_hi_col], index=times) if conf_hi_col is not None else None
-
-        return TimeSeries(series, conf_lo, conf_hi, freq, fill_missing_dates)
+        return TimeSeries(series_df, freq, fill_missing_dates)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
                               values: np.ndarray,
-                              confidence_lo: np.ndarray = None,
-                              confidence_hi: np.ndarray = None,
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
@@ -531,12 +551,8 @@ class TimeSeries:
             A `pandas.DateTimeIndex` representing the time axis for the time series.
         values
             An array of values for the TimeSeries.
-        confidence_lo
-            The lower confidence interval values (optional).
-        confidence_hi
-            The higher confidence interval values (optional).
         freq
-            Optionally, a string representing the frequency of the Pandas Series.
+            Optionally, a string representing the frequency of the time series.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
@@ -546,14 +562,11 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        series = pd.Series(values, index=times)
-        series_lo = pd.Series(confidence_lo, index=times) if confidence_lo is not None else None
-        series_hi = pd.Series(confidence_hi, index=times) if confidence_hi is not None else None
+        df = pd.DataFrame(values, index=times)
 
-        return TimeSeries(series, series_lo, series_hi, freq, fill_missing_dates)
+        return TimeSeries(df, freq, fill_missing_dates)
 
     def plot(self,
-             plot_ci: bool = True,
              new_plot: bool = False,
              *args,
              **kwargs):
@@ -562,8 +575,6 @@ class TimeSeries:
 
         Parameters
         ----------
-        plot_ci
-            whether to plot the confidence intervals
         new_plot
             whether to spawn a new Figure
         args
@@ -571,16 +582,20 @@ class TimeSeries:
         kwargs
             some keyword arguments for the `plot()` method
         """
-
+        raise_if(self.width > 15, "Current TimeSeries instance contains too many components to plot.", logger)
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
-        self._series.plot(*args, **kwargs)
+        if 'label' in kwargs:
+            label = kwargs['label']
+        for i in range(self.width):
+            if i > 0:
+                kwargs['figure'] = plt.gcf()
+                if 'label' in kwargs:
+                    kwargs['label'] = label + '_' + str(i)
+            self.univariate_component(i).pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
-        # TODO: use pandas plot in the future
-        if plot_ci and self._confidence_lo is not None and self._confidence_hi is not None:
-            plt.fill_between(self.time_index(), self._confidence_lo.values, self._confidence_hi.values, alpha=0.5)
 
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
         """
@@ -620,25 +635,16 @@ class TimeSeries:
         raise_if_not(other.freq() == self.freq(),
                      'Appended TimeSeries must have the same frequency as the current one', logger)
 
-        series = self._series.append(other.pd_series())
-        conf_lo = None
-        conf_hi = None
-        if self._confidence_lo is not None and other.conf_lo_pd_series() is not None:
-            conf_lo = self._confidence_lo.append(other.conf_lo_pd_series())
-        if self._confidence_hi is not None and other.conf_hi_pd_series() is not None:
-            conf_hi = self._confidence_hi.append(other.conf_hi_pd_series())
-        return TimeSeries(series, conf_lo, conf_hi)
+        series = self._df.append(other.pd_dataframe())
+        return TimeSeries(series, self.freq())
 
     def append_values(self,
                       values: np.ndarray,
-                      index: pd.DatetimeIndex = None,
-                      conf_lo: np.ndarray = None,
-                      conf_hi: np.ndarray = None) -> 'TimeSeries':
+                      index: pd.DatetimeIndex = None) -> 'TimeSeries':
         """
         Appends values to current TimeSeries, to the given indices.
 
         If no index is provided, assumes that it follows the original data.
-        Does not add new confidence values if there were none first.
         Does not update value if already existing indices are provided.
 
         Parameters
@@ -647,10 +653,6 @@ class TimeSeries:
             An array with the values to append.
         index
             A `pandas.DateTimeIndex` for the new values (optional)
-        conf_lo
-            The lower confidence interval values (optional).
-        conf_hi
-            The upper confidence interval values (optional).
 
         Returns
         -------
@@ -678,32 +680,18 @@ class TimeSeries:
             raise_if_not(index[-1] == index[0] + self.freq(),
                          'Appended index must have the same frequency as the current one.', logger)
         values = values[new_indices]
-        new_series = pd.Series(values, index=index)
-        series = self._series.append(new_series)
-        if conf_lo is not None and self._confidence_lo is not None:
-            raise_if_not(len(index) == len(conf_lo), 'Confidence intervals must have same length as index.', logger)
-            conf_lo = conf_lo[new_indices]
-            conf_lo = self._confidence_lo.append(pd.Series(conf_lo, index=index))
-        if conf_hi is not None and self._confidence_hi is not None:
-            raise_if_not(len(index) == len(conf_hi), 'Confidence intervals must have same length as index.', logger)
-            conf_hi = conf_hi[new_indices]
-            conf_hi = self._confidence_hi.append(pd.Series(conf_hi, index=index))
+        new_series = pd.DataFrame(values, index=index)
+        series = self._df.append(new_series)
 
-        return TimeSeries(series, conf_lo, conf_hi)
+        return TimeSeries(series, self.freq())
 
     def update(self,
                index: pd.DatetimeIndex,
-               values: np.ndarray = None,
-               conf_lo: np.ndarray = None,
-               conf_hi: np.ndarray = None,
-               inplace: bool = False) -> 'TimeSeries':
+               values: np.ndarray = None) -> 'TimeSeries':
         """
-        Updates the Series with the new values provided.
+        Updates the TimeSeries instance with the new values provided.
         If indices are not in original TimeSeries, they will be discarded.
-        At least one parameter other than index must be filled.
         Use `numpy.nan` to ignore a specific index in a series.
-
-        It will raise an error if try to update a missing CI series
 
         Parameters
         ----------
@@ -711,59 +699,141 @@ class TimeSeries:
             A `pandas.DateTimeIndex` containing the indices to replace.
         values
             An array containing the values to replace (optional).
-        conf_lo
-            The lower confidence interval values to change (optional).
-        conf_hi
-            The upper confidence interval values (optional).
-        inplace
-            If True, do operation inplace and return self, defaults to False.
 
         Returns
         -------
         TimeSeries
-            A new TimeSeries (if `inplace = False`) or the same TimeSeries with values updated
+            A new TimeSeries with updated values.
         """
 
-        raise_if_not(not (values is None and conf_lo is None and conf_hi is None),
-                     "At least one parameter must be filled other than index", logger)
-        raise_if_not(index is not None, "Index must be filled.")
+        if isinstance(values, (list, range)):
+            values = np.array(values)
+
+        if values is not None and len(values.shape) == 1:
+            values = values.reshape((len(values), 1))
+
+        raise_if(values is None, "'values' parameter should not be None.", logger)
+        raise_if(index is None, "Index must be filled.")
         if (values is not None):
             raise_if_not(len(values) == len(index), "The number of values must correspond "
                                                     "to the number of indices: {} != {}".format(len(values),
                                                                                                 len(index)), logger)
-        if (conf_lo is not None):
-            raise_if_not(len(conf_lo) == len(index), "The number of values must correspond "
-                                                     "to the number of indices: ""{} != {}".format(len(conf_lo),
-                                                                                                   len(index)), logger)
-        if (conf_hi is not None):
-            raise_if_not(len(conf_hi) == len(index), "The number of values must correspond "
-                                                     "to the number of indices: {} != {}".format(len(conf_hi),
-                                                                                                 len(index)), logger)
+            raise_if_not(self._df.shape[1] == values.shape[1], "The number of columns in values must correspond "
+                                                               "to the number of columns in the current TimeSeries"
+                                                               "instance: {} != {}".format(self._df.shape[1],
+                                                                                           values.shape[1]))
+
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
-        index = index.delete(ignored_indices)
-        series = values if values is None else pd.Series(np.delete(values, ignored_indices), index=index)
-        conf_lo = conf_lo if conf_lo is None else pd.Series(np.delete(conf_lo, ignored_indices), index=index)
-        conf_hi = conf_hi if conf_hi is None else pd.Series(np.delete(conf_hi, ignored_indices), index=index)
+        index = index.delete(ignored_indices)  # only contains indices that are present in the TimeSeries instance
+        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index)
         raise_if_not(len(index) > 0, "Must give at least one correct index.", logger)
-        if inplace:
-            if series is not None:
-                self._series.update(series)
-            if conf_lo is not None:
-                self._confidence_lo.update(conf_lo)
-            if conf_hi is not None:
-                self._confidence_hi.update(conf_hi)
-            return self
-        else:
-            new_series = self.pd_series()
-            new_lo = self.conf_lo_pd_series()
-            new_hi = self.conf_hi_pd_series()
-            if series is not None:
-                new_series.update(series)
-            if conf_lo is not None:
-                new_lo.update(conf_lo)
-            if conf_hi is not None:
-                new_hi.update(conf_hi)
-            return TimeSeries(new_series, new_lo, new_hi)
+
+        new_series = self.pd_dataframe()
+        if series is not None:
+            new_series.update(series)
+            new_series = new_series.astype(self._df.dtypes)
+        return TimeSeries(new_series, self.freq())
+
+    def stack(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Stacks another univariate or multivariate TimeSeries with the same index on top of
+        the current one and returns the newly formed multivariate TimeSeries that includes
+        all the components of `self` and of `other`.
+
+        Parameters
+        ----------
+        other
+            A TimeSeries instance with the same index as the current one.
+
+        Returns
+        -------
+        TimeSeries
+            A new multivariate TimeSeries instance.
+        """
+        raise_if_not((self.time_index() == other.time_index()).all(), 'The indices of the two TimeSeries instances '
+                     'must be equal', logger)
+
+        new_dataframe = pd.concat([self.pd_dataframe(), other.pd_dataframe()], axis=1)
+        return TimeSeries(new_dataframe, self.freq())
+
+    @property
+    def width(self) -> int:
+        """
+        Returns
+        -------
+        int
+            The number of components (univariate time series) of the current TimeSeries instance.
+        """
+        return self._df.shape[1]
+
+    def univariate_component(self, index: int) -> 'TimeSeries':
+        """
+        Retrieves one of the components of the current TimeSeries instance
+        and returns it as new univariate TimeSeries instance.
+
+        Parameters
+        ----------
+        index
+            An zero-indexed integer indicating which component to retrieve.
+
+        Returns
+        -------
+        TimeSeries
+            A new univariate TimeSeries instance.
+        """
+
+        raise_if_not(index >= 0 and index < self.width, 'The index must be between 0 and the number of components '
+                     'of the current TimeSeries instance - 1, {}'.format(self.width - 1), logger)
+
+        return TimeSeries.from_series(self.pd_dataframe().iloc[:, index], self.freq())
+
+    def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries instance with one (or more) additional dimension(s) that contain an attribute
+        of the time index of the current series specified with `component`, such as 'weekday', 'day' or 'month'.
+
+        Parameters
+        ----------
+        attribute
+            A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+        one_hot
+            Boolean value indicating whether to add the specified attribute as a one hot encoding
+            (results in more columns).
+
+        Returns
+        -------
+        TimeSeries
+            New TimeSeries instance enhanced by `attribute`.
+        """
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index(), attribute, one_hot))
+
+    def add_holidays(self,
+                     country_code: str,
+                     prov: str = None,
+                     state: str = None) -> 'TimeSeries':
+        """
+        Adds a binary univariate TimeSeries to the current one that equals 1 at every index that
+        corresponds to selected country's holiday, and 0 otherwise. The frequency of the TimeSeries is daily.
+
+        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+
+        Parameters
+        ----------
+        country_code
+            The country ISO code
+        prov
+            The province
+        state
+            The state
+
+        Returns
+        -------
+        TimeSeries
+            TimeSeries instance enhanced with binary holiday column.
+        """
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.holidays_timeseries(self.time_index(), country_code, prov, state))
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
@@ -787,16 +857,9 @@ class TimeSeries:
             A reindexed TimeSeries with given frequency.
         """
 
-        new_series = self.pd_series().asfreq(freq, method=method)
-        new_conf_hi_series = self.conf_hi_pd_series()
-        if new_conf_hi_series is not None:
-            new_conf_hi_series = new_conf_hi_series.asfreq(freq, method=method)
+        new_df = self.pd_dataframe().asfreq(freq, method=method)
 
-        new_conf_lo_series = self.conf_lo_pd_series()
-        if new_conf_lo_series is not None:
-            new_conf_lo_series = new_conf_lo_series.asfreq(freq, method=method)
-
-        return TimeSeries(series=new_series, confidence_hi=new_conf_hi_series, confidence_lo=new_conf_lo_series)
+        return TimeSeries(new_df, freq)
 
     def is_within_range(self,
                         ts: pd.Timestamp) -> bool:
@@ -818,60 +881,59 @@ class TimeSeries:
         return index[0] <= ts <= index[-1]
 
     @staticmethod
-    def _combine_or_none(series_a: Optional[pd.Series],
-                         series_b: Optional[pd.Series],
-                         combine_fn: Callable[[pd.Series, pd.Series], Any]) -> Optional[pd.Series]:
+    def _combine_or_none(df_a: Optional[pd.DataFrame],
+                         df_b: Optional[pd.DataFrame],
+                         combine_fn: Callable[[pd.DataFrame, pd.DataFrame], Any]) -> Optional[pd.DataFrame]:
         """
-        Combines two Pandas Series `series_a and `series_b` using `combine_fn` if neither is `None`.
+        Combines two Pandas DataFrames `df_a and `df_b` using `combine_fn` if neither is `None`.
 
         Parameters
         ----------
-        series_a
-            the first series
-        series_b
-            the second series
+        df_a
+            the first DataFrame
+        df_b
+            the second DataFrame
         combine_fn
-            An operation with input two Pandas Series and output one Pandas Series.
+            An operation with input two Pandas DataFrames and output one Pandas DataFrame.
 
         Returns
         -------
-        Optional[pandas.Series]
-            A new Pandas Series, the result of [combine_fn], or None.
+        Optional[pandas.DataFrame]
+            A new Pandas DataFrame, the result of [combine_fn], or None.
         """
-        if series_a is not None and series_b is not None:
-            return combine_fn(series_a, series_b)
+        if df_a is not None and df_b is not None:
+            return combine_fn(df_a, df_b)
         return None
 
     @staticmethod
-    def _op_or_none(series: Optional[pd.Series], op: Callable[[pd.Series], Any]):
-        return op(series) if series is not None else None
+    def _op_or_none(df: Optional[pd.DataFrame], op: Callable[[pd.DataFrame], Any]):
+        return op(df) if df is not None else None
 
     def _combine_from_pd_ops(self, other: 'TimeSeries',
-                             combine_fn: Callable[[pd.Series, pd.Series], pd.Series]) -> 'TimeSeries':
+                             combine_fn: Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]) -> 'TimeSeries':
         """
-        Combines this TimeSeries with another one, using the `combine_fn` on the underlying Pandas Series.
+        Combines this TimeSeries with another one, using the `combine_fn` on the underlying Pandas DataFrame.
 
         Parameters
         ----------
         other
             A second TimeSeries.
         combine_fn
-            An operation with input two Pandas Series and output one Pandas Series.
+            An operation with input two Pandas DataFrames and output one Pandas DataFrame.
 
         Returns
         -------
         TimeSeries
-            A new TimeSeries, with underlying Pandas Series the series obtained with `combine_fn`.
+            A new TimeSeries, with underlying Pandas DataFrame the series obtained with `combine_fn`.
         """
         raise_if_not(self.has_same_time_as(other), 'The two TimeSeries must have the same time index.', logger)
+        raise_if_not(self._df.shape == other._df.shape, 'The two TimeSeries must have the same shape.', logger)
 
-        series = combine_fn(self._series, other.pd_series())
-        conf_lo = self._combine_or_none(self._confidence_lo, other.conf_lo_pd_series(), combine_fn)
-        conf_hi = self._combine_or_none(self._confidence_hi, other.conf_hi_pd_series(), combine_fn)
-        return TimeSeries(series, conf_lo, conf_hi)
+        series = combine_fn(self._df, other.pd_dataframe())
+        return TimeSeries(series, self.freq())
 
     @staticmethod
-    def _fill_missing_dates(series: pd.Series) -> pd.Series:
+    def _fill_missing_dates(series: pd.DataFrame) -> pd.DataFrame:
         """
         Tries to fill missing dates in series with NaN.
         Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.
@@ -879,12 +941,12 @@ class TimeSeries:
         Parameters
         ----------
         series
-            The actual time series, as a pandas Series with a proper time index.
+            The actual time series, as a pandas DataFrame with a proper time index.
 
         Returns
         -------
         pandas.Series
-            A new Pandas Series without missing dates.
+            A new Pandas DataFrame without missing dates.
         """
         date_axis = series.index
         samples_size = 3
@@ -911,37 +973,37 @@ class TimeSeries:
     """
 
     def mean(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.mean(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.mean(axis, skipna, level, numeric_only, **kwargs)
 
     def var(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
-        return self._series.var(axis, skipna, level, ddof, numeric_only, **kwargs)
+        return self._df.var(axis, skipna, level, ddof, numeric_only, **kwargs)
 
     def std(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
-        return self._series.std(axis, skipna, level, ddof, numeric_only, **kwargs)
+        return self._df.std(axis, skipna, level, ddof, numeric_only, **kwargs)
 
     def skew(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.skew(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.skew(axis, skipna, level, numeric_only, **kwargs)
 
     def kurtosis(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.kurtosis(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.kurtosis(axis, skipna, level, numeric_only, **kwargs)
 
     def min(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.min(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.min(axis, skipna, level, numeric_only, **kwargs)
 
     def max(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.max(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.max(axis, skipna, level, numeric_only, **kwargs)
 
     def sum(self, axis=None, skipna=None, level=None, numeric_only=None, min_count=0, **kwargs) -> float:
-        return self._series.sum(axis, skipna, level, numeric_only, min_count, **kwargs)
+        return self._df.sum(axis, skipna, level, numeric_only, min_count, **kwargs)
 
     def median(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
-        return self._series.median(axis, skipna, level, numeric_only, **kwargs)
+        return self._df.median(axis, skipna, level, numeric_only, **kwargs)
 
     def autocorr(self, lag=1) -> float:
-        return self._series.autocorr(lag)
+        return self._df.autocorr(lag)
 
-    def describe(self, percentiles=None, include=None, exclude=None) -> pd.Series:
-        return self._series.describe(percentiles, include, exclude)
+    def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
+        return self._df.describe(percentiles, include, exclude)
 
     """
     Definition of some dunder methods
@@ -949,16 +1011,8 @@ class TimeSeries:
 
     def __eq__(self, other):
         if isinstance(other, TimeSeries):
-            if not self._series.equals(other.pd_series()):
+            if not self._df.equals(other.pd_dataframe()):
                 return False
-            for other_ci, self_ci in zip([other.conf_lo_pd_series(), other.conf_hi_pd_series()],
-                                         [self._confidence_lo, self._confidence_hi]):
-                if (other_ci is None) ^ (self_ci is None):
-                    # only one is None
-                    return False
-                if self._combine_or_none(self_ci, other_ci, lambda s1, s2: s1.equals(s2)) is False:
-                    # Note: we check for "False" explicitly, because None is OK..
-                    return False
             return True
         return False
 
@@ -966,14 +1020,12 @@ class TimeSeries:
         return not self.__eq__(other)
 
     def __len__(self):
-        return len(self._series)
+        return len(self._df)
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer, np.float)):
-            new_series = self._series + other
-            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s + other)
-            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s + other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._df + other
+            return TimeSeries(new_series, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 + s2)
         else:
@@ -985,10 +1037,8 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer, np.float)):
-            new_series = self._series - other
-            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s - other)
-            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s - other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._df - other
+            return TimeSeries(new_series, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 - s2)
         else:
@@ -1000,10 +1050,8 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer, np.float)):
-            new_series = self._series * other
-            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
-            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._df * other
+            return TimeSeries(new_series, self.freq())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
         else:
@@ -1018,10 +1066,8 @@ class TimeSeries:
             if n < 0 and not all(self.values() != 0):
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
 
-            new_series = self._series ** float(n)
-            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s ** float(n))
-            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s ** float(n))
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._df ** float(n)
+            return TimeSeries(new_series, self.freq())
         else:
             raise_log(TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(n).__name__)), logger)
@@ -1031,10 +1077,8 @@ class TimeSeries:
             if (other == 0):
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
 
-            new_series = self._series / other
-            conf_lo = self._op_or_none(self._confidence_lo, lambda s: s / other)
-            conf_hi = self._op_or_none(self._confidence_hi, lambda s: s / other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            new_series = self._df / other
+            return TimeSeries(new_series, self.freq())
 
         elif isinstance(other, TimeSeries):
             if (not all(other.values() != 0)):
@@ -1049,32 +1093,25 @@ class TimeSeries:
         return n * (self ** (-1))
 
     def __abs__(self):
-        series = abs(self._series)
-        conf_lo = self._op_or_none(self._confidence_lo, lambda s: abs(s))
-        conf_hi = self._op_or_none(self._confidence_hi, lambda s: abs(s))
-        return TimeSeries(series, conf_lo, conf_hi)
+        series = abs(self._df)
+        return TimeSeries(series, self.freq())
 
     def __neg__(self):
-        series = -self._series
-        conf_lo = self._op_or_none(self._confidence_lo, lambda s: -s)
-        conf_hi = self._op_or_none(self._confidence_hi, lambda s: -s)
-        return TimeSeries(series, conf_lo, conf_hi)
+        series = -self._df
+        return TimeSeries(series, self.freq())
 
     def __contains__(self, ts: pd.Timestamp) -> bool:
-        return ts in self._series.index
+        return ts in self._df.index
 
     def __round__(self, n=None):
-        series = self._series.round(n)
-        confidence_lo = self._op_or_none(self._confidence_lo, lambda s: s.round(n))
-        confidence_hi = self._op_or_none(self._confidence_hi, lambda s: s.round(n))
-        return TimeSeries(series, confidence_lo, confidence_hi)
+        series = self._df.round(n)
+        return TimeSeries(series, self.freq())
 
-    # TODO: Ignoring confidence series for now
     def __lt__(self, other):
         if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
-            series = self._series < other
+            series = self._df < other
         elif isinstance(other, TimeSeries):
-            series = self._series < other.pd_series()
+            series = self._df < other.pd_dataframe()
         else:
             raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
@@ -1082,9 +1119,9 @@ class TimeSeries:
 
     def __gt__(self, other):
         if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
-            series = self._series > other
+            series = self._df > other
         elif isinstance(other, TimeSeries):
-            series = self._series > other.pd_series()
+            series = self._df > other.pd_dataframe()
         else:
             raise_log(TypeError('unsupported operand type(s) for > : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
@@ -1092,9 +1129,9 @@ class TimeSeries:
 
     def __le__(self, other):
         if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
-            series = self._series <= other
+            series = self._df <= other
         elif isinstance(other, TimeSeries):
-            series = self._series <= other.pd_series()
+            series = self._df <= other.pd_dataframe()
         else:
             raise_log(TypeError('unsupported operand type(s) for <= : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
@@ -1102,21 +1139,16 @@ class TimeSeries:
 
     def __ge__(self, other):
         if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
-            series = self._series >= other
+            series = self._df >= other
         elif isinstance(other, TimeSeries):
-            series = self._series >= other.pd_series()
+            series = self._df >= other.pd_dataframe()
         else:
             raise_log(TypeError('unsupported operand type(s) for >= : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
         return series
 
     def __str__(self):
-        df = pd.DataFrame({'value': self._series})
-        if self._confidence_lo is not None:
-            df['conf_low'] = self._confidence_lo
-        if self._confidence_hi is not None:
-            df['conf_high'] = self._confidence_hi
-        return str(df) + '\nFreq: {}'.format(self.freq_str())
+        return str(self._df) + '\nFreq: {}'.format(self.freq_str())
 
     def __repr__(self):
         return self.__str__()
@@ -1131,7 +1163,7 @@ class TimeSeries:
     def __getitem__(self, item):
         # return only main series if nb of values < 3
         if isinstance(item, (int, pd.Timestamp)):
-            return self._series[[item]]
+            return self._df.loc[[item]]
         elif isinstance(item, (pd.DatetimeIndex, slice, list, np.ndarray)):
             if isinstance(item, slice):
                 # if create a slice with timestamp, convert to indices
@@ -1146,20 +1178,19 @@ class TimeSeries:
                 # cannot reverse order
                 if item.indices(len(self))[-1] == -1:
                     raise_log(IndexError("Cannot have a backward TimeSeries"), logger)
+
+                if (isinstance(item.start, int) or isinstance(item.stop, int)):
+                    item = self._df.index[item]
+
             # Verify that values in item are really in index to avoid the creation of NaN values
             if isinstance(item, (np.ndarray, pd.DatetimeIndex)):
                 check = np.array([elem in self.time_index() for elem in item])
                 if not np.all(check):
                     raise_log(IndexError("None of {} in the index".format(item[~check])), logger)
-            try:
-                return TimeSeries(self._series[item],
-                                  self._op_or_none(self._confidence_lo, lambda s: s[item]),
-                                  self._op_or_none(self._confidence_hi, lambda s: s[item]))
-            except ValueError:
-                # return only main series if nb of values < 3
-                return TimeSeries(self._series[item])
+
+            return TimeSeries(self._df.loc[item, :], self.freq())
         elif isinstance(item, str):
-            return self._series[[pd.Timestamp(item)]]
+            return self._df[[pd.Timestamp(item)]]
         else:
             raise_log(IndexError("Input {} of class {} is not a possible key.\n Please use integers, "
                                  "pd.DateTimeIndex, arrays or slice".format(item, item.__class__)), logger)
