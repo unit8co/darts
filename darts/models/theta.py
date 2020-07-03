@@ -4,7 +4,7 @@ Theta Method
 """
 
 import math
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -295,6 +295,49 @@ class FourTheta(ForecastingModel):
         forecast *= self.mean
 
         return self._build_forecast_series(forecast)
+
+    @staticmethod
+    def select_best_model(ts: TimeSeries, thetas: List[int] = None, m: Optional[int] = None):
+        """
+        Performs a grid search over all hyper parameters to select the best model.
+
+        Parameters
+        ----------
+        ts
+            The TimeSeries on which the model will be tested.
+        thetas
+            A list of thetas to loop over.
+        m
+            Optionally, the season used to decompose the time series.
+        Returns
+        -------
+        theta
+            The best performing model on the time series.
+        """
+        # Only import if needed
+        from ..backtesting.backtesting import backtest_gridsearch
+        from sklearn.metrics import mean_absolute_error as mae
+        if thetas is None:
+            thetas = [1, 2, 3]
+        elif isinstance(thetas, int):
+            thetas = [thetas]
+        season_mode = ["additive", "multiplicative"]
+        model_mode = ["additive", "multiplicative"]
+        drift_mode = ["linear", "exponential"]
+        if (ts.values() <= 0).any():
+            drift_mode = ["linear"]
+            model_mode = ["additive"]
+            season_mode = ["additive"]
+
+        theta = backtest_gridsearch(FourTheta,
+                                    {"theta": thetas,
+                                     "model_mode": model_mode,
+                                     "season_mode": season_mode,
+                                     "trend_mode": drift_mode,
+                                     "seasonality_period": [m]
+                                     },
+                                    ts, val_series='train', metric=mae)
+        return theta
 
     def __str__(self):
         return '4Theta(theta:{}, curve:{}, model:{}, seasonality:{})'.format(self.theta, self.trend_mode,
