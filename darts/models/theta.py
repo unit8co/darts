@@ -128,7 +128,7 @@ class Theta(UnivariateForecastingModel):
         return 'Theta({})'.format(self.theta)
 
 
-class FourTheta(ForecastingModel):
+class FourTheta(UnivariateForecastingModel):
     def __init__(self,
                  theta: int = 0,
                  seasonality_period: Optional[int] = None,
@@ -185,8 +185,8 @@ class FourTheta(ForecastingModel):
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
         # - if theta = 0, then the theta method restricts to a simple `trend_mode` regression.
 
-    def fit(self, ts):
-        super().fit(ts)
+    def fit(self, ts, component_index: Optional[int] = None):
+        super().fit(ts, component_index)
 
         self.length = len(ts)
         # normalization of data

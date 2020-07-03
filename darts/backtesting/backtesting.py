@@ -364,7 +364,7 @@ def backtest_gridsearch(model_class: type,
         elif val_series == 'train':
             model.fit(train_series)
             # Use ndarray because casting to TimeSeries takes too much time
-            error = metric(model.fitted_values, train_series.values())
+            error = metric(model.fitted_values, train_series.univariate_values())
         else:  # split mode
             model.fit(train_series)
             error = metric(model.predict(len(val_series)), val_series)
