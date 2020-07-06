@@ -19,7 +19,7 @@ from sklearn.metrics import mean_absolute_error as mae
 
 from M4_metrics import *
 
-info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
+# info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
 
 
 def naive2_groe(ts: TimeSeries, n: int, m: int):
@@ -41,7 +41,7 @@ def naive2_groe(ts: TimeSeries, n: int, m: int):
     return naive2.predict(n) * seasonOut
 
 
-def groe_owa(ts: TimeSeries, model: ForecastingModel, n1: int, m: int, p: int):
+def groe_owa(ts: TimeSeries, model: ForecastingModel, n1: int, m: int, p: int, fq: int):
     """
     Backtesting.
     Compute the OWA score iteratively on ´p´ timepoints following an expanding window mode.
@@ -58,12 +58,13 @@ def groe_owa(ts: TimeSeries, model: ForecastingModel, n1: int, m: int, p: int):
         step size
     p
         number of steps to iterate over
+    fq
+        Frequency of the time series.
     Returns
     -------
     Sum of all OWA errors
     """
     n = len(ts)
-    fq = info_dataset.Frequency[freq[0] + '1']
     errors = []
     for i in range(p):
         if n1 + i * m == n:
@@ -229,18 +230,19 @@ if __name__ == "__main__":
             mean_pred = mean_pred / len(model_predictions)
 
             # GROE OWA (weight based on score)
+            fq = info_dataset.Frequency[freq[0] + '1']
             criterion = [
-                groe_owa(train, naiveSeason, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6),
-                groe_owa(train, theta, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6),
-                groe_owa(train, fourtheta, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6),
+                groe_owa(train, naiveSeason, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6, fq),
+                groe_owa(train, theta, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6, fq),
+                groe_owa(train, fourtheta, max(5, len(train) - len(test)), int(np.floor(len(test) / 6)), 6, fq),
                 groe_owa(train, DeseasonForecastingModel(NaiveSeasonal(K=1), m), max(5, len(train) - len(test)),
-                         int(np.floor(len(test) / 6)), 6),
+                         int(np.floor(len(test) / 6)), 6, fq),
                 groe_owa(train, DeseasonForecastingModel(ses, m), max(5, len(train) - len(test)),
-                         int(np.floor(len(test) / 6)), 6),
+                         int(np.floor(len(test) / 6)), 6, fq),
                 groe_owa(train, DeseasonForecastingModel(holt, m), max(5, len(train) - len(test)),
-                         int(np.floor(len(test) / 6)), 6),
+                         int(np.floor(len(test) / 6)), 6, fq),
                 groe_owa(train, DeseasonForecastingModel(damp, m), max(5, len(train) - len(test)),
-                         int(np.floor(len(test) / 6)), 6)]
+                         int(np.floor(len(test) / 6)), 6, fq)]
 
             Score = 1 / np.array(criterion)
             pesos = Score / Score.sum()
