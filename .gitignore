@@ -14,5 +14,5 @@ runs/
 htmlcov
 .darts
 docs_env
-
+.DS_Store
 .gradle
