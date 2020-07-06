@@ -144,7 +144,7 @@ class FourTheta(UnivariateForecastingModel):
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        This model is similar to Theta, with `theta`=2-theta, `model_mode`=additive and `trend_mode`=linear.
+        This model is similar to Theta, with `theta` = 2-theta, `model_mode` = additive and `trend_mode` = linear.
 
         Parameters
         ----------
