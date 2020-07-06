@@ -1003,7 +1003,7 @@ class TimeSeries:
             new_series = self._series * other
             conf_lo = self._op_or_none(self._confidence_lo, lambda s: s * other)
             conf_hi = self._op_or_none(self._confidence_hi, lambda s: s * other)
-            return TimeSeries(new_series, conf_lo, conf_hi)
+            return TimeSeries(new_series, conf_lo, conf_hi, freq=self.freq_str())
         elif isinstance(other, TimeSeries):
             return self._combine_from_pd_ops(other, lambda s1, s2: s1 * s2)
         else:
@@ -1154,7 +1154,8 @@ class TimeSeries:
             try:
                 return TimeSeries(self._series[item],
                                   self._op_or_none(self._confidence_lo, lambda s: s[item]),
-                                  self._op_or_none(self._confidence_hi, lambda s: s[item]))
+                                  self._op_or_none(self._confidence_hi, lambda s: s[item]),
+                                  freq=self.freq_str())
             except ValueError:
                 # return only main series if nb of values < 3
                 return TimeSeries(self._series[item])

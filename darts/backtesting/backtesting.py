@@ -340,6 +340,9 @@ def backtest_gridsearch(model_class: type,
         if val_series is None:  # expanding window mode
             backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n)
             error = metric(backtest_forecast, train_series)
+        elif val_series == 'train':
+            model.fit(train_series)
+            error = metric(model.fitted_values, train_series.values())
         else:  # split mode
             model.fit(train_series)
             error = metric(model.predict(len(val_series)), val_series)
