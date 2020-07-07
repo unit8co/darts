@@ -12,5 +12,7 @@ examples/.ipynb_checkpoints/
 runs/
 .coverage
 htmlcov
-
+.darts
 docs_env
+.DS_Store
+.gradle
