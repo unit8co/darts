@@ -110,7 +110,7 @@ def exampleName=project.properties["exampleName"] ?: ""
 
 task checkExample(type: Exec) {
     dependsOn installLocally
-    workingDir "./examples"
+    workingDir "."
     // exampleName must be passed with -PexampleName=FFT-examples.ipynb
     commandLine "papermill", exampleName, exampleName
 
