@@ -288,9 +288,9 @@ def mape(actual_series: TimeSeries,
 
 @multivariate_support
 def smape(actual_series: TimeSeries,
-         pred_series: TimeSeries,
-         intersect: bool = True,
-         reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+          pred_series: TimeSeries,
+          intersect: bool = True,
+          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
