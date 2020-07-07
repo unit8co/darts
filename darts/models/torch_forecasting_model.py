@@ -329,7 +329,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
+    def predict(self, n: int,
+                use_full_output_length: bool = False,
+                input_series: Optional[TimeSeries] = None) -> TimeSeries:
+
         """ Predicts values for a certain number of time steps after the end of the training series
 
         In the case of univariate training series, `n` can assume any integer value greater than 0.
@@ -353,6 +356,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
         use_full_output_length
             Boolean value indicating whether or not the full output sequence of the model prediction should be
             used to produce the output of this function.
+        input_series
+            Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
+            prediction. If it is not passed, the training TimeSeries instance will be used as input.
 
         Returns
         -------
@@ -361,12 +367,21 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         super().predict(n)
 
+        raise_if_not(input_series is None or input_series.width == self.training_series.width,
+                     "'input_series' must have same width as series used to fit model.", logger)
+
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
                      " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
-        input_sequence = self.training_series.values()[-self.input_length:]
+        if input_series is None:
+            input_sequence = self.training_series.values()[-self.input_length:]
+        else:
+            raise_if_not(len(input_series) >= self.input_length,
+                         "'input_series' must at least be as long as 'self.input_length'", logger)
+            input_sequence = input_series.values()[-self.input_length:]
+            super().fit(input_series, self.target_indices)
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
         # iterate through predicting output and consuming it again until enough predictions are created
