@@ -79,7 +79,7 @@ void coverageTestSteps() {
         commandLine "coverage", "run", "-m", "unittest"
     }
     exec {
-        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit='darts/tests*'"
+        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit='darts/tests*,*__init__.py'"
     }
 }
 
