@@ -18,7 +18,15 @@ from ..utils.timeseries_generation import (
     constant_timeseries as ct,
     gaussian_timeseries as gt
 )
-from ..models import Theta, FFT, ExponentialSmoothing, NaiveSeasonal, StandardRegressionModel, NaiveDrift
+from ..models import (
+    Theta,
+    FFT,
+    ExponentialSmoothing,
+    NaiveSeasonal,
+    StandardRegressionModel,
+    NaiveDrift,
+    TCNModel
+)
 
 
 def compare_best_against_random(model_class, params, series):
@@ -62,14 +70,48 @@ class BacktestingTestCase(unittest.TestCase):
 
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
+        linear_series_multi = linear_series.stack(linear_series)
 
-        # univariate series
+        # univariate model + univariate series
         pred = backtest_forecasting(linear_series, NaiveDrift(), pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, linear_series), 1.0)
 
-        # multivariate series
-        with self.assertRaises(AssertionError):
-            backtest_forecasting(linear_series.stack(linear_series), NaiveDrift(), pd.Timestamp('20000201'), 3)
+        # univariate model + multivariate series without component index argument
+        with self.assertRaises(ValueError):
+            backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3)
+
+        # univariate model + multivariate series with component index argument
+        pred = backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3,
+                                    component_index=0, verbose=False)
+        self.assertEqual(pred.width, 1)
+        self.assertEqual(r2_score(pred, linear_series), 1.0)
+        pred = backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3,
+                                    component_index=1, verbose=False)
+        self.assertEqual(pred.width, 1)
+        self.assertEqual(r2_score(pred, linear_series), 1.0)
+
+        # multivariate model + univariate series
+        tcn_model = TCNModel(batch_size=1, n_epochs=1)
+        pred = backtest_forecasting(linear_series, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
+        self.assertEqual(pred.width, 1)
+
+        # multivariate model + multivariate series
+        with self.assertRaises(ValueError):
+            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
+        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
+        with self.assertRaises(ValueError):
+            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                 use_full_output_length=False)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 1, target_indices=[0],
+                                    verbose=False)
+        self.assertEqual(pred.width, 1)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                    use_full_output_length=True, target_indices=[1])
+        self.assertEqual(pred.width, 1)
+        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
+        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
+                                    use_full_output_length=True, target_indices=[0, 1])
+        self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):
         gaussian_series = gt(mean=2, length=50)
@@ -88,9 +130,9 @@ class BacktestingTestCase(unittest.TestCase):
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate target
-        with self.assertRaises(ValueError):
-            backtest_regression(features_multivariate, target.stack(target),
-                                StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        pred = backtest_regression(features_multivariate, target.stack(target),
+                                   StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
 
     def test_backtest_gridsearch(self):
 
@@ -108,6 +150,19 @@ class BacktestingTestCase(unittest.TestCase):
 
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
+
+    def test_backtest_gridsearch_multi(self):
+        dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
+        tcn_params = {
+            'n_epochs': [1],
+            'batch_size': [1],
+            'input_size': [2],
+            'output_length': [3],
+            'output_size': [2],
+            'kernel_size': [2, 3, 4]
+        }
+        backtest_gridsearch(TCNModel, tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
+                            use_full_output_length=True, target_indices=[0, 1])
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)
