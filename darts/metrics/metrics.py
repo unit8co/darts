@@ -287,8 +287,54 @@ def mape(actual_series: TimeSeries,
 
 
 @multivariate_support
+def smape(actual_series: TimeSeries,
+         pred_series: TimeSeries,
+         intersect: bool = True,
+         reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+    """ Mean Absolute Percentage Error (MAPE).
+
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+    both of length :math:`T`, it is a percentage value computed as
+
+    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}.
+
+    Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
+    the Mean Absolute Scaled Error (MASE) in these cases.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
+
+    Raises
+    ------
+    ValueError
+        If the actual series contains some zeros.
+
+    Returns
+    -------
+    float
+        The Mean Absolute Percentage Error (MAPE)
+    """
+
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    raise_if_not((y_true != 0).any() or (y_hat != 0).any(),
+                 'The actual series must be strictly positive to compute the sMAPE.', logger)
+    return 200. * np.mean(np.abs((y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat))))
+
+
+@multivariate_support
 def mase(actual_series: TimeSeries,
          pred_series: TimeSeries,
+         insample: TimeSeries,
          m: Optional[int] = 1,
          intersect: bool = True,
          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
@@ -327,11 +373,11 @@ def mase(actual_series: TimeSeries,
             warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    errors = np.sum(np.abs(y_true - y_hat))
-    t = y_true.size
-    scale = t / (t - m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
+    x_t = insample.values()
+    errors = np.abs(y_true - y_hat)
+    scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
     raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
-    return errors / scale
+    return np.mean(errors / scale)
 
 
 @multivariate_support
