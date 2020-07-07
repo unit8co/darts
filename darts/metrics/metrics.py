@@ -349,6 +349,8 @@ def mase(actual_series: TimeSeries,
         The series of actual values
     pred_series
         The series of predicted values
+    insample
+        The series used for training
     m
         Optionally, the seasonality to use for differencing.
         `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
@@ -367,6 +369,8 @@ def mase(actual_series: TimeSeries,
         The Mean Absolute Scaled Error (MASE)
     """
 
+    raise_if_not(insample.end_time() + insample.freq() == pred_series.start_time(),
+                 "The pred_series must be the forecast of the insample series", logger)
     if m is None:
         test_season, m = check_seasonality(actual_series)
         if not test_season:
