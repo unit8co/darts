@@ -87,7 +87,7 @@ class Theta(ForecastingModel):
             new_ts = remove_seasonality(ts, self.season_period, model=self.mode)
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
+        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=0.2)
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
