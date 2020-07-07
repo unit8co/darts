@@ -372,7 +372,7 @@ def mase(actual_series: TimeSeries,
     raise_if_not(insample.end_time() + insample.freq() == pred_series.start_time(),
                  "The pred_series must be the forecast of the insample series", logger)
     if m is None:
-        test_season, m = check_seasonality(actual_series)
+        test_season, m = check_seasonality(insample)
         if not test_season:
             warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
