@@ -291,15 +291,17 @@ def smape(actual_series: TimeSeries,
           pred_series: TimeSeries,
           intersect: bool = True,
           reduction: Callable[[np.ndarray], float] = np.mean) -> float:
-    """ Mean Absolute Percentage Error (MAPE).
+    """ symmetric Mean Absolute Percentage Error (sMAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
     both of length :math:`T`, it is a percentage value computed as
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}.
+    .. math::
+        200 \\cdot \\frac{1}{T}
+        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }.
 
-    Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
-    the Mean Absolute Scaled Error (MASE) in these cases.
+    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
+     for some :math:`t`. Consider using the Mean Absolute Scaled Error (MASE) in these cases.
 
     Parameters
     ----------
@@ -322,7 +324,7 @@ def smape(actual_series: TimeSeries,
     Returns
     -------
     float
-        The Mean Absolute Percentage Error (MAPE)
+        The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
@@ -362,6 +364,11 @@ def mase(actual_series: TimeSeries,
     reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
+
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
 
     Returns
     -------
