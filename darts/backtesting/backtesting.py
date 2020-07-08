@@ -118,11 +118,8 @@ def backtest_forecasting(series: TimeSeries,
     last_pred_time = (
         series.time_index()[-fcast_horizon_n - stride] if trim_to_series else series.time_index()[-stride - 1]
     )
-<<<<<<< HEAD
     raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
                  " support the option 'retrain=False'.", logger)
-=======
->>>>>>> develop
 
     # specify the correct fit and predict keyword arguments for the given model
     fit_kwargs, predict_kwargs = _create_parameter_dicts(model, target_indices, component_index, use_full_output_length)
