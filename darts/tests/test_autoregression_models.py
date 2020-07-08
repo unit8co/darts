@@ -1,4 +1,5 @@
 import logging
+import shutil
 import unittest
 
 import numpy as np
@@ -43,6 +44,10 @@ class AutoregressionModelsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
 
     def test_models_runnability(self):
         for model, _ in self.models:

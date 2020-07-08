@@ -18,6 +18,7 @@ from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
+from ..utils.torch import random_method
 from ..logging import raise_if_not, get_logger, raise_log
 from .forecasting_model import MultivariateForecastingModel
 
@@ -133,7 +134,6 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
 
 class TorchForecastingModel(MultivariateForecastingModel):
-    # TODO: add init seed
     # TODO: add is_stochastic & reset methods
     # TODO: transparent support for multivariate time series
     def __init__(self,
@@ -260,6 +260,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
+    @random_method
     def fit(self,
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,

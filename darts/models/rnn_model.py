@@ -4,9 +4,11 @@ Recurrent Neural Networks
 """
 
 import torch.nn as nn
+from numpy.random import RandomState
 from typing import List, Optional, Union
 
 from ..logging import raise_if_not, get_logger
+from ..utils.torch import random_method
 from .torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
@@ -103,7 +105,7 @@ class _RNNModule(nn.Module):
 
 
 class RNNModel(TorchForecastingModel):
-
+    @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  input_size: int = 1,
@@ -113,6 +115,7 @@ class RNNModel(TorchForecastingModel):
                  n_rnn_layers: int = 1,
                  hidden_fc_sizes: Optional[List] = None,
                  dropout: float = 0.,
+                 random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
         """ Recurrent Neural Network Model (RNNs).
@@ -145,6 +148,9 @@ class RNNModel(TorchForecastingModel):
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
             Fraction of neurons afected by Dropout.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
         kwargs['output_length'] = output_length

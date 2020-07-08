@@ -94,7 +94,7 @@ def backtest_forecasting(series: TimeSeries,
     stride
         The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
     retrain
-        Whether to retrain the model for every prediction or not. Currently only TorchForecastingModel
+        Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
         instances as `model` argument support setting `retrain` to `False`.
     trim_to_series
         Whether the predicted series has the end trimmed to match the end of the main series
@@ -112,12 +112,17 @@ def backtest_forecasting(series: TimeSeries,
     raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
                  logger)
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+    raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
+                 " support the option 'retrain=False'.", logger)
 
     last_pred_time = (
         series.time_index()[-fcast_horizon_n - stride] if trim_to_series else series.time_index()[-stride - 1]
     )
+<<<<<<< HEAD
     raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
                  " support the option 'retrain=False'.", logger)
+=======
+>>>>>>> develop
 
     # specify the correct fit and predict keyword arguments for the given model
     fit_kwargs, predict_kwargs = _create_parameter_dicts(model, target_indices, component_index, use_full_output_length)

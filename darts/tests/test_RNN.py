@@ -21,6 +21,10 @@ class RNNModelTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
+
     def test_creation(self):
         with self.assertRaises(ValueError):
             # cannot choose any string
