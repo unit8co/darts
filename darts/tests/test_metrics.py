@@ -33,13 +33,20 @@ class MetricsTestCase(unittest.TestCase):
             metrics.mape(self.series1, self.series1)
 
         with self.assertRaises(ValueError):
+            metrics.smape(self.series1, self.series1)
+
+        with self.assertRaises(ValueError):
             metrics.mape(self.series12, self.series12)
+
+        with self.assertRaises(ValueError):
+            metrics.smape(self.series12, self.series12)
 
         with self.assertRaises(ValueError):
             metrics.ope(self.series1 - self.series1.pd_series().mean(), self.series1 - self.series1.pd_series().mean())
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1 + 1, self.series1 + 1), 0)
+        self.assertEqual(metrics.smape(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1), 0)
         self.assertEqual(metrics.marre(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.r2_score(self.series1 + 1, self.series1 + 1), 1)
@@ -95,6 +102,9 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_mape(self):
         self.helper_test_multivariate_duplication_equality(metrics.mape)
+
+    def test_smape(self):
+        self.helper_test_multivariate_duplication_equality(metrics.smape)
 
     def test_mase(self):
         self.helper_test_multivariate_duplication_equality(metrics.mase, insample=self.series_train)
