@@ -5,7 +5,6 @@ Theta Method
 
 import math
 from typing import Optional, List
-from enum import Enum
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -14,24 +13,9 @@ from ..utils.statistics import check_seasonality, extract_trend_and_seasonality,
 from .forecasting_model import UnivariateForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
+from ..models import Season, Trend, Model
 
 logger = get_logger(__name__)
-
-
-class Season(Enum):
-    MULTIPLICATIVE = 'multiplicative'
-    ADDITIVE = 'additive'
-    NONE = None
-
-
-class Trend(Enum):
-    LINEAR = 'linear'
-    EXPONENTIAL = 'exponential'
-
-
-class Model(Enum):
-    MULTIPLICATIVE = 'multiplicative'
-    ADDITIVE = 'additive'
 
 
 class Theta(UnivariateForecastingModel):
@@ -72,11 +56,10 @@ class Theta(UnivariateForecastingModel):
         self.is_seasonal = False
         self.seasonality = None
         self.seasonality_period = seasonality_period
+        self.mode = mode
 
         raise_if_not(mode in Season,
                      "Unknown value for mode: {}.".format(mode), logger)
-
-        self.mode = mode.value
 
         # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
@@ -106,8 +89,8 @@ class Theta(UnivariateForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.mode)
-            new_ts = remove_seasonality(ts, self.season_period, model=self.mode)
+            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.mode.value)
+            new_ts = remove_seasonality(ts, self.season_period, model=self.mode.value)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
@@ -140,9 +123,9 @@ class Theta(UnivariateForecastingModel):
 
             replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
                                              math.ceil(n / self.season_period))[:n]
-            if self.mode == "multiplicative":
+            if self.mode is Season.MULTIPLICATIVE:
                 forecast *= replicated_seasonality
-            elif self.mode == "additive":
+            elif self.mode is Season.ADDITIVE:
                 forecast += replicated_seasonality
 
         return self._build_forecast_series(forecast)
@@ -195,6 +178,9 @@ class FourTheta(UnivariateForecastingModel):
         self.is_seasonal = False
         self.seasonality = None
         self.season_period = seasonality_period
+        self.model_mode = model_mode
+        self.season_mode = season_mode
+        self.trend_mode = trend_mode
         self.wses = 0 if self.theta == 0 else (1 / theta)
         self.wdrift = 1 - self.wses
         self.fitted_values = None
@@ -205,10 +191,6 @@ class FourTheta(UnivariateForecastingModel):
                      "Unknown value for trend_mode: {}.".format(trend_mode), logger)
         raise_if_not(season_mode in Season,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
-
-        self.model_mode = model_mode.value
-        self.season_mode = season_mode.value
-        self.trend_mode = trend_mode.value
 
         # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
@@ -239,50 +221,50 @@ class FourTheta(UnivariateForecastingModel):
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period,
-                                                                model=self.season_mode)
-            new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode)
+                                                                model=self.season_mode.value)
+            new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode.value)
 
         if (new_ts <= 0).values.any():
-            self.model_mode = Model.ADDITIVE.value
-            self.trend_mode = Trend.LINEAR.value
+            self.model_mode = Model.ADDITIVE
+            self.trend_mode = Trend.LINEAR
             logger.warn("Time series has negative values. Fallback to additive and linear model")
 
         # Drift part of the decomposition
-        if self.trend_mode == Trend.LINEAR.value:
+        if self.trend_mode is Trend.LINEAR:
             linreg = new_ts.univariate_values()
         else:
             linreg = np.log(new_ts.univariate_values())
         self.drift = np.poly1d(np.polyfit(np.arange(self.length), linreg, 1))
         theta0_in = self.drift(np.arange(self.length))
-        if self.trend_mode == Trend.EXPONENTIAL.value:
+        if self.trend_mode is Trend.EXPONENTIAL:
             theta0_in = np.exp(theta0_in)
 
-        if (theta0_in > 0).all() and self.model_mode == Model.MULTIPLICATIVE.value:
+        if (theta0_in > 0).all() and self.model_mode is Model.MULTIPLICATIVE:
             theta_t = (new_ts.univariate_values() ** self.theta) * (theta0_in ** (1 - self.theta))
         else:
-            if self.model_mode == Model.MULTIPLICATIVE.value:
+            if self.model_mode is Model.MULTIPLICATIVE:
                 logger.warn("Negative Theta line. Fallback to additive model")
-                self.model_mode = Model.ADDITIVE.value
+                self.model_mode = Model.ADDITIVE
             theta_t = self.theta * new_ts.univariate_values() + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(theta_t).fit()
         theta2_in = self.model.fittedvalues
 
-        if (theta2_in > 0).all() and self.model_mode == Model.MULTIPLICATIVE.value:
+        if (theta2_in > 0).all() and self.model_mode is Model.MULTIPLICATIVE:
             self.fitted_values = theta2_in**self.wses * theta0_in**self.wdrift
         else:
-            if self.model_mode == Model.MULTIPLICATIVE.value:
-                self.model_mode = Model.ADDITIVE.value
+            if self.model_mode is Model.MULTIPLICATIVE:
+                self.model_mode = Model.ADDITIVE
                 logger.warn("Negative Theta line. Fallback to additive model")
                 theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
                 self.model = hw.SimpleExpSmoothing(theta_t).fit()
                 theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
         if self.is_seasonal:
-            if self.season_mode == Season.ADDITIVE.value:
+            if self.season_mode is Season.ADDITIVE:
                 self.fitted_values += self.seasonality.univariate_values()
-            elif self.season_mode == Season.MULTIPLICATIVE.value:
+            elif self.season_mode is Season.MULTIPLICATIVE:
                 self.fitted_values *= self.seasonality.univariate_values()
         self.fitted_values *= self.mean
         # takes too much time to create a time series for fitted_values
@@ -296,10 +278,10 @@ class FourTheta(UnivariateForecastingModel):
 
         # Forecast of the Linear Regression part.
         drift = self.drift(np.arange(self.length, self.length + n))
-        if self.trend_mode == Trend.EXPONENTIAL.value:
+        if self.trend_mode is Trend.EXPONENTIAL:
             drift = np.exp(drift)
 
-        if self.model_mode == Model.ADDITIVE.value:
+        if self.model_mode is Model.ADDITIVE:
             forecast = self.wses * forecast + self.wdrift * drift
         else:
             forecast = forecast**self.wses * drift**self.wdrift
@@ -309,7 +291,7 @@ class FourTheta(UnivariateForecastingModel):
 
             replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
                                              math.ceil(n / self.season_period))[:n]
-            if self.season_mode == Season.MULTIPLICATIVE.value:
+            if self.season_mode is Season.MULTIPLICATIVE:
                 forecast *= replicated_seasonality
             else:
                 forecast += replicated_seasonality
