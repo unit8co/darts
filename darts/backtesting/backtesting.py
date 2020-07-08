@@ -400,8 +400,12 @@ def backtest_gridsearch(model_class: type,
     """
 
     if (val_series is not None):
-        raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
-                     " number of components.", logger)
+        if val_series == 'train':
+            raise_if_not(hasattr(model_class, "fitted_values"), "The model must have an fitted_values attribute"
+                                                                " to compare with the train TimeSeries", logger)
+        else:
+            raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
+                         " number of components.", logger)
 
     raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
                  "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
