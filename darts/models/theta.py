@@ -13,7 +13,7 @@ from ..utils.statistics import check_seasonality, extract_trend_and_seasonality,
 from .forecasting_model import UnivariateForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
-from ..models import Season, Trend, Model
+from .. import Season, Trend, Model
 
 logger = get_logger(__name__)
 

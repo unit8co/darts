@@ -8,8 +8,7 @@ import pandas as pd
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA, TCNModel
-from ..models.theta import Theta
+from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA, TCNModel, Theta, FourTheta
 from ..models.fft import FFT
 
 
@@ -37,6 +36,8 @@ class AutoregressionModelsTestCase(unittest.TestCase):
         (Theta(), 11.3),
         (Theta(1), 20.2),
         (Theta(3), 9.8),
+        (FourTheta(1), 20.2),
+        (FourTheta(-1), 9.8),
         (FFT(trend='poly'), 11.4),
         (NaiveSeasonal(), 32.4),
     ]
