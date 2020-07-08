@@ -206,9 +206,15 @@ class FourTheta(UnivariateForecastingModel):
             self.mean = 1.
         new_ts = ts / self.mean
 
+        if (new_ts <= 0).values.any():
+            self.model_mode = Model.ADDITIVE
+            self.trend_mode = Trend.LINEAR
+            self.season_mode = Season.ADDITIVE
+            logger.warn("Time series has negative values. Fallback to additive and linear model")
+
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        if self.season_mode is None:
+        if self.season_mode is Season.NONE:
             self.season_period = 1
         if self.season_period is None:
             max_lag = len(ts) // 2
@@ -223,11 +229,6 @@ class FourTheta(UnivariateForecastingModel):
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period,
                                                                 model=self.season_mode.value)
             new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode.value)
-
-        if (new_ts <= 0).values.any():
-            self.model_mode = Model.ADDITIVE
-            self.trend_mode = Trend.LINEAR
-            logger.warn("Time series has negative values. Fallback to additive and linear model")
 
         # Drift part of the decomposition
         if self.trend_mode is Trend.LINEAR:
@@ -328,7 +329,7 @@ class FourTheta(UnivariateForecastingModel):
         if (ts.values() <= 0).any():
             drift_mode = [Trend.LINEAR]
             model_mode = [Model.ADDITIVE]
-            season_mode = [Model.MULTIPLICATIVE]
+            season_mode = [Season.MULTIPLICATIVE]
         else:
             season_mode = [season for season in Season]
             model_mode = [model for model in Model]
