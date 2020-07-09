@@ -5,15 +5,17 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
-from .forecasting_model import ForecastingModel
+from typing import Optional
+import numpy as np
+
+from .forecasting_model import UnivariateForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
-import numpy as np
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(ForecastingModel):
+class NaiveMean(UnivariateForecastingModel):
     def __init__(self):
         """ Naive Mean Model
 
@@ -26,9 +28,9 @@ class NaiveMean(ForecastingModel):
     def __str__(self):
         return 'Naive mean predictor model'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
-        self.mean_val = np.mean(series.values())
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        self.mean_val = np.mean(series.univariate_values())
 
     def predict(self, n: int):
         super().predict(n)
@@ -36,7 +38,7 @@ class NaiveMean(ForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(ForecastingModel):
+class NaiveSeasonal(UnivariateForecastingModel):
     def __init__(self, K: int = 1):
         """ Naive Seasonal Model
 
@@ -60,10 +62,10 @@ class NaiveSeasonal(ForecastingModel):
     def __str__(self):
         return 'Naive seasonal model, with K={}'.format(self.K)
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
         raise_if_not(len(series) >= self.K, 'The time series requires at least K={} points'.format(self.K), logger)
-        self.last_k_vals = series.values()[-self.K:]
+        self.last_k_vals = series.univariate_values()[-self.K:]
 
     def predict(self, n: int):
         super().predict(n)
@@ -71,7 +73,7 @@ class NaiveSeasonal(ForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(ForecastingModel):
+class NaiveDrift(UnivariateForecastingModel):
     def __init__(self):
         """ Naive Drift Model
 
@@ -85,8 +87,9 @@ class NaiveDrift(ForecastingModel):
     def __str__(self):
         return 'Naive drift model'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        series = self.training_series
 
     def predict(self, n: int):
         super().predict(n)

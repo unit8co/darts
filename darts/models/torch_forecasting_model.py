@@ -6,6 +6,7 @@ Torch Forecasting Model
 import numpy as np
 import os
 import re
+import math
 from glob import glob
 import shutil
 import pickle
@@ -13,12 +14,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
+from ..utils.torch import random_method
 from ..logging import raise_if_not, get_logger, raise_log
-from .forecasting_model import ForecastingModel
+from .forecasting_model import MultivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.darts', 'runs')
@@ -34,12 +36,13 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-class _TimeSeriesDataset1DSequential(Dataset):
+class _TimeSeriesSequentialDataset(Dataset):
 
     def __init__(self,
                  series: TimeSeries,
                  data_length: int = 1,
-                 target_length: int = 1):
+                 target_length: int = 1,
+                 target_indices: List[int] = [0]):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -62,6 +65,7 @@ class _TimeSeriesDataset1DSequential(Dataset):
         self.len_series = len(series)
         self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
+        self.target_indices = target_indices
 
         raise_if_not(self.data_length > 0,
                      "The input sequence length must be positive. It is {}".format(self.data_length),
@@ -78,15 +82,16 @@ class _TimeSeriesDataset1DSequential(Dataset):
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
-class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
+class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
     def __init__(self,
                  series: TimeSeries,
                  length: int = 3,
-                 shift: int = 1):
+                 shift: int = 1,
+                 target_indices: List[int] = [0]):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -108,6 +113,7 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
+        self.target_indices = target_indices
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
@@ -124,17 +130,18 @@ class _TimeSeriesDataset1DShifted(torch.utils.data.Dataset):
         idx = index % self.__len__()
         data = self.series_values[idx:idx + self.length]
         target = self.series_values[idx + self.shift:idx + self.length + self.shift]
-        return torch.from_numpy(data).float().unsqueeze(1), torch.from_numpy(target).float().unsqueeze(1)
+        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
 
 
-class TorchForecastingModel(ForecastingModel):
-    # TODO: add init seed
+class TorchForecastingModel(MultivariateForecastingModel):
     # TODO: add is_stochastic & reset methods
     # TODO: transparent support for multivariate time series
     def __init__(self,
                  batch_size: int = 32,
                  output_length: int = 1,
                  input_length: int = 10,
+                 input_size: int = 1,
+                 output_size: int = 1,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -146,6 +153,7 @@ class TorchForecastingModel(ForecastingModel):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
+
         """ Pytorch-based Forecasting Model.
 
         This class is meant to be inherited to create a new pytorch-based forecasting module.
@@ -158,6 +166,10 @@ class TorchForecastingModel(ForecastingModel):
             Number of time steps to be output by the forecasting module.
         input_length
             Number of past time steps that are fed to the forecasting module.
+        input_size
+            The dimensionality of the TimeSeries instances that will be fed to the fit function.
+        output_size
+            The dimensionality of the output time series.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -202,9 +214,10 @@ class TorchForecastingModel(ForecastingModel):
         else:
             self.device = torch.device(torch_device_str)
 
-        self.input_size = 1  # We support only univariate time series currently
         self.input_length = input_length
+        self.input_size = input_size
         self.output_length = output_length
+        self.output_size = output_size
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -247,10 +260,12 @@ class TorchForecastingModel(ForecastingModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
+    @random_method
     def fit(self,
             series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
-            verbose: bool = False) -> None:
+            verbose: bool = False,
+            target_indices: Optional[List[int]] = None) -> None:
         """ Fit method for torch modules
 
         Parameters
@@ -262,14 +277,21 @@ class TorchForecastingModel(ForecastingModel):
             throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
+        target_indices
+            A list of integers indicating which component(s) of the time series should be used
+            as targets for forecasting.
         """
+        raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
+                     "the `input_size` defined when instantiating the current model.", logger)
 
-        super().fit(series)
+        super().fit(series, target_indices)
+
+        raise_if_not(len(self.target_indices) == self.output_size, "The number of target components must be equal to "
+                     "the `output_size` defined when instantiating the current model.", logger)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        # Prepare training data:
         dataset = self.create_dataset(series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
@@ -307,21 +329,85 @@ class TorchForecastingModel(ForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self, n: int,
+                use_full_output_length: bool = False,
+                input_series: Optional[TimeSeries] = None) -> TimeSeries:
+
+        """ Predicts values for a certain number of time steps after the end of the training series
+
+        In the case of univariate training series, `n` can assume any integer value greater than 0.
+        If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
+        the first predicted value is kept as output while at the same time being fed into the input for
+        the next prediction (the first value of the previous input is discarded). This way, the input sequence
+        'rolls over' by 1 step for every prediction in 'n'.
+        If `use_full_output_length` is set to `True`, the model will predict not one, but `self.output_length` values
+        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
+        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
+        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
+        iteration.
+
+        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_output_length`
+        has to be set to `True`. In this case, only one iteration of predictions will be performed.
+
+        Parameters
+        ----------
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        use_full_output_length
+            Boolean value indicating whether or not the full output sequence of the model prediction should be
+            used to produce the output of this function.
+        input_series
+            Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
+            prediction. If it is not passed, the training TimeSeries instance will be used as input.
+
+        Returns
+        -------
+        TimeSeries
+            A time series containing the `n` next points, starting after the end of the training time series
+        """
         super().predict(n)
 
-        input_sequence = self.training_series.values()[-self.input_length:]
-        pred_in = torch.from_numpy(input_sequence).float().view(1, -1, 1).to(self.device)
+        raise_if_not(input_series is None or input_series.width == self.training_series.width,
+                     "'input_series' must have same width as series used to fit model.", logger)
+
+        raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
+                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
+                     "TimeSeries instance as input.", logger)
+
+        # create input sequence for prediction
+        if input_series is None:
+            input_sequence = self.training_series.values()[-self.input_length:]
+        else:
+            raise_if_not(len(input_series) >= self.input_length,
+                         "'input_series' must at least be as long as 'self.input_length'", logger)
+            input_sequence = input_series.values()[-self.input_length:]
+            super().fit(input_series, self.target_indices)
+        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+
+        # iterate through predicting output and consuming it again until enough predictions are created
         test_out = []
         self.model.eval()
-        for i in range(n):
-            out = self.model(pred_in)
-            pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, :] = out[:, self.first_prediction_index]
-            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
-        test_out = np.stack(test_out)
+        if (use_full_output_length):
+            num_iterations = int(math.ceil(n / self.output_length))
+            for i in range(num_iterations):
+                raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
+                             " support predictions with n > output_length", logger)
+                out = self.model(pred_in)
+                if (num_iterations > 1):
+                    pred_in = pred_in.roll(-self.output_length, 1)
+                    pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
+                test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
+            test_out = np.concatenate(test_out, axis=1)
+            test_out = test_out[:, :n, :]
+        else:
+            for i in range(n):
+                out = self.model(pred_in)
+                pred_in = pred_in.roll(-1, 1)
+                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+                test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
 
-        return self._build_forecast_series(test_out.squeeze())
+        test_out = np.stack(test_out)
+        return self._build_forecast_series(test_out.reshape(n, -1))
 
     @property
     def first_prediction_index(self) -> int:
@@ -452,7 +538,7 @@ class TorchForecastingModel(ForecastingModel):
                     os.remove(chkpt)
 
     def create_dataset(self, series):
-        return _TimeSeriesDataset1DSequential(series, self.input_length, self.output_length)
+        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
 
     @staticmethod
     def load_from_checkpoint(model_name: str,

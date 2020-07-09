@@ -10,14 +10,14 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
-from .forecasting_model import ForecastingModel
+from .forecasting_model import UnivariateForecastingModel
 from ..logging import raise_log, get_logger
 from ..timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class Theta(ForecastingModel):
+class Theta(UnivariateForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
     # .. todo: Try with something different than SES? They do that in the paper.
@@ -64,8 +64,9 @@ class Theta(ForecastingModel):
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
 
-    def fit(self, ts):
-        super().fit(ts)
+    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
+        super().fit(series, component_index)
+        ts = self.training_series
 
         self.length = len(ts)
         self.season_period = self.seasonality_period
