@@ -91,7 +91,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
                  series: TimeSeries,
                  length: int = 3,
                  shift: int = 1,
-                 target_indices: List[int] = [0]):
+                 target_indices: Optional[List[int]] = None):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -113,7 +113,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
-        self.target_indices = target_indices
+        self.target_indices = target_indices if target_indices is not None else [0]
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
