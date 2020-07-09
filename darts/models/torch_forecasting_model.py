@@ -293,7 +293,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data
-        dataset = self.create_dataset(series)
+        dataset = self._create_dataset(series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
         raise_if_not(len(train_loader) > 0,
@@ -379,7 +379,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         return 0
 
-    def create_dataset(self, series):
+    def _create_dataset(self, series):
         return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
 
     def _train(self,
@@ -505,7 +505,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
     def _prepare_validation_data(self, val_series):
         if val_series is not None:
-            val_dataset = self.create_dataset(val_series)
+            val_dataset = self._create_dataset(val_series)
             val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
                                     num_workers=0, pin_memory=True, drop_last=False)
             raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
