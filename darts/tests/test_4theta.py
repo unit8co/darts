@@ -24,7 +24,7 @@ class FourThetaTestCase(unittest.TestCase):
             FourTheta(model_mode=Season.ADDITIVE)
         with self.assertRaises(ValueError):
             FourTheta(season_mode=Model.ADDITIVE)
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ValueError, TypeError)):
             FourTheta(trend_mode='linear')
 
     def test_negative_series(self):
