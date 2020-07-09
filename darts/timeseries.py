@@ -967,6 +967,9 @@ class TimeSeries:
         inferred_frequency = observed_frequencies.pop()
         return series.resample(inferred_frequency).asfreq(fill_value=None)
 
+    def transform(self, f: Callable[['TimeSeries'], 'TimeSeries'], *args, **kwargs) -> 'TimeSeries':
+        return f(self, *args, **kwargs)
+
     """
     Definition of some useful statistical methods.
     These methods rely on the Pandas implementation.
