@@ -5,13 +5,13 @@
 from darts import TimeSeries
 from darts.models import NaiveSeasonal, NaiveDrift, ExponentialSmoothing
 from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts.utils import _build_tqdm_iterator
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import pickle as pkl
 
-from M4_metrics import *
+from .M4_metrics import mase_m4, smape_m4, owa_m4
 
 
 if __name__ == "__main__":
@@ -28,12 +28,12 @@ if __name__ == "__main__":
         # Test models on all time series
         mase_all = []
         smape_all = []
-        m = info_dataset.Frequency[cat[0]+"1"]
-        for train, test in tqdm(zip(ts_train, ts_test)):
+        m = int(info_dataset.Frequency[cat[0]+"1"])
+        for train, test in _build_tqdm_iterator(zip(ts_train, ts_test), verbose=True):
             train_des = train
             seasonOut = 1
             if m > 1:
-                if check_seasonality(train, m=int(m), max_lag=2 * m):
+                if check_seasonality(train, m=m, max_lag=2 * m):
                     _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
                     train_des = remove_seasonality(train, freq=m, model='multiplicative')
                     seasonOut = season[-m:].shift(m)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
             try:
                 ses.fit(train_des)
             except ValueError:
-                # no useful anymore
+                # not useful anymore
                 train_des = train_des.shift(-len(train_des)).append(train_des)
 #                 train_des = TimeSeries.from_times_and_values(train_des.shift(-11).time_index()[:11], 
 #                                                              2*train_des.values()[0]-train_des.values()[10::-1]) \
@@ -92,6 +92,6 @@ if __name__ == "__main__":
               "Damped: {:.3f}, Comb: {:.3f}".format(*tuple(np.nanmean(np.stack(mase_all), axis=(0,2)))))
         print("sMAPE; sNaive: {:.3f}, sNaive+Drift: {:.3f}, Naive2: {:.3f}, SES: {:.3f}, Holt: {:.3f}, "
               "Damped: {:.3f}, Comb: {:.3f}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
-        print("OWA: ", OWA_m4(cat,
+        print("OWA: ", owa_m4(cat,
                               np.nanmean(np.stack(mase_all), axis=(0, 2)),
                               np.nanmean(np.stack(smape_all), axis=(0, 2))))

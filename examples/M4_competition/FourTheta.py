@@ -63,15 +63,19 @@ class FourTheta(ForecastingModel):
 
         # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
-        # - if theta = 2, the formula for self.coef below fails, hence it is forbidden.
+        # - if theta = 0, then the theta method restricts to a simple `trend_mode` regression.
 
     def fit(self, ts):
         super().fit(ts)
 
         self.length = len(ts)
         self.mean = ts.mean()
-        new_ts = ts/self.mean
+        new_ts = ts/self.mean.mean()
 
+        if (new_ts <= 0).values.any():
+            self.mode = 'additive'
+            self.trend = 'linear'
+            self.season_mode = 'additive'
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
         if self.season_period is None:
@@ -81,55 +85,49 @@ class FourTheta(ForecastingModel):
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
-            # todo: check season?
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period, model=self.season_mode)
             new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode)
 
-        if (new_ts <= 0).values.any():
-            self.mode = 'additive'
-            self.trend = 'linear'
-
+        ts_values = new_ts.univariate_values()
         if self.trend == 'linear':
-            linreg = new_ts.values()
+            linreg = ts_values
         elif self.trend == 'exponential':
-            linreg = np.log(new_ts.values())
+            linreg = np.log(ts_values)
         else:
             self.trend = 'linear'
-            linreg = new_ts.values()
+            linreg = ts_values
             print("unknown value for trend. Fallback to linear.")
         self.drift = np.poly1d(np.polyfit(np.arange(self.length), linreg, 1))
-        Theta0In = self.drift(np.arange(self.length))
+        theta0_in = self.drift(np.arange(self.length))
         if self.trend == 'exponential':
-            Theta0In = np.exp(Theta0In)
+            theta0_in = np.exp(theta0_in)
 
         if self.mode == 'additive':
-            ThetaT = self.theta*new_ts.values() + (1 - self.theta) * Theta0In
-        elif self.mode == 'multiplicative' and (Theta0In > 0).all():
-            ThetaT = (new_ts.values()**self.theta) * (Theta0In**(1-self.theta))
+            theta_t = self.theta*new_ts.values() + (1 - self.theta) * theta0_in
+        elif self.mode == 'multiplicative' and (theta0_in > 0).all():
+            theta_t = (new_ts.values() ** self.theta) * (theta0_in ** (1 - self.theta))
         else:
             self.mode = 'additive'
-            ThetaT = self.theta * new_ts.values() + (1 - self.theta) * Theta0In
-            #print("fallback to additive mode")
+            theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(ThetaT).fit()
-        Theta2In = self.model.fittedvalues
+        self.model = hw.SimpleExpSmoothing(theta_t).fit()
+        theta2_in = self.model.fittedvalues
 
         if self.mode == 'additive':
-            self.fitted_values = self.wses * Theta2In + self.wdrift * Theta0In
-        elif self.mode == 'multiplicative' and (Theta2In>0).all():
-            self.fitted_values = Theta2In**self.wses * Theta0In**self.wdrift
+            self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
+        elif self.mode == 'multiplicative' and (theta2_in > 0).all():
+            self.fitted_values = theta2_in ** self.wses * theta0_in ** self.wdrift
         else:
             # Fallback to additive model
             self.mode = 'additive'
-            ThetaT = self.theta * new_ts.values() + (1 - self.theta) * Theta0In
-            self.model = hw.SimpleExpSmoothing(ThetaT).fit()
-            Theta2In = self.model.fittedvalues
-            self.fitted_values = self.wses * Theta2In + self.wdrift * Theta0In
-            #print("fallback to additive mode")
+            theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
+            self.model = hw.SimpleExpSmoothing(theta_t).fit()
+            theta2_in = self.model.fittedvalues
+            self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
 
         if self.is_seasonal:
             if self.season_mode == 'additive':
@@ -154,7 +152,7 @@ class FourTheta(ForecastingModel):
         if self.mode == 'additive':
             forecast = self.wses * forecast + self.wdrift * drift
         else:
-            forecast = forecast**self.wses * drift**self.wdrift
+            forecast = forecast ** self.wses * drift ** self.wdrift
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
@@ -179,15 +177,22 @@ class FourTheta(ForecastingModel):
 
 class FourThetaARMA(ForecastingModel):
     def __init__(self,
-                 theta: List[int] = [2],
+                 theta: List[int] = None,
                  seasonality_period: Optional[int] = None,
-                 mode: List[str] = ['multiplicative'],
-                 season_mode: List[str] = ['multiplicative'],
-                 trend: List[str] = ['linear'],
-                 normalize: bool = True):
+                 mode: List[str] = None,
+                 season_mode: List[str] = None,
+                 trend: List[str] = None):
         
         super().__init__()
-        
+
+        if theta is None:
+            theta = [1, 2, 3]
+        if mode is None:
+            mode = ['additive']
+        if season_mode is None:
+            season_mode = ['multiplicative']
+        if trend is None:
+            trend = ['linear']
         self.fourtheta = None
         self.arma = None
         self.theta = theta
@@ -195,24 +200,23 @@ class FourThetaARMA(ForecastingModel):
         self.mode = mode
         self.season_mode = season_mode
         self.trend = trend
-        self.normalize = normalize
         self.error = None
         
     def fit(self, ts):
         super().fit(ts)
         self.fourtheta = backtest_gridsearch(FourTheta,
-                                       {"theta": self.theta,
-                                        "mode": self.mode,
-                                        "season_mode": self.season_mode,
-                                        "trend": self.trend,
-                                        "seasonality_period": [self.seasonality_period]
-                                       },
-                                       ts,
-                                       val_series='train',
-                                       metric=mae)
+                                             {"theta": self.theta,
+                                              "mode": self.mode,
+                                              "season_mode": self.season_mode,
+                                              "trend": self.trend,
+                                              "seasonality_period": [self.seasonality_period]
+                                              },
+                                             ts,
+                                             val_series=ts,
+                                             metric=mae)
         self.fourtheta.fit(ts)
-        if len(ts)>=30:
-            self.error = ts - TimeSeries.from_times_and_values(ts.time_index(), self.fourtheta.fittedvalues)
+        if len(ts) >= 30:
+            self.error = ts - TimeSeries.from_times_and_values(ts.time_index(), self.fourtheta.fitted_values)
             self.arma = AutoARIMA(d=0, D=0, stationary=True)
             self.arma.fit(self.error)
         

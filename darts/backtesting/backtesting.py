@@ -398,7 +398,7 @@ def backtest_gridsearch(model_class: type,
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
-    if (val_series is not None):
+    if val_series is not None:
         raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
                      " number of components.", logger)
 
@@ -425,7 +425,7 @@ def backtest_gridsearch(model_class: type,
             backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n,
                                                      target_indices, component_index, use_full_output_length)
             error = metric(backtest_forecast, train_series)
-        elif val_series == 'train':
+        elif val_series == train_series:
             model.fit(train_series)
             error = metric(model.fitted_values, train_series.values())
         else:  # split mode

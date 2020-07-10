@@ -9,17 +9,17 @@ from darts.utils.statistics import check_seasonality, remove_seasonality, extrac
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.backtesting import backtest_gridsearch
 from FourTheta import FourTheta
+from darts.utils import _build_tqdm_iterator
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import pickle as pkl
-from sklearn.linear_model import Lasso, LassoCV
+from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_absolute_error as mae
 
-from M4_metrics import *
+from .M4_metrics import owa_m4, smape_m4, mase_m4
 
-# info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
+info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
 
 
 def naive2_groe(ts: TimeSeries, n: int, m: int):
@@ -128,8 +128,6 @@ class DeseasonForecastingModel(ForecastingModel):
 if __name__ == "__main__":
     data_frequencies = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily', 'Hourly']
 
-    info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
-
     for freq in data_frequencies[::-1]:
         # Load TimeSeries from M4
         ts_train = pkl.load(open("dataset/train_" + freq + ".pkl", "rb"))
@@ -137,14 +135,14 @@ if __name__ == "__main__":
 
         mase_all = []
         smape_all = []
-        m = info_dataset.Frequency[freq[0] + '1']
-        for train, test in tqdm(zip(ts_train, ts_test)):
+        m = int(info_dataset.Frequency[freq[0] + '1'])
+        for train, test in _build_tqdm_iterator(zip(ts_train, ts_test), verbose=True):
             # remove seasonality
             train_des = train
             seasonOut = 1
             season = constant_timeseries(length=len(train), freq=train.freq_str(), start_ts=train.start_time())
             if m > 1:
-                if check_seasonality(train, m=int(m), max_lag=2 * m):
+                if check_seasonality(train, m=m, max_lag=2 * m):
                     pass
                     _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
                     train_des = remove_seasonality(train, freq=m, model='multiplicative')
@@ -165,14 +163,14 @@ if __name__ == "__main__":
                 model_mode = ["additive"]
                 season_mode = ["additive"]
             fourtheta = backtest_gridsearch(FourTheta,
-                                            {"theta": [1, 2, 3],  # np.linspace(-0.5, 3, 20),
+                                            {"theta": [1, 2, 3],
                                              "mode": model_mode,
                                              "season_mode": season_mode,
                                              "trend": drift_mode,
                                              "seasonality_period": [m]
                                              },
                                             train,
-                                            val_series='train',
+                                            val_series=train,
                                             metric=mae)
             theta = Theta(theta=0, mode='multiplicative', seasonality_period=m)
 
@@ -246,8 +244,6 @@ if __name__ == "__main__":
 
             Score = 1 / np.array(criterion)
             pesos = Score / Score.sum()
-
-
             groe_ensemble = 0
             for prediction, weight in zip(model_predictions, pesos):
                 groe_ensemble = prediction * weight + groe_ensemble
@@ -286,6 +282,6 @@ if __name__ == "__main__":
               "BO3 ensembling: {:.3f}, BO3 Mean: {:.3f}".format(*tuple(np.nanmean(np.stack(mase_all), axis=(0, 2)))))
         print("sMAPE; Naive2: {:.3f}, Linear Regression: {:.3f}, Mean ensembling: {:.3f}, GROE ensembling: {:.3f}, "
               "BO3 ensembling: {:.3f}, BO3 Mean: {:.3f}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
-        print("OWA: ", OWA_m4(freq,
+        print("OWA: ", owa_m4(freq,
                               np.nanmean(np.stack(mase_all), axis=(0, 2)),
                               np.nanmean(np.stack(smape_all), axis=(0, 2))))

@@ -5,18 +5,18 @@
 from darts import TimeSeries
 from darts.models import Theta
 from FourTheta import FourTheta
-from darts.backtesting import backtest_forecasting, backtest_gridsearch
+from darts.backtesting import backtest_gridsearch
 from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts.utils import _build_tqdm_iterator
 
-from scipy.stats import boxcox, boxcox_normplot, boxcox_normmax
+from scipy.stats import boxcox, boxcox_normplot
 from scipy.special import inv_boxcox
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import pickle as pkl
 
-from M4_metrics import *
+from .M4_metrics import mase_m4, smape_m4, owa_m4
 from sklearn.metrics import mean_absolute_error as mae
 
 
@@ -75,7 +75,7 @@ def train_4theta(ts, n):
                                      "seasonality_period": [m]
                                      },
                                     train,
-                                    val_series='train',
+                                    val_series=train,
                                     metric=mae)
     fourtheta.fit(ts)
     forecast = fourtheta.predict(n)
@@ -96,25 +96,22 @@ if __name__ == "__main__":
         # Test models on all time series
         mase_all = []
         smape_all = []
-        m = info_dataset.Frequency[cat[0]+"1"]
-        for train, test in tqdm(zip(ts_train, ts_test)):
+        m = int(info_dataset.Frequency[cat[0]+"1"])
+        for train, test in _build_tqdm_iterator(zip(ts_train, ts_test), verbose=True):
             train_des = train
             seasonOut = 1
             if m > 1:
-                if check_seasonality(train, m=int(m), max_lag=2*m):
+                if check_seasonality(train, m=m, max_lag=2*m):
                     _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
                     train_des = remove_seasonality(train, freq=m, model='multiplicative')
                     seasonOut = season[-m:].shift(m)
                     seasonOut = seasonOut.append_values(seasonOut.values())
                     seasonOut = seasonOut[:len(test)]
-                else:
-                    m = 1
 
             forecast_theta = train_theta(train_des, seasonOut, len(test))
             forecast_fourtheta = train_4theta(train, len(test))
             forecast_thetaBC = train_theta_boxcox(train_des, seasonOut, len(test))
-            
-            m = info_dataset.Frequency[cat[0]+'1']
+
             mase_all.append(np.vstack([
                 mase_m4(train, test, forecast_theta, m=m),
                 mase_m4(train, test, forecast_fourtheta, m=m),
@@ -132,5 +129,5 @@ if __name__ == "__main__":
               " Theta-BoxCox: {:.3f}".format(*tuple(np.nanmean(np.stack(mase_all), axis=(0, 2)))))
         print("sMAPE; Theta: {:.3f}, 4theta: {:.3f},"
               " Theta-BoxCox: {:.3f}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
-        print("OWA: ", OWA_m4(cat, np.nanmean(np.stack(mase_all), axis=(0, 2)),
+        print("OWA: ", owa_m4(cat, np.nanmean(np.stack(mase_all), axis=(0, 2)),
                               np.nanmean(np.stack(smape_all), axis=(0, 2))))

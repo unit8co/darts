@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from datetime import datetime
-from tqdm import tqdm
+from darts.utils import _build_tqdm_iterator
 
 # dataset info
 data_categories = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily', 'Hourly']
@@ -20,7 +20,7 @@ for cat in data_categories:
 info_dataset = pd.read_csv('./dataset/M4-info.csv', delimiter=',').set_index('M4id')
 
 # creating time series
-for i, dc in tqdm(enumerate(data_categories)):
+for i, dc in _build_tqdm_iterator(enumerate(data_categories), verbose=True):
     train_set = train_datasets[i]
     test_set = test_datasets[i]
     ts_train = []
@@ -28,7 +28,7 @@ for i, dc in tqdm(enumerate(data_categories)):
     if os.path.isfile("dataset/train_"+dc+".pkl") and os.path.isfile("dataset/test_"+dc+".pkl"):
         print(" TimeSeries already created")
         continue
-    for ts in tqdm(train_set.columns):
+    for ts in _build_tqdm_iterator(train_set.columns):
         if dc == 'Yearly' and train_set.count()[ts] > 490:
             print("ts too big, fallback to quaterly frequency")
             info_dataset.SP[ts] = "Quaterly"

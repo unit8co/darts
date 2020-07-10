@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from darts import TimeSeries
 from darts.metrics.metrics import get_logger, _get_values_or_raise, raise_if_not
@@ -24,7 +25,8 @@ def smape_m4(actual_series: TimeSeries, pred_series: TimeSeries, intersect: bool
     return 200. * np.abs((y_true - y_hat) / (np.abs(y_true)+np.abs(y_hat)))
 
 
-def mase_m4(train_series: TimeSeries, actual_series: TimeSeries, pred_series: TimeSeries, m: int= 1, intersect: bool = True) -> float:
+def mase_m4(train_series: TimeSeries, actual_series: TimeSeries, pred_series: TimeSeries,
+            m: int = 1, intersect: bool = True) -> float:
     if isinstance(actual_series, np.ndarray):
         y_true, y_hat = actual_series, pred_series
     else:
@@ -36,6 +38,6 @@ def mase_m4(train_series: TimeSeries, actual_series: TimeSeries, pred_series: Ti
     return errors / scale
 
 
-def OWA_m4(frequency: str, sMAPE: float, MASE: float) -> float:
+def owa_m4(frequency: str, smape: np.ndarray, mase: np.ndarray) -> float:
     bl = baseline[frequency]
-    return (sMAPE/bl[0] + MASE/bl[1]) / 2
+    return (smape/bl[0] + mase/bl[1]) / 2
