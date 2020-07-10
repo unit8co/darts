@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 
-from .M4_metrics import owa_m4, mase_m4, smape_m4, baseline
+from M4_metrics import owa_m4, mase_m4, smape_m4, baseline
 
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr

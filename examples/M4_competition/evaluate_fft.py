@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 
-from .M4_metrics import owa_m4, mase_m4, smape_m4
+from M4_metrics import owa_m4, mase_m4, smape_m4
 
 
 if __name__ == "__main__":
@@ -39,7 +39,6 @@ if __name__ == "__main__":
                         train_des = remove_seasonality(train, freq=m, model='multiplicative')
                         seasonOut = season[-m:].shift(m)
                         seasonOut = seasonOut.append_values(seasonOut.values())[:len(test)]
-
                 try:
                     fft = backtest_gridsearch(FFT,
                                               {'nr_freqs_to_keep': [2, 3, 5, 10, 15, 25, 50],

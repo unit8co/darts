@@ -57,7 +57,7 @@ class FourTheta(ForecastingModel):
         self.mode = mode
         self.season_mode = season_mode
         self.trend = trend
-        self.wses = 0 if self.theta == 0 else 1/theta
+        self.wses = 0 if self.theta == 0 else (1 / theta)
         self.wdrift = 1 - self.wses
         self.fitted_values = None
 
@@ -69,13 +69,9 @@ class FourTheta(ForecastingModel):
         super().fit(ts)
 
         self.length = len(ts)
-        self.mean = ts.mean()
-        new_ts = ts/self.mean.mean()
+        self.mean = ts.mean().mean()
+        new_ts = ts/self.mean
 
-        if (new_ts <= 0).values.any():
-            self.mode = 'additive'
-            self.trend = 'linear'
-            self.season_mode = 'additive'
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
         if self.season_period is None:
@@ -90,6 +86,10 @@ class FourTheta(ForecastingModel):
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period, model=self.season_mode)
             new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode)
+
+        if (new_ts <= 0).values.any():
+            self.mode = 'additive'
+            self.trend = 'linear'
 
         ts_values = new_ts.univariate_values()
         if self.trend == 'linear':
@@ -106,12 +106,12 @@ class FourTheta(ForecastingModel):
             theta0_in = np.exp(theta0_in)
 
         if self.mode == 'additive':
-            theta_t = self.theta*new_ts.values() + (1 - self.theta) * theta0_in
+            theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
         elif self.mode == 'multiplicative' and (theta0_in > 0).all():
-            theta_t = (new_ts.values() ** self.theta) * (theta0_in ** (1 - self.theta))
+            theta_t = (ts_values ** self.theta) * (theta0_in ** (1 - self.theta))
         else:
             self.mode = 'additive'
-            theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
+            theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(theta_t).fit()
@@ -124,16 +124,16 @@ class FourTheta(ForecastingModel):
         else:
             # Fallback to additive model
             self.mode = 'additive'
-            theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
+            theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
             self.model = hw.SimpleExpSmoothing(theta_t).fit()
             theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
 
         if self.is_seasonal:
             if self.season_mode == 'additive':
-                self.fitted_values += self.seasonality.values()
+                self.fitted_values += self.seasonality.univariate_values()
             elif self.season_mode == 'multiplicative':
-                self.fitted_values *= self.seasonality.values()
+                self.fitted_values *= self.seasonality.univariate_values()
         self.fitted_values *= self.mean
         # self.fittedvalues = TimeSeries.from_times_and_values(ts.time_index(), self.fittedvalues)
 

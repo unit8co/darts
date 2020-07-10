@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 
-from .M4_metrics import owa_m4, mase_m4, smape_m4
+from M4_metrics import owa_m4, mase_m4, smape_m4
 
 
 if __name__ == "__main__":

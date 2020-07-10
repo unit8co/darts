@@ -9,10 +9,9 @@ from darts.utils import _build_tqdm_iterator
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import pickle as pkl
 
-from .M4_metrics import owa_m4, mase_m4, smape_m4
+from M4_metrics import owa_m4, mase_m4, smape_m4
 
 
 if __name__ == "__main__":
@@ -30,7 +29,7 @@ if __name__ == "__main__":
         mase_all = []
         smape_all = []
         m = int(info_dataset.Frequency[cat[0]+"1"])
-        for train, test in tqdm(zip(ts_train, ts_test)):
+        for train, test in _build_tqdm_iterator(zip(ts_train, ts_test), verbose=True):
             train_des = train
             seasonOut = 1
             if m > 1:
@@ -59,8 +58,8 @@ if __name__ == "__main__":
                 elif cat == 'Yearly':
                     prophet_args['yearly_seasonality'] = True
                 prophet = Prophet(**prophet_args)
-                derivate = np.diff(train.values(), n=1)
-                jump = derivate.max()/(train.max()-train.min())
+                derivate = np.diff(train.univariate_values(), n=1)
+                jump = derivate.max()/(train.max().max() - train.min().min())
                 try:
                     if jump <= 0.5:
                         prophet.fit(train)
@@ -78,8 +77,6 @@ if __name__ == "__main__":
                     ]))
             except Exception as e:
                 print(e)
-                pkl.dump(mase_all, open("prophet_mase_"+cat+".pkl", "wb"))
-                pkl.dump(smape_all, open("prophet_smape_"+cat+".pkl", "wb"))
                 break
         pkl.dump(mase_all, open("prophet_mase_"+cat+".pkl", "wb"))
         pkl.dump(smape_all, open("prophet_smape_"+cat+".pkl", "wb"))

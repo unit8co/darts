@@ -16,44 +16,44 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 
-from .M4_metrics import mase_m4, smape_m4, owa_m4
+from M4_metrics import mase_m4, smape_m4, owa_m4
 from sklearn.metrics import mean_absolute_error as mae
 
 
 def train_theta(ts, seasonality, n):
     # should be the same as fitting with mode='multiplicative' and no prior deseasonalization.
     # done to change easily the deseasonalization method
-    theta = Theta(theta=2, mode="additive", seasonality_period=1)
+    theta = Theta(theta=0, mode="additive", seasonality_period=1)
     theta.fit(ts)
     forecast = theta.predict(n) * seasonality
     return forecast
 
 
 def train_theta_boxcox(ts, seasonality, n):
-    theta_bc = Theta(theta=2, mode="additive", seasonality_period=1)
+    theta_bc = Theta(theta=0, mode="additive", seasonality_period=1)
     shiftdata = 0
-    if (ts < 0).any():
+    if (ts.univariate_values() < 0).any():
         shiftdata = -ts.min() + 100
         ts = ts + shiftdata
-    new_values, lmbd = boxcox(ts.values())
+    new_values, lmbd = boxcox(ts.univariate_values())
     if lmbd < 0:
-        lmbds, value = boxcox_normplot(ts.values(), lmbd - 1, 0, N=100)
+        lmbds, value = boxcox_normplot(ts.univariate_values(), lmbd - 1, 0, N=100)
         if np.isclose(value[0], 0):
             lmbd = lmbds[np.argmax(value)]
-            new_values = boxcox(ts.values(), lmbd)
+            new_values = boxcox(ts.univariate_values(), lmbd)
         if np.isclose(new_values, new_values[0]).all():
             lmbd = 0
-            new_values = boxcox(ts.values(), lmbd)
+            new_values = boxcox(ts.univariate_values(), lmbd)
     ts = TimeSeries.from_times_and_values(ts.time_index(), new_values)
     theta_bc.fit(ts)
     forecast = theta_bc.predict(n)
 
-    new_values = inv_boxcox(forecast.values(), lmbd)
+    new_values = inv_boxcox(forecast.univariate_values(), lmbd)
     forecast = TimeSeries.from_times_and_values(seasonality.time_index(), new_values)
     if shiftdata > 0:
         forecast = forecast - shiftdata
     forecast = forecast * seasonality
-    if (forecast < 0).any():
+    if (forecast.univariate_values() < 0).any():
         indices = seasonality.time_index()[forecast < 0]
         forecast = forecast.update(indices, np.zeros(len(indices)), inplace=True)
     return forecast
@@ -117,7 +117,6 @@ if __name__ == "__main__":
                 mase_m4(train, test, forecast_fourtheta, m=m),
                 mase_m4(train, test, forecast_thetaBC, m=m),
                 ]))
-            print(np.mean(mase_all[-1]))
             smape_all.append(np.vstack([
                 smape_m4(test, forecast_theta),
                 smape_m4(test, forecast_fourtheta),

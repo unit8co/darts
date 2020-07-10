@@ -17,7 +17,7 @@ import pickle as pkl
 from sklearn.linear_model import LassoCV
 from sklearn.metrics import mean_absolute_error as mae
 
-from .M4_metrics import owa_m4, smape_m4, mase_m4
+from M4_metrics import owa_m4, smape_m4, mase_m4
 
 info_dataset = pd.read_csv('dataset/M4-info.csv', delimiter=',').set_index('M4id')
 
@@ -108,11 +108,11 @@ class DeseasonForecastingModel(ForecastingModel):
         super().fit(train)
         train_des = train
         self.seasonOut = 1
-        if m > 1:
-            if check_seasonality(train, m=int(m), max_lag=2 * m):
-                _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
-                train_des = remove_seasonality(train, freq=m, model='multiplicative')
-                seasonOut = season[-m:].shift(m)
+        if self.m > 1:
+            if check_seasonality(train, m=self.m, max_lag=2 * self.m):
+                _, season = extract_trend_and_seasonality(train, self.m, model='multiplicative')
+                train_des = remove_seasonality(train, freq=self.m, model='multiplicative')
+                seasonOut = season[-self.m:].shift(self.m)
                 self.seasonOut = seasonOut.append_values(seasonOut.values())
         self.model.fit(train_des)
 

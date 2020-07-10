@@ -28,7 +28,7 @@ for i, dc in _build_tqdm_iterator(enumerate(data_categories), verbose=True):
     if os.path.isfile("dataset/train_"+dc+".pkl") and os.path.isfile("dataset/test_"+dc+".pkl"):
         print(" TimeSeries already created")
         continue
-    for ts in _build_tqdm_iterator(train_set.columns):
+    for ts in _build_tqdm_iterator(train_set.columns, verbose=True):
         if dc == 'Yearly' and train_set.count()[ts] > 490:
             print("ts too big, fallback to quaterly frequency")
             info_dataset.SP[ts] = "Quaterly"
