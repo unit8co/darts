@@ -202,7 +202,7 @@ class _TCNModule(nn.Module):
 
 
 class TCNModel(TorchForecastingModel):
-    
+
     @random_method
     def __init__(self,
                  input_length: int = 12,
