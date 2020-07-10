@@ -91,7 +91,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
                  series: TimeSeries,
                  length: int = 3,
                  shift: int = 1,
-                 target_indices: List[int] = [0]):
+                 target_indices: Optional[List[int]] = None):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -113,7 +113,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
-        self.target_indices = target_indices
+        self.target_indices = target_indices if target_indices is not None else [0]
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
@@ -292,44 +292,32 @@ class TorchForecastingModel(MultivariateForecastingModel):
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        dataset = self.create_dataset(series)
+        # Prepare training data
+        dataset = self._create_dataset(series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
                                   num_workers=0, pin_memory=True, drop_last=True)
         raise_if_not(len(train_loader) > 0,
                      'The provided training time series is too short for obtaining even one training point.',
                      logger)
 
-        # Prepare validation data:
-        if val_series is not None:
-            val_dataset = self.create_dataset(val_series)
-            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
-                                    num_workers=0, pin_memory=True, drop_last=False)
-            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
-                         'The provided validation time series is too short for this model output length.',
-                         logger)
-        else:
-            val_loader = None
+        # Prepare validation data
+        val_loader = self._prepare_validation_data(val_series)
 
-        # Tensorboard
-        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
-        if self.log_tensorboard:
-            if self.from_scratch:
-                shutil.rmtree(runs_folder, ignore_errors=True)
-                tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
-                tb_writer.add_graph(self.model, dummy_input)
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
-        else:
-            tb_writer = None
+        # Prepare tensorboard writer
+        tb_writer = self._prepare_tensorboard_writer()
 
+        # Train model
         self._train(train_loader, val_loader, tb_writer, verbose)
 
+        # Close tensorboard writer
         if tb_writer is not None:
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int, use_full_output_length: bool = False) -> TimeSeries:
+    def predict(self, n: int,
+                use_full_output_length: bool = False,
+                input_series: Optional[TimeSeries] = None) -> TimeSeries:
+
         """ Predicts values for a certain number of time steps after the end of the training series
 
         In the case of univariate training series, `n` can assume any integer value greater than 0.
@@ -353,6 +341,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
         use_full_output_length
             Boolean value indicating whether or not the full output sequence of the model prediction should be
             used to produce the output of this function.
+        input_series
+            Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
+            prediction. If it is not passed, the training TimeSeries instance will be used as input.
 
         Returns
         -------
@@ -361,35 +352,22 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         super().predict(n)
 
+        raise_if_not(input_series is None or input_series.width == self.training_series.width,
+                     "'input_series' must have same width as series used to fit model.", logger)
+
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
                      " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
-        input_sequence = self.training_series.values()[-self.input_length:]
-        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+        pred_in = self._create_predict_input(input_series)
 
-        # iterate through predicting output and consuming it again until enough predictions are created
-        test_out = []
+        # produce output
         self.model.eval()
         if (use_full_output_length):
-            num_iterations = int(math.ceil(n / self.output_length))
-            for i in range(num_iterations):
-                raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
-                             " support predictions with n > output_length", logger)
-                out = self.model(pred_in)
-                if (num_iterations > 1):
-                    pred_in = pred_in.roll(-self.output_length, 1)
-                    pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
-                test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
-            test_out = np.concatenate(test_out, axis=1)
-            test_out = test_out[:, :n, :]
+            test_out = self._produce_predict_output_with_full_output_length(pred_in, n)
         else:
-            for i in range(n):
-                out = self.model(pred_in)
-                pred_in = pred_in.roll(-1, 1)
-                pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-                test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+            test_out = self._produce_predict_output_with_single_output_steps(pred_in, n)
 
         test_out = np.stack(test_out)
         return self._build_forecast_series(test_out.reshape(n, -1))
@@ -400,6 +378,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
         Returns the index of the first predicted within the output of self.model.
         """
         return 0
+
+    def _create_dataset(self, series):
+        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
 
     def _train(self,
                train_loader: DataLoader,
@@ -522,8 +503,67 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def create_dataset(self, series):
-        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
+    def _prepare_validation_data(self, val_series):
+        if val_series is not None:
+            val_dataset = self._create_dataset(val_series)
+            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                    num_workers=0, pin_memory=True, drop_last=False)
+            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                         'The provided validation time series is too short for this model output length.',
+                         logger)
+        else:
+            val_loader = None
+        return val_loader
+
+    def _prepare_tensorboard_writer(self):
+        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
+        if self.log_tensorboard:
+            if self.from_scratch:
+                shutil.rmtree(runs_folder, ignore_errors=True)
+                tb_writer = SummaryWriter(runs_folder)
+                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
+                tb_writer.add_graph(self.model, dummy_input)
+            else:
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
+        else:
+            tb_writer = None
+        return tb_writer
+
+    def _create_predict_input(self, input_series):
+        if input_series is None:
+            input_sequence = self.training_series.values()[-self.input_length:]
+        else:
+            raise_if_not(len(input_series) >= self.input_length,
+                         "'input_series' must at least be as long as 'self.input_length'", logger)
+            input_sequence = input_series.values()[-self.input_length:]
+            super().fit(input_series, self.target_indices)
+        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
+
+        return pred_in
+
+    def _produce_predict_output_with_full_output_length(self, pred_in, n):
+        test_out = []
+        num_iterations = int(math.ceil(n / self.output_length))
+        for i in range(num_iterations):
+            raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
+                         " support predictions with n > output_length", logger)
+            out = self.model(pred_in)
+            if (num_iterations > 1):
+                pred_in = pred_in.roll(-self.output_length, 1)
+                pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
+            test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
+        test_out = np.concatenate(test_out, axis=1)
+        test_out = test_out[:, :n, :]
+        return test_out
+
+    def _produce_predict_output_with_single_output_steps(self, pred_in, n):
+        test_out = []
+        for i in range(n):
+            out = self.model(pred_in)
+            pred_in = pred_in.roll(-1, 1)
+            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+        return test_out
 
     @staticmethod
     def load_from_checkpoint(model_name: str,
