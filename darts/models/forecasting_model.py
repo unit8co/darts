@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from .torch_forecasting_model import TorchForecastingModel
+# from .torch_forecasting_model import TorchForecastingModel
 from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import _build_tqdm_iterator
 
@@ -96,6 +96,44 @@ class ForecastingModel(ABC):
         time_index = self._generate_new_dates(len(points_preds))
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
+
+    def _backtest_sanity_checks(self, series: TimeSeries, start: pd.Timestamp, forcast_horizon: int):
+        """Perform sanity checks on backtest inputs.
+
+        Parameters
+        ----------
+        series
+            The univariate time series on which to backtest
+        start
+            The first prediction time, at which a prediction is computed for a future time
+        forcast_horizon
+            The forecast horizon for the point predictions
+
+        Raises
+        ------
+        ValueError
+            if an input doesn't pass sanity checks.
+        """
+        raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
+        raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
+        raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+
+    @abstractmethod
+    def _backtest_model_specfic_sanity_checks(self, retrain: bool):
+        """Add model specific sanity check(s) on the backtest inputs.
+
+        Parameters
+        ----------
+        retrain
+            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
+            instances as `model` argument support setting `retrain` to `False`.
+
+        Raises
+        ------
+        ValueError
+            if an input doesn't pass sanity checks.
+        """
+        raise_if(retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
 
     def backtest(self,
                  series: TimeSeries,
@@ -181,11 +219,8 @@ class ForecastingModel(ABC):
         """ # noqa : W605
 
         # sanity checks
-        raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
-        raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
-        raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
-        raise_if(retrain and not isinstance(self, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
-                 " support the option 'retrain=False'.", logger)
+        self._backtest_sanity_checks(start, series, forcast_horizon)
+        self._backtest_model_specfic_sanity_checks(retrain)
 
         # specify the correct fit and predict keyword arguments depending on the model
         # TODO: refactor this and override a method in children class
