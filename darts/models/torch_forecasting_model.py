@@ -652,3 +652,34 @@ class TorchForecastingModel(MultivariateForecastingModel):
             if an input doesn't pass sanity checks.
         """
         pass
+
+    def _backtest_build_fit_and_predict_kwargs(self,
+                                               target_indices: Optional[List[int]],
+                                               component_index: Optional[int],
+                                               use_full_output_length: bool):
+        """ Adapt fit and predict kwargs depending on the model used for backtesting
+
+        Parameters
+        ----------
+        target_indices
+            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
+            a list of indices of components of `series` to be predicted by `model`.
+        component_index
+            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
+            an integer index of the component of `series` to be predicted by `model`.
+        use_full_output_length
+            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`.
+
+        Returns
+        -------
+        fit_kwargs
+            kwargs passed to the fit method during backtesting.
+        predict kwargs
+            kwargs passed to the predict method during backtesting.
+        """
+        fit_kwargs = {}
+        predict_kwargs = {}
+        fit_kwargs['target_indices'] = target_indices
+        predict_kwargs['use_full_output_length'] = use_full_output_length
+        return fit_kwargs, predict_kwargs
