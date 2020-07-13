@@ -168,8 +168,11 @@
 <span class="sd">        df</span>
 <span class="sd">            The actual time series, as a pandas DataFrame with a proper time index.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries</span>
-<span class="sd">            instance with a length smaller than 3, this argument must be passed.</span>
+<span class="sd">            Optionally, a Pandas offset alias representing the frequency of the DataFrame.</span>
+<span class="sd">            (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)</span>
+<span class="sd">            When creating a TimeSeries instance with a length smaller than 3, this argument must be passed.</span>
+<span class="sd">            Furthermore, this argument can be used to override the automatic frequency detection if the</span>
+<span class="sd">            index is incomplete.</span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values</span>
 <span class="sd">            in case the frequency of `series` cannot be inferred.</span>
@@ -198,7 +201,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">inferred_freq</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">fill_missing_dates</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_missing_dates</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_missing_dates</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">raise_if_not</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;Could not infer frequency. Are some dates missing? &#39;</span>
                                         <span class="s1">&#39;Try specifying `fill_missing_dates=True`.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -1069,39 +1072,46 @@
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_fill_missing_dates</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_fill_missing_dates</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tries to fill missing dates in series with NaN.</span>
-<span class="sd">        Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.</span>
+<span class="sd">        If no value for the `freq` argument is provided, the method is successful only when explicit frequency</span>
+<span class="sd">        can be determined from all consecutive triple timestamps.</span>
+<span class="sd">        If a value for `freq` is given, this value will be used to determine the new frequency.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
 <span class="sd">            The actual time series, as a pandas DataFrame with a proper time index.</span>
+<span class="sd">        freq</span>
+<span class="sd">            Optionally, the desired frequency of the TimeSeries instance.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pandas.Series</span>
 <span class="sd">            A new Pandas DataFrame without missing dates.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">date_axis</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">index</span>
-        <span class="n">samples_size</span> <span class="o">=</span> <span class="mi">3</span>
-        <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">date_axis</span><span class="p">[</span><span class="n">x</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="n">samples_size</span><span class="p">]</span><span class="o">.</span><span class="n">inferred_freq</span>
-            <span class="k">for</span> <span class="n">x</span>
-            <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">date_axis</span><span class="p">)</span> <span class="o">-</span> <span class="n">samples_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
 
-        <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="o">.</span><span class="fm">__ne__</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">freq</span><span class="p">:</span>
+            <span class="n">date_axis</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">index</span>
+            <span class="n">samples_size</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">date_axis</span><span class="p">[</span><span class="n">x</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="n">samples_size</span><span class="p">]</span><span class="o">.</span><span class="n">inferred_freq</span>
+                <span class="k">for</span> <span class="n">x</span>
+                <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">date_axis</span><span class="p">)</span> <span class="o">-</span> <span class="n">samples_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;Could not infer explicit frequency. Observed frequencies: &quot;</span>
-            <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;none&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">))</span>
-            <span class="o">+</span> <span class="s2">&quot;. Is Series too short (n=2)?&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">)</span>
+            <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="o">.</span><span class="fm">__ne__</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">))</span>
 
-        <span class="n">inferred_frequency</span> <span class="o">=</span> <span class="n">observed_frequencies</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">inferred_frequency</span><span class="p">)</span><span class="o">.</span><span class="n">asfreq</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;Could not infer explicit frequency. Observed frequencies: &quot;</span>
+                <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;none&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">))</span>
+                <span class="o">+</span> <span class="s2">&quot;. Is Series too short (n=2)?&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">)</span>
+
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">observed_frequencies</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">asfreq</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Definition of some useful statistical methods.</span>
@@ -1351,7 +1361,7 @@
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.1.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
     </p>
   </div>
 </footer>
