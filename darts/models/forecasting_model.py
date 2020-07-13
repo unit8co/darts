@@ -175,7 +175,7 @@ class ForecastingModel(ABC):
                  trim_to_series: bool = True,
                  verbose: bool = False) -> TimeSeries:
         """ Retrain and forcast values pointwise with an expanding training window over `series`.
-        
+
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
         training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
         set forward by one time step. The resulting predictions are then returned.
@@ -191,7 +191,7 @@ class ForecastingModel(ABC):
         iteration 1:
 
              x            o
-           /   \          ^
+           /   \\         ^
          x       x - x ...|
         |_________|_______|
          training  forcast
@@ -200,12 +200,12 @@ class ForecastingModel(ABC):
         iteration 2:
 
              x            o
-           /   \            \  
+           /   \\           \\
          x       x - x ...     -  - o
         |_____________|_______|_____^
            training    forcast  stride
             window     horizon
-        
+
         ...
 
         legend:
@@ -238,13 +238,13 @@ class ForecastingModel(ABC):
             Whether the predicted series has the end trimmed to match the end of the main series
         verbose
             Whether to print progress
-        
+
         Returns
         -------
         TimeSeries
             A time series containing the forecast values for `series`, when successively applying the specified model
             with the specified forecast horizon.
-        """ # noqa : W605
+        """
 
         # sanity checks
         self._backtest_sanity_checks(series, start, forcast_horizon)
