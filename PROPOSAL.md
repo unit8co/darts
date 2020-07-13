@@ -3,6 +3,12 @@
 Reference: #DARTS-133
 
 ---
+## Progress
+
+- [x] backtest_forcasting moved in model methods
+- [ ] forcasting residuals directly returned from call to backtest
+- [ ] explore_models
+- [ ] separate plot
 
 ## Summary
 
