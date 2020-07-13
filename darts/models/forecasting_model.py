@@ -174,7 +174,7 @@ class ForecastingModel(ABC):
                  retrain: bool = True,
                  trim_to_series: bool = True,
                  verbose: bool = False) -> TimeSeries:
-        """ Retrain and forcast values pointwise with an expanding training window over `series`.
+        r""" Retrain and forcast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
         training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
@@ -188,29 +188,31 @@ class ForecastingModel(ABC):
         has not been trained before. Then, at every iteration, the newly expanded 'training sequence' will be fed to the
         model to produce the new output.
 
-        iteration 1:
+        .. code-block:: none
 
-             x            o
-           /   \\         ^
-         x       x - x ...|
-        |_________|_______|
-         training  forcast
-          window   horizon
+            iteration 1:
 
-        iteration 2:
+                 x            o
+               /   \\         ^
+             x       x - x ...|
+            |_________|_______|
+             training  forcast
+              window   horizon
 
-             x            o
-           /   \\           \\
-         x       x - x ...     -  - o
-        |_____________|_______|_____^
-           training    forcast  stride
-            window     horizon
+            iteration 2:
 
-        ...
+                 x            o
+               /   \\           \\
+             x       x - x ...     -  - o
+            |_____________|_______|_____^
+               training    forcast  stride
+                window     horizon
 
-        legend:
-            - x: point from provided `series`.
-            - o: point forcasted by the model trained on the `training_window` data.
+            ...
+
+            legend:
+                - x: point from provided `series`.
+                - o: point forcasted by the model trained on the `training_window` data.
 
         Parameters
         ----------
@@ -245,7 +247,6 @@ class ForecastingModel(ABC):
             A time series containing the forecast values for `series`, when successively applying the specified model
             with the specified forecast horizon.
         """
-
         # sanity checks
         self._backtest_sanity_checks(series, start, forcast_horizon)
         self._backtest_model_specfic_sanity_checks(retrain)
