@@ -29,16 +29,23 @@ class FourThetaTestCase(unittest.TestCase):
 
     def test_negative_series(self):
         sine_series = st(length=50)
-        model = FourTheta(model_mode=Model.MULTIPLICATIVE, trend_mode=Trend.EXPONENTIAL)
+        model = FourTheta(model_mode=Model.MULTIPLICATIVE, trend_mode=Trend.EXPONENTIAL,
+                          season_mode=Season.ADDITIVE, normalization=False)
         model.fit(sine_series)
         self.assertTrue(model.model_mode is Model.ADDITIVE and model.trend_mode is Trend.LINEAR)
+
+    def test_zero_mean(self):
+        sine_series = st(length=50)
+        with self.assertRaises(ValueError):
+            model = FourTheta(model_mode=Model.MULTIPLICATIVE, trend_mode=Trend.EXPONENTIAL)
+            model.fit(sine_series)
 
     def test_theta(self):
         random.seed(1)
         series = rt(length=50, mean=100)
         theta_param = random.randrange(-5, 5)
         theta = Theta(theta_param)
-        fourtheta = FourTheta(2 - theta_param)
+        fourtheta = FourTheta(2 - theta_param, normalization=False)
         theta.fit(series)
         fourtheta.fit(series)
         forecast_theta = theta.predict(20)
