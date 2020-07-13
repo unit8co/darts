@@ -25,7 +25,7 @@ class Theta(UnivariateForecastingModel):
     def __init__(self,
                  theta: int = 0,
                  seasonality_period: Optional[int] = None,
-                 mode: Season = Season.MULTIPLICATIVE):
+                 season_mode: Season = Season.MULTIPLICATIVE):
         """
         An implementation of the Theta method with configurable `theta` parameter.
 
@@ -42,7 +42,7 @@ class Theta(UnivariateForecastingModel):
         seasonality_period
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
             calling `fit()`.
-        mode
+        season_mode
             Type of seasonality. Either "additive" or "multiplicative".
         """
 
@@ -56,10 +56,10 @@ class Theta(UnivariateForecastingModel):
         self.is_seasonal = False
         self.seasonality = None
         self.seasonality_period = seasonality_period
-        self.mode = mode
+        self.season_mode = season_mode
 
-        raise_if_not(mode in Season,
-                     "Unknown value for mode: {}.".format(mode), logger)
+        raise_if_not(season_mode in Season,
+                     "Unknown value for season_mode: {}.".format(season_mode), logger)
 
         # Remark on the values of the theta parameter:
         # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
@@ -89,8 +89,8 @@ class Theta(UnivariateForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.mode.value)
-            new_ts = remove_seasonality(ts, self.season_period, model=self.mode.value)
+            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode.value)
+            new_ts = remove_seasonality(ts, self.season_period, model=self.season_mode.value)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
@@ -123,9 +123,9 @@ class Theta(UnivariateForecastingModel):
 
             replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
                                              math.ceil(n / self.season_period))[:n]
-            if self.mode is Season.MULTIPLICATIVE:
+            if self.season_mode is Season.MULTIPLICATIVE:
                 forecast *= replicated_seasonality
-            elif self.mode is Season.ADDITIVE:
+            elif self.season_mode is Season.ADDITIVE:
                 forecast += replicated_seasonality
 
         return self._build_forecast_series(forecast)
