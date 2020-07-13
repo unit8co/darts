@@ -43,7 +43,7 @@ class Theta(UnivariateForecastingModel):
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
             calling `fit()`.
         season_mode
-            Type of seasonality. Either "additive" or "multiplicative".
+            Type of seasonality. Must be a Season Enum member.
         """
 
         super().__init__()
@@ -55,15 +55,11 @@ class Theta(UnivariateForecastingModel):
         self.theta = theta
         self.is_seasonal = False
         self.seasonality = None
-        self.seasonality_period = seasonality_period
+        self.season_period = seasonality_period
         self.season_mode = season_mode
 
         raise_if_not(season_mode in Season,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
-
-        # Remark on the values of the theta parameter:
-        # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
-        # - if theta = 2, the formula for self.coef below fails, hence it is forbidden.
 
         if self.theta == 2:
             raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
@@ -73,10 +69,11 @@ class Theta(UnivariateForecastingModel):
         ts = self.training_series
 
         self.length = len(ts)
-        self.season_period = self.seasonality_period
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
+        if self.season_mode is Season.NONE:
+            self.season_period = 1
         if self.season_period is None:
             max_lag = len(ts) // 2
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
@@ -149,22 +146,24 @@ class FourTheta(UnivariateForecastingModel):
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        This model is similar to Theta, with `theta` = 2-theta, `model_mode` = additive and `trend_mode` = linear.
+        When called with `theta = 2 - X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
+        this model is equivalent to calling `Theta(theta=X)`.
 
         Parameters
         ----------
         theta
             Value of the theta parameter. Defaults to 2.
-            If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
+            If theta = 1, then the fourtheta method restricts to a simple exponential smoothing (SES).
+            If theta = 0, then the fourtheta method restricts to a simple `trend_mode` regression.
         seasonality_period
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
             calling `fit()`.
         model_mode
-            Type of model combining the Theta lines. Either "additive" or "multiplicative".
+            Type of model combining the Theta lines. Must be a Model Enum member.
         season_mode
-            Type of seasonality. Either "additive" or "multiplicative".
+            Type of seasonality. Must be a Season Enum member.
         trend_mode
-            Type of trend to fit. Either "linear" or "exponential".
+            Type of trend to fit. Must be a Trend Enum member.
         """
 
         super().__init__()
@@ -191,10 +190,6 @@ class FourTheta(UnivariateForecastingModel):
                      "Unknown value for trend_mode: {}.".format(trend_mode), logger)
         raise_if_not(season_mode in Season,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
-
-        # Remark on the values of the theta parameter:
-        # - if theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
-        # - if theta = 0, then the theta method restricts to a simple `trend_mode` regression.
 
     def fit(self, ts, component_index: Optional[int] = None):
         super().fit(ts, component_index)
@@ -301,7 +296,7 @@ class FourTheta(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
     @staticmethod
-    def select_best_model(ts: TimeSeries, thetas: List[int] = None, m: Optional[int] = None):
+    def select_best_model(ts: TimeSeries, thetas: Optional[List[int]] = None, m: Optional[int] = None) -> 'FourTheta':
         """
         Performs a grid search over all hyper parameters to select the best model.
 
@@ -310,12 +305,12 @@ class FourTheta(UnivariateForecastingModel):
         ts
             The TimeSeries on which the model will be tested.
         thetas
-            A list of thetas to loop over.
+            A list of thetas to loop over. Defaults to [1, 2, 3].
         m
             Optionally, the season used to decompose the time series.
         Returns
         -------
-        theta
+        FourTheta
             The best performing model on the time series.
         """
         # Only import if needed
