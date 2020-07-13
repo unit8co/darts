@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-# from .torch_forecasting_model import TorchForecastingModel
 from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import _build_tqdm_iterator
 
@@ -132,7 +131,7 @@ class ForecastingModel(ABC):
         ValueError
             if an input doesn't pass sanity checks.
         """
-        raise_if(retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
+        raise_if(not retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
 
     def _backtest_build_fit_and_predict_kwargs(self,
                                                target_indices: Optional[List[int]],
@@ -248,7 +247,7 @@ class ForecastingModel(ABC):
         """ # noqa : W605
 
         # sanity checks
-        self._backtest_sanity_checks(start, series, forcast_horizon)
+        self._backtest_sanity_checks(series, start, forcast_horizon)
         self._backtest_model_specfic_sanity_checks(retrain)
 
         # specify the correct fit and predict keyword arguments depending on the model
