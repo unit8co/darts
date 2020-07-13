@@ -32,8 +32,11 @@ class TimeSeries:
         df
             The actual time series, as a pandas DataFrame with a proper time index.
         freq
-            Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries
-            instance with a length smaller than 3, this argument must be passed.
+            Optionally, a Pandas offset alias representing the frequency of the DataFrame.
+            (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)
+            When creating a TimeSeries instance with a length smaller than 3, this argument must be passed.
+            Furthermore, this argument can be used to override the automatic frequency detection if the
+            index is incomplete.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
@@ -62,7 +65,7 @@ class TimeSeries:
         else:
             if not df.index.inferred_freq:
                 if fill_missing_dates:
-                    self._df = self._fill_missing_dates(self._df)
+                    self._df = self._fill_missing_dates(self._df, freq)
                 else:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
                                         'Try specifying `fill_missing_dates=True`.', logger)
@@ -974,39 +977,46 @@ class TimeSeries:
         return TimeSeries(series, self.freq())
 
     @staticmethod
-    def _fill_missing_dates(series: pd.DataFrame) -> pd.DataFrame:
+    def _fill_missing_dates(series: pd.DataFrame, freq: Optional[str] = None) -> pd.DataFrame:
         """
         Tries to fill missing dates in series with NaN.
-        Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.
+        If no value for the `freq` argument is provided, the method is successful only when explicit frequency
+        can be determined from all consecutive triple timestamps.
+        If a value for `freq` is given, this value will be used to determine the new frequency.
 
         Parameters
         ----------
         series
             The actual time series, as a pandas DataFrame with a proper time index.
+        freq
+            Optionally, the desired frequency of the TimeSeries instance.
 
         Returns
         -------
         pandas.Series
             A new Pandas DataFrame without missing dates.
         """
-        date_axis = series.index
-        samples_size = 3
-        observed_frequencies = [
-            date_axis[x:x + samples_size].inferred_freq
-            for x
-            in range(len(date_axis) - samples_size + 1)]
 
-        observed_frequencies = set(filter(None.__ne__, observed_frequencies))
+        if not freq:
+            date_axis = series.index
+            samples_size = 3
+            observed_frequencies = [
+                date_axis[x:x + samples_size].inferred_freq
+                for x
+                in range(len(date_axis) - samples_size + 1)]
 
-        raise_if_not(
-            len(observed_frequencies) == 1,
-            "Could not infer explicit frequency. Observed frequencies: "
-            + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
-            + ". Is Series too short (n=2)?",
-            logger)
+            observed_frequencies = set(filter(None.__ne__, observed_frequencies))
 
-        inferred_frequency = observed_frequencies.pop()
-        return series.resample(inferred_frequency).asfreq(fill_value=None)
+            raise_if_not(
+                len(observed_frequencies) == 1,
+                "Could not infer explicit frequency. Observed frequencies: "
+                + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
+                + ". Is Series too short (n=2)?",
+                logger)
+
+            freq = observed_frequencies.pop()
+
+        return series.resample(freq).asfreq(fill_value=None)
 
     """
     Definition of some useful statistical methods.
