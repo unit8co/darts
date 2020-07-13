@@ -402,7 +402,7 @@ def backtest_gridsearch(model_class: type,
     if (val_series is not None):
         if val_series == 'train':
             model = model_class()
-            raise_if_not(hasattr(model, "fitted_values"), "The model must have an fitted_values attribute"
+            raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
                          " to compare with the train TimeSeries", logger)
         else:
             raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
@@ -433,8 +433,7 @@ def backtest_gridsearch(model_class: type,
             error = metric(backtest_forecast, train_series)
         elif val_series == 'train':
             model.fit(train_series)
-            # Use ndarray because casting to TimeSeries takes too much time
-            error = metric(model.fitted_values, train_series.univariate_values())
+            error = metric(model.fitted_values, train_series)
         else:  # split mode
             model.fit(train_series, **fit_kwargs)
             error = metric(model.predict(len(val_series)), val_series, **predict_kwargs)

@@ -268,8 +268,7 @@ class FourTheta(UnivariateForecastingModel):
             elif self.season_mode is Season.MULTIPLICATIVE:
                 self.fitted_values *= self.seasonality.univariate_values()
         self.fitted_values *= self.mean
-        # takes too much time to create a time series for fitted_values
-        # self.fitted_values = TimeSeries.from_times_and_values(ts.time_index(), self.fitted_values)
+        self.fitted_values = TimeSeries.from_times_and_values(ts.time_index(), self.fitted_values)
 
     def predict(self, n: int) -> 'TimeSeries':
         super().predict(n)
@@ -321,7 +320,7 @@ class FourTheta(UnivariateForecastingModel):
         """
         # Only import if needed
         from ..backtesting.backtesting import backtest_gridsearch
-        from sklearn.metrics import mean_absolute_error as mae
+        from ..metrics import mae
         if thetas is None:
             thetas = [1, 2, 3]
         elif isinstance(thetas, int):
