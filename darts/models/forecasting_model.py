@@ -118,7 +118,6 @@ class ForecastingModel(ABC):
         raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
         raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    @abstractmethod
     def _backtest_model_specfic_sanity_checks(self, retrain: bool):
         """Add model specific sanity check(s) on the backtest inputs.
 
@@ -134,6 +133,36 @@ class ForecastingModel(ABC):
             if an input doesn't pass sanity checks.
         """
         raise_if(retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
+
+    def _backtest_build_fit_and_predict_kwargs(self,
+                                               target_indices: Optional[List[int]],
+                                               component_index: Optional[int],
+                                               use_full_output_length: bool):
+        """ Adapt fit and predict kwargs depending on the model used for backtesting
+
+        Parameters
+        ----------
+        target_indices
+            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
+            a list of indices of components of `series` to be predicted by `model`.
+        component_index
+            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
+            an integer index of the component of `series` to be predicted by `model`.
+        use_full_output_length
+            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`.
+
+        Returns
+        -------
+        fit_kwargs
+            kwargs passed to the fit method during backtesting.
+        predict kwargs
+            kwargs passed to the predict method during backtesting.
+        """
+        fit_kwargs = {}
+        predict_kwargs = {}
+        fit_kwargs['target_indices'] = target_indices
+        return fit_kwargs, predict_kwargs
 
     def backtest(self,
                  series: TimeSeries,
@@ -223,15 +252,9 @@ class ForecastingModel(ABC):
         self._backtest_model_specfic_sanity_checks(retrain)
 
         # specify the correct fit and predict keyword arguments depending on the model
-        # TODO: refactor this and override a method in children class
-        fit_kwargs = {}
-        predict_kwargs = {}
-        if isinstance(self, UnivariateForecastingModel):
-            fit_kwargs['component_index'] = component_index
-        else:
-            fit_kwargs['target_indices'] = target_indices
-        if isinstance(self, TorchForecastingModel):
-            predict_kwargs['use_full_output_length'] = use_full_output_length
+        fit_kwargs, predict_kwargs = self._backtest_build_fit_and_predict_kwargs(target_indices,
+                                                                                 component_index,
+                                                                                 use_full_output_length)
 
         # build the prediction times in advance (to be able to use tqdm)
         last_pred_time = (
@@ -287,6 +310,36 @@ class UnivariateForecastingModel(ForecastingModel):
             super().fit(series)
         else:
             super().fit(series.univariate_component(component_index))
+
+    def _backtest_build_fit_and_predict_kwargs(self,
+                                               target_indices: Optional[List[int]],
+                                               component_index: Optional[int],
+                                               use_full_output_length: bool):
+        """ Adapt fit and predict kwargs depending on the model used for backtesting
+
+        Parameters
+        ----------
+        target_indices
+            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
+            a list of indices of components of `series` to be predicted by `model`.
+        component_index
+            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
+            an integer index of the component of `series` to be predicted by `model`.
+        use_full_output_length
+            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`.
+
+        Returns
+        -------
+        fit_kwargs
+            kwargs passed to the fit method during backtesting.
+        predict kwargs
+            kwargs passed to the predict method during backtesting.
+        """
+        fit_kwargs = {}
+        predict_kwargs = {}
+        fit_kwargs['component_index'] = component_index
+        return fit_kwargs, predict_kwargs
 
 
 class MultivariateForecastingModel(ForecastingModel):
