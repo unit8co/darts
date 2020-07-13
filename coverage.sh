@@ -1,5 +1,6 @@
 #!/bin/bash
 # run and display coverage report properly filtered in terminal, xml or html
+# usage: ./coverage.sh [ xml | html ]
 usage()
 {
     echo "usage: ./coverage.sh [ xml | html ]"
