@@ -33,7 +33,7 @@ class TimeSeries:
         df
             The actual time series, as a pandas DataFrame with a proper time index.
         freq
-            Optionally, a Pandas offset alias representing the frequency of the DataFrame. 
+            Optionally, a Pandas offset alias representing the frequency of the DataFrame.
             (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)
             When creating a TimeSeries instance with a length smaller than 3, this argument must be passed.
             Furthermore, this argument can be used to override the automatic frequency detection if the
@@ -940,8 +940,8 @@ class TimeSeries:
     def _fill_missing_dates(series: pd.DataFrame, freq: Optional[str] = None) -> pd.DataFrame:
         """
         Tries to fill missing dates in series with NaN.
-        If no value for the `freq` argument is provided, the method is successful only when explicit frequency 
-        can be determined from all consecutive triple timestamps. 
+        If no value for the `freq` argument is provided, the method is successful only when explicit frequency
+        can be determined from all consecutive triple timestamps.
         If a value for `freq` is given, this value will be used to determine the new frequency.
 
         Parameters
