@@ -279,7 +279,7 @@ class ForecastingModel(ABC):
                 pred = self.predict(forcast_horizon, **predict_kwargs)
             else:
                 pred = self.predict(forcast_horizon, input_series=train, **predict_kwargs)
-            values.append(pred.last_value())  # store the N-th point
+            values.append(pred.values()[-1])  # store the N-th point
             times.append(pred.end_time())  # store the N-th timestamp
         return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
