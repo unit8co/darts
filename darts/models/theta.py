@@ -350,7 +350,7 @@ class FourTheta(UnivariateForecastingModel):
                                      "season_mode": season_mode,
                                      "trend_mode": drift_mode,
                                      "seasonality_period": [m],
-                                     "normalization": normalization
+                                     "normalization": [normalization]
                                      },
                                     ts, use_fitted_values=True, metric=mae)
         return theta
