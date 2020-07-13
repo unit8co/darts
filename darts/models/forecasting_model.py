@@ -9,13 +9,15 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, List, Union
+from typing import Optional, List
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
+from .torch_forecasting_model import TorchForecastingModel
 from ..logging import get_logger, raise_log, raise_if_not, raise_if
+from ..utils import _build_tqdm_iterator
 
 logger = get_logger(__name__)
 
@@ -97,19 +99,28 @@ class ForecastingModel(ABC):
 
     def backtest(self,
                  series: TimeSeries,
-                 training_window_initial_size: Union[int, float] = 0.5,
-                 training_window_stride: int = 0,
-                 forcast_horizon: int = 1,
-                 verbose: bool = False) -> (TimeSeries, TimeSeries):
-        """ Use the model to forecast values of `series` on a sliding window.
+                 start: pd.Timestamp,
+                 forcast_horizon: int,
+                 target_indices: Optional[List[int]] = None,
+                 component_index: Optional[int] = None,
+                 use_full_output_length: bool = True,
+                 stride: int = 1,
+                 retrain: bool = True,
+                 trim_to_series: bool = True,
+                 verbose: bool = False) -> TimeSeries:
+        """ Retrain and forcast values pointwise with an expanding training window over `series`.
         
-        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the `model` on the
-        training set, emits a (point) prediction for a fixed window, and then moves the end of the training set forward
-        by `stride` time step. The resulting predictions and residuals (diff between `series` and the prediction)
-        are then returned.
+        To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
+        training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
+        set forward by one time step. The resulting predictions are then returned.
 
-        This always re-trains the models on the entire training window. If the `training_window_stride` is 0, the 
-        training window is expanding, if the `training_stride` is 1 then the training window is sliding as follow:
+        Unless `retrain` is set to False, this always re-trains the models on the entire available history,
+        corresponding an expending window strategy.
+
+        If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances),
+        the model will only be trained only on the initial training window (up to `start` time stamp), and only if it
+        has not been trained before. Then, at every iteration, the newly expanded 'training sequence' will be fed to the
+        model to produce the new output.
 
         iteration 1:
 
@@ -124,10 +135,10 @@ class ForecastingModel(ABC):
 
              x            o
            /   \            \  
-         x       x - x ...    o
-        |___|_________|_______^
-        stride training forcast
-               window   horizon
+         x       x - x ...     -  - o
+        |_____________|_______|_____^
+           training    forcast  stride
+            window     horizon
         
         ...
 
@@ -135,57 +146,84 @@ class ForecastingModel(ABC):
             - x: point from provided `series`.
             - o: point forcasted by the model trained on the `training_window` data.
 
-        ..warning:: if the `training_window_stride` is above 1 the training window size will have to shrink.
-
         Parameters
         ----------
         series
-            The univariate time series on which to backtest.
-        training_window_initial_size
-            A percentage or number of steps corresponding to the intial training window size starting from timestep 0.
-        training_window_stride
-            A value that will be used to offset the training window at each iteration (if above 1 the training window
-            will shrink).
+            The univariate time series on which to backtest
+        start
+            The first prediction time, at which a prediction is computed for a future time
         forcast_horizon
-            Delay in time steps between the training window and the forcasted value.
+            The forecast horizon for the point predictions
+        target_indices
+            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
+            a list of indices of components of `series` to be predicted by `model`.
+        component_index
+            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
+            an integer index of the component of `series` to be predicted by `model`.
+        use_full_output_length
+            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`.
+        stride
+            The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
+        retrain
+            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
+            instances as `model` argument support setting `retrain` to `False`.
+        trim_to_series
+            Whether the predicted series has the end trimmed to match the end of the main series
         verbose
-            Show backtesting iterations progress.
+            Whether to print progress
         
         Returns
         -------
-        serie_forcasted
-            A TimeSeries corresponding to each point prediction occuring during backtest.
-        residuals
-            A TimeSeries corresponding to the difference between `serie_forcasted` and the provided `serie`.
+        TimeSeries
+            A time series containing the forecast values for `series`, when successively applying the specified model
+            with the specified forecast horizon.
         """ # noqa : W605
 
         # sanity checks
-        series._assert_univariate()
-
-        if isinstance(training_window_initial_size, float):
-            training_window_initial_size = round(len(series) * training_window_initial_size)
-        raise_if(training_window_initial_size + forcast_horizon > len(series),
-                 'The initial training window size and forcast horizon combined must be smaller than `series` length.',
-                 logger)
-
+        raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
+        raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
         raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+        raise_if(retrain and not isinstance(self, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
+                 " support the option 'retrain=False'.", logger)
 
-        raise_if(series.freq() is None, 'The frequency of the provided `series` must be defined.')
+        # specify the correct fit and predict keyword arguments depending on the model
+        # TODO: refactor this and override a method in children class
+        fit_kwargs = {}
+        predict_kwargs = {}
+        if isinstance(self, UnivariateForecastingModel):
+            fit_kwargs['component_index'] = component_index
+        else:
+            fit_kwargs['target_indices'] = target_indices
+        if isinstance(self, TorchForecastingModel):
+            predict_kwargs['use_full_output_length'] = use_full_output_length
 
+        # build the prediction times in advance (to be able to use tqdm)
+        last_pred_time = (
+            series.time_index()[-forcast_horizon - stride] if trim_to_series else series.time_index()[-stride - 1]
+        )
+        pred_times = [start]
+        while pred_times[-1] <= last_pred_time:
+            pred_times.append(pred_times[-1] + series.freq() * stride)
+
+        # iterate and predict pointwise
         values = []
         times = []
 
-        for i in range(training_window_initial_size + forcast_horizon, len(series) + 1):
-            # build the training series
-            training_window_start = (i - (training_window_initial_size + forcast_horizon)) * training_window_stride
-            training_window_end = i - forcast_horizon
-            train = series[training_window_start:training_window_end]
+        iterator = _build_tqdm_iterator(pred_times, verbose)
 
-            self.fit(train)
-            pred = self.predict(forcast_horizon)
-            values.append(pred.last_value())
-            times.append(pred.end_time())
+        if ((not retrain) and (not self._fit_called)):
+            self.fit(series.drop_after(start), verbose=verbose, **fit_kwargs)
 
+        for pred_time in iterator:
+            train = series.drop_after(pred_time)  # build the training series
+            if (retrain):
+                self.fit(train, **fit_kwargs)
+                pred = self.predict(forcast_horizon, **predict_kwargs)
+            else:
+                pred = self.predict(forcast_horizon, input_series=train, **predict_kwargs)
+            values.append(pred.last_value())  # store the N-th point
+            times.append(pred.end_time())  # store the N-th timestamp
         return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
