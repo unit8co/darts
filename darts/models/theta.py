@@ -352,7 +352,7 @@ class FourTheta(UnivariateForecastingModel):
                                      "seasonality_period": [m],
                                      "normalization": normalization
                                      },
-                                    ts, val_series='train', metric=mae)
+                                    ts, use_fitted_values=True, metric=mae)
         return theta
 
     def __str__(self):

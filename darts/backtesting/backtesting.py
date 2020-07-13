@@ -341,12 +341,13 @@ def backtest_gridsearch(model_class: type,
                         use_full_output_length: bool = True,
                         val_series: Optional[TimeSeries] = None,
                         num_predictions: int = 10,
+                        use_fitted_values: bool = False,
                         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                         verbose=False):
     """ A function for finding the best hyperparameters.
 
-    This function has 2 modes of operation: Expanding window mode and split mode.
-    Both modes of operation evaluate every possible combination of hyperparameter values
+    This function has 3 modes of operation: Expanding window mode, split mode and comparison with fitted values.
+    The three modes of operation evaluate every possible combination of hyperparameter values
     provided in the `parameters` dictionary by instantiating the `model_class` subclass
     of ForecastingModel with each combination, and returning the best-performing model with regards
     to the `metric` function. The `metric` function is expected to return an error value,
@@ -364,6 +365,12 @@ def backtest_gridsearch(model_class: type,
     For every hyperparameter combination, the model is trained on `train_series` and
     evaluated on `val_series`.
 
+    Comparison with fitted values (activated when `use_fitted_values` is passed):
+    For every hyperparameter combination, the model is trained on `train_series` and the resulting
+    fitted values are evaluated on `train_series`. Raise an error if `model.fitted_values` doesn't exist.
+    The fitted values are the result of the fit of the model on a TimeSeries. Comparing with the fitted values
+    is a quick way to assess the model, but one cannot see if the model overfits or underfits.
+
 
     Parameters
     ----------
@@ -376,7 +383,6 @@ def backtest_gridsearch(model_class: type,
         The univariate TimeSeries instance used for training (and also validation in split mode).
     val_series
         The univariate TimeSeries instance used for validation in split mode.
-        Use `train` to compare with model.fitted_values
     fcast_horizon_n
         The integer value of the forecasting horizon used in expanding window mode.
     target_indices
@@ -390,6 +396,9 @@ def backtest_gridsearch(model_class: type,
         as argument to the predict method of `model`.
     num_predictions:
         The number of train/prediction cycles performed in one iteration of expanding window mode.
+    use_fitted_values
+        If `True`, it will activates the comparison with the fitted values, if `fitted_values` is an attribute of
+        `model_class`.
     metric:
         A function that takes two TimeSeries instances as inputs and returns a float error value.
     verbose:
@@ -401,22 +410,23 @@ def backtest_gridsearch(model_class: type,
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
-    if (val_series is not None):
-        if val_series == 'train':
-            model = model_class()
-            raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
-                         " to compare with the train TimeSeries", logger)
-        else:
-            raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
-                         " number of components.", logger)
+    if use_fitted_values:
+        model = model_class()
+        raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
+                     " to compare with the train TimeSeries", logger)
+    elif val_series is not None:
+        raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
+                     " number of components.", logger)
 
-    raise_if_not((fcast_horizon_n is None) ^ (val_series is None),
-                 "Please pass exactly one of the arguments 'forecast_horizon_n' or 'val_series'.", logger)
+    raise_if_not(bool((fcast_horizon_n is None) ^ (val_series is None) ^ use_fitted_values -
+                      ((fcast_horizon_n is not None) & (val_series is not None) & use_fitted_values)),
+                 "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_series' or 'use_fitted_values'.",
+                 logger)
 
     fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index,
                                                          use_full_output_length)
 
-    if val_series is None:
+    if (val_series is None) & (not use_fitted_values):
         backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
     min_error = float('inf')
     best_param_combination = {}
@@ -429,13 +439,13 @@ def backtest_gridsearch(model_class: type,
     for param_combination in iterator:
         param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
         model = model_class(**param_combination_dict)
-        if val_series is None:  # expanding window mode
+        if use_fitted_values:
+            model.fit(train_series)
+            error = metric(model.fitted_values, train_series)
+        elif val_series is None:  # expanding window mode
             backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n,
                                                      target_indices, component_index, use_full_output_length)
             error = metric(backtest_forecast, train_series)
-        elif val_series == 'train':
-            model.fit(train_series)
-            error = metric(model.fitted_values, train_series)
         else:  # split mode
             model.fit(train_series, **fit_kwargs)
             error = metric(model.predict(len(val_series)), val_series, **predict_kwargs)
