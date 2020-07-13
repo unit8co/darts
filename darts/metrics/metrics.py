@@ -487,13 +487,15 @@ def r2_score(series1: TimeSeries,
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
     for details about the :math:`R^2` score and how it is computed.
+    Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,
+    whereas `series2` should correspond to the predicted series.
 
     Parameters
     ----------
     series1
-        The first time series
+        The first time series. This should correspond to the ground truth values.
     series2
-        The second time series
+        The second time series. This should correspond to the predicted values.
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
