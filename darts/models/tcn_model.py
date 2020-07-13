@@ -6,7 +6,9 @@ Temporal Convolutional Network
 import math
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional
+from numpy.random import RandomState
+from typing import Optional, Union
+from ..utils.torch import random_method
 
 from ..logging import raise_if_not, get_logger
 from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesShiftedDataset
@@ -201,6 +203,7 @@ class _TCNModule(nn.Module):
 
 class TCNModel(TorchForecastingModel):
 
+    @random_method
     def __init__(self,
                  input_length: int = 12,
                  input_size: int = 1,
@@ -212,6 +215,7 @@ class TCNModel(TorchForecastingModel):
                  dilation_base: int = 2,
                  weight_norm: bool = False,
                  dropout: float = 0.2,
+                 random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
         """ Temporal Convolutional Network Model (TCN).
@@ -241,6 +245,9 @@ class TCNModel(TorchForecastingModel):
             The number of convolutional layers.
         dropout
             The dropout rate for every convolutional layer.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
         raise_if_not(kernel_size < input_length,
@@ -260,7 +267,7 @@ class TCNModel(TorchForecastingModel):
 
         super().__init__(**kwargs)
 
-    def create_dataset(self, series):
+    def _create_dataset(self, series):
         return _TimeSeriesShiftedDataset(series, self.input_length, self.output_length, self.target_indices)
 
     @property

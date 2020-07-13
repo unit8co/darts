@@ -59,6 +59,13 @@ class RNNModelTestCase(unittest.TestCase):
         pred4 = model3.predict(n=1)
         self.assertEqual(len(pred4), 1)
 
+        # test validation series input
+        model3.fit(self.series[:60], val_series=self.series[60:])
+        pred4 = model3.predict(n=6)
+        self.assertEqual(len(pred4), 6)
+
+        shutil.rmtree('.darts')
+
     @staticmethod
     def helper_test_use_full_output_length(test_case, pytorch_model, series):
         model = pytorch_model(n_epochs=2, output_length=3)
