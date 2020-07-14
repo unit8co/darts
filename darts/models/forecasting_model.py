@@ -96,7 +96,7 @@ class ForecastingModel(ABC):
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
 
-    def _backtest_sanity_checks(self, series: TimeSeries, start: pd.Timestamp, forcast_horizon: int):
+    def _backtest_sanity_checks(self, series: TimeSeries, start: pd.Timestamp, forecast_horizon: int):
         """Perform sanity checks on backtest inputs.
 
         Parameters
@@ -105,7 +105,7 @@ class ForecastingModel(ABC):
             The univariate time series on which to backtest
         start
             The first prediction time, at which a prediction is computed for a future time
-        forcast_horizon
+        forecast_horizon
             The forecast horizon for the point predictions
 
         Raises
@@ -115,9 +115,9 @@ class ForecastingModel(ABC):
         """
         raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
         raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
-        raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+        raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    def _backtest_model_specfic_sanity_checks(self, retrain: bool):
+    def _backtest_model_specific_sanity_checks(self, retrain: bool):
         """Add model specific sanity check(s) on the backtest inputs.
 
         Parameters
@@ -166,7 +166,7 @@ class ForecastingModel(ABC):
     def backtest(self,
                  series: TimeSeries,
                  start: pd.Timestamp,
-                 forcast_horizon: int,
+                 forecast_horizon: int,
                  target_indices: Optional[List[int]] = None,
                  component_index: Optional[int] = None,
                  use_full_output_length: bool = True,
@@ -174,7 +174,7 @@ class ForecastingModel(ABC):
                  retrain: bool = True,
                  trim_to_series: bool = True,
                  verbose: bool = False) -> TimeSeries:
-        r""" Retrain and forcast values pointwise with an expanding training window over `series`.
+        """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
         training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
@@ -188,39 +188,13 @@ class ForecastingModel(ABC):
         has not been trained before. Then, at every iteration, the newly expanded 'training sequence' will be fed to the
         model to produce the new output.
 
-        .. code-block:: none
-
-            iteration 1:
-
-                 x            o
-               /   \\         ^
-             x       x - x ...|
-            |_________|_______|
-             training  forcast
-              window   horizon
-
-            iteration 2:
-
-                 x            o
-               /   \\           \\
-             x       x - x ...     -  - o
-            |_____________|_______|_____^
-               training    forcast  stride
-                window     horizon
-
-            ...
-
-            legend:
-                - x: point from provided `series`.
-                - o: point forcasted by the model trained on the `training_window` data.
-
         Parameters
         ----------
         series
             The univariate time series on which to backtest
         start
             The first prediction time, at which a prediction is computed for a future time
-        forcast_horizon
+        forecast_horizon
             The forecast horizon for the point predictions
         target_indices
             In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
@@ -248,8 +222,8 @@ class ForecastingModel(ABC):
             with the specified forecast horizon.
         """
         # sanity checks
-        self._backtest_sanity_checks(series, start, forcast_horizon)
-        self._backtest_model_specfic_sanity_checks(retrain)
+        self._backtest_sanity_checks(series, start, forecast_horizon)  # general sanity check def in forcasting model
+        self._backtest_model_specific_sanity_checks(retrain)  # model specific santiy check overriden in models
 
         # specify the correct fit and predict keyword arguments depending on the model
         fit_kwargs, predict_kwargs = self._backtest_build_fit_and_predict_kwargs(target_indices,
@@ -258,7 +232,7 @@ class ForecastingModel(ABC):
 
         # build the prediction times in advance (to be able to use tqdm)
         last_pred_time = (
-            series.time_index()[-forcast_horizon - stride] if trim_to_series else series.time_index()[-stride - 1]
+            series.time_index()[-forecast_horizon - stride] if trim_to_series else series.time_index()[-stride - 1]
         )
         pred_times = [start]
         while pred_times[-1] <= last_pred_time:
@@ -277,9 +251,9 @@ class ForecastingModel(ABC):
             train = series.drop_after(pred_time)  # build the training series
             if (retrain):
                 self.fit(train, **fit_kwargs)
-                pred = self.predict(forcast_horizon, **predict_kwargs)
+                pred = self.predict(forecast_horizon, **predict_kwargs)
             else:
-                pred = self.predict(forcast_horizon, input_series=train, **predict_kwargs)
+                pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
             values.append(pred.values()[-1])  # store the N-th point
             times.append(pred.end_time())  # store the N-th timestamp
         return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))

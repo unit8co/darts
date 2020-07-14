@@ -637,7 +637,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         for p in self.optimizer.param_groups:
             return p['lr']
 
-    def _backtest_model_specfic_sanity_checks(self, retrain: bool):
+    def _backtest_model_specific_sanity_checks(self, retrain: bool):
         """Add model specific sanity check(s) on the backtest inputs.
 
         Parameters
