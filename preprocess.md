@@ -110,9 +110,11 @@ pipeline = (Pipeline()
 
 pipeline = pipeline.resolve()
 train, val = pipeline.get_data()
-original_ts = pipeline.resolve(reverse=True).get_data()
+original_ts = pipeline.resolve(reverse=True).get_data()[0]
 ```
 
 ## Potential problems
-What about transformers without inverse - maybe storing input and returning it would work but then we have to say that trasformer works only for one list of input.
-Maybe overcomplicated
+* What about transformers without inverse - maybe storing input and returning it would work but then we have to say that trasformer works only for one list of input.
+* Maybe overcomplicated
+
+* In approach with lists of timeseries it really isn't (mathematically) `transform` anymore.
