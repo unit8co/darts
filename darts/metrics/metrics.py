@@ -352,7 +352,8 @@ def mase(actual_series: TimeSeries,
     pred_series
         The series of predicted values
     insample
-        The series used for training
+        The prior series used to forecast `pred_series` .
+        A naive forecast method is used to compute the scale of the data.
     m
         Optionally, the seasonality to use for differencing.
         `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
