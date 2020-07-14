@@ -319,7 +319,7 @@ def smape(actual_series: TimeSeries,
     Raises
     ------
     ValueError
-        If the actual series contains some zeros.
+        If the actual series and the pred series contains some zeros at the same time index.
 
     Returns
     -------
