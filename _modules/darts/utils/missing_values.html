@@ -175,7 +175,7 @@
 <span class="sd">        A TimeSeries, `ts` with all missing values set to `fill`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">ts</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">ts</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span> <span class="n">ts</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="auto_fillna"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.auto_fillna">[docs]</a><span class="k">def</span> <span class="nf">auto_fillna</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
@@ -207,7 +207,7 @@
     <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s1">&#39;inplace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">ts_temp</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">ts_temp</span><span class="o">.</span><span class="n">values</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">ts_temp</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ts</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span></div>
 </pre></div>
 
               </div>
