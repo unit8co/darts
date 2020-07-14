@@ -418,8 +418,8 @@ def backtest_gridsearch(model_class: type,
         raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
                      " number of components.", logger)
 
-    raise_if_not(bool((fcast_horizon_n is None) ^ (val_series is None) ^ use_fitted_values -
-                      ((fcast_horizon_n is not None) & (val_series is not None) & use_fitted_values)),
+    raise_if_not(bool((fcast_horizon_n is None) ^ (val_series is None) ^ use_fitted_values
+                      - ((fcast_horizon_n is not None) & (val_series is not None) & use_fitted_values)),
                  "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_series' or 'use_fitted_values'.",
                  logger)
 
