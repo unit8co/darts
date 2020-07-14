@@ -52,4 +52,3 @@ class TransformerTestCase(unittest.TestCase):
         self.assertEqual(series1_recovered.width, self.series1.width)
         self.assertEqual(series2_recovered.width, self.series2.width)
         self.assertEqual(series3_recovered, series1_recovered[:1])
-
