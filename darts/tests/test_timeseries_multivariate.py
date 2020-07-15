@@ -44,7 +44,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         # Series cannot be lower than three without passing frequency as argument to constructor
         with self.assertRaises(ValueError):
             TimeSeries(self.dataframe1.iloc[:2, :])
-        TimeSeries(self.dataframe1.iloc[:2, :], 'D')
+        TimeSeries(self.dataframe1.iloc[:2, :], freq='D')
 
     def test_eq(self):
         seriesA = TimeSeries(self.dataframe1)
