@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+from numpy.testing import assert_almost_equal
 
 import logging
 from ..metrics import r2_score
@@ -25,8 +26,9 @@ class ForcastingModelTestCase(unittest.TestCase):
         self.model = NaiveDrift()
 
     def test_backtest_on_univariate_series_with_univariate_model(self):
-        pred = self.model.backtest(self.linear_series, pd.Timestamp('20000201'), 3)
+        pred, res = self.model.backtest(self.linear_series, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, self.linear_series), 1.0)
+        assert_almost_equal(res.sum()[0], 0)
 
     def test_backtest_on_multivariate_series_with_univariate_model_should_have_component_index(self):
         with self.assertRaises(ValueError):
@@ -34,8 +36,8 @@ class ForcastingModelTestCase(unittest.TestCase):
 
     def test_backtest_on_multivariate_series_with_univariate_model_with_component_index(self):
         for component_index in (0, 1):
-            pred = self.model.backtest(self.linear_series_multi, pd.Timestamp('20000201'), 3,
-                                       component_index=component_index, verbose=False)
+            pred, res = self.model.backtest(self.linear_series_multi, pd.Timestamp('20000201'), 3,
+                                            component_index=component_index, verbose=False)
             self.assertEqual(pred.width, 1)
             self.assertEqual(r2_score(pred, self.linear_series), 1.0)
 

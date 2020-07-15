@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
@@ -173,7 +173,7 @@ class ForecastingModel(ABC):
                  stride: int = 1,
                  retrain: bool = True,
                  trim_to_series: bool = True,
-                 verbose: bool = False) -> TimeSeries:
+                 verbose: bool = False) -> Tuple[TimeSeries, TimeSeries]:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
@@ -217,12 +217,14 @@ class ForecastingModel(ABC):
 
         Returns
         -------
-        TimeSeries
+        forecast
             A time series containing the forecast values for `series`, when successively applying the specified model
             with the specified forecast horizon.
+        residuals
+            Difference between the `forecast` and the actual `series` provided.
         """
         # sanity checks
-        self._backtest_sanity_checks(series, start, forecast_horizon)  # general sanity check def in forcasting model
+        self._backtest_sanity_checks(series, start, forecast_horizon)  # general sanity check def in forecasting model
         self._backtest_model_specific_sanity_checks(retrain)  # model specific santiy check overriden in models
 
         # specify the correct fit and predict keyword arguments depending on the model
@@ -256,7 +258,14 @@ class ForecastingModel(ABC):
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
             values.append(pred.values()[-1])  # store the N-th point
             times.append(pred.end_time())  # store the N-th timestamp
-        return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+
+        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+
+        # compute the residuals between forecast and series
+        series_trimmed = series.slice_intersect(forecast)
+        residuals = series_trimmed - forecast
+
+        return forecast, residuals
 
 
 class UnivariateForecastingModel(ForecastingModel):
