@@ -1223,9 +1223,12 @@ class TimeSeries:
             """return a new TimeSeries from a pd.DataFrame using iloc indexing."""
             return TimeSeries.from_dataframe(self._df.iloc[key], freq=self.freq())
 
-        def use_loc(key: Any) -> TimeSeries:
+        def use_loc(key: Any, col_indexing: Optional[bool] = False) -> TimeSeries:
             """return a new TimeSeries from a pd.DataFrame using loc indexing."""
-            return TimeSeries.from_dataframe(self._df.loc[key], freq=self.freq())
+            if col_indexing:
+                return TimeSeries.from_dataframe(self._df.loc[:, key], freq=self.freq())
+            else:
+                return TimeSeries.from_dataframe(self._df.loc[key], freq=self.freq())
 
         if isinstance(key, pd.DatetimeIndex):
             check = np.array([elem in self.time_index() for elem in key])
@@ -1234,7 +1237,7 @@ class TimeSeries:
             return use_loc(key)
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
-                return TimeSeries.from_dataframe(self._df.loc[:, key], freq=self.freq())
+                return use_loc(key, col_indexing=True)
             elif isinstance(key.start, int) or isinstance(key.stop, int):
                 return use_base_indexing(key)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
