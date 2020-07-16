@@ -45,7 +45,7 @@ class FourThetaTestCase(unittest.TestCase):
         series = rt(length=50, mean=100)
         theta_param = random.randrange(-5, 5)
         theta = Theta(theta_param)
-        fourtheta = FourTheta(2 - theta_param, normalization=False)
+        fourtheta = FourTheta(theta_param, normalization=False)
         theta.fit(series)
         fourtheta.fit(series)
         forecast_theta = theta.predict(20)

@@ -16,14 +16,14 @@ from ..timeseries import TimeSeries
 from .. import SeasonalityMode, TrendMode, ModelMode
 
 logger = get_logger(__name__)
+ALPHA_START = 0.2
 
 
 class Theta(UnivariateForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
-    # .. todo: From the OTM, set theta_2 = 2-theta_1 to recover our generalization - but we have an explicit formula.
     # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(self,
-                 theta: int = 0,
+                 theta: int = 2,
                  seasonality_period: Optional[int] = None,
                  season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE):
         """
@@ -40,7 +40,7 @@ class Theta(UnivariateForecastingModel):
         Parameters
         ----------
         theta
-            Value of the theta parameter. Defaults to 0. Cannot be set to 2.0.
+            Value of the theta parameter. Defaults to 2. Cannot be set to 0.
             If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
         seasonality_period
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
@@ -66,8 +66,8 @@ class Theta(UnivariateForecastingModel):
         raise_if_not(season_mode in SeasonalityMode,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
-        if self.theta == 2:
-            raise_log(ValueError('The parameter theta cannot be equal to 2.'), logger)
+        if self.theta == 0:
+            raise_log(ValueError('The parameter theta cannot be equal to 0.'), logger)
 
     def fit(self, series: TimeSeries, component_index: Optional[int] = None):
         super().fit(series, component_index)
@@ -101,11 +101,11 @@ class Theta(UnivariateForecastingModel):
         b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
 
         # Normalization of the coefficient b_theta.
-        self.coef = b_theta / (2.0 - self.theta)  # change to b_theta / (-self.theta) if classical theta
+        self.coef = b_theta / (-self.theta)
 
         self.alpha = self.model.params["smoothing_level"]
         if self.alpha == 0.:
-            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=0.2)
+            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
 
     def predict(self, n: int) -> 'TimeSeries':
@@ -157,7 +157,7 @@ class FourTheta(UnivariateForecastingModel):
         `trend_mode` must be a TrendMode Enum member.
         You can access the different Enums with `from darts import SeasonalityMode, TrendMode, ModelMode`.
 
-        When called with `theta = 2 - X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
+        When called with `theta = X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
         this model is equivalent to calling `Theta(theta=X)`.
         Even though this model is an improvement of `Theta`, `FourTheta` is a naive implementation of the algorithm.
         Thus, a difference in performance can be observed.

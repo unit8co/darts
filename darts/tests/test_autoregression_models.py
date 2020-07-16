@@ -36,7 +36,7 @@ class AutoregressionModelsTestCase(unittest.TestCase):
         (AutoARIMA(), 13.7),
         (Theta(), 11.3),
         (Theta(1), 20.2),
-        (Theta(3), 9.8),
+        (Theta(-1), 9.8),
         (FourTheta(1), 20.2),
         (FourTheta(-1), 9.8),
         (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),

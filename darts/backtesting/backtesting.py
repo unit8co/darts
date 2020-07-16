@@ -518,7 +518,7 @@ def explore_models(train_series: TimeSeries,
                 'trend': [None, 'poly', 'exp']
             }),
             (Theta, {
-                'theta': np.delete(np.linspace(-10, 10, 51), 30)
+                'theta': np.delete(np.linspace(-10, 10, 51), 25)
             }),
             (Prophet, {}),
             (AutoARIMA, {})
