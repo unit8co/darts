@@ -1215,10 +1215,6 @@ class TimeSeries:
             slices use pandas convention of including both ends of the slice.
 
         """
-        def use_base_indexing(key: Any) -> TimeSeries:
-            """return a new TimeSeries from a pd.DataFrame using classic indexing."""
-            return TimeSeries.from_dataframe(self._df[key], freq=self.freq())
-
         def use_iloc(key: Any) -> TimeSeries:
             """return a new TimeSeries from a pd.DataFrame using iloc indexing."""
             return TimeSeries.from_dataframe(self._df.iloc[key], freq=self.freq())
@@ -1239,19 +1235,19 @@ class TimeSeries:
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 return use_loc(key, col_indexing=True)
             elif isinstance(key.start, int) or isinstance(key.stop, int):
-                return use_base_indexing(key)
+                return use_iloc(key)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 return use_loc(key)
         elif isinstance(key, list):
             if all(isinstance(s, str) for s in key):
-                return use_base_indexing(key)
+                return use_loc(key, col_indexing=True)
             elif all(isinstance(i, int) for i in key):
                 return use_iloc(key)
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 return use_loc(key)
         else:
             if isinstance(key, str):
-                return use_base_indexing([key])
+                return use_loc([key], col_indexing=True)
             elif isinstance(key, int):
                 return use_iloc([key])
             elif isinstance(key, pd.Timestamp):
