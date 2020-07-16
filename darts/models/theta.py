@@ -216,10 +216,10 @@ class FourTheta(UnivariateForecastingModel):
         if self.normalization:
             self.mean = ts.mean().mean()
             raise_if_not(not np.isclose(self.mean, 0),
-                         "The mean value of the TimeSeries must not be 0 when using normalization", logger)
+                         "The mean value of the provided series is too close to zero to perform normalization", logger)
             new_ts = ts / self.mean
         else:
-            new_ts = ts.copy()
+            new_ts = ts
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
@@ -288,7 +288,6 @@ class FourTheta(UnivariateForecastingModel):
             self.fitted_values *= self.mean
         # Takes too much time to create a TimeSeries
         # Overhead: 30% ± 10 (2-10 ms in average)
-        self.fitted_values = TimeSeries.from_times_and_values(ts.time_index(), self.fitted_values)
 
     def predict(self, n: int) -> 'TimeSeries':
         super().predict(n)
@@ -325,7 +324,11 @@ class FourTheta(UnivariateForecastingModel):
     def select_best_model(ts: TimeSeries, thetas: Optional[List[int]] = None,
                           m: Optional[int] = None, normalization: bool = True) -> 'FourTheta':
         """
-        Performs a grid search over all hyper parameters to select the best model.
+        Performs a grid search over all hyper parameters to select the best model,
+        using the fitted values on the training series `ts`.
+
+
+        Uses 'backtesting.backtest_gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
 
         Parameters
         ----------
