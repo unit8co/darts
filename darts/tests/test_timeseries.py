@@ -347,8 +347,9 @@ class TimeSeriesTestCase(unittest.TestCase):
         seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         self.assertEqual(self.series1[pd.date_range('20130101', ' 20130104')], seriesA)
         self.assertEqual(self.series1[:4], seriesA)
-        self.assertTrue(self.series1[pd.Timestamp('20130101')].equals(self.series1.pd_dataframe()[:1]))
-        self.assertEqual(self.series1[pd.Timestamp('20130101'):pd.Timestamp('20130105')], seriesA)
+        self.assertTrue(self.series1[pd.Timestamp('20130101')] == TimeSeries(self.series1.pd_dataframe()[:1],
+                                                                             freq=self.series1.freq()))
+        self.assertEqual(self.series1[pd.Timestamp('20130101'):pd.Timestamp('20130104')], seriesA)
 
         with self.assertRaises(IndexError):
             self.series1[pd.date_range('19990101', '19990201')]

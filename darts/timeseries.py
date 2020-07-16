@@ -48,6 +48,7 @@ class TimeSeries:
 
         # consistent column names
         def columns_are_unique(columns: [List[str], str]) -> bool:
+            """True if columns are unique, False if duplicates."""
             if isinstance(columns, str):
                 return True
             else:
@@ -60,7 +61,7 @@ class TimeSeries:
                                                       "shape".format(len(columns), df.shape[1]))
             df.columns = columns
         else:
-            df.columns = range(df.shape[1])
+            df.columns = [str(i) for i in range(df.shape[1])]  # we make sure columns are str for indexing.
 
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
         raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
@@ -703,7 +704,7 @@ class TimeSeries:
             raise_if_not(index[-1] == index[0] + self.freq(),
                          'Appended index must have the same frequency as the current one.', logger)
         values = values[new_indices]
-        new_series = pd.DataFrame(values, index=index)
+        new_series = pd.DataFrame(values, index=index, columns=self._df.columns)
         series = self._df.append(new_series)
 
         return TimeSeries(series, series.columns, self.freq())
@@ -748,7 +749,8 @@ class TimeSeries:
 
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)  # only contains indices that are present in the TimeSeries instance
-        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index)
+        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index,
+                                                            columns=self._df.columns)
         raise_if_not(len(index) > 0, "Must give at least one correct index.", logger)
 
         new_series = self.pd_dataframe()
@@ -1195,38 +1197,47 @@ class TimeSeries:
     def __deepcopy__(self):
         return self.copy(deep=True)
 
-    # TODO: also support integer 0-D and 1-D indexing
-    def __getitem__(self, item):
-        # return only main series if nb of values < 3
-        if isinstance(item, (int, pd.Timestamp)):
-            return self._df.loc[[item]]
-        elif isinstance(item, (pd.DatetimeIndex, slice, list, np.ndarray)):
-            if isinstance(item, slice):
-                # if create a slice with timestamp, convert to indices
-                if item.start.__class__ == pd.Timestamp or item.stop.__class__ == pd.Timestamp:
-                    istart = None if item.start is None else self.time_index().get_loc(item.start)
-                    istop = None if item.stop is None else self.time_index().get_loc(item.stop)
-                    item = slice(istart, istop, item.step)
-                elif item.start.__class__ == str or item.stop.__class__ == str:
-                    istart = None if item.start is None else self.time_index().get_loc(pd.Timestamp(item.start))
-                    istop = None if item.stop is None else self.time_index().get_loc(pd.Timestamp(item.stop))
-                    item = slice(istart, istop, item.step)
-                # cannot reverse order
-                if item.indices(len(self))[-1] == -1:
-                    raise_log(IndexError("Cannot have a backward TimeSeries"), logger)
+    def __getitem__(self, item: Union[pd.DatetimeIndex, List[str], List[int], List[pd.Timestamp], str, int,
+                                      pd.Timestamp, Any]) -> "TimeSeries":
+        """Allow indexing on darts TimeSeries.
 
-                if (isinstance(item.start, int) or isinstance(item.stop, int)):
-                    item = self._df.index[item]
+        The supported index types are the following base types as a single value, a list or a slice:
+        - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
+        - str -> return a TimeSeries including the column(s) specified as str.
+        - int -> return a TimeSeries with the value(s) at the given row index.
 
-            # Verify that values in item are really in index to avoid the creation of NaN values
-            if isinstance(item, (np.ndarray, pd.DatetimeIndex)):
-                check = np.array([elem in self.time_index() for elem in item])
-                if not np.all(check):
-                    raise_log(IndexError("None of {} in the index".format(item[~check])), logger)
+        `pd.DatetimeIndex` is also support and will return the corresponding value(s) at the provided time indices.
 
-            return TimeSeries(self._df.loc[item, :], self._df.columns, self.freq())
-        elif isinstance(item, str):
-            return self._df[[pd.Timestamp(item)]]
+        .. warning::
+            slices use pandas convention of including both ends of the slice.
+
+
+        """
+        if isinstance(item, pd.DatetimeIndex):
+            check = np.array([elem in self.time_index() for elem in item])
+            if not np.all(check):
+                raise_log(IndexError("None of {} in the index".format(item[~check])), logger)
+            return TimeSeries(self._df.loc[item, :], self._df.loc[item, :].columns, self.freq())
+        elif isinstance(item, slice):
+            if isinstance(item.start, str) or isinstance(item.stop, str):
+                return TimeSeries(self._df.loc[:, item], self._df.loc[:, item].columns, self.freq())
+            elif isinstance(item.start, int) or isinstance(item.stop, int):
+                return TimeSeries(self._df[item], self._df[item].columns, self.freq())
+            elif isinstance(item.start, pd.Timestamp) or isinstance(item.stop, pd.Timestamp):
+                return TimeSeries(self._df.loc[item, :], self._df.loc[item, :].columns, self.freq())
+        elif isinstance(item, list):
+            if all(isinstance(s, str) for s in item):
+                return TimeSeries(self._df[item], self._df[item].columns, self.freq())
+            elif all(isinstance(i, int) for i in item):
+                return TimeSeries(self._df.iloc[item], self._df.iloc[item].columns, self.freq())
+            elif all(isinstance(t, pd.Timestamp) for t in item):
+                return TimeSeries(self._df.loc[item], self._df.loc[item].columns, self.freq())
         else:
-            raise_log(IndexError("Input {} of class {} is not a possible key.\n Please use integers, "
-                                 "pd.DateTimeIndex, arrays or slice".format(item, item.__class__)), logger)
+            if isinstance(item, str):
+                return TimeSeries(self._df[[item]], self._df[[item]].columns, self.freq())
+            elif isinstance(item, int):
+                return TimeSeries(self._df.iloc[[item]], self._df.iloc[[item]].columns, self.freq())
+            elif isinstance(item, pd.Timestamp):
+                return TimeSeries(self._df.loc[[item]], self._df.loc[[item]].columns, self.freq())
+
+        raise_log(IndexError("The type of your index was not matched."), logger)
