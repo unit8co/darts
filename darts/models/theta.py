@@ -248,7 +248,7 @@ class FourTheta(UnivariateForecastingModel):
         if (ts_values <= 0).any():
             self.model_mode = ModelMode.ADDITIVE
             self.trend_mode = TrendMode.LINEAR
-            logger.warn("Time series has negative values. Fallback to additive and linear model")
+            logger.warning("Time series has negative values. Fallback to additive and linear model")
 
         # Drift part of the decomposition
         if self.trend_mode is TrendMode.LINEAR:
@@ -264,7 +264,7 @@ class FourTheta(UnivariateForecastingModel):
             theta_t = (ts_values ** self.theta) * (theta0_in ** (1 - self.theta))
         else:
             if self.model_mode is ModelMode.MULTIPLICATIVE:
-                logger.warn("Negative Theta line. Fallback to additive model")
+                logger.warning("Negative Theta line. Fallback to additive model")
                 self.model_mode = ModelMode.ADDITIVE
             theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
 
@@ -277,7 +277,7 @@ class FourTheta(UnivariateForecastingModel):
         else:
             if self.model_mode is ModelMode.MULTIPLICATIVE:
                 self.model_mode = ModelMode.ADDITIVE
-                logger.warn("Negative Theta line. Fallback to additive model")
+                logger.warning("Negative Theta line. Fallback to additive model")
                 theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
                 self.model = hw.SimpleExpSmoothing(theta_t).fit()
                 theta2_in = self.model.fittedvalues
@@ -359,8 +359,8 @@ class FourTheta(UnivariateForecastingModel):
             drift_mode = [TrendMode.LINEAR]
             model_mode = [ModelMode.ADDITIVE]
             season_mode = [SeasonalityMode.ADDITIVE]
-            logger.warn("The given TimeSeries has negative values. The method will only test "
-                        "linear trend and additive modes.")
+            logger.warning("The given TimeSeries has negative values. The method will only test "
+                           "linear trend and additive modes.")
         else:
             season_mode = [season for season in SeasonalityMode]
             model_mode = [model for model in ModelMode]
