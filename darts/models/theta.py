@@ -152,13 +152,16 @@ class FourTheta(UnivariateForecastingModel):
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        When called with `theta = 2 - X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
-        this model is equivalent to calling `Theta(theta=X)`.
-
         `season_mode` must be a SeasonalityMode Enum member.
         `model_mode` must be a ModelMode Enum member.
         `trend_mode` must be a TrendMode Enum member.
         You can access the different Enums with `from darts import SeasonalityMode, TrendMode, ModelMode`.
+
+        When called with `theta = 2 - X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
+        this model is equivalent to calling `Theta(theta=X)`.
+        Even though this model is an improvement of `Theta`, `FourTheta` is a naive implementation of the algorithm.
+        Thus, a difference in performance can be observed.
+        `Theta` is recommended if the model is good enough for the application.
 
         Parameters
         ----------
