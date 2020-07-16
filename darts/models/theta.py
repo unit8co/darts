@@ -9,7 +9,7 @@ from typing import Optional, List
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
-from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_seasonality
+from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
 from .forecasting_model import UnivariateForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
@@ -92,7 +92,7 @@ class Theta(UnivariateForecastingModel):
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode)
-            new_ts = remove_seasonality(ts, self.season_period, model=self.season_mode)
+            new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
@@ -210,6 +210,8 @@ class FourTheta(UnivariateForecastingModel):
 
     def fit(self, ts, component_index: Optional[int] = None):
         super().fit(ts, component_index)
+        # Check univariate time series
+        ts._assert_univariate()
 
         self.length = len(ts)
         # normalization of data
@@ -237,7 +239,7 @@ class FourTheta(UnivariateForecastingModel):
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period,
                                                                 model=self.season_mode)
-            new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode)
+            new_ts = remove_from_series(new_ts, self.seasonality, model=self.season_mode)
 
         ts_values = new_ts.univariate_values()
         if (ts_values <= 0).any():
@@ -273,7 +275,7 @@ class FourTheta(UnivariateForecastingModel):
             if self.model_mode is ModelMode.MULTIPLICATIVE:
                 self.model_mode = ModelMode.ADDITIVE
                 logger.warn("Negative Theta line. Fallback to additive model")
-                theta_t = self.theta * new_ts.values() + (1 - self.theta) * theta0_in
+                theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
                 self.model = hw.SimpleExpSmoothing(theta_t).fit()
                 theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
