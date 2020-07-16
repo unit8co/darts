@@ -91,8 +91,8 @@ class Theta(UnivariateForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode.value)
-            new_ts = remove_seasonality(ts, self.season_period, model=self.season_mode.value)
+            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode)
+            new_ts = remove_seasonality(ts, self.season_period, model=self.season_mode)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
@@ -236,8 +236,8 @@ class FourTheta(UnivariateForecastingModel):
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
             _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period,
-                                                                model=self.season_mode.value)
-            new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode.value)
+                                                                model=self.season_mode)
+            new_ts = remove_seasonality(new_ts, self.season_period, model=self.season_mode)
 
         ts_values = new_ts.univariate_values()
         if (ts_values <= 0).any():
