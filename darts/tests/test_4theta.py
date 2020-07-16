@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import random
 
-from .. import Season, Trend, Model
+from .. import SeasonalityMode, TrendMode, ModelMode
 from ..models import Theta, FourTheta
 from ..metrics import mape
 from ..utils.timeseries_generation import (
@@ -21,23 +21,23 @@ class FourThetaTestCase(unittest.TestCase):
 
     def test_input(self):
         with self.assertRaises(ValueError):
-            FourTheta(model_mode=Season.ADDITIVE)
+            FourTheta(model_mode=SeasonalityMode.ADDITIVE)
         with self.assertRaises(ValueError):
-            FourTheta(season_mode=Model.ADDITIVE)
+            FourTheta(season_mode=ModelMode.ADDITIVE)
         with self.assertRaises((ValueError, TypeError)):
             FourTheta(trend_mode='linear')
 
     def test_negative_series(self):
         sine_series = st(length=50)
-        model = FourTheta(model_mode=Model.MULTIPLICATIVE, trend_mode=Trend.EXPONENTIAL,
-                          season_mode=Season.ADDITIVE, normalization=False)
+        model = FourTheta(model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL,
+                          season_mode=SeasonalityMode.ADDITIVE, normalization=False)
         model.fit(sine_series)
-        self.assertTrue(model.model_mode is Model.ADDITIVE and model.trend_mode is Trend.LINEAR)
+        self.assertTrue(model.model_mode is ModelMode.ADDITIVE and model.trend_mode is TrendMode.LINEAR)
 
     def test_zero_mean(self):
         sine_series = st(length=50)
         with self.assertRaises(ValueError):
-            model = FourTheta(model_mode=Model.MULTIPLICATIVE, trend_mode=Trend.EXPONENTIAL)
+            model = FourTheta(model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL)
             model.fit(sine_series)
 
     def test_theta(self):
@@ -60,10 +60,10 @@ class FourThetaTestCase(unittest.TestCase):
         train_series, val_series = series.split_before(series.time_index()[-10])
         thetas = np.linspace(-3, 3, 30)
         best_model = FourTheta.select_best_model(train_series, thetas)
-        model = FourTheta(random.choice(thetas), model_mode=random.choice(list(Model)),
-                          trend_mode=random.choice(list(Trend)), season_mode=random.choice(list(Season)))
+        model = FourTheta(random.choice(thetas), model_mode=random.choice(list(ModelMode)),
+                          trend_mode=random.choice(list(TrendMode)), season_mode=random.choice(list(SeasonalityMode)))
         model.fit(train_series)
         best_model.fit(train_series)
         forecast_random = model.predict(10)
-        forecast_best = model.predict(10)
+        forecast_best = best_model.predict(10)
         self.assertTrue(mape(val_series, forecast_best) <= mape(val_series, forecast_random))

@@ -410,8 +410,7 @@ def backtest_gridsearch(model_class: type,
     ForecastingModel
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
-
-    raise_if_not((fcast_horizon_n is None) + (val_series is None) + use_fitted_values == 1,
+    raise_if_not((fcast_horizon_n is not None) + (val_series is not None) + use_fitted_values == 1,
                  "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_series' or 'use_fitted_values'.",
                  logger)
 
