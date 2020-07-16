@@ -47,7 +47,7 @@ class TimeSeries:
                      logger)
 
         # consistent column names
-        def columns_are_unique(columns: [List[str], str]) -> bool:
+        def columns_are_unique(columns: Union[List[str], str]) -> bool:
             """True if columns are unique, False if duplicates."""
             if isinstance(columns, str):
                 return True
