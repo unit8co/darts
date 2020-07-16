@@ -7,7 +7,8 @@ from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger
 from typing import List
 from IPython import get_ipython
-from tqdm import tqdm, tqdm_notebook
+from tqdm import tqdm
+from tqdm.notebook import tqdm as tqdm_notebook
 
 logger = get_logger(__name__)
 

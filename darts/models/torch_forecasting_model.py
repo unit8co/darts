@@ -9,7 +9,6 @@ import re
 import math
 from glob import glob
 import shutil
-import pickle
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -472,7 +471,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
                     epoch: int):
         """
         Saves the whole torch model object to a file
-        TODO: shall we try to optimize going through torch.save, which uses uses zip?
 
         :param is_best: whether the model we're currently saving is the best (on validation set)
         :param folder:
@@ -487,7 +485,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         filename = os.path.join(folder, filename)
 
         with open(filename, 'wb') as f:
-            pickle.dump(self, f)
+            torch.save(self, f)
 
         if len(checklist) >= 5:
             # remove older files
@@ -607,7 +605,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         full_fname = os.path.join(checkpoint_dir, filename)
         print('loading {}'.format(filename))
         with open(full_fname, 'rb') as f:
-            model = pickle.load(f)
+            model = torch.load(f)
         return model
 
     def _get_best_torch_device(self):
