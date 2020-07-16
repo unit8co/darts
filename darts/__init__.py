@@ -9,18 +9,18 @@ from .timeseries import TimeSeries
 from enum import Enum
 
 
-class Season(Enum):
+class SeasonalityMode(Enum):
     MULTIPLICATIVE = 'multiplicative'
     ADDITIVE = 'additive'
     NONE = None
 
 
-class Trend(Enum):
+class TrendMode(Enum):
     LINEAR = 'linear'
     EXPONENTIAL = 'exponential'
 
 
-class Model(Enum):
+class ModelMode(Enum):
     MULTIPLICATIVE = 'multiplicative'
     ADDITIVE = 'additive'
 

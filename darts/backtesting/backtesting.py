@@ -366,10 +366,11 @@ def backtest_gridsearch(model_class: type,
     evaluated on `val_series`.
 
     Comparison with fitted values (activated when `use_fitted_values` is passed):
-    For every hyperparameter combination, the model is trained on `train_series` and the resulting
-    fitted values are evaluated on `train_series`. Raise an error if `model.fitted_values` doesn't exist.
-    The fitted values are the result of the fit of the model on a TimeSeries. Comparing with the fitted values
-    is a quick way to assess the model, but one cannot see if the model overfits or underfits.
+    For every hyperparameter combination, the model is trained on `train_series` and evaluated on the resulting
+    fitted values.
+    Not all models have fitted values, and this method raises an error if `model.fitted_values` doesn't exist.
+    The fitted values are the result of the fit of the model on the training series. Comparing with the fitted values
+    can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
 
 
     Parameters
@@ -397,8 +398,8 @@ def backtest_gridsearch(model_class: type,
     num_predictions:
         The number of train/prediction cycles performed in one iteration of expanding window mode.
     use_fitted_values
-        If `True`, it will activates the comparison with the fitted values, if `fitted_values` is an attribute of
-        `model_class`.
+        If `True`, uses the comparison with the fitted values.
+        Raises an error if `fitted_values` is not an attribute of `model_class`.
     metric:
         A function that takes two TimeSeries instances as inputs and returns a float error value.
     verbose:
@@ -410,6 +411,10 @@ def backtest_gridsearch(model_class: type,
         An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
     """
 
+    raise_if_not((fcast_horizon_n is None) + (val_series is None) + use_fitted_values == 1,
+                 "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_series' or 'use_fitted_values'.",
+                 logger)
+
     if use_fitted_values:
         model = model_class()
         raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
@@ -418,15 +423,10 @@ def backtest_gridsearch(model_class: type,
         raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
                      " number of components.", logger)
 
-    raise_if_not(bool((fcast_horizon_n is None) ^ (val_series is None) ^ use_fitted_values
-                      - ((fcast_horizon_n is not None) & (val_series is not None) & use_fitted_values)),
-                 "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_series' or 'use_fitted_values'.",
-                 logger)
-
     fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index,
                                                          use_full_output_length)
 
-    if (val_series is None) & (not use_fitted_values):
+    if (val_series is None) and (not use_fitted_values):
         backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
     min_error = float('inf')
     best_param_combination = {}
