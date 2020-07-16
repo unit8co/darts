@@ -34,7 +34,7 @@ class TimeSeries:
             The actual time series, as a pandas DataFrame with a proper time index.
         columns
             The columns name in the same order as in the underlying DataFrame. If columns name are not unique they will
-            be replaced by a `pd.RangeIndex` starting from 0.
+            be replaced by a `pd.RangeIndex` converted to str starting from '0'.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries
             instance with a length smaller than 3, this argument must be passed.
