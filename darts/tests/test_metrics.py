@@ -9,9 +9,11 @@ from ..metrics import metrics
 
 class MetricsTestCase(unittest.TestCase):
 
+    pd_train = pd.Series(np.sin(np.pi * np.arange(31) / 4) + 1, index=pd.date_range('20121201', '20121231'))
     pd_series1 = pd.Series(range(10), index=pd.date_range('20130101', '20130110'))
     pd_series2 = pd.Series(np.random.rand(10) * 10 + 1, index=pd.date_range('20130101', '20130110'))
     pd_series3 = pd.Series(np.sin(np.pi * np.arange(20) / 4) + 1, index=pd.date_range('20130101', '20130120'))
+    series_train = TimeSeries.from_series(pd_train)
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     pd_series1[:] = pd_series1.mean()
     series0: TimeSeries = TimeSeries.from_series(pd_series1)
@@ -31,14 +33,21 @@ class MetricsTestCase(unittest.TestCase):
             metrics.mape(self.series1, self.series1)
 
         with self.assertRaises(ValueError):
+            metrics.smape(self.series1, self.series1)
+
+        with self.assertRaises(ValueError):
             metrics.mape(self.series12, self.series12)
+
+        with self.assertRaises(ValueError):
+            metrics.smape(self.series12, self.series12)
 
         with self.assertRaises(ValueError):
             metrics.ope(self.series1 - self.series1.pd_series().mean(), self.series1 - self.series1.pd_series().mean())
 
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1 + 1, self.series1 + 1), 0)
-        self.assertEqual(metrics.mase(self.series1 + 1, self.series1 + 1, 1), 0)
+        self.assertEqual(metrics.smape(self.series1 + 1, self.series1 + 1), 0)
+        self.assertEqual(metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1), 0)
         self.assertEqual(metrics.marre(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.r2_score(self.series1 + 1, self.series1 + 1), 1)
         self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
@@ -47,15 +56,15 @@ class MetricsTestCase(unittest.TestCase):
         self.assertAlmostEqual(metric(self.series12, self.series21),
                                metric(self.series1.append(self.series2b), self.series2.append(self.series1b)))
 
-    def helper_test_multivariate_duplication_equality(self, metric):
+    def helper_test_multivariate_duplication_equality(self, metric, **kwargs):
         series11 = self.series1.stack(self.series1) + 1
         series22 = self.series2.stack(self.series2)
         series33 = self.series3.stack(self.series3)
-        self.assertAlmostEqual(metric(series11, series22), metric(self.series1 + 1, self.series2))
-        self.assertAlmostEqual(metric(series11, series33), metric(self.series1 + 1, self.series3))
-        self.assertAlmostEqual(metric(series22, series33), metric(self.series2, self.series3))
-        self.assertAlmostEqual(metric(series22, series33, reduction=(lambda x: x[0])),
-                               metric(self.series2, self.series3, reduction=(lambda x: x[0])))
+        self.assertAlmostEqual(metric(series11, series22, **kwargs), metric(self.series1 + 1, self.series2, **kwargs))
+        self.assertAlmostEqual(metric(series11, series33, **kwargs), metric(self.series1 + 1, self.series3, **kwargs))
+        self.assertAlmostEqual(metric(series22, series33, **kwargs), metric(self.series2, self.series3, **kwargs))
+        self.assertAlmostEqual(metric(series22, series33, reduction=(lambda x: x[0]), **kwargs),
+                               metric(self.series2, self.series3, reduction=(lambda x: x[0]), **kwargs))
 
     def test_r2(self):
         from sklearn.metrics import r2_score
@@ -71,7 +80,7 @@ class MetricsTestCase(unittest.TestCase):
 
     def test_season(self):
         with self.assertRaises(ValueError):
-            metrics.mase(self.series3, self.series3 * 1.3, 8)
+            metrics.mase(self.series3, self.series3 * 1.3, self.series_train, 8)
 
     def test_mse(self):
         self.helper_test_shape_equality(metrics.mse)
@@ -94,8 +103,14 @@ class MetricsTestCase(unittest.TestCase):
     def test_mape(self):
         self.helper_test_multivariate_duplication_equality(metrics.mape)
 
+    def test_smape(self):
+        self.helper_test_multivariate_duplication_equality(metrics.smape)
+
     def test_mase(self):
-        self.helper_test_multivariate_duplication_equality(metrics.mase)
+        self.helper_test_multivariate_duplication_equality(metrics.mase, insample=self.series_train)
+
+        with self.assertRaises(ValueError):
+            metrics.mase(self.series1, self.series2, self.series3, 1)
 
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
