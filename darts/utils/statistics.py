@@ -62,7 +62,7 @@ def check_seasonality(ts: TimeSeries,
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
-    #finds local maxima of Auto-Correlation Function
+    # Finds local maxima of Auto-Correlation Function
     candidates = argrelmax(r)[0]
 
     if len(candidates) == 0:
