@@ -2,9 +2,9 @@
 
 """
 
-from darts import TimeSeries
-from darts.models import AutoARIMA
-from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts import ModelMode
+from darts.models import AutoARIMA, NaiveSeasonal
+from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils import _build_tqdm_iterator
 
 import numpy as np
@@ -34,15 +34,19 @@ if __name__ == "__main__":
             seasonOut = 1
             if m > 1:
                 if check_seasonality(train, m=m, max_lag=2*m):
-                    _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
-                    train_des = remove_seasonality(train, freq=m, model='multiplicative')
+                    _, season = extract_trend_and_seasonality(train, m, model=ModelMode.MULTIPLICATIVE)
+                    train_des = remove_from_series(train, season, model=ModelMode.MULTIPLICATIVE)
                     seasonOut = season[-m:].shift(m)
                     seasonOut = seasonOut.append_values(seasonOut.values())
                     seasonOut = seasonOut[:len(test)]
-            if len(train_des) < 30:
-                train_des = train_des.shift(-len(train)).append(train_des)
+            # if len(train_des) < 30:
+            #     train_des = train_des.shift(-len(train)).append(train_des)
             autoar = AutoARIMA()
-            autoar.fit(train_des)
+            try:
+                autoar.fit(train_des)
+            except ValueError:
+                autoar = NaiveSeasonal(K=1)
+                autoar.fit(train_des)
             forecast_autoar = autoar.predict(len(test)) * seasonOut
             mase_all.append(np.vstack([
                 mase_m4(train, test, forecast_autoar, m=m),

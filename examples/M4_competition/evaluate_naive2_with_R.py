@@ -2,9 +2,9 @@
 
 """
 
-from darts import TimeSeries
+from darts import TimeSeries, ModelMode
 from darts.models import NaiveSeasonal
-from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils import _build_tqdm_iterator
 
 import numpy as np
@@ -122,8 +122,8 @@ if __name__ == "__main__":
             seasonOut = 1
             if m > 1:
                 if check_seasonality(train, m=m, max_lag=2*m):
-                    _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
-                    train_des = remove_seasonality(train, freq=m, model='multiplicative')
+                    _, season = extract_trend_and_seasonality(train, m, model=ModelMode.MULTIPLICATIVE)
+                    train_des = remove_from_series(train, season, model=ModelMode.MULTIPLICATIVE)
                     seasonOut = season[-m:].shift(m)
                     seasonOut = seasonOut.append_values(seasonOut.values())
                     seasonOut = seasonOut[:len(test)]
@@ -150,5 +150,5 @@ if __name__ == "__main__":
         print(np.round(np.nanmean(np.stack(smape_all), axis=(0, 2)), 3) == baseline[cat][0])
         print("MASE; Naive2: {:.3f}".format(*tuple(np.nanmean(np.stack(mase_all), axis=(0, 2)))))
         print("sMAPE; Naive2: {:.3f}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
-        print("OWA: ", owa_m4(cat, np.nanmean(np.stack(mase_all), axis=(0, 2)),
-                              np.nanmean(np.stack(smape_all), axis=(0, 2))))
+        print("OWA: ", owa_m4(cat, np.nanmean(np.stack(smape_all), axis=(0, 2)),
+                              np.nanmean(np.stack(mase_all), axis=(0, 2))))

@@ -2,7 +2,6 @@
 
 """
 
-from darts import TimeSeries
 from darts.models import Prophet
 from darts.utils.statistics import check_seasonality
 from darts.utils import _build_tqdm_iterator

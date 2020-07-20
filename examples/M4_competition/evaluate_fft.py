@@ -2,9 +2,10 @@
 
 """
 
+from darts import ModelMode
 from darts.models import FFT
 from darts.backtesting import backtest_gridsearch
-from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils import _build_tqdm_iterator
 
 import numpy as np
@@ -31,34 +32,24 @@ if __name__ == "__main__":
         m = int(info_dataset.Frequency[cat[0]+"1"])
         for train, test in _build_tqdm_iterator(zip(ts_train, ts_test), verbose=True):
             try:
-                train_des = train
-                seasonOut = 1
-                if m > 1:
-                    if check_seasonality(train, m=m, max_lag=2*m):
-                        _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
-                        train_des = remove_seasonality(train, freq=m, model='multiplicative')
-                        seasonOut = season[-m:].shift(m)
-                        seasonOut = seasonOut.append_values(seasonOut.values())[:len(test)]
                 try:
                     fft = backtest_gridsearch(FFT,
-                                              {'nr_freqs_to_keep': [2, 3, 5, 10, 15, 25, 50],
+                                              {'nr_freqs_to_keep': [5, 7, 10, 15, 25, 50],
                                                'trend': ['poly', 'exp'],
-                                               'trend_poly_degree': [1, 2, 3],
+                                               'trend_poly_degree': [0, 1, 2, 3],
                                                'required_matches': [None]},
-                                              train,
-                                              fcast_horizon_n=len(test),
-                                              num_predictions=3,
-                                              metric=lambda x, y: np.mean(mase_m4(train, x, y, m=m)))
+                                              train[:-2*len(test)],
+                                              val_series=train[-2*len(test):],
+                                              metric=lambda x, y: np.mean(mase_m4(train[-2*len(test)], x, y, m=m)))
                 except ValueError:
                     fft = backtest_gridsearch(FFT,
-                                            {'nr_freqs_to_keep': [2, 3, 5, 10, 15, 25, 50],
-                                             'trend': ['poly', 'exp'],
-                                             'trend_poly_degree': [1, 2, 3],
-                                             'required_matches': [None]},
-                                            train,
-                                            fcast_horizon_n=len(test)//2,
-                                            num_predictions=3,
-                                            metric=lambda x, y: np.mean(mase_m4(train, x, y, m=m)))
+                                              {'nr_freqs_to_keep': [5, 7, 10, 15, 25, 50],
+                                               'trend': ['poly', 'exp'],
+                                               'trend_poly_degree': [0, 1, 2, 3],
+                                               'required_matches': [None]},
+                                              train[:-len(test)],
+                                              val_series=train[-len(test):],
+                                              metric=lambda x, y: np.mean(mase_m4(train[-len(test)], x, y, m=m)))
                 fft.fit(train)
                 forecast_fft = fft.predict(len(test))
                 mase_all.append(np.vstack([
@@ -77,5 +68,5 @@ if __name__ == "__main__":
         print("MASE; fft: {}".format(*tuple(np.nanmean(np.stack(mase_all), axis=(0, 2)))))
         print("sMAPE; fft: {}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
         print("OWA: ", owa_m4(cat,
-                              np.nanmean(np.stack(mase_all), axis=(0, 2)),
-                              np.nanmean(np.stack(smape_all), axis=(0, 2))))
+                              np.nanmean(np.stack(smape_all), axis=(0, 2)),
+                              np.nanmean(np.stack(mase_all), axis=(0, 2))))

@@ -31,7 +31,7 @@ for i, dc in _build_tqdm_iterator(enumerate(data_categories), verbose=True):
     for ts in _build_tqdm_iterator(train_set.columns, verbose=True):
         if dc == 'Yearly' and train_set.count()[ts] > 490:
             print("ts too big, fallback to quaterly frequency")
-            info_dataset.SP[ts] = "Quaterly"
+            info_dataset.SP[ts] = "Quarterly"
         try:
             train_index = pd.date_range(info_dataset.StartingDate[ts],
                                         periods=train_set.count()[ts],

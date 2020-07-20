@@ -2,20 +2,19 @@
 
 """
 
-from darts import TimeSeries
-from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, StandardRegressionModel
+from darts import TimeSeries, ModelMode, SeasonalityMode
+from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, StandardRegressionModel
 from darts.models.forecasting_model import ForecastingModel
-from darts.utils.statistics import check_seasonality, remove_seasonality, extract_trend_and_seasonality
+from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.backtesting import backtest_gridsearch
-from FourTheta import FourTheta
+from darts.metrics import mae
 from darts.utils import _build_tqdm_iterator
 
 import numpy as np
 import pandas as pd
 import pickle as pkl
 from sklearn.linear_model import LassoCV
-from sklearn.metrics import mean_absolute_error as mae
 
 from M4_metrics import owa_m4, smape_m4, mase_m4
 
@@ -31,8 +30,8 @@ def naive2_groe(ts: TimeSeries, n: int, m: int):
     seasonOut = 1
     if m > 1:
         if check_seasonality(ts, m=int(m), max_lag=2 * m):
-            _, season = extract_trend_and_seasonality(ts, m, model='multiplicative')
-            ts_des = remove_seasonality(ts, freq=m, model='multiplicative')
+            _, season = extract_trend_and_seasonality(ts, m, model=ModelMode.MULTIPLICATIVE)
+            ts_des = remove_from_series(ts, season, model=ModelMode.MULTIPLICATIVE)
             seasonOut = season[-m:].shift(m)
             seasonOut = seasonOut.append_values(seasonOut.values())[:n]
     naive2 = NaiveSeasonal(K=1)
@@ -110,8 +109,8 @@ class DeseasonForecastingModel(ForecastingModel):
         self.seasonOut = 1
         if self.m > 1:
             if check_seasonality(train, m=self.m, max_lag=2 * self.m):
-                _, season = extract_trend_and_seasonality(train, self.m, model='multiplicative')
-                train_des = remove_seasonality(train, freq=self.m, model='multiplicative')
+                _, season = extract_trend_and_seasonality(train, self.m, model=ModelMode.MULTIPLICATIVE)
+                train_des = remove_from_series(train, season, model=ModelMode.MULTIPLICATIVE)
                 seasonOut = season[-self.m:].shift(self.m)
                 self.seasonOut = seasonOut.append_values(seasonOut.values())
         self.model.fit(train_des)
@@ -144,8 +143,8 @@ if __name__ == "__main__":
             if m > 1:
                 if check_seasonality(train, m=m, max_lag=2 * m):
                     pass
-                    _, season = extract_trend_and_seasonality(train, m, model='multiplicative')
-                    train_des = remove_seasonality(train, freq=m, model='multiplicative')
+                    _, season = extract_trend_and_seasonality(train, m, model=ModelMode.MULTIPLICATIVE)
+                    train_des = remove_from_series(train, season, model=ModelMode.MULTIPLICATIVE)
                     seasonOut = season[-m:].shift(m)
                     seasonOut = seasonOut.append_values(seasonOut.values())[:len(test)]
             # model selection
@@ -155,24 +154,25 @@ if __name__ == "__main__":
             holt = ExponentialSmoothing(seasonal=None, damped=False, trend='additive', seasonal_periods=m)
             damp = ExponentialSmoothing(seasonal=None, damped=True, trend='additive', seasonal_periods=m)
 
-            season_mode = ["additive", "multiplicative"]
-            model_mode = ["additive", "multiplicative"]
-            drift_mode = ["linear", "exponential"]
-            if (train.values() <= 0).any():
-                drift_mode = ["linear"]
-                model_mode = ["additive"]
-                season_mode = ["additive"]
-            fourtheta = backtest_gridsearch(FourTheta,
-                                            {"theta": [1, 2, 3],
-                                             "mode": model_mode,
-                                             "season_mode": season_mode,
-                                             "trend": drift_mode,
-                                             "seasonality_period": [m]
-                                             },
-                                            train,
-                                            val_series=train,
-                                            metric=mae)
-            theta = Theta(theta=0, mode='multiplicative', seasonality_period=m)
+            # season_mode = ["additive", "multiplicative"]
+            # model_mode = ["additive", "multiplicative"]
+            # drift_mode = ["linear", "exponential"]
+            # if (train.values() <= 0).any():
+            #     drift_mode = ["linear"]
+            #     model_mode = ["additive"]
+            #     season_mode = ["additive"]
+            # fourtheta = backtest_gridsearch(FourTheta,
+            #                                 {"theta": [1, 2, 3],
+            #                                  "mode": model_mode,
+            #                                  "season_mode": season_mode,
+            #                                  "trend": drift_mode,
+            #                                  "seasonality_period": [m]
+            #                                  },
+            #                                 train,
+            #                                 val_series=train,
+            #                                 metric=mae)
+            fourtheta = FourTheta.select_best_model(train, [1, 2, 3], m)
+            theta = Theta(theta=0, season_mode=SeasonalityMode.MULTIPLICATIVE, seasonality_period=m)
 
             models_simple = [naiveSeason, theta, fourtheta]
             models_des = [naive2, ses, holt, damp]
@@ -283,5 +283,5 @@ if __name__ == "__main__":
         print("sMAPE; Naive2: {:.3f}, Linear Regression: {:.3f}, Mean ensembling: {:.3f}, GROE ensembling: {:.3f}, "
               "BO3 ensembling: {:.3f}, BO3 Mean: {:.3f}".format(*tuple(np.nanmean(np.stack(smape_all), axis=(0, 2)))))
         print("OWA: ", owa_m4(freq,
-                              np.nanmean(np.stack(mase_all), axis=(0, 2)),
-                              np.nanmean(np.stack(smape_all), axis=(0, 2))))
+                              np.nanmean(np.stack(smape_all), axis=(0, 2)),
+                              np.nanmean(np.stack(mase_all), axis=(0, 2))))
