@@ -50,7 +50,7 @@ class FourThetaTestCase(unittest.TestCase):
         fourtheta.fit(series)
         forecast_theta = theta.predict(20)
         forecast_fourtheta = fourtheta.predict(20)
-        self.assertTrue((forecast_theta - forecast_fourtheta <= 1e-12).all()[0])
+        self.assertTrue((forecast_theta - forecast_fourtheta <= 1e-10).all()[0])
 
     def test_best_model(self):
         random.seed(1)
