@@ -961,18 +961,18 @@ class TimeSeries:
 
         df_a = self._df
         df_b = other._df
-        if df_a is not None and df_b is not None:
-            # univariate case
-            if df_a.shape[1] == 1:
-                pd_serie_a = df_a.iloc[:, 0]
-                pd_serie_b = df_b.iloc[:, 0]
-                pd_serie = combine_fn(pd_serie_a, pd_serie_b)
-                series_df = pd_serie.to_frame()
-            # multivariate case
-            else:
-                raise_if(len(set(df_a.columns.to_list() + df_b.columns.columns.to_list())) != len(df_a.columns),
-                         "Column name in each TimeSeries must match one to one.")
-                series_df = combine_fn(df_a, df_b)
+
+        # univariate case
+        if df_a.shape[1] == 1:
+            pd_serie_a = df_a.iloc[:, 0]
+            pd_serie_b = df_b.iloc[:, 0]
+            pd_serie = combine_fn(pd_serie_a, pd_serie_b)
+            series_df = pd_serie.to_frame()
+        # multivariate case
+        else:
+            raise_if(len(set(df_a.columns.to_list() + df_b.columns.columns.to_list())) != len(df_a.columns),
+                     "Column name in each TimeSeries must match one to one.")
+            series_df = combine_fn(df_a, df_b)
         return TimeSeries(series_df, self.freq_str())
 
     @staticmethod
