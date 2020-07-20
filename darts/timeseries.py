@@ -39,8 +39,8 @@ class TimeSeries:
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
         columns
-            The columns name in the same order as in the underlying DataFrame. If columns name are not unique they will
-            be replaced by a `pd.RangeIndex` converted to str starting from '0'.
+            The columns name in the same order as in the underlying DataFrame. If not provided, it will try to use the
+            underlying DataFrame columns. If columns name are not unique they will be named "0", "1", etc..
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
