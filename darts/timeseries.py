@@ -59,9 +59,10 @@ class TimeSeries:
                 columns = [columns]
             raise_if_not(len(columns) == df.shape[1], "`{}` columns specified when `{}` was expected from `df` "
                                                       "shape".format(len(columns), df.shape[1]))
-            df.columns = columns
         else:
-            df.columns = [str(i) for i in range(df.shape[1])]  # we make sure columns are str for indexing.
+            columns = df.columns
+            if isinstance(columns, pd.RangeIndex):
+                columns = [str(i) for i in range(df.shape[1])]  # we make sure columns are str for indexing.
 
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
         raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
@@ -72,6 +73,7 @@ class TimeSeries:
                      'is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time
+        self._df = columns
 
         if (len(df) < 3):
             self._freq: str = freq
