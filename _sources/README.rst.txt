@@ -19,8 +19,8 @@ Time Series Made Easy in Python
    :alt: PyPI version
 
 
-.. image:: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20PR%20merge%20workflow/develop
-   :target: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20PR%20merge%20workflow/develop
+.. image:: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
+   :target: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
    :alt: GitHub Workflow Status
 
 
