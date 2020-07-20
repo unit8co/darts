@@ -9,6 +9,7 @@ from typing import Tuple, Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
+from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf
 
@@ -62,24 +63,12 @@ def check_seasonality(ts: TimeSeries,
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
-    gradient = np.gradient(r)
-    gradient_signs_changes = np.diff(np.sign(gradient))
+    # Finds local maxima of Auto-Correlation Function
+    candidates = argrelmax(r)[0]
 
-    # Tries to infer seasonality from Auto-Correlation Function if no value of m has been provided.
-    # We look for the first positive significant local maximum of the ACF by checking the sign changes
-    # in the gradient.
-
-    # Local maximum is indicated by signs_change == -2.
-    if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
+    if len(candidates) == 0:
         logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
-
-    # Building a list of candidates for local maximum.
-    candidates = np.nonzero((gradient_signs_changes == -2))[0].tolist()
-
-    # If a -2 value appears in gradient_signs_changes at index i, then the local
-    # maximum of r occurs either at index i or i+1. We check manually and change the candidates accordingly.
-    candidates = [i if r[i] >= r[i + 1] else i + 1 for i in candidates]
 
     if m is not None:
         # Check for local maximum when m is user defined.
