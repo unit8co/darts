@@ -440,6 +440,8 @@ def backtest_gridsearch(model_class: type,
         model = model_class(**param_combination_dict)
         if use_fitted_values:
             model.fit(train_series)
+            # Takes too much time to create a TimeSeries
+            # Overhead: 2-10 ms in average
             fitted_values = TimeSeries.from_times_and_values(train_series.time_index(), model.fitted_values)
             error = metric(fitted_values, train_series)
         elif val_series is None:  # expanding window mode

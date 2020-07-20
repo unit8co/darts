@@ -291,8 +291,6 @@ class FourTheta(UnivariateForecastingModel):
         # will lead to fitted_values similar to ts. But one cannot see if it overfits.
         if self.normalization:
             self.fitted_values *= self.mean
-        # Takes too much time to create a TimeSeries
-        # Overhead: 30% ± 10 (2-10 ms in average)
 
     def predict(self, n: int) -> 'TimeSeries':
         super().predict(n)
