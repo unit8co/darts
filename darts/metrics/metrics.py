@@ -287,8 +287,56 @@ def mape(actual_series: TimeSeries,
 
 
 @multivariate_support
+def smape(actual_series: TimeSeries,
+          pred_series: TimeSeries,
+          intersect: bool = True,
+          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+    """ symmetric Mean Absolute Percentage Error (sMAPE).
+
+    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+    both of length :math:`T`, it is a percentage value computed as
+
+    .. math::
+        200 \\cdot \\frac{1}{T}
+        \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }.
+
+    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
+     for some :math:`t`. Consider using the Mean Absolute Scaled Error (MASE) in these cases.
+
+    Parameters
+    ----------
+    actual_series
+        The series of actual values
+    pred_series
+        The series of predicted values
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate TimeSeries instances.
+
+    Raises
+    ------
+    ValueError
+        If the actual series and the pred series contains some zeros at the same time index.
+
+    Returns
+    -------
+    float
+        The symmetric Mean Absolute Percentage Error (sMAPE)
+    """
+
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
+                 'The actual series must be strictly positive to compute the sMAPE.', logger)
+    return 200. * np.mean(np.abs((y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat))))
+
+
+@multivariate_support
 def mase(actual_series: TimeSeries,
          pred_series: TimeSeries,
+         insample: TimeSeries,
          m: Optional[int] = 1,
          intersect: bool = True,
          reduction: Callable[[np.ndarray], float] = np.mean) -> float:
@@ -303,6 +351,9 @@ def mase(actual_series: TimeSeries,
         The series of actual values
     pred_series
         The series of predicted values
+    insample
+        The training series used to forecast `pred_series` .
+        This series serves to compute the scale of the error obtained by a naive forecaster on the training data.
     m
         Optionally, the seasonality to use for differencing.
         `m=1` corresponds to the non-seasonal MASE, whereas `m>1` corresponds to seasonal MASE.
@@ -315,23 +366,30 @@ def mase(actual_series: TimeSeries,
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
 
+    Raises
+    ------
+    ValueError
+        If the `insample` series is periodic ( :math:`X_t = X_{t-m}` )
+
     Returns
     -------
     float
         The Mean Absolute Scaled Error (MASE)
     """
 
+    raise_if_not(insample.end_time() + insample.freq() == pred_series.start_time(),
+                 "The pred_series must be the forecast of the insample series", logger)
     if m is None:
-        test_season, m = check_seasonality(actual_series)
+        test_season, m = check_seasonality(insample)
         if not test_season:
             warn("No seasonality found when computing MASE. Fixing the period to 1.", UserWarning)
             m = 1
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    errors = np.sum(np.abs(y_true - y_hat))
-    t = y_true.size
-    scale = t / (t - m) * np.sum(np.abs(y_true[m:] - y_true[:-m]))
+    x_t = insample.values()
+    errors = np.abs(y_true - y_hat)
+    scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
     raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
-    return errors / scale
+    return np.mean(errors / scale)
 
 
 @multivariate_support
@@ -430,13 +488,15 @@ def r2_score(series1: TimeSeries,
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
     for details about the :math:`R^2` score and how it is computed.
+    Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,
+    whereas `series2` should correspond to the predicted series.
 
     Parameters
     ----------
     series1
-        The first time series
+        The first time series. This should correspond to the ground truth values.
     series2
-        The second time series
+        The second time series. This should correspond to the predicted values.
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
