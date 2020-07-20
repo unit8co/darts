@@ -566,9 +566,9 @@ class TimeSeries:
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
                               values: np.ndarray,
-                              column: Optional[str] = None,
                               freq: Optional[str] = None,
-                              fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                              fill_missing_dates: Optional[bool] = True,
+                              column: Optional[str] = None,) -> 'TimeSeries':
         """
         Returns TimeSeries built from an index and values.
 
@@ -578,13 +578,13 @@ class TimeSeries:
             A `pandas.DateTimeIndex` representing the time axis for the time series.
         values
             An array of values for the TimeSeries.
-        column
-            Name of the column to use if any.
         freq
             Optionally, a string representing the frequency of the time series.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        column
+            Name of the column to use if any.
 
         Returns
         -------
