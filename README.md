@@ -4,7 +4,7 @@
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/u8darts)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20PR%20merge%20workflow/develop)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
 ![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
