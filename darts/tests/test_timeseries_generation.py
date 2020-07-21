@@ -21,7 +21,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
             value_set = set(constant_ts._df.values.flatten())
             self.assertTrue(len(value_set) == 1)
 
-        for length in range(1, 50):
+        for length in [1, 2, 5, 10, 100]:
             test_routine(length)
 
     def test_linear_timeseries(self):
@@ -38,7 +38,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
             self.assertAlmostEqual(linear_ts.values()[-1][0] - linear_ts.values()[-2][0],
                                    (end_value - start_value) / (length - 1))
 
-        for length in range(2, 50):
+        for length in [2, 5, 10, 100]:
             test_routine(length)
 
     def test_sine_timeseries(self):
@@ -53,7 +53,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
             self.assertTrue((sine_ts <= value_y_offset + value_amplitude).all().all())
             self.assertTrue((sine_ts >= value_y_offset - value_amplitude).all().all())
 
-        for length in range(1, 50):
+        for length in [1, 2, 5, 10, 100]:
             test_routine(length)
 
     def test_gaussian_timeseries(self):
@@ -63,7 +63,7 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
             gaussian_ts = gaussian_timeseries(length=length)
             self.assertEqual(len(gaussian_ts), length)
 
-        for length in range(1, 50):
+        for length in [1, 2, 5, 10, 100]:
             test_routine(length)
 
     def test_random_walk_timeseries(self):
@@ -73,5 +73,5 @@ class TimeSeriesGenerationTestCase(unittest.TestCase):
             random_walk_ts = random_walk_timeseries(length=length)
             self.assertEqual(len(random_walk_ts), length)
 
-        for length in range(1, 50):
+        for length in [1, 2, 5, 10, 100]:
             test_routine(length)
