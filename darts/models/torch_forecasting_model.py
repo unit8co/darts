@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -267,7 +267,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
     def fit(self,
             covariate_series: TimeSeries,
             target_series: Optional[TimeSeries] = None,
-            val_series: Optional[TimeSeries] = None,
+            val_series: Optional[Tuple[TimeSeries]] = None,
             verbose: bool = False) -> None:
         """ Fit method for torch modules
 
@@ -279,8 +279,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
             A series of target (dependent) value(s) predicted using the covariate_series if None specified, use the
             covariate series as target.
         val_series
-            Optionally, a validation time series, which will be used to compute the validation loss
-            throughout training and keep track of the best performing models.
+            Optionally, 2 validation time series (covariate and target), which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
         target_indices
@@ -299,14 +299,20 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      "equal to the `output_size` defined when instantiating the current model.", logger)
 
         if val_series is not None:
+            raise_if_not(len(val_series) == 2, "val_series must contain 2 elements (covariates, targets)")
+            val_covariate_series, val_target_series = val_series
             raise_if_not(covariate_series.width == val_series.width, "covariate_series must have the same number of "
-                         "component(s) as val_series.", logger)
+                         "component(s) as val_covariate_series.", logger)
+            raise_if_not(target_series.width == val_target_series.width, "target_series must have the same number of"
+                         " component(s) as val_target_series.", logger)
+            raise_if_not(len(val_covariate_series) == len(val_target_series), "val_covariate_series must have the same"
+                         " number of value as val_target_series.")
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data
-        dataset = self._create_dataset(covariate_series)
+        dataset = self._create_dataset(covariate_series, target_series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0, pin_memory=True,
                                   drop_last=True)
         raise_if_not(len(train_loader) > 0,
@@ -314,7 +320,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      logger)
 
         # Prepare validation data
-        val_loader = self._prepare_validation_data(val_series)
+        val_loader = None if val_series is None else self._prepare_validation_data(val_covariate_series,
+                                                                                   val_target_series)
 
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer()
@@ -392,8 +399,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         return 0
 
-    def _create_dataset(self, series):
-        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length)
+    def _create_dataset(self, covariate_series, target_series):
+        return _TimeSeriesSequentialDataset(covariate_series, target_series, self.input_length, self.output_length)
 
     def _train(self,
                train_loader: DataLoader,
@@ -515,16 +522,13 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _prepare_validation_data(self, val_series):
-        if val_series is not None:
-            val_dataset = self._create_dataset(val_series)
-            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
-                                    num_workers=0, pin_memory=True, drop_last=False)
-            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
-                         'The provided validation time series is too short for this model output length.',
-                         logger)
-        else:
-            val_loader = None
+    def _prepare_validation_data(self, val_covariate_series, val_target_series):
+        val_dataset = self._create_dataset(val_covariate_series, val_target_series)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                num_workers=0, pin_memory=True, drop_last=False)
+        raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                     'The provided validation time series is too short for this model output length.',
+                     logger)
         return val_loader
 
     def _prepare_tensorboard_writer(self):
