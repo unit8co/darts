@@ -22,7 +22,7 @@ We recommend to first setup a clean python environment for your project with at 
 
 ### Quick Install
 
-Once your environement is setup you can install darts using the pip package:
+Once your environment is setup you can install darts using the pip package:
 
     pip install u8darts
 
