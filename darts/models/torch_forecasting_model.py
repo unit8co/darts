@@ -301,8 +301,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
         if val_series is not None:
             raise_if_not(len(val_series) == 2, "val_series must contain 2 elements (covariates, targets)")
             val_covariate_series, val_target_series = val_series
-            raise_if_not(covariate_series.width == val_series.width, "covariate_series must have the same number of "
-                         "component(s) as val_covariate_series.", logger)
+            raise_if_not(covariate_series.width == val_target_series.width, "covariate_series must have the same number"
+                         " of component(s) as val_covariate_series.", logger)
             raise_if_not(target_series.width == val_target_series.width, "target_series must have the same number of"
                          " component(s) as val_target_series.", logger)
             raise_if_not(len(val_covariate_series) == len(val_target_series), "val_covariate_series must have the same"
