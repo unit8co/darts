@@ -117,12 +117,16 @@ class MultivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self, covariate_series: TimeSeries, target_series: TimeSeries) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
 
         Parameters
         ----------
-        series
+        covariate_series
             The training time series on which to fit the model (can be multivariate or univariate).
+        target_series
+            The target values used ad dependent variables when training the model
         """
-        super().fit(series)
+        raise_if_not(len(covariate_series) == len(target_series), "covariate_series and target_series musth have same "
+                     "length.")
+        super().fit(covariate_series)

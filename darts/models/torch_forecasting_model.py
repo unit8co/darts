@@ -82,7 +82,7 @@ class _TimeSeriesSequentialDataset(Dataset):
         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
-class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
+class _TimeSeriesShiftedDataset(Dataset):
 
     def __init__(self,
                  series: TimeSeries,
@@ -282,10 +282,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if_not(covariate_series.width == self.input_size, "The number of components of the covariate series must "
                      "be equal to the `input_size` defined when instantiating the current model.", logger)
 
-        super().fit(covariate_series)
-
         if target_series is None:
             target_series = covariate_series
+
+        super().fit(covariate_series, target_series)
 
         raise_if_not(target_series.width == self.output_size, "The number of components in the target series must be "
                      "equal to the `output_size` defined when instantiating the current model.", logger)
