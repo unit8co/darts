@@ -101,26 +101,16 @@ class UnivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None) -> None:
+    def fit(self, series: TimeSeries) -> None:
         """ Fits/trains the univariate model on selected univariate series.
 
         Parameters
         ----------
         series
-            The training time series on which to fit the model.
-        component_index
-            Optionally, a zero-indexed integer indicating the component to use if a multivariate
-            time series is passed.
+            A **univariate** training time series on which to fit the model.
         """
-
-        raise_if_not(series.width == 1 or (component_index is not None), "If a multivariate series is given"
-                     "as input to this univariate model, please provide a `component_index` integer indicating"
-                     " which component to use.", logger)
-
-        if series.width == 1:
-            super().fit(series)
-        else:
-            super().fit(series.univariate_component(component_index))
+        series._assert_univariate()
+        super().fit(series)
 
 
 class MultivariateForecastingModel(ForecastingModel):
