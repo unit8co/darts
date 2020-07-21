@@ -60,7 +60,7 @@ class RNNModelTestCase(unittest.TestCase):
         self.assertEqual(len(pred4), 1)
 
         # test validation series input
-        model3.fit(self.series[:60], val_series=self.series[60:])
+        model3.fit(self.series[:60], val_series=(self.series[60:],self.series[60:]))
         pred4 = model3.predict(n=6)
         self.assertEqual(len(pred4), 6)
 
@@ -85,18 +85,15 @@ class RNNModelTestCase(unittest.TestCase):
     @staticmethod
     def helper_test_multivariate(test_case, pytorch_model, series_multivariate):
         model = pytorch_model(n_epochs=2)
-        # missing target_indices
-        with test_case.assertRaises(ValueError):
-            model.fit(series_multivariate)
         # trying to fit multivariate series with input_size=1
         with test_case.assertRaises(ValueError):
-            model.fit(series_multivariate, target_indices=[0])
+            model.fit(series_multivariate, series_multivariate["0"])
         model = pytorch_model(n_epochs=2, input_size=2, output_length=3)
-        # missing target_indices
+        # output size is 1 while should be 2 here
         with test_case.assertRaises(ValueError):
             model.fit(series_multivariate)
         # fit function called with valid parameters
-        model.fit(series_multivariate, target_indices=[0])
+        model.fit(series_multivariate, series_multivariate["0"])
         # use_full_output_length not set to True
         with test_case.assertRaises(ValueError):
             pred = model.predict(n=1)
@@ -111,10 +108,10 @@ class RNNModelTestCase(unittest.TestCase):
         test_case.assertEqual(len(pred), 2)
         # len(target_indices) != output_size
         with test_case.assertRaises(ValueError):
-            model.fit(series_multivariate, target_indices=[0, 1])
+            model.fit(series_multivariate, series_multivariate[["0", "1"]])
         model = pytorch_model(n_epochs=2, input_size=2, output_length=2, output_size=2)
         # fit and predict called with valid parameters
-        model.fit(series_multivariate, target_indices=[0, 1])
+        model.fit(series_multivariate, series_multivariate[["0", "1"]])
         pred = model.predict(2, True)
         test_case.assertEqual(pred.width, 2)
 
