@@ -258,7 +258,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
     @random_method
     def fit(self,
             covariate_series: TimeSeries,
-            target_series: TimeSeries,
+            target_series: Optional[TimeSeries] = None,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False) -> None:
         """ Fit method for torch modules
@@ -266,9 +266,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
         Parameters
         ----------
         covariate_series
-            A series of covariate values used to predict the target series (can also include the target)
+            A series of covariate values used to predict the target series (can also include the target).
         target_series
-            A series of target (dependent) value(s) predicted using the covariate_series
+            A series of target (dependent) value(s) predicted using the covariate_series if None specified, use the
+            covariate series as target.
         val_series
             Optionally, a validation time series, which will be used to compute the validation loss
             throughout training and keep track of the best performing models.
@@ -282,6 +283,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      "be equal to the `input_size` defined when instantiating the current model.", logger)
 
         super().fit(covariate_series)
+
+        if target_series is None:
+            target_series = covariate_series
 
         raise_if_not(target_series.width == self.output_size, "The number of components in the target series must be "
                      "equal to the `output_size` defined when instantiating the current model.", logger)
