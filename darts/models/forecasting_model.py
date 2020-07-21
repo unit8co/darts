@@ -118,28 +118,12 @@ class MultivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, series: TimeSeries, target_indices: Optional[List[int]] = None) -> None:
+    def fit(self, series: TimeSeries) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
 
         Parameters
         ----------
         series
-            The training time series on which to fit the model.
-        target_indices
-            A list of integers indicating which component(s) of the time series should be used
-            as targets for forecasting.
+            The training time series on which to fit the model (can be multivariate or univariate).
         """
-
-        if series.width == 1:
-            target_indices = [0]
-
-        raise_if_not(target_indices is not None and len(target_indices) > 0,
-                     "If a multivariate series is given as input to this multivariate model, please"
-                     " provide a list of integer indices `target_indices`"
-                     " that indicate which components of this series should be predicted", logger)
-
-        raise_if_not(all(idx >= 0 and idx < series.width for idx in target_indices), "The target indices "
-                     "must all be between 0 and the width of the TimeSeries instance used for fitting - 1.", logger)
-
-        self.target_indices = target_indices
         super().fit(series)
