@@ -70,8 +70,8 @@ class Theta(UnivariateForecastingModel):
         if self.theta == 0:
             raise_log(ValueError('The parameter theta cannot be equal to 0.'), logger)
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         ts = self.training_series
 
         self.length = len(ts)
@@ -215,8 +215,8 @@ class FourTheta(UnivariateForecastingModel):
         raise_if_not(season_mode in SeasonalityMode,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
-    def fit(self, ts, component_index: Optional[int] = None):
-        super().fit(ts, component_index)
+    def fit(self, ts):
+        super().fit(ts)
         # Check univariate time series
         ts._assert_univariate()
 
