@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -40,8 +40,7 @@ class _TimeSeriesSequentialDataset(Dataset):
     def __init__(self,
                  series: TimeSeries,
                  data_length: int = 1,
-                 target_length: int = 1,
-                 target_indices: List[int] = [0]):
+                 target_length: int = 1):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -64,7 +63,6 @@ class _TimeSeriesSequentialDataset(Dataset):
         self.len_series = len(series)
         self.data_length = len(series) - 1 if data_length is None else data_length
         self.target_length = target_length
-        self.target_indices = target_indices
 
         raise_if_not(self.data_length > 0,
                      "The input sequence length must be positive. It is {}".format(self.data_length),
@@ -81,7 +79,7 @@ class _TimeSeriesSequentialDataset(Dataset):
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
         data = self.series_values[idx:idx + self.data_length]
         target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
+        return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
 class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
@@ -89,8 +87,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
     def __init__(self,
                  series: TimeSeries,
                  length: int = 3,
-                 shift: int = 1,
-                 target_indices: Optional[List[int]] = None):
+                 shift: int = 1):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -112,7 +109,6 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
         self.len_series = len(series)
         self.length = len(series) - 1 if length is None else length
         self.shift = shift
-        self.target_indices = target_indices if target_indices is not None else [0]
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
@@ -129,7 +125,7 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
         idx = index % self.__len__()
         data = self.series_values[idx:idx + self.length]
         target = self.series_values[idx + self.shift:idx + self.length + self.shift]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
+        return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
 class TorchForecastingModel(MultivariateForecastingModel):
@@ -261,16 +257,18 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
     @random_method
     def fit(self,
-            series: TimeSeries,
+            covariate_series: TimeSeries,
+            target_series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
-            verbose: bool = False,
-            target_indices: Optional[List[int]] = None) -> None:
+            verbose: bool = False) -> None:
         """ Fit method for torch modules
 
         Parameters
         ----------
-        series
-            The training time series
+        covariate_series
+            A series of covariate values used to predict the target series (can also include the target)
+        target_series
+            A series of target (dependent) value(s) predicted using the covariate_series
         val_series
             Optionally, a validation time series, which will be used to compute the validation loss
             throughout training and keep track of the best performing models.
@@ -280,21 +278,25 @@ class TorchForecastingModel(MultivariateForecastingModel):
             A list of integers indicating which component(s) of the time series should be used
             as targets for forecasting.
         """
-        raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
-                     "the `input_size` defined when instantiating the current model.", logger)
+        raise_if_not(covariate_series.width == self.input_size, "The number of components of the covariate series must "
+                     "be equal to the `input_size` defined when instantiating the current model.", logger)
 
-        super().fit(series, target_indices)
+        super().fit(covariate_series)
 
-        raise_if_not(len(self.target_indices) == self.output_size, "The number of target components must be equal to "
-                     "the `output_size` defined when instantiating the current model.", logger)
+        raise_if_not(target_series.width == self.output_size, "The number of components in the target series must be "
+                     "equal to the `output_size` defined when instantiating the current model.", logger)
+
+        if val_series is not None:
+            raise_if_not(covariate_series.width == val_series.width, "covariate_series must have the same number of "
+                         "component(s) as val_series.", logger)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data
-        dataset = self._create_dataset(series)
-        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
-                                  num_workers=0, pin_memory=True, drop_last=True)
+        dataset = self._create_dataset(covariate_series)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0, pin_memory=True,
+                                  drop_last=True)
         raise_if_not(len(train_loader) > 0,
                      'The provided training time series is too short for obtaining even one training point.',
                      logger)
@@ -379,7 +381,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         return 0
 
     def _create_dataset(self, series):
-        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
+        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length)
 
     def _train(self,
                train_loader: DataLoader,
@@ -534,7 +536,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             raise_if_not(len(input_series) >= self.input_length,
                          "'input_series' must at least be as long as 'self.input_length'", logger)
             input_sequence = input_series.values()[-self.input_length:]
-            super().fit(input_series, self.target_indices)
+            super().fit(input_series)
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
         return pred_in
