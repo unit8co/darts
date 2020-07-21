@@ -4,10 +4,7 @@
 
 from darts import TimeSeries, SeasonalityMode
 from darts.models import Theta, FourTheta
-# from FourTheta import FourTheta
-from darts.backtesting import backtest_gridsearch
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
-from darts.metrics import mae
 from darts.utils import _build_tqdm_iterator
 
 from scipy.stats import boxcox, boxcox_normplot
@@ -60,23 +57,6 @@ def train_theta_boxcox(ts, seasonality, n):
 
 
 def train_4theta(ts, n):
-    # season_mode = ["additive", "multiplicative"]
-    # model_mode = ["additive", "multiplicative"]
-    # drift_mode = ["linear", "exponential"]
-    # if (ts.values() <= 0).any():
-    #     drift_mode = ["linear"]
-    #     model_mode = ["additive"]
-    #     season_mode = ["additive"]
-    # fourtheta = backtest_gridsearch(FourTheta,
-    #                                 {"theta": [1, 2, 3],
-    #                                  "mode": model_mode,
-    #                                  "season_mode": season_mode,
-    #                                  "trend": drift_mode,
-    #                                  "seasonality_period": [m]
-    #                                  },
-    #                                 train,
-    #                                 use_fitted_values=True,
-    #                                 metric=mae)
     fourtheta = FourTheta.select_best_model(ts, [1, 2, 3], m)
     fourtheta.fit(ts)
     forecast = fourtheta.predict(n)

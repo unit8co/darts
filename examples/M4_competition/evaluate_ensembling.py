@@ -7,8 +7,6 @@ from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, 
 from darts.models.forecasting_model import ForecastingModel
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils.timeseries_generation import constant_timeseries
-from darts.backtesting import backtest_gridsearch
-from darts.metrics import mae
 from darts.utils import _build_tqdm_iterator
 
 import numpy as np
@@ -154,23 +152,6 @@ if __name__ == "__main__":
             holt = ExponentialSmoothing(seasonal=None, damped=False, trend='additive', seasonal_periods=m)
             damp = ExponentialSmoothing(seasonal=None, damped=True, trend='additive', seasonal_periods=m)
 
-            # season_mode = ["additive", "multiplicative"]
-            # model_mode = ["additive", "multiplicative"]
-            # drift_mode = ["linear", "exponential"]
-            # if (train.values() <= 0).any():
-            #     drift_mode = ["linear"]
-            #     model_mode = ["additive"]
-            #     season_mode = ["additive"]
-            # fourtheta = backtest_gridsearch(FourTheta,
-            #                                 {"theta": [1, 2, 3],
-            #                                  "mode": model_mode,
-            #                                  "season_mode": season_mode,
-            #                                  "trend": drift_mode,
-            #                                  "seasonality_period": [m]
-            #                                  },
-            #                                 train,
-            #                                 val_series=train,
-            #                                 metric=mae)
             fourtheta = FourTheta.select_best_model(train, [1, 2, 3], m)
             theta = Theta(theta=0, season_mode=SeasonalityMode.MULTIPLICATIVE, seasonality_period=m)
 
