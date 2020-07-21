@@ -38,7 +38,8 @@ def _get_runs_folder(work_dir, model_name):
 class _TimeSeriesSequentialDataset(Dataset):
 
     def __init__(self,
-                 series: TimeSeries,
+                 covariate_series: TimeSeries,
+                 target_series: TimeSeries,
                  data_length: int = 1,
                  target_length: int = 1):
         """
@@ -49,19 +50,22 @@ class _TimeSeriesSequentialDataset(Dataset):
 
         Parameters
         ----------
-        series
+        covariate_series
             The time series to be included in the dataset.
+        target_series
+            The time series used has target.
         data_length
             The length of the training sub-sequences.
         target_length
             The length of the target sub-sequences, starting at the end of the training sub-sequence.
         """
 
-        self.series_values = series.values()
+        self.covariate_series_values = covariate_series.values()
+        self.target_series_values = target_series.values()
 
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
-        self.len_series = len(series)
-        self.data_length = len(series) - 1 if data_length is None else data_length
+        self.len_series = len(covariate_series)
+        self.data_length = len(covariate_series) - 1 if data_length is None else data_length
         self.target_length = target_length
 
         raise_if_not(self.data_length > 0,
@@ -77,15 +81,16 @@ class _TimeSeriesSequentialDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Cast to PyTorch tensors on the right device in advance
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
-        data = self.series_values[idx:idx + self.data_length]
-        target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
+        data = self.covariate_series_values[idx:idx + self.data_length]
+        target = self.target_series_values[idx + self.data_length:idx + self.data_length + self.target_length]
         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
 class _TimeSeriesShiftedDataset(Dataset):
 
     def __init__(self,
-                 series: TimeSeries,
+                 covariate_series: TimeSeries,
+                 target_series: TimeSeries,
                  length: int = 3,
                  shift: int = 1):
         """
@@ -97,17 +102,20 @@ class _TimeSeriesShiftedDataset(Dataset):
 
         Parameters
         ----------
-        series
+        covariate_series
             The time series to be included in the dataset.
+        target_series
+            The time series used has target.
         length
             The length of the training and target sub-sequences.
         shift
             The number of positions that the target sequence is shifted forward compared to the training sequence.
         """
 
-        self.series_values = series.values()
-        self.len_series = len(series)
-        self.length = len(series) - 1 if length is None else length
+        self.covariate_series_values = covariate_series.values()
+        self.target_series_values = target_series.values()
+        self.len_series = len(covariate_series)
+        self.length = len(covariate_series) - 1 if length is None else length
         self.shift = shift
 
         raise_if_not(self.length > 0,
@@ -123,8 +131,8 @@ class _TimeSeriesShiftedDataset(Dataset):
 
     def __getitem__(self, index):
         idx = index % self.__len__()
-        data = self.series_values[idx:idx + self.length]
-        target = self.series_values[idx + self.shift:idx + self.length + self.shift]
+        data = self.covariate_series_values[idx:idx + self.length]
+        target = self.target_series_values[idx + self.shift:idx + self.length + self.shift]
         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
