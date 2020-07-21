@@ -16,7 +16,8 @@ task build {
 // docker & docker run
 docker {
     name "unit8/darts"
-    tags version, "latest"
+    //it will also automatically create image with tag 'latest'
+    tag version, "unit8/darts:${version}"
     dockerfile file("${project.rootDir}/Dockerfile")
     // needed files for docker and to build library
     files "README.md", "setup.py", "setup.cfg"
