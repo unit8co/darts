@@ -11,7 +11,6 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import Optional
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
 from pmdarima import AutoARIMA as PmdAutoARIMA
@@ -45,8 +44,8 @@ class ARIMA(UnivariateForecastingModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         series = self.training_series
         m = staARIMA(series.values(),
                      order=(self.p, self.d, self.q)) if self.d > 0 else staARMA(series.values(), order=(self.p, self.q))
@@ -90,8 +89,8 @@ class AutoARIMA(UnivariateForecastingModel):
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         series = self.training_series
         self.model.fit(series.values())
 
