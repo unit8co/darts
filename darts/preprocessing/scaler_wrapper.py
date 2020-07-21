@@ -2,6 +2,8 @@
 Scaler wrapper
 --------------
 """
+from darts.preprocessing.base_transformer import BaseTransformer
+
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
 from sklearn.preprocessing import MinMaxScaler
@@ -9,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 logger = get_logger(__name__)
 
 
-class ScalerWrapper:
+class ScalerWrapper(BaseTransformer[TimeSeries]):
     def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1))):
         """
         Generic wrapper class for using transformers/scalers that implement `fit()`, `transform()` and
@@ -23,18 +25,27 @@ class ScalerWrapper:
             Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this
             will scale all the values of a time series between 0 and 1.
         """
+        super().__init__(
+            validator_fns=[(lambda x: self._is_fit_called(), 'fit() must be called before transform()')],
+            fittable=True,
+            reversible=True
+        )
+
         def _raise():
             raise_log(ValueError(
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
-                or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503 
+                or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503
             _raise()
 
         self.transformer = scaler
         self.train_series = None
         self._fit_called = False
+
+    def _is_fit_called(self) -> bool:
+        return self._fit_called
 
     def fit(self, series: TimeSeries) -> 'ScalerWrapper':
         """ Fits this transformer/scaler to the provided time series data
@@ -49,7 +60,7 @@ class ScalerWrapper:
         self._fit_called = True
         return self
 
-    def transform(self, series: TimeSeries) -> TimeSeries:
+    def transform(self, series: TimeSeries, *args, **kwargs) -> TimeSeries:
         """
         Returns a new time series, transformed with this (fitted) transformer.
         This does not handle series with confidence intervals - the intervals are discarded.
@@ -69,21 +80,7 @@ class ScalerWrapper:
                                                 self.transformer.transform(series.values().
                                                                            reshape((-1, series.width))))
 
-    def fit_transform(self, series: TimeSeries) -> TimeSeries:
-        """
-        Applies `fit()` and `transform()` in one go.
-
-        Parameters
-        ----------
-        series
-            The time series to fit the transformer and to transform
-        Returns
-        -------
-            A new time series, transformed with this (fitted) transformer.
-        """
-        return self.fit(series).transform(series)
-
-    def inverse_transform(self, series: TimeSeries) -> TimeSeries:
+    def inverse_transform(self, series: TimeSeries, *args, **kwargs) -> TimeSeries:
         """
         Performs the inverse transformation on a time series
 

@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from ..preprocessing import ScalerWrapper
-from ..utils import timeseries_generation as tg
+from darts.preprocessing import ScalerWrapper
+from darts.utils import timeseries_generation as tg
 
 
 class TransformerTestCase(unittest.TestCase):
@@ -22,7 +22,7 @@ class TransformerTestCase(unittest.TestCase):
         transformer3 = ScalerWrapper(MinMaxScaler(feature_range=(0, 2)))
         transformer4 = ScalerWrapper(StandardScaler())
 
-        series2_tr3 = transformer3.fit_transform(self.series2)
+        series2_tr3 = transformer3(self.series2, fit=True)
         series2_tr4 = transformer4.fit_transform(self.series2)
 
         # should comply with scaling constraints
