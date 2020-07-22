@@ -882,11 +882,10 @@ class TimeSeries:
 
 
     def map(self,
-            fn: Callable[[float], float],
+            fn: Callable[[np.number], np.number],
             cols: Optional[Union[List[int], int]] = None) -> 'TimeSeries':
-        #TODO check if typing is correct
         """
-        Applies the function fn to all values in this TimeSeries, or, to only those
+        Applies the function fn elementwise to all values in this TimeSeries, or, to only those
         values in the columns specified by the optional argument cols. Returns a new
         TimeSeries instance.
         
@@ -902,18 +901,17 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries instance
         """
-        new_dataframe = self.pd_dataframe() 
-        
         if cols is None:
-            new_dataframe = new_dataframe.applymap(fn)
+            new_dataframe = self.pd_dataframe().applymap(fn)
         else:
             if isinstance(cols, int):
                 cols = [cols]
             raise_if_not(all([0 <= index and index < self.width for index in cols]),
                      'The indices in `cols` must be between 0 and the number of components of the current '
                      'TimeSeries instance - 1, {}'.format(self.width - 1), logger)
+            new_dataframe = self.pd_dataframe() 
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
-        return TimeSeries(new_dataframe, self.freq())
+        return TimeSeries(new_dataframe, self.freq_str())
 
     @staticmethod
     def _combine_or_none(df_a: Optional[pd.DataFrame],
