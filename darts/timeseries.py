@@ -880,6 +880,41 @@ class TimeSeries:
         index = self.time_index()
         return index[0] <= ts <= index[-1]
 
+
+    def map(self,
+            fn: Callable[[float], float],
+            cols: Optional[Union[List[int], int]] = None) -> 'TimeSeries':
+        #TODO check if typing is correct
+        """
+        Applies the function fn to all values in this TimeSeries, or, to only those
+        values in the columns specified by the optional argument cols. Returns a new
+        TimeSeries instance.
+        
+        Parameters
+        ----------
+        fn
+            A numerical function
+        cols
+            Optionally, an integer or list of integers specifying the column(s) onto which fn should be applied
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance
+        """
+
+        #TODO do we need any checks, or raise any potential errors?
+
+        new_dataframe = self.pd_dataframe() 
+        
+        if cols is None:
+            new_dataframe = new_dataframe.applymap(fn)
+        else:
+            if isinstance(cols, int):
+                cols = [cols]
+            new_dataframe[cols] = new_dataframe[cols].applymap(fn)
+        return TimeSeries(new_dataframe, self.freq())
+
     @staticmethod
     def _combine_or_none(df_a: Optional[pd.DataFrame],
                          df_b: Optional[pd.DataFrame],
