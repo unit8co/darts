@@ -5,7 +5,7 @@ Additional util functions
 
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger
-from typing import List
+from typing import List, Callable, TypeVar
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
@@ -78,3 +78,41 @@ def _build_tqdm_iterator(iterable, verbose):
     else:
         iterator = iterable
     return iterator
+
+
+# Types for sanity checks decorator
+A = TypeVar('A')
+B = TypeVar('B')
+T = TypeVar('T')
+
+
+def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B], T]], Callable[[A, B], T]]:
+    """ Decorator allowing to specify some sanity check method(s) to be used on a class method.
+
+    Parameters
+    ----------
+    *sanity_check_methods
+        one or more sanity check methods that will be called with all the parameter of the decorated method.
+
+    Returns
+    -------
+    A Callable corresponding to the decorated method.
+
+    Examples
+    --------
+    class Model:
+        def _a_sanity_check(self, *args, **kwargs):
+            raise_if_not(kwargs['b'] == kwargs['c'], 'b must equal c', logger)
+
+        @_with_sanity_checks("_a_sanity_check")
+        def fit(self, a, b=0, c=0):
+            # at this point we can safely assume that 'b' and 'c' are equal...
+            ...
+    """
+    def decorator(method_to_sanitize: Callable[[A, B], T]) -> Callable[[A, B], T]:
+        def sanitized_method(self, *args: A, **kwargs: B) -> T:
+            for sanity_check_method in sanity_check_methods:
+                getattr(self, sanity_check_method)(*args, **kwargs)
+            return method_to_sanitize(self, *args, **kwargs)
+        return sanitized_method
+    return decorator
