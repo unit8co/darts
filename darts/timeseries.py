@@ -902,9 +902,6 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries instance
         """
-
-        #TODO do we need any checks, or raise any potential errors?
-
         new_dataframe = self.pd_dataframe() 
         
         if cols is None:
@@ -912,6 +909,9 @@ class TimeSeries:
         else:
             if isinstance(cols, int):
                 cols = [cols]
+            raise_if_not(all([0 <= index and index < self.width for index in cols]),
+                     'The indices in `cols` must be between 0 and the number of components of the current '
+                     'TimeSeries instance - 1, {}'.format(self.width - 1), logger)
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
         return TimeSeries(new_dataframe, self.freq())
 
