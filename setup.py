@@ -33,6 +33,9 @@ setup(
       license='Apache License 2.0',
       packages=find_packages(),
       install_requires=read_requirements('requirements/main.txt'),
+      package_data={
+          'darts': ['py.typed'],
+      },
       zip_safe=False,
       python_requires='>=3.6',
       classifiers=[
