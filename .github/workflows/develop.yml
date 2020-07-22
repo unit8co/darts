@@ -3,7 +3,7 @@ name: darts develop workflow
 on:
   push:
     branches-ignore:
-      - develop
+      - master
 
 jobs:
   tests:
