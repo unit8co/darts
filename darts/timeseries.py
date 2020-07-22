@@ -902,7 +902,7 @@ class TimeSeries:
             A new TimeSeries instance
         """
         if cols is None:
-            new_dataframe = self.pd_dataframe().applymap(fn)
+            new_dataframe = self._df.applymap(fn)
         else:
             if isinstance(cols, int):
                 cols = [cols]
