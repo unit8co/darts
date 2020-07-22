@@ -9,14 +9,15 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, List, Tuple
+from typing import Optional, Tuple, Union, Dict, Any
+from types import SimpleNamespace
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not, raise_if
-from ..utils import _build_tqdm_iterator
+from ..logging import get_logger, raise_log, raise_if_not
+from ..utils import _build_tqdm_iterator, _with_sanity_checks
 
 logger = get_logger(__name__)
 
@@ -96,84 +97,48 @@ class ForecastingModel(ABC):
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
 
-    def _backtest_sanity_checks(self, series: TimeSeries, start: pd.Timestamp, forecast_horizon: int):
-        """Perform sanity checks on backtest inputs.
+    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Sanity checks for the backtest function
 
         Parameters
         ----------
-        series
-            The univariate time series on which to backtest
-        start
-            The first prediction time, at which a prediction is computed for a future time
-        forecast_horizon
-            The forecast horizon for the point predictions
+        args
+            The args parameter(s) provided to the backtest function.
+        kwargs
+            The kwargs paramter(s) provided to the backtest function.
 
         Raises
         ------
         ValueError
-            if an input doesn't pass sanity checks.
+            when a check on the parameter does not pass.
         """
-        raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
-        raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
-        raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+        covariate_series = args[0]
+        n = SimpleNamespace(**kwargs)
+        if n.target_series is None:
+            target_series = covariate_series
+        raise_if_not(covariate_series.time_index == target_series.time_index, "the target and covariate series must "
+                     "have the same time indices.")
+        raise_if_not(n.start in covariate_series, '`start` timestamp is not in the `series`.', logger)
+        raise_if_not(n.start != covariate_series.end_time(), '`start` timestamp is the last timestamp of `series`',
+                     logger)
+        raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    def _backtest_model_specific_sanity_checks(self, retrain: bool):
-        """Add model specific sanity check(s) on the backtest inputs.
+    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Method to be overriden in subclass for model specific sanity checks"""
+        pass
 
-        Parameters
-        ----------
-        retrain
-            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `model` argument support setting `retrain` to `False`.
-
-        Raises
-        ------
-        ValueError
-            if an input doesn't pass sanity checks.
-        """
-        raise_if(not retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
-
-    def _backtest_build_fit_and_predict_kwargs(self,
-                                               target_indices: Optional[List[int]],
-                                               component_index: Optional[int],
-                                               use_full_output_length: bool):
-        """ Adapt fit and predict kwargs depending on the model used for backtesting
-
-        Parameters
-        ----------
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
-
-        Returns
-        -------
-        fit_kwargs
-            kwargs passed to the fit method during backtesting.
-        predict kwargs
-            kwargs passed to the predict method during backtesting.
-        """
-        fit_kwargs = {}
-        predict_kwargs = {}
-        fit_kwargs['target_indices'] = target_indices
-        return fit_kwargs, predict_kwargs
-
+    @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
     def backtest(self,
-                 series: TimeSeries,
-                 start: pd.Timestamp,
-                 forecast_horizon: int,
-                 target_indices: Optional[List[int]] = None,
-                 component_index: Optional[int] = None,
-                 use_full_output_length: bool = True,
+                 covariate_series: TimeSeries,
+                 target_series: Optional[TimeSeries] = None,
+                 start: Union[pd.Timestamp, float, int] = 0.5,
+                 forecast_horizon: int = 1,
                  stride: int = 1,
                  retrain: bool = True,
                  trim_to_series: bool = True,
-                 verbose: bool = False) -> Tuple[TimeSeries, TimeSeries]:
+                 verbose: bool = False,
+                 fit_kwargs: Optional[Dict[str, Any]] = None,
+                 predict_kwargs: Optional[Dict[str, Any]] = None) -> Tuple[TimeSeries, TimeSeries]:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
@@ -190,21 +155,14 @@ class ForecastingModel(ABC):
 
         Parameters
         ----------
-        series
-            The univariate time series on which to backtest
+        covariate_series
+            The covariate time series on which to backtest
+        target_series
+            The target time series on which to backtest
         start
             The first prediction time, at which a prediction is computed for a future time
         forecast_horizon
-            The forecast horizon for the point predictions
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
+            The forecast horizon for the point prediction
         stride
             The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
         retrain
@@ -214,31 +172,28 @@ class ForecastingModel(ABC):
             Whether the predicted series has the end trimmed to match the end of the main series
         verbose
             Whether to print progress
+        fit_kwargs
+            Additional arguments passed to the fit method during backtesting
+        predict_kwargs
+            Additional arguments passed to the predict method during backtesting
 
         Returns
         -------
         forecast
-            A time series containing the forecast values for `series`, when successively applying the specified model
-            with the specified forecast horizon.
+            A time series containing the forecast values for `target_series`, when successively applying the specified
+            model with the specified forecast horizon.
         residuals
-            Difference between the `forecast` and the actual `series` provided.
+            Difference between the `forecast` and the actual `target_series` provided.
         """
-        # sanity checks
-        self._backtest_sanity_checks(series, start, forecast_horizon)  # general sanity check def in forecasting model
-        self._backtest_model_specific_sanity_checks(retrain)  # model specific santiy check overriden in models
-
-        # specify the correct fit and predict keyword arguments depending on the model
-        fit_kwargs, predict_kwargs = self._backtest_build_fit_and_predict_kwargs(target_indices,
-                                                                                 component_index,
-                                                                                 use_full_output_length)
-
         # build the prediction times in advance (to be able to use tqdm)
-        last_pred_time = (
-            series.time_index()[-forecast_horizon - stride] if trim_to_series else series.time_index()[-stride - 1]
-        )
+        if trim_to_series:
+            last_pred_time = covariate_series.time_index()[-forecast_horizon - stride]
+        else:
+            last_pred_time = covariate_series.time_index()[-stride - 1]
+
         pred_times = [start]
         while pred_times[-1] <= last_pred_time:
-            pred_times.append(pred_times[-1] + series.freq() * stride)
+            pred_times.append(pred_times[-1] + covariate_series.freq() * stride)
 
         # iterate and predict pointwise
         values = []
@@ -246,13 +201,14 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        if ((not retrain) and (not self._fit_called)):
-            self.fit(series.drop_after(start), verbose=verbose, **fit_kwargs)
+        if not retrain:
+            self.fit(covariate_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
-            train = series.drop_after(pred_time)  # build the training series
+            train = covariate_series.drop_after(pred_time)  # build the training series
+            target = target_series.drop_after(pred_time)  # build the target series
             if (retrain):
-                self.fit(train, **fit_kwargs)
+                self.fit(train, target)
                 pred = self.predict(forecast_horizon, **predict_kwargs)
             else:
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
@@ -262,198 +218,10 @@ class ForecastingModel(ABC):
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
         # compute the residuals between forecast and series
-        series_trimmed = series.slice_intersect(forecast)
-        residuals = series_trimmed - forecast
+        target_series_trimmed = target_series.slice_intersect(forecast)
+        residuals = target_series_trimmed - forecast
 
         return forecast, residuals
-
-    def _backtest_sanity_checks(self, series: TimeSeries, start: pd.Timestamp, forcast_horizon: int):
-        """Perform sanity checks on backtest inputs.
-
-        Parameters
-        ----------
-        series
-            The univariate time series on which to backtest
-        start
-            The first prediction time, at which a prediction is computed for a future time
-        forcast_horizon
-            The forecast horizon for the point predictions
-
-        Raises
-        ------
-        ValueError
-            if an input doesn't pass sanity checks.
-        """
-        raise_if_not(start in series, '`start` timestamp is not in the `series`.', logger)
-        raise_if_not(start != series.end_time(), '`start` timestamp is the last timestamp of `series`', logger)
-        raise_if_not(forcast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
-
-    def _backtest_model_specfic_sanity_checks(self, retrain: bool):
-        """Add model specific sanity check(s) on the backtest inputs.
-
-        Parameters
-        ----------
-        retrain
-            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `model` argument support setting `retrain` to `False`.
-
-        Raises
-        ------
-        ValueError
-            if an input doesn't pass sanity checks.
-        """
-        raise_if(not retrain, "Only 'TorchForecastingModel' instances support the option 'retrain=False'.", logger)
-
-    def _backtest_build_fit_and_predict_kwargs(self,
-                                               target_indices: Optional[List[int]],
-                                               component_index: Optional[int],
-                                               use_full_output_length: bool):
-        """ Adapt fit and predict kwargs depending on the model used for backtesting
-
-        Parameters
-        ----------
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
-
-        Returns
-        -------
-        fit_kwargs
-            kwargs passed to the fit method during backtesting.
-        predict kwargs
-            kwargs passed to the predict method during backtesting.
-        """
-        fit_kwargs = {}
-        predict_kwargs = {}
-        fit_kwargs['target_indices'] = target_indices
-        return fit_kwargs, predict_kwargs
-
-    def backtest(self,
-                 series: TimeSeries,
-                 start: pd.Timestamp,
-                 forcast_horizon: int,
-                 target_indices: Optional[List[int]] = None,
-                 component_index: Optional[int] = None,
-                 use_full_output_length: bool = True,
-                 stride: int = 1,
-                 retrain: bool = True,
-                 trim_to_series: bool = True,
-                 verbose: bool = False) -> TimeSeries:
-        r""" Retrain and forcast values pointwise with an expanding training window over `series`.
-
-        To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
-        training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
-        set forward by one time step. The resulting predictions are then returned.
-
-        Unless `retrain` is set to False, this always re-trains the models on the entire available history,
-        corresponding an expending window strategy.
-
-        If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances),
-        the model will only be trained only on the initial training window (up to `start` time stamp), and only if it
-        has not been trained before. Then, at every iteration, the newly expanded 'training sequence' will be fed to the
-        model to produce the new output.
-
-        .. code-block:: none
-
-            iteration 1:
-
-                 x            o
-               /   \\         ^
-             x       x - x ...|
-            |_________|_______|
-             training  forcast
-              window   horizon
-
-            iteration 2:
-
-                 x            o
-               /   \\           \\
-             x       x - x ...     -  - o
-            |_____________|_______|_____^
-               training    forcast  stride
-                window     horizon
-
-            ...
-
-            legend:
-                - x: point from provided `series`.
-                - o: point forcasted by the model trained on the `training_window` data.
-
-        Parameters
-        ----------
-        series
-            The univariate time series on which to backtest
-        start
-            The first prediction time, at which a prediction is computed for a future time
-        forcast_horizon
-            The forecast horizon for the point predictions
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
-        stride
-            The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
-        retrain
-            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `model` argument support setting `retrain` to `False`.
-        trim_to_series
-            Whether the predicted series has the end trimmed to match the end of the main series
-        verbose
-            Whether to print progress
-
-        Returns
-        -------
-        TimeSeries
-            A time series containing the forecast values for `series`, when successively applying the specified model
-            with the specified forecast horizon.
-        """
-        # sanity checks
-        self._backtest_sanity_checks(series, start, forcast_horizon)
-        self._backtest_model_specfic_sanity_checks(retrain)
-
-        # specify the correct fit and predict keyword arguments depending on the model
-        fit_kwargs, predict_kwargs = self._backtest_build_fit_and_predict_kwargs(target_indices,
-                                                                                 component_index,
-                                                                                 use_full_output_length)
-
-        # build the prediction times in advance (to be able to use tqdm)
-        last_pred_time = (
-            series.time_index()[-forcast_horizon - stride] if trim_to_series else series.time_index()[-stride - 1]
-        )
-        pred_times = [start]
-        while pred_times[-1] <= last_pred_time:
-            pred_times.append(pred_times[-1] + series.freq() * stride)
-
-        # iterate and predict pointwise
-        values = []
-        times = []
-
-        iterator = _build_tqdm_iterator(pred_times, verbose)
-
-        if ((not retrain) and (not self._fit_called)):
-            self.fit(series.drop_after(start), verbose=verbose, **fit_kwargs)
-
-        for pred_time in iterator:
-            train = series.drop_after(pred_time)  # build the training series
-            if (retrain):
-                self.fit(train, **fit_kwargs)
-                pred = self.predict(forcast_horizon, **predict_kwargs)
-            else:
-                pred = self.predict(forcast_horizon, input_series=train, **predict_kwargs)
-            values.append(pred.values()[-1])  # store the N-th point
-            times.append(pred.end_time())  # store the N-th timestamp
-        return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
 
 class UnivariateForecastingModel(ForecastingModel):
@@ -471,66 +239,6 @@ class UnivariateForecastingModel(ForecastingModel):
         """
         series._assert_univariate()
         super().fit(series)
-
-    def _backtest_build_fit_and_predict_kwargs(self,
-                                               target_indices: Optional[List[int]],
-                                               component_index: Optional[int],
-                                               use_full_output_length: bool):
-        """ Adapt fit and predict kwargs depending on the model used for backtesting
-
-        Parameters
-        ----------
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
-
-        Returns
-        -------
-        fit_kwargs
-            kwargs passed to the fit method during backtesting.
-        predict kwargs
-            kwargs passed to the predict method during backtesting.
-        """
-        fit_kwargs = {}
-        predict_kwargs = {}
-        fit_kwargs['component_index'] = component_index
-        return fit_kwargs, predict_kwargs
-
-    def _backtest_build_fit_and_predict_kwargs(self,
-                                               target_indices: Optional[List[int]],
-                                               component_index: Optional[int],
-                                               use_full_output_length: bool):
-        """ Adapt fit and predict kwargs depending on the model used for backtesting
-
-        Parameters
-        ----------
-        target_indices
-            In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-            a list of indices of components of `series` to be predicted by `model`.
-        component_index
-            In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-            an integer index of the component of `series` to be predicted by `model`.
-        use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
-
-        Returns
-        -------
-        fit_kwargs
-            kwargs passed to the fit method during backtesting.
-        predict kwargs
-            kwargs passed to the predict method during backtesting.
-        """
-        fit_kwargs = {}
-        predict_kwargs = {}
-        fit_kwargs['component_index'] = component_index
-        return fit_kwargs, predict_kwargs
 
 
 class MultivariateForecastingModel(ForecastingModel):
