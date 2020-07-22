@@ -268,7 +268,7 @@ def forecasting_residuals(model: ForecastingModel,
     first_index = series.time_index()[model.min_train_series_length]
 
     # compute fitted values
-    p = backtest_forecasting(series, model, first_index, fcast_horizon_n, trim_to_series=True, verbose=verbose)
+    p = backtest_forecasting(series, model, first_index, fcast_horizon_n, True, verbose=verbose)
 
     # compute residuals
     series_trimmed = series.slice_intersect(p)
