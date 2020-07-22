@@ -3,6 +3,7 @@ name: darts develop workflow
 on:
   push:
     branches-ignore:
+      - master
       - develop
 
 jobs:
@@ -70,3 +71,4 @@ jobs:
       - name: "6. Build docs"
         run: |
           ./gradlew buildDocs
+
