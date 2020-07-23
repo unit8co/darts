@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
@@ -34,6 +34,20 @@ class ForecastingModel(ABC):
         # state
         self._fit_called = False
 
+    def _make_fitable_series(self,
+                             covariate_series: TimeSeries,
+                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
+        """Perform checks and returns ready to be used covariate and target series"""
+        if target_series is None:
+            target_series = covariate_series
+
+        # general checks on covariate / target series
+        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
+                     "timeseries must have same time indices.")
+        raise_if_not(len(covariate_series) >= self.min_train_series_length,
+                     "Train series only contains {} elements but {} model requires at least {} entries"
+                     .format(len(covariate_series), str(self), self.min_train_series_length))
+
     @abstractmethod
     def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the model on the provided series
@@ -45,15 +59,7 @@ class ForecastingModel(ABC):
         target_series
             target time series on which to fit the model
         """
-        if target_series is None:
-            target_series = covariate_series
-
-        # general checks on covariate / target series
-        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
-                     "timeseries must have same time indices.")
-        raise_if_not(len(covariate_series) >= self.min_train_series_length,
-                     "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(covariate_series), str(self), self.min_train_series_length))
+        covariate_series, target_series = self._make_fitable_series(covariate_series, target_series)
 
         self.covariate_series = covariate_series
         self.target_series = target_series
