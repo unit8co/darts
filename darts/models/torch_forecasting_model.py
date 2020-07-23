@@ -13,12 +13,12 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..logging import raise_if_not, get_logger, raise_log
+from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import MultivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
@@ -267,7 +267,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
     def fit(self,
             covariate_series: TimeSeries,
             target_series: Optional[TimeSeries] = None,
-            val_series: Optional[Tuple[TimeSeries]] = None,
+            val_covariate_series: Optional[TimeSeries] = None,
+            val_target_series: Optional[TimeSeries] = None,
             verbose: bool = False) -> None:
         """ Fit method for torch modules
 
@@ -278,8 +279,11 @@ class TorchForecastingModel(MultivariateForecastingModel):
         target_series
             A series of target (dependent) value(s) predicted using the covariate_series if None specified, use the
             covariate series as target.
-        val_series
-            Optionally, 2 validation time series (covariate and target), which will be used to compute the validation
+        val_covariate_series
+            Optionally, a validation covariate time series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
+        val_target_series
+            Optionally, a validation target time series, which will be used to compute the validation
             loss throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
@@ -287,26 +291,22 @@ class TorchForecastingModel(MultivariateForecastingModel):
             A list of integers indicating which component(s) of the time series should be used
             as targets for forecasting.
         """
-        raise_if_not(covariate_series.width == self.input_size, "The number of components of the covariate series must "
-                     "be equal to the `input_size` defined when instantiating the current model.", logger)
-
-        if target_series is None:
-            target_series = covariate_series
-
         super().fit(covariate_series, target_series)
 
-        raise_if_not(target_series.width == self.output_size, "The number of components in the target series must be "
-                     "equal to the `output_size` defined when instantiating the current model.", logger)
+        raise_if_not(self.covariate_series.width == self.input_size, "The number of components of the covariate series "
+                     "must be equal to the `input_size` defined when instantiating the current model.", logger)
+        raise_if_not(self.target_series.width == self.output_size, "The number of components in the target series must "
+                     "be equal to the `output_size` defined when instantiating the current model.", logger)
 
-        if val_series is not None:
-            raise_if_not(len(val_series) == 2, "val_series must contain 2 elements (covariates, targets)")
-            val_covariate_series, val_target_series = val_series
-            raise_if_not(covariate_series.width == val_target_series.width, "covariate_series must have the same number"
-                         " of component(s) as val_covariate_series.", logger)
-            raise_if_not(target_series.width == val_target_series.width, "target_series must have the same number of"
-                         " component(s) as val_target_series.", logger)
-            raise_if_not(len(val_covariate_series) == len(val_target_series), "val_covariate_series must have the same"
-                         " number of value as val_target_series.")
+        # perform checks on the validation series
+        raise_if(val_covariate_series is None and val_target_series is not None, "`val_target_series` can not be "
+                 "specified without a `val_covariate_series`.")
+        if val_covariate_series is not None:
+            val_covariate_series, val_target_series = self._make_fitable_series(val_covariate_series, val_target_series)
+            raise_if_not(self.covariate_series.width == val_covariate_series.width, "covariate_series must have the "
+                         "same number of component(s) as val_covariate_series.", logger)
+            raise_if_not(self.target_series.width == val_target_series.width, "target_series must have the same number "
+                         "of component(s) as val_target_series.", logger)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
@@ -320,8 +320,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      logger)
 
         # Prepare validation data
-        val_loader = None if val_series is None else self._prepare_validation_data(val_covariate_series,
-                                                                                   val_target_series)
+        val_loader = None if val_covariate_series is None else self._prepare_validation_data(val_covariate_series,
+                                                                                             val_target_series)
 
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer()
@@ -372,10 +372,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         super().predict(n)
 
-        raise_if_not(input_series is None or input_series.width == self.training_series.width,
+        raise_if_not(input_series is None or input_series.width == self.covariate_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
-        raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
+        raise_if_not(use_full_output_length or self.covariate_series.width == 1, "Please set 'use_full_output_length'"
                      " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
                      "TimeSeries instance as input.", logger)
 
@@ -547,7 +547,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
     def _create_predict_input(self, input_series):
         if input_series is None:
-            input_sequence = self.training_series.values()[-self.input_length:]
+            input_sequence = self.covariate_series.values()[-self.input_length:]
         else:
             raise_if_not(len(input_series) >= self.input_length,
                          "'input_series' must at least be as long as 'self.input_length'", logger)
@@ -561,7 +561,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         test_out = []
         num_iterations = int(math.ceil(n / self.output_length))
         for i in range(num_iterations):
-            raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
+            raise_if_not(self.covariate_series.width == 1 or num_iterations == 1, "Only univariate time series"
                          " support predictions with n > output_length", logger)
             out = self.model(pred_in)
             if (num_iterations > 1):
