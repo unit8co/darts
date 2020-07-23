@@ -112,12 +112,17 @@ class ForecastingModel(ABC):
         ValueError
             when a check on the parameter does not pass.
         """
+        # parse args and kwargs
         covariate_series = args[0]
         n = SimpleNamespace(**kwargs)
+
+        # check target and covariate series
         if not hasattr(n, 'target_series'):
             target_series = covariate_series
         raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "the target and covariate series"
                      " must have the same time indices.")
+
+        # check forecast horizon‚
         if hasattr(n, 'forecast_horizon'):
             raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
@@ -199,7 +204,7 @@ class ForecastingModel(ABC):
         if target_series is None:
             target_series = covariate_series
 
-        # prepare the start parameter
+        # prepare the start parameter -> pd.Timestamp
         if isinstance(start, float):
             start_index = int((len(covariate_series.time_index()) - 1) * start)
             start = covariate_series.time_index()[start_index]
