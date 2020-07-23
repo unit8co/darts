@@ -885,8 +885,8 @@ class TimeSeries:
             fn: Callable[[np.number], np.number],
             cols: Optional[Union[List[int], int]] = None) -> 'TimeSeries':
         """
-        Applies the function fn elementwise to all values in this TimeSeries, or, to only those
-        values in the columns specified by the optional argument cols. Returns a new
+        Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
+        values in the columns specified by the optional argument `cols`. Returns a new
         TimeSeries instance.
         
         Parameters
