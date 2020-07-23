@@ -9,6 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
+from typing import Optional
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
@@ -34,18 +35,28 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the model on the provided series
 
         Parameters
         ----------
-        series
-            the training time series on which to fit the model
+        covariate_series
+            covariate time series on which to fit the model
+        target_series
+            target time series on which to fit the model
         """
-        raise_if_not(len(series) >= self.min_train_series_length,
+        if target_series is None:
+            target_series = covariate_series
+
+        # general checks on covariate / target series
+        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
+                     "timeseries must have same time indices.")
+        raise_if_not(len(covariate_series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(series), str(self), self.min_train_series_length))
-        self.training_series = series
+                     .format(len(covariate_series), str(self), self.min_train_series_length))
+
+        self.covariate_series = covariate_series
+        self.target_series = target_series
         self._fit_called = True
 
     @abstractmethod
@@ -100,16 +111,20 @@ class UnivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the univariate model on selected univariate series.
 
         Parameters
         ----------
-        series
-            A **univariate** training time series on which to fit the model.
+        covariate_series
+            A **univariate** covariate timeseries on which to fit the model.
+        target_series
+            A **univariate** target timeseries on which to fit the model.
         """
-        series._assert_univariate()
-        super().fit(series)
+        covariate_series._assert_univariate()
+        if target_series is not None:
+            target_series._assert_univariate()
+        super().fit(covariate_series, target_series)
 
 
 class MultivariateForecastingModel(ForecastingModel):
@@ -117,7 +132,7 @@ class MultivariateForecastingModel(ForecastingModel):
     """
 
     @abstractmethod
-    def fit(self, covariate_series: TimeSeries, target_series: TimeSeries) -> None:
+    def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
 
         Parameters
@@ -125,8 +140,6 @@ class MultivariateForecastingModel(ForecastingModel):
         covariate_series
             The training time series on which to fit the model (can be multivariate or univariate).
         target_series
-            The target values used ad dependent variables when training the model
+            The target values used as dependent variables when training the model
         """
-        raise_if_not(len(covariate_series) == len(target_series), "covariate_series and target_series musth have same "
-                     "length.")
-        super().fit(covariate_series)
+        super().fit(covariate_series, target_series)
