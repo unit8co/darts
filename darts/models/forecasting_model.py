@@ -116,20 +116,22 @@ class ForecastingModel(ABC):
         n = SimpleNamespace(**kwargs)
         if not hasattr(n, 'target_series'):
             target_series = covariate_series
-        raise_if_not(covariate_series.time_index == target_series.time_index, "the target and covariate series must "
-                     "have the same time indices.")
-        raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "the target and covariate series"
+                     " must have the same time indices.")
+        if hasattr(n, 'forecast_horizon'):
+            raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
         # check start parameter
-        if isinstance(n.start, float):
-            raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
-        elif isinstance(n.start, pd.Timestamp):
-            raise_if_not(n.start in covariate_series, '`start` timestamp is not in the `series`.', logger)
-            raise_if(n.start == covariate_series.end_time(), '`start` timestamp is the last timestamp of `series`',
-                     logger)
-        else:
-            raise_if(covariate_series[n.start].time_index()[0] == covariate_series.end_time(), '`start` timestamp is '
-                     'the last timestamp of `series`', logger)
+        if hasattr(n, 'start'):
+            if isinstance(n.start, float):
+                raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
+            elif isinstance(n.start, pd.Timestamp):
+                raise_if_not(n.start in covariate_series, '`start` timestamp is not in the `series`.', logger)
+                raise_if(n.start == covariate_series.end_time(), '`start` timestamp is the last timestamp of `series`',
+                         logger)
+            else:
+                raise_if(covariate_series[n.start].time_index()[0] == covariate_series.end_time(), '`start` timestamp '
+                         'is the last timestamp of `series`', logger)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Method to be overriden in subclass for model specific sanity checks"""
