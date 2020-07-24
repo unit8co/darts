@@ -45,18 +45,11 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+    def fit(self) -> None:
         """ Fits/trains the model on the provided series
 
         Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
         wether they are univariate or multivariate.
-
-        Parameters
-        ----------
-        covariate_series
-            covariate time series on which to fit the model
-        target_series
-            target time series on which to fit the model
         """
         self._fit_called = True
 
@@ -141,6 +134,8 @@ class MultivariateForecastingModel(ForecastingModel):
         raise_if_not(len(covariate_series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
                      .format(len(covariate_series), str(self), self.min_train_series_length))
+
+        return covariate_series, target_series
 
     @abstractmethod
     def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:

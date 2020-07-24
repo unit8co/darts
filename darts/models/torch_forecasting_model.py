@@ -312,7 +312,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data
-        dataset = self._create_dataset(covariate_series, target_series)
+        dataset = self._create_dataset(self.covariate_series, self.target_series)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0, pin_memory=True,
                                   drop_last=True)
         raise_if_not(len(train_loader) > 0,
