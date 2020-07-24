@@ -24,33 +24,32 @@ class ForecastingModel(ABC):
     """ The base class for all forecasting models.
 
     All implementations of forecasting have to implement the `fit()` and `predict()` methods defined below.
-    """
 
+    Attributes
+    ----------
+    training_series
+        reference to the `TimeSeries` used for training the model in univariate cases.
+    covariate_series
+        reference to the `TimeSeries` used as covariate to train the model in multivariate cases.
+    target_series
+        reference to the `TimeSeries` used as target to train the model in multivariate cases.
+    """
     @abstractmethod
     def __init__(self):
         # Stores training date information:
         self.training_series: TimeSeries = None
+        self.covariate_series: TimeSeries = None
+        self.target_series: TimeSeries = None
 
         # state
         self._fit_called = False
 
-    def _make_fitable_series(self,
-                             covariate_series: TimeSeries,
-                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
-        """Perform checks and returns ready to be used covariate and target series"""
-        if target_series is None:
-            target_series = covariate_series
-
-        # general checks on covariate / target series
-        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
-                     "timeseries must have same time indices.")
-        raise_if_not(len(covariate_series) >= self.min_train_series_length,
-                     "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(covariate_series), str(self), self.min_train_series_length))
-
     @abstractmethod
     def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the model on the provided series
+
+        Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
+        wether they are univariate or multivariate.
 
         Parameters
         ----------
@@ -59,10 +58,6 @@ class ForecastingModel(ABC):
         target_series
             target time series on which to fit the model
         """
-        covariate_series, target_series = self._make_fitable_series(covariate_series, target_series)
-
-        self.covariate_series = covariate_series
-        self.target_series = target_series
         self._fit_called = True
 
     @abstractmethod
@@ -113,29 +108,39 @@ class ForecastingModel(ABC):
 
 
 class UnivariateForecastingModel(ForecastingModel):
-    """ The base class for univariate forecasting models.
-    """
-
+    """The base class for univariate forecasting models."""
     @abstractmethod
-    def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+    def fit(self, series: TimeSeries) -> None:
         """ Fits/trains the univariate model on selected univariate series.
+
+        Implements behavior specific to calling the `fit` method on `UnivariateForecastingModel`.
 
         Parameters
         ----------
-        covariate_series
-            A **univariate** covariate timeseries on which to fit the model.
-        target_series
-            A **univariate** target timeseries on which to fit the model.
+        series
+            A **univariate** timeseries on which to fit the model.
         """
-        covariate_series._assert_univariate()
-        if target_series is not None:
-            target_series._assert_univariate()
-        super().fit(covariate_series, target_series)
+        series._assert_univariate()
+        self.training_series = series
+        super().fit()
 
 
 class MultivariateForecastingModel(ForecastingModel):
     """ The base class for multivariate forecasting models.
     """
+    def _make_fitable_series(self,
+                             covariate_series: TimeSeries,
+                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
+        """Perform checks and returns ready to be used covariate and target series"""
+        if target_series is None:
+            target_series = covariate_series
+
+        # general checks on covariate / target series
+        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
+                     "timeseries must have same time indices.")
+        raise_if_not(len(covariate_series) >= self.min_train_series_length,
+                     "Train series only contains {} elements but {} model requires at least {} entries"
+                     .format(len(covariate_series), str(self), self.min_train_series_length))
 
     @abstractmethod
     def fit(self, covariate_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
@@ -148,4 +153,8 @@ class MultivariateForecastingModel(ForecastingModel):
         target_series
             The target values used as dependent variables when training the model
         """
-        super().fit(covariate_series, target_series)
+        covariate_series, target_series = self._make_fitable_series(covariate_series, target_series)
+
+        self.covariate_series = covariate_series
+        self.target_series = target_series
+        super().fit()
