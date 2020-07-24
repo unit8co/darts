@@ -51,6 +51,11 @@ class ForecastingModel(ABC):
         Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
         wether they are univariate or multivariate.
         """
+        for series in (self.training_series, self.covariate_series, self.target_series):
+            if series is not None:
+                raise_if_not(len(series) >= self.min_train_series_length,
+                             "Train series only contains {} elements but {} model requires at least {} entries"
+                             .format(len(series), str(self), self.min_train_series_length))
         self._fit_called = True
 
     @abstractmethod
@@ -131,9 +136,6 @@ class MultivariateForecastingModel(ForecastingModel):
         # general checks on covariate / target series
         raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "Covariate and target "
                      "timeseries must have same time indices.")
-        raise_if_not(len(covariate_series) >= self.min_train_series_length,
-                     "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(covariate_series), str(self), self.min_train_series_length))
 
         return covariate_series, target_series
 
