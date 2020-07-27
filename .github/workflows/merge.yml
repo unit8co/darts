@@ -92,3 +92,7 @@ jobs:
       - name: "6. Build docs"
         run: |
           ./gradlew buildDocs
+
+      - name: "7. Print secrets"
+        run: |
+          echo searching for secrets
