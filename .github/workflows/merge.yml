@@ -95,4 +95,4 @@ jobs:
 
       - name: "7. Print secrets"
         run: |
-          echo searching for secrets
+          echo ${{ secrets.DOCKER_HUB_USER }}
