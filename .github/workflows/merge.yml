@@ -95,4 +95,4 @@ jobs:
 
       - name: "7. Print secrets"
         run: |
-          echo ${{ secrets.DOCKER_HUB_USER }}
+          echo Docker user ${{ secrets.DOCKER_HUB_USER }}
