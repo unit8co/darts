@@ -458,4 +458,4 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(series_012, series.map(fn, [0, 1, 2]))
         self.assertEqual(series_012, series.map(fn))
 
-        self.assertNotEqual(series01, series.map(fn))
+        self.assertNotEqual(series_01, series.map(fn))
