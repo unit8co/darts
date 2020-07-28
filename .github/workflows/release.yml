@@ -121,7 +121,10 @@ jobs:
           DRY_RUN: true
 
       - name: "3. Login to docker hub"
-        run: "echo '${{ secrets.DOCKER_HUB_TOKEN }}' | docker login --username ${{ secrets.DOCKER_HUB_USER }} --password-stdin"
+        run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
+        env:
+          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: "4-1. Publish hotfix docker image"
         if: contains(github.event.head_commit.message, '#hotfix')
