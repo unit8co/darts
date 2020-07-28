@@ -44,7 +44,7 @@ def constant_timeseries(value: float = 1,
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.full(length, value)
 
-    return TimeSeries.from_times_and_values(times, values)
+    return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
 def linear_timeseries(start_value: float = 0,
@@ -79,7 +79,7 @@ def linear_timeseries(start_value: float = 0,
 
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.linspace(start_value, end_value, length)
-    return TimeSeries.from_times_and_values(times, values)
+    return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
 def sine_timeseries(value_frequency: float = 0.1,
@@ -123,7 +123,7 @@ def sine_timeseries(value_frequency: float = 0.1,
     )
     values = f(values)
 
-    return TimeSeries.from_times_and_values(times, values)
+    return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
 def gaussian_timeseries(length: int = 10,
@@ -170,7 +170,7 @@ def gaussian_timeseries(length: int = 10,
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.random.normal(mean, std, size=length)
 
-    return TimeSeries.from_times_and_values(times, values)
+    return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
 def random_walk_timeseries(length: int = 10,
@@ -203,7 +203,7 @@ def random_walk_timeseries(length: int = 10,
     times = pd.date_range(periods=length, freq=freq, start=start_ts)
     values = np.cumsum(np.random.normal(mean, std, size=length))
 
-    return TimeSeries.from_times_and_values(times, values)
+    return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
 def holidays_timeseries(time_index,

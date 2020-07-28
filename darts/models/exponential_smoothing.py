@@ -9,15 +9,16 @@ import statsmodels.tsa.holtwinters as hw
 from .forecasting_model import UnivariateForecastingModel
 from ..logging import get_logger
 from ..timeseries import TimeSeries
+from .. import ModelMode
 
 logger = get_logger(__name__)
 
 
 class ExponentialSmoothing(UnivariateForecastingModel):
     def __init__(self,
-                 trend: Optional[str] = 'additive',
+                 trend: Optional[ModelMode] = ModelMode.ADDITIVE,
                  damped: Optional[bool] = False,
-                 seasonal: Optional[str] = 'additive',
+                 seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
                  seasonal_periods: Optional[int] = 12,
                  **fit_kwargs):
         """ Exponential Smoothing
@@ -28,14 +29,22 @@ class ExponentialSmoothing(UnivariateForecastingModel):
 
         We refer to this link for the original and more complete documentation of the parameters.
 
+        `model_mode` must be a ModelMode Enum member.
+        You can access the Enum with `from darts import ModelMode`.
+
+        `ExponentialSmoothing(trend=None, seasonal=None)` corresponds to a single exponential smoothing.
+        `ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)` corresponds to a Holt's exponential smoothing.
+
         Parameters
         ----------
         trend
-            Type of trend component
+            Type of trend component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
+            Defaults to `ModelMode.ADDITIVE`.
         damped
-            Should the trend component be damped.
+            Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component
+            Type of seasonal component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
+            Defaults to `ModelMode.ADDITIVE`.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle.
@@ -60,9 +69,9 @@ class ExponentialSmoothing(UnivariateForecastingModel):
         super().fit(series, component_index)
         series = self.training_series
         hw_model = hw.ExponentialSmoothing(series.values(),
-                                           trend=self.trend,
+                                           trend=self.trend.value,
                                            damped=self.damped,
-                                           seasonal=self.seasonal,
+                                           seasonal=self.seasonal.value,
                                            seasonal_periods=self.seasonal_periods)
 
         hw_results = hw_model.fit(**self.fit_kwargs)
