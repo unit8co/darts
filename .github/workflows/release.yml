@@ -126,15 +126,15 @@ jobs:
           DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: "4-1. Publish hotfix docker image"
-        if: contains(github.event.head_commit.message, '#hotfix')
+      #check build.gradle file for explanation of next steps
+      - name: "4. Publish image with tag corresponding to current version"
         run: |
-          ./gradlew dockerTagsPush -P version=${{ steps.bump_dry.outputs.tag }}
+          ./gradlew dockerPushVersion -P version=${{ steps.bump_dry.outputs.tag }}
 
-      - name: "4-2. Publish non-hotfix docker image"
+      - name: "5. Publish image with tag 'latest' if not hotfix"
         if: ${{ !contains(github.event.head_commit.message, '#hotfix') }}
         run: |
-          ./gradlew dockerPush -P version=${{ steps.bump_dry.outputs.tag }}
+          ./gradlew dockerPushLatest
 
 
   deploy-docs:
