@@ -120,22 +120,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
 
-      - name: "3. Determine docker tags"
-        run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
+      - name: "3. Login to docker hub"
+        run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
+        env:
+          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: "3-1. Determine docker tags for hotfix"
-        if: contains(github.event.head_commit.message, '#hotfix')
-        run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
+      #check build.gradle file for explanation of next steps
+      - name: "4. Publish image with tag corresponding to current version"
+        run: |
+          ./gradlew dockerPushVersion -P version=${{ steps.bump_dry.outputs.tag }}
 
-      - name: "4. Build and publish docker to docker hub"
-        uses: elgohr/Publish-Docker-Github-Action@2.14
-        with:
-          name: unit8/darts
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          tags: "${{ env.DOCKER_TAGS }}"
-          cache: true
-          buildoptions: "--compress -q"
+      - name: "5. Publish image with tag 'latest' if not hotfix"
+        if: ${{ !contains(github.event.head_commit.message, '#hotfix') }}
+        run: |
+          ./gradlew dockerPushLatest
+
 
   deploy-docs:
     runs-on: ubuntu-latest
