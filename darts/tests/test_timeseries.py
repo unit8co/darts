@@ -442,9 +442,9 @@ class TimeSeriesTestCase(unittest.TestCase):
         df_01 = series.pd_dataframe()
         df_012 = series.pd_dataframe()
 
-        df_0[[0]] = df_0[[0]].applymap(fn)
-        df_2[[2]] = df_2[[2]].applymap(fn)
-        df_01[[0, 1]] = df_01[[0, 1]].applymap(fn)
+        df_0[["0"]] = df_0[["0"]].applymap(fn)
+        df_2[["2"]] = df_2[["2"]].applymap(fn)
+        df_01[["0", "1"]] = df_01[["0", "1"]].applymap(fn)
         df_012 = df_012.applymap(fn)
 
         series_0 = TimeSeries(df_0, 'D')
@@ -452,11 +452,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         series_01 = TimeSeries(df_01, 'D')
         series_012 = TimeSeries(df_012, 'D')
 
-        self.assertEqual(series_0, series.map(fn, 0))
-        self.assertEqual(series_0, series.map(fn, [0]))
-        self.assertEqual(series_2, series.map(fn, 2))
-        self.assertEqual(series_01, series.map(fn, [0, 1]))
-        self.assertEqual(series_012, series.map(fn, [0, 1, 2]))
+        self.assertEqual(series_0, series.map(fn, "0"))
+        self.assertEqual(series_0, series.map(fn, ["0"]))
+        self.assertEqual(series_2, series.map(fn, "2"))
+        self.assertEqual(series_01, series.map(fn, ["0", "1"]))
+        self.assertEqual(series_012, series.map(fn, ["0", "1", "2"]))
         self.assertEqual(series_012, series.map(fn))
 
         self.assertNotEqual(series_01, series.map(fn))

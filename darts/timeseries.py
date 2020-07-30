@@ -908,7 +908,7 @@ class TimeSeries:
 
     def map(self,
             fn: Callable[[np.number], np.number],
-            cols: Optional[Union[List[int], int]] = None) -> 'TimeSeries':
+            cols: Optional[Union[List[str], str]] = None) -> 'TimeSeries':
         """
         Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
         values in the columns specified by the optional argument `cols`. Returns a new
@@ -919,7 +919,7 @@ class TimeSeries:
         fn
             A numerical function
         cols
-            Optionally, an integer or list of integers specifying the column(s) onto which fn should be applied
+            Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
 
         Returns
         -------
@@ -929,11 +929,8 @@ class TimeSeries:
         if cols is None:
             new_dataframe = self._df.applymap(fn)
         else:
-            if isinstance(cols, int):
+            if isinstance(cols, str):
                 cols = [cols]
-            raise_if_not(all([0 <= index < self.width for index in cols]),
-                         'The indices in `cols` must be between 0 and the number of components of the current '
-                         'TimeSeries instance - 1, {}'.format(self.width - 1), logger)
             new_dataframe = self.pd_dataframe()
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
         return TimeSeries(new_dataframe, self.freq_str())
