@@ -29,25 +29,22 @@ logger = get_logger(__name__)
 
 # TODO parameterize the moving window
 
-def _create_parameter_dicts(model, target_indices, component_index, use_full_output_length):
+def _create_parameter_dicts(model, target_series, use_full_output_length):
     fit_kwargs = {}
     predict_kwargs = {}
-    if isinstance(model, UnivariateForecastingModel):
-        fit_kwargs['component_index'] = component_index
-    else:
-        fit_kwargs['target_indices'] = target_indices
+    if not isinstance(model, UnivariateForecastingModel):
+        fit_kwargs['target_series'] = target_series
     if isinstance(model, TorchForecastingModel):
         predict_kwargs['use_full_output_length'] = use_full_output_length
 
     return fit_kwargs, predict_kwargs
 
 
-def backtest_forecasting(series: TimeSeries,
+def backtest_forecasting(training_series: TimeSeries,
+                         target_series: TimeSeries,
                          model: ForecastingModel,
                          start: pd.Timestamp,
                          fcast_horizon_n: int,
-                         target_indices: Optional[List[int]] = None,
-                         component_index: Optional[int] = None,
                          use_full_output_length: bool = True,
                          stride: int = 1,
                          retrain: bool = True,
@@ -74,20 +71,16 @@ def backtest_forecasting(series: TimeSeries,
 
     Parameters
     ----------
-    series
-        The univariate time series on which to backtest
+    training_series
+        The time series on which to backtest
+    target_series
+        the target time series on which to backtest
     model
         The forecasting model to be backtested
     start
         The first prediction time, at which a prediction is computed for a future time
     fcast_horizon_n
         The forecast horizon for the point predictions
-    target_indices
-        In case `series` is multivariate and `model` is a subclass of `MultivariateForecastingModel`,
-        a list of indices of components of `series` to be predicted by `model`.
-    component_index
-        In case `series` is multivariate and `model` is a subclass of `UnivariateForecastingModel`,
-        an integer index of the component of `series` to be predicted by `model`.
     use_full_output_length
         In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
         as argument to the predict method of `model`.
@@ -107,27 +100,26 @@ def backtest_forecasting(series: TimeSeries,
         A time series containing the forecast values for `series`, when successively applying
         the specified model with the specified forecast horizon.
     """
-
-    raise_if_not(start in series, 'The provided start timestamp is not in the time series.', logger)
-    raise_if_not(start != series.end_time(), 'The provided start timestamp is the last timestamp of the time series',
+    raise_if_not(start in training_series, 'The provided start timestamp is not in the time series.', logger)
+    raise_if_not(start != training_series.end_time(),
+                 'The provided start timestamp is the last timestamp of the time series',
                  logger)
     raise_if_not(fcast_horizon_n > 0, 'The provided forecasting horizon must be a positive integer.', logger)
     raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
                  " support the option 'retrain=False'.", logger)
 
-    last_pred_time = (
-        series.time_index()[-fcast_horizon_n - stride] if trim_to_series else series.time_index()[-stride - 1]
-    )
+    if trim_to_series:
+        last_pred_time = training_series.time_index()[-fcast_horizon_n - stride]
+    else:
+        last_pred_time = training_series.time_index()[-stride - 1]
+
     raise_if_not(retrain or isinstance(model, TorchForecastingModel), "Only 'TorchForecastingModel' instances"
                  " support the option 'retrain=False'.", logger)
-
-    # specify the correct fit and predict keyword arguments for the given model
-    fit_kwargs, predict_kwargs = _create_parameter_dicts(model, target_indices, component_index, use_full_output_length)
 
     # build the prediction times in advance (to be able to use tqdm)
     pred_times = [start]
     while pred_times[-1] <= last_pred_time:
-        pred_times.append(pred_times[-1] + series.freq() * stride)
+        pred_times.append(pred_times[-1] + training_series.freq() * stride)
 
     # what we'll return
     values = []
@@ -135,13 +127,22 @@ def backtest_forecasting(series: TimeSeries,
 
     iterator = _build_tqdm_iterator(pred_times, verbose)
 
+    # build predict kwargs will be removed in refactored backtest
+    predict_kwargs = {}
+    if isinstance(model, TorchForecastingModel):
+        predict_kwargs['use_full_output_length'] = use_full_output_length
+
     if ((not retrain) and (not model._fit_called)):
-        model.fit(series.drop_after(start), verbose=verbose, **fit_kwargs)
+        model.fit(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
     for pred_time in iterator:
-        train = series.drop_after(pred_time)  # build the training series
+        train = training_series.drop_after(pred_time)  # build the training series
+        target = target_series.drop_after(pred_time)
         if (retrain):
-            model.fit(train, **fit_kwargs)
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(train)
+            else:
+                model.fit(train, target)
             pred = model.predict(fcast_horizon_n, **predict_kwargs)
         else:
             pred = model.predict(fcast_horizon_n, input_series=train, **predict_kwargs)
@@ -268,7 +269,7 @@ def forecasting_residuals(model: ForecastingModel,
     first_index = series.time_index()[model.min_train_series_length]
 
     # compute fitted values
-    p = backtest_forecasting(series, model, first_index, fcast_horizon_n, True, verbose=verbose)
+    p = backtest_forecasting(series, series, model, first_index, fcast_horizon_n, True, verbose=verbose)
 
     # compute residuals
     series_trimmed = series.slice_intersect(p)
@@ -422,8 +423,7 @@ def backtest_gridsearch(model_class: type,
         raise_if_not(train_series.width == val_series.width, "Training and validation series require the same"
                      " number of components.", logger)
 
-    fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), target_indices, component_index,
-                                                         use_full_output_length)
+    fit_kwargs, predict_kwargs = _create_parameter_dicts(model_class(), train_series, use_full_output_length)
 
     if (val_series is None) and (not use_fitted_values):
         backtest_start_time = train_series.end_time() - (num_predictions + fcast_horizon_n) * train_series.freq()
@@ -445,8 +445,8 @@ def backtest_gridsearch(model_class: type,
             fitted_values = TimeSeries.from_times_and_values(train_series.time_index(), model.fitted_values)
             error = metric(fitted_values, train_series)
         elif val_series is None:  # expanding window mode
-            backtest_forecast = backtest_forecasting(train_series, model, backtest_start_time, fcast_horizon_n,
-                                                     target_indices, component_index, use_full_output_length)
+            backtest_forecast = backtest_forecasting(train_series, train_series, model, backtest_start_time,
+                                                     fcast_horizon_n, use_full_output_length)
             error = metric(backtest_forecast, train_series)
         else:  # split mode
             model.fit(train_series, **fit_kwargs)
