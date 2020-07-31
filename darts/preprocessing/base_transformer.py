@@ -21,8 +21,8 @@ class BaseTransformer(Generic[T], ABC):
                  fittable: bool = False):
         """
         Abstract class for transformers. All deriving classes have to implement only one function `transform`.
-        It also have `inverse_transform`, `fit` and `predict` left unimplemented. If child of this class implements
-        any of this methods it should mark this with appropriate property (`reversible`, `fittable`, `can_predict`).
+        It also has `inverse_transform`, `fit` and `predict` left unimplemented. If a child of this class implements
+        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`, `can_predict`).
 
         Parameters
         ----------
@@ -32,11 +32,11 @@ class BaseTransformer(Generic[T], ABC):
             List of tuples of validating function and optional string with reason for validating.
             From this will be created list of validators and it will be appended to validators.
         reversible
-            Flag indicating whether this transformer have implemented inverse_transform
+            Flag indicating whether this transformer implements inverse_transform
         can_predict
-            Flag indicating whether this transformer have implemented predict
+            Flag indicating whether this transformer implements predict
         fittable
-            Flag indicating whether this transformer have implemented fit
+            Flag indicating whether this transformer implements fit
         """
         if validators:
             self._validators = validators
