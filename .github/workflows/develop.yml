@@ -62,7 +62,7 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: release-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          key: tests-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
 
       - name: "6. Build docs"
         run: |
