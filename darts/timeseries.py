@@ -369,6 +369,9 @@ class TimeSeries:
             A new TimeSeries, with length at most `n` and indices greater or equal than `start_ts`.
         """
         raise_if_not(n >= 0, 'n should be a positive integer.', logger)  # TODO: logically raise if n<3, cf. init
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         self._raise_if_not_within(start_ts)
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
         end_ts: pd.Timestamp = start_ts + (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
@@ -393,6 +396,9 @@ class TimeSeries:
             A new TimeSeries, with length at most `n` and indices smaller or equal than `end_ts`.
         """
         raise_if_not(n >= 0, 'n should be a positive integer.', logger)
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         self._raise_if_not_within(end_ts)
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
         start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
@@ -460,6 +466,9 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with a shifted index.
         """
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         try:
             self.time_index()[-1] + n * self.freq()
         except pd.errors.OutOfBoundsDatetime:
@@ -880,7 +889,6 @@ class TimeSeries:
         index = self.time_index()
         return index[0] <= ts <= index[-1]
 
-
     def map(self,
             fn: Callable[[np.number], np.number],
             cols: Optional[Union[List[int], int]] = None) -> 'TimeSeries':
@@ -888,7 +896,7 @@ class TimeSeries:
         Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
         values in the columns specified by the optional argument `cols`. Returns a new
         TimeSeries instance.
-        
+
         Parameters
         ----------
         fn
@@ -906,10 +914,10 @@ class TimeSeries:
         else:
             if isinstance(cols, int):
                 cols = [cols]
-            raise_if_not(all([0 <= index and index < self.width for index in cols]),
-                     'The indices in `cols` must be between 0 and the number of components of the current '
-                     'TimeSeries instance - 1, {}'.format(self.width - 1), logger)
-            new_dataframe = self.pd_dataframe() 
+            raise_if_not(all([0 <= index < self.width for index in cols]),
+                         'The indices in `cols` must be between 0 and the number of components of the current '
+                         'TimeSeries instance - 1, {}'.format(self.width - 1), logger)
+            new_dataframe = self.pd_dataframe()
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
         return TimeSeries(new_dataframe, self.freq_str())
 
