@@ -31,9 +31,9 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          key: notexisting-tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
-            tests-${{ runner.os }}-pip-
+            notexisting-tests-${{ runner.os }}-pip-
 
       - name: "5. Tests"
         run: |
