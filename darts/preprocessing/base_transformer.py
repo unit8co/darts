@@ -22,7 +22,8 @@ class BaseTransformer(Generic[T], ABC):
         """
         Abstract class for transformers. All deriving classes have to implement only one function `transform`.
         It also has `inverse_transform`, `fit` and `predict` left unimplemented. If a child of this class implements
-        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`, `can_predict`).
+        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`,
+        `can_predict`).
 
         Parameters
         ----------
