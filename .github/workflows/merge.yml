@@ -34,9 +34,9 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          key: clear-tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
           restore-keys: |
-            tests-${{ runner.os }}-pip-
+            clear-tests-${{ runner.os }}-pip-
 
       - name: "5. Tests"
         run: |
@@ -85,9 +85,9 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          key: clear-release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
           restore-keys: |
-            release-${{ runner.os }}-pip-
+            clear-release-${{ runner.os }}-pip-
 
       - name: "6. Build docs"
         run: |
