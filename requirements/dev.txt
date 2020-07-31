@@ -1,6 +1,6 @@
 # tests
-testfixtures>=6.14.0
-coverage>=5.1
+testfixtures==6.14.0
+coverage==5.1
 
 # linters
-flake8>=3.7.9
+flake8==3.7.9
