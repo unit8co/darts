@@ -41,16 +41,16 @@ class FourThetaTestCase(unittest.TestCase):
             model.fit(sine_series)
 
     def test_theta(self):
-        random.seed(1)
+        np.random.seed(1)
         series = rt(length=50, mean=100)
-        theta_param = random.randrange(-5, 5)
+        theta_param = np.random.randint(1, 5)
         theta = Theta(theta_param)
         fourtheta = FourTheta(theta_param, normalization=False)
         theta.fit(series)
         fourtheta.fit(series)
         forecast_theta = theta.predict(20)
         forecast_fourtheta = fourtheta.predict(20)
-        self.assertTrue((forecast_theta - forecast_fourtheta <= 1e-12).all()[0])
+        self.assertTrue((forecast_theta - forecast_fourtheta <= 1e-11).all()[0])
 
     def test_best_model(self):
         random.seed(1)
