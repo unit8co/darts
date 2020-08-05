@@ -7,7 +7,7 @@ from ..models.groe_combination_model import GROECombinationModel
 
 
 class CombinationModelsTestCase(unittest.TestCase):
-    series1 = tg.sine_timeseries(value_frequency=1/5, value_y_offset=10, length=50)
+    series1 = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     series2 = tg.linear_timeseries(length=50)
 
     def test_input_models(self):

@@ -3,7 +3,7 @@ from ..utils.cross_validation import generalized_rolling_origin_evaluation as gr
 from ..models import ExponentialSmoothing, NaiveSeasonal
 from ..utils.timeseries_generation import (random_walk_timeseries as rt, constant_timeseries as ct,
                                            sine_timeseries as st, linear_timeseries as lt)
-from ..metrics import mape, mase, mae
+from ..metrics import mape, mae
 import numpy as np
 
 
@@ -46,7 +46,7 @@ class CrossValidationTestCase(unittest.TestCase):
 
     def test_groe_ouput(self):
         value = groe(self.series2 + self.series3, self.model1, origin1=35, n_evaluation=6, n_prediction=10)
-        self.assertAlmostEqual(value, 6*55)
+        self.assertAlmostEqual(value, 6 * 55)
 
 
 if __name__ == '__main__':
