@@ -1,13 +1,13 @@
 """
-Standard Regression model
--------------------------
+Cross-validation functions
+--------------------------
 """
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
-from typing import List, Callable, Optional
+from ..metrics import metrics as mfunc
+from ..logging import get_logger, raise_if_not
+from typing import Union, Callable, Optional
 import numpy as np
-import pandas as pd
 
 from ..models.forecasting_model import ForecastingModel
 
@@ -15,78 +15,87 @@ logger = get_logger(__name__)
 
 
 def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingModel,
-                                          metrics: Callable[[TimeSeries, TimeSeries], float],
-                                          fq: Optional[int] = None, n1: Optional[int] = None,
-                                          m: Optional[int] = None, p: Optional[int] = None,
-                                          H: Optional[int] = None, **model_args) -> float:
+                                          metrics: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
+                                          origin1: Optional[int] = None,
+                                          stride: Optional[int] = None, n_evaluation: Optional[int] = None,
+                                          n_prediction: Optional[int] = None) -> float:
     """
-    This function implements the Generalized Rolling origin Evaluation from Fiorrucci et al (2015)
-    [https://arxiv.org/ftp/arxiv/papers/1503/1503.03529.pdf
-    Cross-Validation function to evaluate the Forecastin model `model`.
+    This function implements the Generalized Rolling origin Evaluation from
+    `Fiorruci et al (2015) <https://arxiv.org/ftp/arxiv/papers/1503/1503.03529.pdf>`_
 
-    If m=1 is computed the Rolling Origin Evaluation.
-    If m>=length(y)-n1 is computed the Fixed Origin Evaluation
+    Cross-Validation function to evaluate a forecasting model over a specific TimeSeries,
+    and using a specific metrics.
 
-    if all parameters are give, H will be ignored.
+    If `stride = 1`, the execution is similar to a Rolling Origin Evaluation.
+    If `stride >= len(ts) - origin1` the execution is similar to a Fixed Origin Evaluation.
+
+    At least two parameters from `stride`, `n_evaluation` and `n_prediction` must be given.
+
+    If ValueErrors occur, the function will return `np.inf`.
 
     Parameters
     ----------
     ts
         A TimeSeres object to use for cross-validation.
     model
-        The ForecastingModel to cross-validate.
+        The instance of ForecastingModel to cross-validate.
     metrics
-        The metrics to use.
-    fq
-        The seasonality period of ts.
-    n1
-        The index of the first origin. Defaults is len(ts) - H if provided, otherwise 5.
-    m
-        The stride used for rolling the origin. Defaults is H/p if provided
-    p
-        Number of evaluation. Defaults is the maximum
-    H
-        Number of predictions for each evaluation. Defaults is m*p if provided
+        The metrics to use. Either a function from taking 2 TimeSeries as parameters,
+        or a string of the name of the function from darts.metrics.
+    origin1
+        The index of the first origin. Defaults is the minimum between len(ts) - 10 and 5.
+    stride
+        The stride used for rolling the origin. Defaults is n_prediction / n_evaluation if provided.
+    n_evaluation
+        Number of evaluation. Defaults is the maximum number possible.
+    n_prediction
+        Number of predictions for each evaluation. Defaults is len(ts) - origin1.
     Returns
     -------
     Float
         The sum of the predictions errors over the different origins.
     """
-    raise_if_not(((m is None) + (H is None) + (p is None)) > 1,
-                 "At least 2 parameters between m, p and H must be given")
-    n = len(ts)
-    if n1 is None:
-        n1 = max(5, n - 10)
-    if m is None:
-        m = int(np.floor(H/p))
-    if H is None:
-        H = n - n1
-    if p is None:
-        p = int(1 + np.floor(H / m))
-    if fq is None:
-        pass
-        # found automatically frequency
-    # todo: if model object or class. to chose
+    raise_if_not(((stride is None) + (n_prediction is None) + (n_evaluation is None)) > 1,
+                 "At least 2 parameters between stride, n_prediction and n_evaluation must be given")
+    raise_if_not(callable(metrics) or hasattr(mfunc, metrics),
+                 "The metrics should be a function from darts.metrics or a string of its name")
+    if type(metrics) is str and metrics != 'mase':
+        metrics = getattr(mfunc, metrics)
+    len_ts = len(ts)
+    if origin1 is None:
+        origin1 = max(5, len_ts - 10)
+    if stride is None:
+        stride = int(np.floor(n_prediction / n_evaluation))
+    if n_prediction is None:
+        n_prediction = len_ts - origin1
+    if n_evaluation is None:
+        n_evaluation = int(1 + np.floor(n_prediction / stride))
     errors = []
-    for i in range(p):
+    for i in range(n_evaluation):
         # if origin is further than end timestamp, end function
-        if n1 + i * m >= n:
+        if origin1 + i * stride >= len_ts:
             break
-        ni = n1 + i * m
-        npred = n - ni
-        train = ts[:ni]
-        test = ts[ni:]
+        # rolling origin
+        origini = origin1 + i * stride
+        n_pred = min(len_ts - origini, n_prediction)
+        train = ts[:origini]
+        test = ts[origini:]
 
         try:
             model.fit(train)
-            forecast = model.predict(npred)
+            forecast = model.predict(n_pred)
         except ValueError:
-            errors.append(0)
+            # If cannot forecast with a specific timeseries, return np.inf
+            errors.append(np.inf)
             continue
         try:
-            error = metrics(test, forecast)
+            if metrics == 'mase':
+                error = getattr(mfunc, metrics)(test, forecast, train) * n_evaluation
+            else:
+                error = metrics(test, forecast) * n_evaluation
             errors.append(error)
         except ValueError:
-            errors.append(0)
+            # if cannot use metrics, return np.inf
+            errors.append(np.inf)
     errors = np.sum(errors)
     return errors
