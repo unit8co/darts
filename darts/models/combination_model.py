@@ -18,6 +18,7 @@ class CombinationModel:
     Acts as a constant weight combination model that averages all predictions from `models`
     """
     def __init__(self, models: List[ForecastingModel]):
+        raise_if_not(isinstance(models, list) and models, "Must give at least one model")
         for model in models:
             raise_if_not(isinstance(model, ForecastingModel),
                          "All models must be instances of forecasting models from darts.models")
@@ -38,4 +39,4 @@ class CombinationModel:
         for model in self.models:
             model.fit(self.train_ts)
             self.predictions.append(model.predict(n))
-        return np.dot(self.predictions, self.weights)
+        return sum(map(lambda ts, weight: ts * weight, self.predictions, self.weights))
