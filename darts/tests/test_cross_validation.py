@@ -15,7 +15,7 @@ class CrossValidationTestCase(unittest.TestCase):
     model1 = NaiveSeasonal()
     model2 = ExponentialSmoothing(seasonal_periods=10)
 
-    def test_input_metrics(self):
+    def test_groe_input_metrics(self):
         groe(self.series1, self.model1, metrics=mape, stride=5)
         groe(self.series1, self.model1, metrics='mape', stride=5)
         groe(self.series1, self.model1,
@@ -23,12 +23,12 @@ class CrossValidationTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metrics='plop', stride=5)
 
-    def test_input_params(self):
+    def test_groe_input_params(self):
         groe(self.series1, self.model1, metrics=mape, stride=5, n_evaluation=10)
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metrics=mape)
 
-    def test_input_origin(self):
+    def test_groe_input_origin(self):
         # small time series
         groe(self.series1, self.model1, metrics=mape, stride=1, origin1=2)
         groe(self.series1, self.model1, metrics=mape, stride=1, origin1=48)
@@ -38,13 +38,13 @@ class CrossValidationTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metrics=mape, stride=1, origin1=0)
 
-    def test_inf_output(self):
+    def test_groe_inf_output(self):
         # metrics
         self.assertEqual(np.inf, groe(self.series0, self.model1, metrics=mape, stride=1))
         # model
         self.assertEqual(np.inf, groe(self.series2, self.model2, metrics=mape, origin1=5, stride=1))
 
-    def test_ouput(self):
+    def test_groe_ouput(self):
         value = groe(self.series2 + self.series3, self.model1, origin1=35, n_evaluation=6, n_prediction=10)
         self.assertAlmostEqual(value, 6*55)
 
