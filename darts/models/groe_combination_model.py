@@ -22,7 +22,10 @@ class GROECombinationModel(CombinationModel):
         """
         Implementation of a Combination Model using GROE to compute its weights.
 
-        The weights are 1/loss function/sum
+        The weights are a function of the loss function of the GROE cross-validation scheme.
+        The weights are computed as
+
+        .. math:: \\frac{1}{GROE_{metrics}(model_i)}/sum_i{\\frac{1}{GROE_{metrics}(model_i)}}
 
         Parameters
         ----------
