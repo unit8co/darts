@@ -27,6 +27,8 @@ class CrossValidationTestCase(unittest.TestCase):
         groe(self.series1, self.model1, metrics=mape, stride=5, n_evaluation=10)
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metrics=mape)
+        with self.assertRaises(ValueError):
+            groe(self.series1, self.model1, metrics=mape, stride=-5, n_evaluation=10)
 
     def test_groe_input_origin(self):
         # small time series

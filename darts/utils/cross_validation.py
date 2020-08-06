@@ -61,12 +61,10 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     raise_if_not(callable(metrics) or hasattr(mfunc, metrics),
                  "The metrics should be a function that takes TimeSeries as inputs,"
                  " or a string of a function name from darts.metrics")
+    raise_if_not(stride is None or stride > 0,
+                 "The stride parameter must be strictly positive")
     if type(metrics) is str and metrics != 'mase':
-        try:
-            metrics = getattr(mfunc, metrics)
-        except ValueError:
-            raise_log(ValueError("The metrics should be a function that takes TimeSeries as inputs,"
-                      " or a string of a function name from darts.metrics"), logger)
+        metrics = getattr(mfunc, metrics)
     len_ts = len(ts)
     if origin1 is None:
         origin1 = max(5, len_ts - 10)
