@@ -8,6 +8,7 @@ from ..metrics import metrics as mfunc
 from ..logging import get_logger, raise_if_not, raise_log
 from typing import Union, Callable, Optional
 import numpy as np
+import pandas as pd
 
 from ..models.forecasting_model import ForecastingModel
 
@@ -16,7 +17,7 @@ logger = get_logger(__name__)
 
 def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingModel,
                                           metrics: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
-                                          origin1: Optional[int] = None,
+                                          origin1: Optional[Union[int, pd.Timestamp]] = None,
                                           stride: Optional[int] = None, n_evaluation: Optional[int] = None,
                                           n_prediction: Optional[int] = None) -> float:
     """
@@ -32,7 +33,6 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     At least one parameter from `stride` and `n_evaluation` must be given.
 
     If ValueErrors occur, the function will return `np.inf`.
-    TODO: origin1 could be a TimeStamp
 
     Parameters
     ----------
@@ -45,6 +45,7 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         or a string of the name of the function from darts.metrics.
     origin1
         Optional. The index of the first origin. Defaults is the minimum between len(ts) - 10 and 5.
+        Can also be the value of the DateTimeIndex.
     stride
         Optional. The stride used for rolling the origin. Defaults is n_prediction / n_evaluation if provided.
     n_evaluation
@@ -68,6 +69,9 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     len_ts = len(ts)
     if origin1 is None:
         origin1 = max(5, len_ts - 10)
+    elif isinstance(origin1, pd.Timestamp):
+        raise_if_not(ts.is_within_range(origin1), "origin1 must be inside the TimeSeries")
+        origin1 = ts.time_index().get_loc(origin1)
     elif origin1 >= len_ts or origin1 <= 0:
         raise_log(ValueError("origin1 must be inside the TimeSeries"), logger)
     if n_prediction is None:

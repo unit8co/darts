@@ -5,6 +5,7 @@ from ..utils.timeseries_generation import (random_walk_timeseries as rt, constan
                                            sine_timeseries as st, linear_timeseries as lt)
 from ..metrics import mape, mae
 import numpy as np
+import pandas as pd
 
 
 class CrossValidationTestCase(unittest.TestCase):
@@ -39,6 +40,16 @@ class CrossValidationTestCase(unittest.TestCase):
             groe(self.series1, self.model1, metrics=mape, stride=1, origin1=52)
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metrics=mape, stride=1, origin1=0)
+
+    def test_groe_input_timestamp(self):
+        # small time series
+        groe(self.series1, self.model1, metrics=mape, stride=1, origin1=pd.Timestamp('2000-01-03'))
+        groe(self.series1, self.model1, metrics=mape, stride=1, origin1=pd.Timestamp('2000-02-18'))
+        # impossible values
+        with self.assertRaises(ValueError):
+            groe(self.series1, self.model1, metrics=mape, stride=1, origin1=pd.Timestamp('2000-02-25'))
+        with self.assertRaises(ValueError):
+            groe(self.series1, self.model1, metrics=mape, stride=1, origin1=pd.Timestamp('2000-01-01'))
 
     def test_groe_inf_output(self):
         # metrics
