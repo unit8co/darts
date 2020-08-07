@@ -73,7 +73,7 @@ class BacktestingTestCase(unittest.TestCase):
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
-        pred, _ = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3)
+        pred = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, linear_series), 1.0)
 
         # univariate model + multivariate series without component index argument
@@ -82,7 +82,7 @@ class BacktestingTestCase(unittest.TestCase):
 
         # multivariate model + univariate series
         tcn_model = TCNModel(batch_size=1, n_epochs=1)
-        pred, _ = tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
+        pred= tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
         self.assertEqual(pred.width, 1)
 
         # multivariate model + multivariate series
@@ -92,14 +92,14 @@ class BacktestingTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
                                use_full_output_length=False)
-        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
+        pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
                                      verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
-        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
+        pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
                                      verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
         tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
-        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['0', '1']], pd.Timestamp('20000125'), 3,
+        pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0', '1']], pd.Timestamp('20000125'), 3,
                                      verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 2)
 
@@ -159,11 +159,11 @@ class BacktestingTestCase(unittest.TestCase):
 
         # test zero residuals
         constant_ts = ct(length=20)
-        residuals = forecasting_residuals(model, constant_ts)
+        residuals = model.residuals(constant_ts)
         np.testing.assert_almost_equal(residuals.univariate_values(), np.zeros(len(residuals)))
 
         # test constant, positive residuals
         linear_ts = lt(length=20)
-        residuals = forecasting_residuals(model, linear_ts)
+        residuals = model.residuals(linear_ts)
         np.testing.assert_almost_equal(np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1))
         np.testing.assert_array_less(np.zeros(len(residuals)), residuals.univariate_values())

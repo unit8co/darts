@@ -253,11 +253,51 @@ class ForecastingModel(ABC):
 
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
-        # compute the residuals between forecast and series
-        target_series_trimmed = target_series.slice_intersect(forecast)
-        residuals = target_series_trimmed - forecast
+        return forecast
 
-        return forecast, residuals
+
+    def residuals(self,
+                  series: TimeSeries,
+                  fcast_horizon_n: int = 1,
+                  verbose: bool = False) -> TimeSeries:
+        """ A function for computing the residuals produced by the current model and a univariate time series.
+
+        This function computes the difference between the actual observations from `series`
+        and the fitted values vector p obtained by training `self` on `series`.
+        For every index i in `series`, p[i] is computed by training `self` on
+        series[:(i - `fcast_horizon_n`)] and forecasting `fcast_horizon_n` into the future.
+        (p[i] will be set to the last value of the predicted vector.)
+        The vector of residuals will be shorter than `series` due to the minimum
+        training series length required by `self` and the gap introduced by `fcast_horizon_n`.
+        Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.
+
+        Parameters
+        ----------
+        series
+            The univariate TimeSeries instance which the residuals will be computed for.
+        fcast_horizon_n
+            The forecasting horizon used to predict each fitted value.
+        verbose
+            Whether to print progress.
+        Returns
+        -------
+        TimeSeries
+            The vector of residuals.
+        """
+
+        series._assert_univariate()
+
+        # get first index not contained in the first training set
+        first_index = series.time_index()[self.min_train_series_length]
+
+        # compute fitted values
+        p = self.backtest(series, None, first_index, fcast_horizon_n, True, verbose=verbose)
+
+        # compute residuals
+        series_trimmed = series.slice_intersect(p)
+        residuals = series_trimmed - p
+
+        return residuals
 
 
 class UnivariateForecastingModel(ForecastingModel):
