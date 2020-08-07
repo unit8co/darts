@@ -970,7 +970,7 @@ class TimeSeries:
             series_df = pd_serie.to_frame()
         # multivariate case
         else:
-            raise_if(len(set(df_a.columns.to_list() + df_b.columns.columns.to_list())) != len(df_a.columns),
+            raise_if(len(set(df_a.columns.to_list() + df_b.columns.to_list())) != len(df_a.columns),
                      "Column name in each TimeSeries must match one to one.")
             series_df = combine_fn(df_a, df_b)
         return TimeSeries(series_df, self.freq_str())

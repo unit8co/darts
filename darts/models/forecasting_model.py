@@ -152,8 +152,7 @@ class ForecastingModel(ABC):
                  retrain: bool = True,
                  trim_to_series: bool = True,
                  verbose: bool = False,
-                 fit_kwargs: Optional[Dict[str, Any]] = None,
-                 predict_kwargs: Optional[Dict[str, Any]] = None) -> Tuple[TimeSeries, TimeSeries]:
+                 use_full_output_length: Optional[bool] = None) -> Tuple[TimeSeries, TimeSeries]:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
@@ -183,14 +182,14 @@ class ForecastingModel(ABC):
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances as `model` argument support setting `retrain` to `False`.
+        use_full_output_length
+            Optionally, if `self` is an instance of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`. Otherwise, if this value is set and `self` is not an
+            instance of `TorchForecastingModel`, this will cause an error.
         trim_to_series
             Whether the predicted series has the end trimmed to match the end of the main series
         verbose
             Whether to print progress
-        fit_kwargs
-            Additional arguments passed to the fit method during backtesting
-        predict_kwargs
-            Additional arguments passed to the predict method during backtesting
 
         Returns
         -------
@@ -203,6 +202,17 @@ class ForecastingModel(ABC):
         # handle case where target_series not specified
         if target_series is None:
             target_series = covariate_series
+        
+        # construct predict kwargs dictionary
+        predict_kwargs = {}
+        if use_full_output_length is not None:
+            predict_kwargs['use_full_output_length'] = use_full_output_length
+        
+        # construct fit function (used to ignore target series for univariate models)
+        if isinstance(self, MultivariateForecastingModel):
+            fit_function = self.fit
+        else:
+            fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)
 
         # prepare the start parameter -> pd.Timestamp
         if isinstance(start, float):
@@ -227,14 +237,14 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        if not retrain:
-            self.fit(covariate_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
+        if not retrain and not model._fit_called:
+            fit_function(covariate_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
             train = covariate_series.drop_after(pred_time)  # build the training series
             target = target_series.drop_after(pred_time)  # build the target series
             if (retrain):
-                self.fit(train, target)
+                fit_function(train, target)
                 pred = self.predict(forecast_horizon, **predict_kwargs)
             else:
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)

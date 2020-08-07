@@ -73,44 +73,34 @@ class BacktestingTestCase(unittest.TestCase):
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
-        pred = backtest_forecasting(linear_series, NaiveDrift(), pd.Timestamp('20000201'), 3)
+        pred, _ = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, linear_series), 1.0)
 
         # univariate model + multivariate series without component index argument
-        with self.assertRaises(ValueError):
-            backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3)
-
-        # univariate model + multivariate series with component index argument
-        pred = backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3,
-                                    component_index=0, verbose=False)
-        self.assertEqual(pred.width, 1)
-        self.assertEqual(r2_score(pred, linear_series), 1.0)
-        pred = backtest_forecasting(linear_series_multi, NaiveDrift(), pd.Timestamp('20000201'), 3,
-                                    component_index=1, verbose=False)
-        self.assertEqual(pred.width, 1)
-        self.assertEqual(r2_score(pred, linear_series), 1.0)
+        with self.assertRaises(AssertionError):
+            NaiveDrift().backtest(linear_series_multi, None, pd.Timestamp('20000201'), 3)
 
         # multivariate model + univariate series
         tcn_model = TCNModel(batch_size=1, n_epochs=1)
-        pred = backtest_forecasting(linear_series, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
+        pred, _ = tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
         self.assertEqual(pred.width, 1)
 
         # multivariate model + multivariate series
         with self.assertRaises(ValueError):
-            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False)
+            tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
         tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
         with self.assertRaises(ValueError):
-            backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
-                                 use_full_output_length=False)
-        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 1, target_indices=[0],
-                                    verbose=False)
+            tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
+                               use_full_output_length=False)
+        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
+                                     verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
-        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
-                                    use_full_output_length=True, target_indices=[1])
+        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
+                                     verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
         tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
-        pred = backtest_forecasting(linear_series_multi, tcn_model, pd.Timestamp('20000125'), 3, verbose=False,
-                                    use_full_output_length=True, target_indices=[0, 1])
+        pred, _ = tcn_model.backtest(linear_series_multi, linear_series_multi[['0', '1']], pd.Timestamp('20000125'), 3,
+                                     verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):

@@ -376,7 +376,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                      "'input_series' must have same width as series used to fit model.", logger)
 
         raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
-                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
+                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate "
                      "TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
@@ -637,7 +637,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         for p in self.optimizer.param_groups:
             return p['lr']
 
-    def _backtest_model_specific_sanity_checks(self, retrain: bool):
+    def _backtest_model_specific_sanity_checks(self, retrain: bool, *args, **kwargs):
         """Add model specific sanity check(s) on the backtest inputs.
 
         Parameters
