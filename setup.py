@@ -52,5 +52,11 @@ setup(
             ('Programming Language :: Python :: '
              'Implementation :: PyPy')
       ],
+      extras_require={
+            'pmdarima': ['pmdarima>=1.5.3'],
+            'torch': ['torch>=1.4.0', 'tensorboard>=2.1.1'],
+            'fbprophet': ['fbprophet>=0.6'],
+            'statsmodels': ['statsmodels>=0.11.1'],
+      },
       keywords='timeseries forecasting arima'
 )
