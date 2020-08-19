@@ -13,18 +13,18 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
     times1 = pd.date_range('20130101', '20130110')
     times2 = pd.date_range('20130206', '20130215')
     dataframe1 = pd.DataFrame({
-        0: range(10),
-        1: range(5, 15),
-        2: range(10, 20)
+        "0": range(10),
+        "1": range(5, 15),
+        "2": range(10, 20)
     }, index=times1)
     dataframe2 = pd.DataFrame({
-        0: np.arange(1, 11),
-        1: np.arange(1, 11) * 3,
-        2: np.arange(1, 11) * 5
+        "0": np.arange(1, 11),
+        "1": np.arange(1, 11) * 3,
+        "2": np.arange(1, 11) * 5
     }, index=times1)
     dataframe3 = pd.DataFrame({
-        0: np.arange(1, 11),
-        1: np.arange(11, 21),
+        "0": np.arange(1, 11),
+        "1": np.arange(11, 21),
     }, index=times2)
     series1 = TimeSeries(dataframe1)
     series2 = TimeSeries(dataframe2)
@@ -44,7 +44,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         # Series cannot be lower than three without passing frequency as argument to constructor
         with self.assertRaises(ValueError):
             TimeSeries(self.dataframe1.iloc[:2, :])
-        TimeSeries(self.dataframe1.iloc[:2, :], 'D')
+        TimeSeries(self.dataframe1.iloc[:2, :], freq='D')
 
     def test_eq(self):
         seriesA = TimeSeries(self.dataframe1)
@@ -73,9 +73,9 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         seriesB = self.series2.rescale_with_value(1)
         self.assertEqual(seriesB, TimeSeries(
             pd.DataFrame({
-                0: np.arange(1, 11),
-                1: np.arange(1, 11),
-                2: np.arange(1, 11)
+                "0": np.arange(1, 11),
+                "1": np.arange(1, 11),
+                "2": np.arange(1, 11)
             }, index=self.dataframe2.index).astype(float)
         ))
 
@@ -119,7 +119,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
             self.series1.stack(self.series3)
         seriesA = self.series1.stack(self.series2)
         dataframeA = pd.concat([self.dataframe1, self.dataframe2], axis=1)
-        dataframeA.columns = range(6)
+        dataframeA.columns = [str(i) for i in range(6)]
         self.assertTrue((seriesA.pd_dataframe() == dataframeA).all().all())
         self.assertEqual(seriesA.values().shape, (len(self.dataframe1),
                                                   len(self.dataframe1.columns) + len(self.dataframe2.columns)))
@@ -130,7 +130,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.series1.univariate_component(3)
         seriesA = self.series1.univariate_component(1)
-        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15)))
+        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15), columns=["1"]))
         seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
         self.assertTrue(self.series1 == seriesB)
 

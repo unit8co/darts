@@ -40,7 +40,7 @@ def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `ts` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts.pd_dataframe().fillna(value=fill))
+    return TimeSeries.from_times_and_values(ts.time_index(), ts.pd_dataframe().fillna(value=fill), ts.freq())
 
 
 def auto_fillna(ts: TimeSeries,
@@ -72,4 +72,4 @@ def auto_fillna(ts: TimeSeries,
     interpolate_kwargs['inplace'] = True
     ts_temp.interpolate(**interpolate_kwargs)
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values)
+    return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values, ts.freq())
