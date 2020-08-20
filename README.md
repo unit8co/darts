@@ -121,13 +121,12 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ## Installation Guide
 
-The default installation supports `StandardRegressionModel`, `NaiveMean`, `NaiveSeasonal` and `NaiveDrift`.
+The default installation supports `StandardRegressionModel`, `NaiveMean`, `NaiveSeasonal`, `NaiveDrift`, `Theta`, `FFT` and `ExponentialSmoothing`.
 
 Support for other models can be added by installing the following extras:
 - `darts[pmdarima]`: `ARIMA` and `AutoARIMA`.
 - `darts[torch]`: `RNNModel`, `TCNModel` and `TorchForecastingModel`.
 - `darts[fbprophet]` `Prophet`.
-- `darts[statsmodels]`: `Theta`, `FFT` and `ExponentialSmoothing`.
 
 ### Support for other models
 

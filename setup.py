@@ -56,7 +56,6 @@ setup(
             'pmdarima': ['pmdarima==1.6.1'],
             'torch': ['torch==1.5.1', 'tensorboard==2.2.2'],
             'fbprophet': ['fbprophet==0.6'],
-            'statsmodels': ['statsmodels==0.11.1'],
       },
       keywords='timeseries forecasting arima'
 )
