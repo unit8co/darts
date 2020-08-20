@@ -121,9 +121,17 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ## Installation Guide
 
-### Preconditions
+The default installation supports `StandardRegressionModel`, `NaiveMean`, `NaiveSeasonal` and `NaiveDrift`.
 
-Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+Support for other models can be added by installing the following extras:
+- `darts[pmdarima]`: `ARIMA` and `AutoARIMA`.
+- `darts[torch]`: `RNNModel`, `TCNModel` and `TorchForecastingModel`.
+- `darts[fbprophet]` `Prophet`.
+- `darts[statsmodels]`: `Theta`, `FFT` and `ExponentialSmoothing`.
+
+### Support for other models
+
+Direct dependencies of `darts[fbprophet]` and `darts[torch]` include `fbprophet` and `torch` which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
