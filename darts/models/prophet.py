@@ -4,6 +4,7 @@ Facebook Prophet
 """
 
 from typing import Optional
+import fbprophet
 import logging
 
 from ..timeseries import TimeSeries
@@ -14,11 +15,6 @@ from ..logging import get_logger, execute_and_suppress_output
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
-
-try:
-    import fbprophet
-except ModuleNotFoundError:
-    logger.warning("Support Prophet based models not available. To enable it install darts[prophet]")
 
 
 class Prophet(UnivariateForecastingModel):
