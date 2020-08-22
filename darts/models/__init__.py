@@ -3,35 +3,36 @@ Models
 ------
 """
 
+from ..logging import get_logger
+
+logger = get_logger(__name__)
+
 # Forecasting
 try:
-    from autoriama import AutoARIMA
+    from arima import AutoARIMA
 except ModuleNotFoundError:
-    pass
+    logger.warning("Support pmdarima based models not available. To enable it install darts[pmdarima]")
 
 try:
     from .prophet import Prophet
 except ModuleNotFoundError:
-    pass
+    logger.warning("Support Prophet based models not available. To enable it install darts[prophet]")
 
 try:
-    import ModuleNotFoundError:
-from .rnn_model import RNNModel
-    pass
+    from .rnn_model import RNNModel
+except ModuleNotFoundError:
+    logger.warning("Support Torch based models not available. To enable it install darts[torch]")
 
 try:
-    import ModuleNotFoundError:
-from .tcn_model import TCNModel
-    pass
+    from .tcn_model import TCNModel
+except ModuleNotFoundError:
+    logger.warning("Support Torch based models not available. To enable it install darts[torch]")
 
-try:
-    from .fft import FFT
-except import ModuleNotFoundError:
-    pass
 
 from .arima import ARIMA
 from .baselines import NaiveMean, NaiveSeasonal, NaiveDrift
 from .exponential_smoothing import ExponentialSmoothing
+from .fft import FFT
 from .theta import Theta
 
 # Regression

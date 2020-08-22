@@ -19,13 +19,12 @@ from .forecasting_model import UnivariateForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
-try:
-    from autoa_rima import AutoARIMA 
-except ModuleNotFoundError:
-    pass
-
-
 logger = get_logger(__name__)
+
+try:
+    from auto_arima import AutoARIMA
+except ModuleNotFoundError:
+    logger.warning("Support AutoARIMA based models not available. To enable it install darts[pmdarima]")
 
 
 class ARIMA(UnivariateForecastingModel):
