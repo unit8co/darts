@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from ..timeseries import TimeSeries
 from ..models.forecasting_model import ForecastingModel
 from ..models.regression_model import RegressionModel
-from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
+from ..models import NaiveSeasonal, ARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
 from ..utils import _build_tqdm_iterator
 from ..utils.statistics import plot_acf
