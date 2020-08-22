@@ -1,9 +1,9 @@
 """
-ARIMA and Auto-ARIMA
+Auto-ARIMA
 --------------------
 
-Models for auto-ARIMA [1] (Autoregressive integrated moving average).
-The implementations are wrapped around <https://github.com/alkaline-ml/pmdarima>`_.
+Models for auto-ARIMA [1].
+The implementation is wrapped around <https://github.com/alkaline-ml/pmdarima>`_.
 
 References
 ----------
