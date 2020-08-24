@@ -4,16 +4,18 @@ Utils for time series statistics
 """
 
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
+from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf
 
-from ..logging import raise_log, get_logger
+from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
+from .. import SeasonalityMode, ModelMode
 
 logger = get_logger(__name__)
 
@@ -61,24 +63,12 @@ def check_seasonality(ts: TimeSeries,
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
-    gradient = np.gradient(r)
-    gradient_signs_changes = np.diff(np.sign(gradient))
+    # Finds local maxima of Auto-Correlation Function
+    candidates = argrelmax(r)[0]
 
-    # Tries to infer seasonality from Auto-Correlation Function if no value of m has been provided.
-    # We look for the first positive significant local maximum of the ACF by checking the sign changes
-    # in the gradient.
-
-    # Local maximum is indicated by signs_change == -2.
-    if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
+    if len(candidates) == 0:
         logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
-
-    # Building a list of candidates for local maximum.
-    candidates = np.nonzero((gradient_signs_changes == -2))[0].tolist()
-
-    # If a -2 value appears in gradient_signs_changes at index i, then the local
-    # maximum of r occurs either at index i or i+1. We check manually and change the candidates accordingly.
-    candidates = [i if r[i] >= r[i + 1] else i + 1 for i in candidates]
 
     if m is not None:
         # Check for local maximum when m is user defined.
@@ -133,7 +123,8 @@ def _bartlett_formula(r: np.ndarray,
 
 def extract_trend_and_seasonality(ts: TimeSeries,
                                   freq: int = None,
-                                  model: str = 'multiplicative') -> Tuple[TimeSeries, TimeSeries]:
+                                  model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE) -> \
+        Tuple[TimeSeries, TimeSeries]:
     """
     Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.
 
@@ -144,7 +135,10 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use ('additive' or 'multiplicative').
+        The type of decomposition to use.
+        Must be `from darts import ModelMode, SeasonalityMode` Enum member.
+        Either MULTIPLICATIVE or ADDITIVE.
+        Defaults ModelMode.MULTIPLICATIVE.
 
     Returns
     -------
@@ -152,8 +146,11 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    raise_if_not(model in ModelMode or model in SeasonalityMode,
+                 "Unknown value for model_mode: {}.".format(model), logger)
+    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
 
-    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model, extrapolate_trend='freq')
+    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model.value, extrapolate_trend='freq')
 
     season = TimeSeries.from_times_and_values(ts.time_index(), decomp.seasonal)
     trend = TimeSeries.from_times_and_values(ts.time_index(), decomp.trend)
@@ -163,7 +160,7 @@ def extract_trend_and_seasonality(ts: TimeSeries,
 
 def remove_from_series(ts: TimeSeries,
                        other: TimeSeries,
-                       model: str) -> TimeSeries:
+                       model: Union[SeasonalityMode, ModelMode]) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
     Use e.g. to remove an additive or multiplicative trend from a series.
@@ -175,7 +172,9 @@ def remove_from_series(ts: TimeSeries,
     other
         The TimeSeries to remove.
     model
-        The type of model considered (either 'additive' or 'multiplicative').
+        The type of model considered.
+        Must be `from darts import ModelMode, SeasonalityMode` Enums member.
+        Either MULTIPLICATIVE or ADDITIVE.
 
     Returns
     -------
@@ -184,19 +183,21 @@ def remove_from_series(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    raise_if_not(model in ModelMode or model in SeasonalityMode,
+                 "Unknown value for model_mode: {}.".format(model), logger)
 
-    if model == 'multiplicative':
+    if model.value == 'multiplicative':
         new_ts = ts / other
-    elif model == 'additive':
+    elif model.value == 'additive':
         new_ts = ts - other
     else:
-        raise_log(ValueError('Invalid parameter; must be either "additive" or "multiplicative". Was: {}'.format(model)))
+        raise_log(ValueError('Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}'.format(model)))
     return new_ts
 
 
 def remove_seasonality(ts: TimeSeries,
                        freq: int = None,
-                       model: str = 'multiplicative') -> TimeSeries:
+                       model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
@@ -207,7 +208,10 @@ def remove_seasonality(ts: TimeSeries,
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use ('additive' or 'multiplicative').
+        The type of decomposition to use.
+        Must be `from darts import SeasonalityMode` Enum member.
+        Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
+        Defaults SeasonalityMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
@@ -215,6 +219,7 @@ def remove_seasonality(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model)
     new_ts = remove_from_series(ts, seasonality, model)
@@ -222,7 +227,7 @@ def remove_seasonality(ts: TimeSeries,
 
 
 def remove_trend(ts: TimeSeries,
-                 model='multiplicative') -> TimeSeries:
+                 model: ModelMode = ModelMode.MULTIPLICATIVE) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.
 
@@ -231,7 +236,10 @@ def remove_trend(ts: TimeSeries,
     ts
         The TimeSeries to adjust.
     model
-        The type of decomposition to use (additive or multiplicative).
+        The type of decomposition to use.
+        Must be `from darts import ModelMode` Enum member.
+        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
+        Defaults modelMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries

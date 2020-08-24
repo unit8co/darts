@@ -22,9 +22,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "3. Update pip"
+      - name: "3. Setup pip"
         run: |
-          python -m pip install --upgrade pip
+          ./gradlew setupPip
 
       - name: "4. Attach cache for pip"
         uses: actions/cache@v1
@@ -35,24 +35,9 @@ jobs:
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
-      - name: "5-0. Install torch without cuda on ${{ runner.os }}"
-        if: contains(runner.os, 'Linux')
+      - name: "5. Tests"
         run: |
-          # this avoids an unnecessary cuda install on Linux
-          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: "5. Install main and dev dependencies"
-        run: |
-          pip install -q .
-          pip install -q -r requirements/dev.txt
-
-      - name: "5. Run tests"
-        run: |
-          python -m unittest
-
-      - name: "6. Run linter"
-        run: |
-          flake8 --config=setup.cfg darts
+          ./gradlew test
 
   release:
     needs: [tests]
@@ -135,22 +120,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
 
-      - name: "3. Determine docker tags"
-        run: echo ::set-env name=DOCKER_TAGS::$(echo latest, ${{ steps.bump_dry.outputs.tag }})
+      - name: "3. Login to docker hub"
+        run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
+        env:
+          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: "3-1. Determine docker tags for hotfix"
-        if: contains(github.event.head_commit.message, '#hotfix')
-        run: echo ::set-env name=DOCKER_TAGS::$(echo ${{ steps.bump_dry.outputs.tag }})
+      #check build.gradle file for explanation of next steps
+      - name: "4. Publish image with tag corresponding to current version"
+        run: |
+          ./gradlew dockerPushVersion -P version=${{ steps.bump_dry.outputs.tag }}
 
-      - name: "4. Build and publish docker to docker hub"
-        uses: elgohr/Publish-Docker-Github-Action@2.14
-        with:
-          name: unit8/darts
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          tags: "${{ env.DOCKER_TAGS }}"
-          cache: true
-          buildoptions: "--compress -q"
+      - name: "5. Publish image with tag 'latest' if not hotfix"
+        if: ${{ !contains(github.event.head_commit.message, '#hotfix') }}
+        run: |
+          ./gradlew dockerPushLatest
+
 
   deploy-docs:
     runs-on: ubuntu-latest
@@ -164,12 +149,15 @@ jobs:
         with:
           python-version: 3.6
 
-      - name: "3. Update pip and install pandoc"
+      - name: "3. Install pandoc"
         run: |
           sudo apt-get install -y pandoc
-          python -m pip install --upgrade pip
 
-      - name: "4. Attach cache for pip"
+      - name: "4. Setup pip"
+        run: |
+          ./gradlew setupPip
+
+      - name: "5. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
@@ -178,30 +166,11 @@ jobs:
           restore-keys: |
             release-${{ runner.os }}-pip-
 
-      - name: "5. Install main and release dependencies"
+      - name: "6. Build docs"
         run: |
-          # this avoids an unnecessary cuda install on Linux
-          pip install -q torch==1.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-          pip install -q .
-          pip install -q -r requirements/release.txt
+          ./gradlew buildDocs
 
-      - name: "6. Copy examples"
-        run: |
-          make --directory ./docs copy-examples
-
-      - name: "7. Generate API documentation"
-        run: |
-          make --directory ./docs generate
-
-      - name: "8. Generate readme"
-        run: |
-          make --directory ./docs readme
-
-      - name: "9. Build documentation"
-        run: |
-          make --directory ./docs html
-
-      - name: "10. Publish documentation to gh-pages"
+      - name: "7. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self

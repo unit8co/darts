@@ -22,7 +22,7 @@ We recommend to first setup a clean python environment for your project with at 
 
 ### Quick Install
 
-Once your environement is setup you can install darts using the pip package:
+Once your environment is setup you can install darts using the pip package:
 
     pip install u8darts
 
@@ -113,7 +113,9 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 3. Clone the forked repository locally.
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
 5. Create a new branch with your fix / feature from the **develop** branch.
-6. Create a pull request from your new branch to the **develop** branch.
+6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
+7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
+8. Create a pull request from your new branch to the **develop** branch.
 
 ## Contact Us
 
@@ -165,11 +167,35 @@ Don't forget to activate your virtual environment
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
-```
-cd scripts
-./build_docker.sh && ./run_docker.sh
+```bash
+./gradlew docker && ./gradlew dockerRun
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
 For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
+
+
+### Tests
+
+Gradle setup works best with python env, but it requires only that pip is for python3.
+
+To run all tests at once just run
+```bash
+./gradlew test
+```
+
+alternatively you can run
+```bash
+./gradlew unitTest     # to run only unittests
+./gradlew coverageTest # to run coverage
+./gradlew lint         # to run linter
+```
+
+### Documentation
+
+To build documantation locally just run
+```bash
+./gradlew buildDocs
+```
+After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.

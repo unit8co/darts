@@ -1,0 +1,157 @@
+buildscript {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "com.palantir.docker" version "0.25.0"
+    id "com.palantir.docker-run" version "0.25.0"
+}
+
+// needed for palantir plugin
+task build {
+}
+
+// docker & docker run
+docker {
+    name "unit8/darts"
+
+    // ./gradlew dockerPushVersion will push image with tag ${version}
+    // ${version} is property passed from command line during workflow
+    tag "version", "unit8/darts:${version}"
+
+    // ./gradlew dockerPushLatest will push image with tag 'latest'
+    tag "latest", "unit8/darts:latest"
+
+    dockerfile file("${project.rootDir}/Dockerfile")
+    // needed files for docker and to build library
+    files "README.md", "setup.py", "setup.cfg"
+    copySpec.with {
+        from(".") {
+            include "examples/**"
+            into "."
+        }
+        from(".") {
+            include "darts/**"
+            into "."
+        }
+        from(".") {
+            include "requirements/**"
+            into "."
+        }
+    }
+}
+
+dockerRun {
+    name "unit8_darts"
+    image "unit8/darts:latest"
+    ports "8888:8888"
+    daemonize false
+    clean true
+}
+
+// setup requirements
+task setupPip(type: Exec) {
+    commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
+}
+
+task pipMain(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/main.txt"
+}
+
+task pipDev(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/dev.txt"
+}
+
+task pipRelease(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/release.txt"
+}
+
+task pipInstall() {
+    doFirst {
+        setupPip
+    }
+    dependsOn pipMain, pipDev, pipRelease
+}
+
+task installLocally(type:Exec) {
+    dependsOn pipInstall
+    commandLine "pip", "install", "."
+}
+
+// Tests
+void coverageTestSteps() {
+    exec {
+        commandLine "coverage", "run", "-m", "unittest"
+    }
+    exec {
+        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit='darts/tests*,*__init__.py'"
+    }
+}
+
+task unitTest(type: Exec) {
+    dependsOn pipMain, pipDev
+    commandLine "python", "-m", "unittest"
+}
+
+task coverageTest() {
+    dependsOn pipMain, pipDev
+    doLast {
+        coverageTestSteps()
+    }
+}
+
+task lint(type: Exec) {
+    dependsOn pipDev
+    commandLine "flake8", "--config=setup.cfg", "darts"
+}
+
+task test() {
+    dependsOn unitTest
+    dependsOn coverageTest
+    dependsOn lint
+}
+
+def exampleName=project.properties["exampleName"] ?: ""
+
+task checkExample(type: Exec) {
+    dependsOn installLocally
+    workingDir "./examples"
+    // exampleName must be passed with -PexampleName=FFT-examples.ipynb
+    commandLine "papermill", exampleName, exampleName
+
+    doFirst {
+        exec {
+            commandLine "jupyter", "nbextension", "enable", "--py", "widgetsnbextension"
+        }
+    }
+}
+
+// Documentation build
+void docSteps() {
+    exec {
+        commandLine "make", "--directory", "./docs", "copy-examples"
+    }
+    exec {
+        commandLine "make", "--directory", "./docs", "generate"
+    }
+    exec {
+        commandLine "make", "--directory", "./docs", "readme"
+    }
+    exec {
+        commandLine "make", "--directory", "./docs", "html"
+    }
+}
+
+task cleanDocs(type: Exec) {
+    commandLine "make", "--directory", "./docs", "clean"
+}
+
+task buildDocs() {
+    dependsOn pipInstall
+    dependsOn cleanDocs
+    doLast {
+        docSteps()
+    }
+}

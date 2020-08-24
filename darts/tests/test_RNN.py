@@ -21,6 +21,10 @@ class RNNModelTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
+
     def test_creation(self):
         with self.assertRaises(ValueError):
             # cannot choose any string
@@ -54,6 +58,11 @@ class RNNModelTestCase(unittest.TestCase):
         # test short predict
         pred4 = model3.predict(n=1)
         self.assertEqual(len(pred4), 1)
+
+        # test validation series input
+        model3.fit(self.series[:60], val_series=self.series[60:])
+        pred4 = model3.predict(n=6)
+        self.assertEqual(len(pred4), 6)
 
         shutil.rmtree('.darts')
 

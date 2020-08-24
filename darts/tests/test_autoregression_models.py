@@ -1,4 +1,5 @@
 import logging
+import shutil
 import unittest
 
 import numpy as np
@@ -7,9 +8,9 @@ import pandas as pd
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA, TCNModel
-from ..models.theta import Theta
+from ..models import Prophet, NaiveSeasonal, ExponentialSmoothing, ARIMA, AutoARIMA, TCNModel, Theta, FourTheta
 from ..models.fft import FFT
+from .. import SeasonalityMode, TrendMode, ModelMode
 
 
 class AutoregressionModelsTestCase(unittest.TestCase):
@@ -35,7 +36,12 @@ class AutoregressionModelsTestCase(unittest.TestCase):
         (AutoARIMA(), 13.7),
         (Theta(), 11.3),
         (Theta(1), 20.2),
-        (Theta(3), 9.8),
+        (Theta(-1), 9.8),
+        (FourTheta(1), 20.2),
+        (FourTheta(-1), 9.8),
+        (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
+        (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
+        (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
         (FFT(trend='poly'), 11.4),
         (NaiveSeasonal(), 32.4),
     ]
@@ -43,6 +49,10 @@ class AutoregressionModelsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree('.darts')
 
     def test_models_runnability(self):
         for model, _ in self.models:
