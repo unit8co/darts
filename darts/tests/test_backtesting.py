@@ -4,12 +4,7 @@ import pandas as pd
 import random
 import logging
 
-from ..backtesting import (
-    backtest_gridsearch,
-    backtest_forecasting,
-    forecasting_residuals,
-    backtest_regression
-)
+from ..backtesting import backtest_regression
 from ..metrics import mape, r2_score
 from ..utils.timeseries_generation import (
     linear_timeseries as lt,
@@ -28,15 +23,14 @@ from ..models import (
     TCNModel
 )
 
-
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = backtest_gridsearch(model_class, params, series, fcast_horizon_n=10, metric=mape)
+    best_model_1 = model_class.backtest_gridsearch(params, series, fcast_horizon_n=10, metric=mape)
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
-    best_model_2 = backtest_gridsearch(model_class, params, train, val_series=val, metric=mape)
+    best_model_2 = model_class.backtest_gridsearch(params, train, val_target_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random_param_choice = {}
@@ -45,8 +39,8 @@ def compare_best_against_random(model_class, params, series):
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_forecast_1 = backtest_forecasting(series, best_model_1, series.time_index()[-21], 10)
-    random_forecast_1 = backtest_forecasting(series, random_model, series.time_index()[-21], 10)
+    best_forecast_1 = best_model_1.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
+    random_forecast_1 = random_model.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
@@ -151,8 +145,8 @@ class BacktestingTestCase(unittest.TestCase):
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
-        backtest_gridsearch(TCNModel, tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
-                            use_full_output_length=True, target_indices=[0, 1])
+        TCNModel.backtest_gridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
+                                     use_full_output_length=True)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)

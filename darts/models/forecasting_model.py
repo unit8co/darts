@@ -9,8 +9,9 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, Tuple, Union, Dict, Any
+from typing import Optional, Tuple, Union, Dict, Any, Callable
 from types import SimpleNamespace
+from itertools import product
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ import pandas as pd
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import _build_tqdm_iterator, _with_sanity_checks
+from .. import metrics
 
 logger = get_logger(__name__)
 
@@ -254,6 +256,137 @@ class ForecastingModel(ABC):
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
 
         return forecast
+
+
+    @classmethod
+    def backtest_gridsearch(model_class,
+                            parameters: dict,
+                            covariate_series: TimeSeries,
+                            target_series: TimeSeries = None,
+                            fcast_horizon_n: Optional[int] = None,
+                            use_full_output_length: Optional[bool] = None,
+                            val_target_series: Optional[TimeSeries] =  None,
+                            num_predictions: int = 10,
+                            use_fitted_values: bool = False,
+                            metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                            verbose=False):
+        """ A function for finding the best hyperparameters.
+
+        This function has 3 modes of operation: Expanding window mode, split mode and comparison with fitted values.
+        The three modes of operation evaluate every possible combination of hyperparameter values
+        provided in the `parameters` dictionary by instantiating the `model_class` subclass
+        of ForecastingModel with each combination, and returning the best-performing model with regards
+        to the `metric` function. The `metric` function is expected to return an error value,
+        thus the model resulting in the smallest `metric` output will be chosen.
+        The relationship of the training data and test data depends on the mode of operation.
+
+        Expanding window mode (activated when `fcast_horizon_n` is passed):
+        For every hyperparameter combination, the model is repeatedly trained and evaluated on different
+        splits of `train_series`. The number of splits is equal to `num_predictions`, and the
+        forecasting horizon used when making a prediction is `fcast_horizon_n`.
+        Note that the model is retrained for every single prediction, thus this mode is slower.
+
+        Split window mode (activated when `val_series` is passed):
+        This mode will be used when the `val_series` argument is passed.
+        For every hyperparameter combination, the model is trained on `train_series` and
+        evaluated on `val_series`.
+
+        Comparison with fitted values (activated when `use_fitted_values` is passed):
+        For every hyperparameter combination, the model is trained on `train_series` and evaluated on the resulting
+        fitted values.
+        Not all models have fitted values, and this method raises an error if `model.fitted_values` doesn't exist.
+        The fitted values are the result of the fit of the model on the training series. Comparing with the fitted values
+        can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
+
+
+        Parameters
+        ----------
+        model_class
+            The ForecastingModel subclass to be tuned for 'series'.
+        parameters
+            A dictionary containing as keys hyperparameter names, and as values lists of values for the
+            respective hyperparameter.
+        train_series
+            The univariate TimeSeries instance used for training (and also validation in split mode).
+        val_target_series
+            The univariate TimeSeries instance used for validation in split mode.
+        fcast_horizon_n
+            The integer value of the forecasting horizon used in expanding window mode.
+        use_full_output_length
+            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
+            as argument to the predict method of `model`.
+        num_predictions:
+            The number of train/prediction cycles performed in one iteration of expanding window mode.
+        use_fitted_values
+            If `True`, uses the comparison with the fitted values.
+            Raises an error if `fitted_values` is not an attribute of `model_class`.
+        metric:
+            A function that takes two TimeSeries instances as inputs and returns a float error value.
+        verbose:
+            Whether to print progress.
+
+        Returns
+        -------
+        ForecastingModel
+            An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
+        """
+        raise_if_not((fcast_horizon_n is not None) + (val_target_series is not None) + use_fitted_values == 1,
+                    "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_target_series' or 'use_fitted_values'.",
+                    logger)
+
+        # check target and covariate series
+        if target_series is None:
+            target_series = covariate_series
+        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "the target and covariate series"
+                        " must have the same time indices.")
+
+        # construct predict kwargs dictionary
+        predict_kwargs = {}
+        if use_full_output_length is not None:
+            predict_kwargs['use_full_output_length'] = use_full_output_length
+
+        if use_fitted_values:
+            model = model_class()
+            raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
+                        " to compare with the train TimeSeries", logger)
+
+        elif val_target_series is not None:
+            raise_if_not(covariate_series.width == val_target_series.width, "Training and validation series require the same"
+                        " number of components.", logger)
+
+        if (val_target_series is None) and (not use_fitted_values):
+            backtest_start_time = covariate_series.end_time() - (num_predictions + fcast_horizon_n) * covariate_series.freq()
+        min_error = float('inf')
+        best_param_combination = {}
+
+        # compute all hyperparameter combinations from selection
+        params_cross_product = list(product(*parameters.values()))
+
+        # iterate through all combinations of the provided parameters and choose the best one
+        iterator = _build_tqdm_iterator(params_cross_product, verbose)
+        for param_combination in iterator:
+            param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
+            model = model_class(**param_combination_dict)
+            if use_fitted_values:
+                model.fit(covariate_series)
+                # Takes too much time to create a TimeSeries
+                # Overhead: 2-10 ms in average
+                fitted_values = TimeSeries.from_times_and_values(covariate_series.time_index(), model.fitted_values)
+                error = metric(fitted_values, target_series)
+            elif val_target_series is None:  # expanding window mode
+                backtest_forecast = model.backtest(covariate_series, target_series, backtest_start_time, fcast_horizon_n, use_full_output_length=use_full_output_length)
+                error = metric(backtest_forecast, target_series)
+            else:  # split mode
+                if isinstance(model, MultivariateForecastingModel):
+                    model.fit(covariate_series, target_series)
+                else:
+                    model.fit(covariate_series)
+                error = metric(model.predict(len(val_target_series), **predict_kwargs), val_target_series)
+            if error < min_error:
+                min_error = error
+                best_param_combination = param_combination_dict
+        logger.info('Chosen parameters: ' + str(best_param_combination))
+        return model_class(**best_param_combination)
 
 
     def residuals(self,
