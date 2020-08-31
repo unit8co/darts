@@ -272,7 +272,7 @@ class ForecastingModel(ABC):
                             verbose=False):
         """ A function for finding the best hyperparameters.
 
-        This function has 3 modes of operation: Expanding window mode, split mode and comparison with fitted values.
+        This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
         The three modes of operation evaluate every possible combination of hyperparameter values
         provided in the `parameters` dictionary by instantiating the `model_class` subclass
         of ForecastingModel with each combination, and returning the best-performing model with regards
@@ -282,21 +282,21 @@ class ForecastingModel(ABC):
 
         Expanding window mode (activated when `fcast_horizon_n` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
-        splits of `train_series`. The number of splits is equal to `num_predictions`, and the
+        splits of `covariate_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
         forecasting horizon used when making a prediction is `fcast_horizon_n`.
         Note that the model is retrained for every single prediction, thus this mode is slower.
 
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
-        For every hyperparameter combination, the model is trained on `train_series` and
+        For every hyperparameter combination, the model is trained on `covariate_series` + `target_series` and
         evaluated on `val_series`.
 
-        Comparison with fitted values (activated when `use_fitted_values` is passed):
-        For every hyperparameter combination, the model is trained on `train_series` and evaluated on the resulting
-        fitted values.
-        Not all models have fitted values, and this method raises an error if `model.fitted_values` doesn't exist.
-        The fitted values are the result of the fit of the model on the training series. Comparing with the fitted values
-        can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
+        Fitted value mode (activated when `use_fitted_values` is set to `True`):
+        For every hyperparameter combination, the model is trained on `covariate_series` + `target_series`
+        and evaluated on the resulting fitted values.
+        Not all models have fitted values, and this method raises an error if `model.fitted_values` does not exist.
+        The fitted values are the result of the fit of the model on the training series. Comparing with the
+        fitted values can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
 
 
         Parameters
@@ -306,15 +306,17 @@ class ForecastingModel(ABC):
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
-        train_series
-            The univariate TimeSeries instance used for training (and also validation in split mode).
-        val_target_series
-            The univariate TimeSeries instance used for validation in split mode.
+        covariate_series
+            The TimeSeries instance used as input for training.
+        target_series
+            The TimeSeries instance used as target for training (and also validation in expanding window mode).
         fcast_horizon_n
             The integer value of the forecasting horizon used in expanding window mode.
         use_full_output_length
             In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
             as argument to the predict method of `model`.
+        val_target_series
+            The TimeSeries instance used for validation in split mode.
         num_predictions:
             The number of train/prediction cycles performed in one iteration of expanding window mode.
         use_fitted_values
