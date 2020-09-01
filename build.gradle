@@ -16,7 +16,14 @@ task build {
 // docker & docker run
 docker {
     name "unit8/darts"
-    tags version, "latest"
+
+    // ./gradlew dockerPushVersion will push image with tag ${version}
+    // ${version} is property passed from command line during workflow
+    tag "version", "unit8/darts:${version}"
+
+    // ./gradlew dockerPushLatest will push image with tag 'latest'
+    tag "latest", "unit8/darts:latest"
+
     dockerfile file("${project.rootDir}/Dockerfile")
     // needed files for docker and to build library
     files "README.md", "setup.py", "setup.cfg"

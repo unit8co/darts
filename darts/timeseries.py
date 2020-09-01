@@ -21,8 +21,7 @@ class TimeSeries:
     def __init__(self,
                  df: pd.DataFrame,
                  freq: Optional[str] = None,
-                 fill_missing_dates: Optional[bool] = True,
-                 columns: Optional[Union[List[str], str]] = None):
+                 fill_missing_dates: Optional[bool] = True):
         """
         A TimeSeries is an object representing a univariate or multivariate time series.
 
@@ -33,37 +32,18 @@ class TimeSeries:
         df
             The actual time series, as a pandas DataFrame with a proper time index.
         freq
-            Optionally, a string representing the frequency of the Pandas DataFrame. When creating a TimeSeries
-            instance with a length smaller than 3, this argument must be passed.
+            Optionally, a Pandas offset alias representing the frequency of the DataFrame.
+            (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)
+            When creating a TimeSeries instance with a length smaller than 3, this argument must be passed.
+            Furthermore, this argument can be used to override the automatic frequency detection if the
+            index is incomplete.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
-        columns
-            The columns name in the same order as in the underlying DataFrame. If not provided, it will try to use the
-            underlying DataFrame columns. If columns name are not unique they will be named "0", "1", etc..
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
                      logger)
-
-        # consistent column names
-        def columns_are_unique(columns: Union[List[str], str]) -> bool:
-            """True if columns are unique, False if duplicates."""
-            if isinstance(columns, str):
-                return True
-            else:
-                return len(set(columns)) == len(columns)
-
-        if columns is not None and columns_are_unique(columns):
-            if isinstance(columns, str):
-                columns = [columns]
-            raise_if_not(len(columns) == df.shape[1], "`{}` columns specified when `{}` was expected from `df` "
-                                                      "shape".format(len(columns), df.shape[1]))
-        else:
-            columns = df.columns
-            if isinstance(columns, pd.RangeIndex) or not columns_are_unique(columns.to_list()):
-                columns = [str(i) for i in range(df.shape[1])]  # we make sure columns are str for indexing.
-
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
         raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
                      logger)
@@ -72,8 +52,8 @@ class TimeSeries:
         raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      'is not passed', logger)
 
-        self._df = df.sort_index()  # Sort by time
-        self._df.columns = columns
+        self._df = df.sort_index()  # Sort by time **returns a copy**
+        self._df.columns = self._clean_df_columns(df.columns)
 
         if (len(df) < 3):
             self._freq: str = freq
@@ -82,7 +62,7 @@ class TimeSeries:
         else:
             if not df.index.inferred_freq:
                 if fill_missing_dates:
-                    self._df = self._fill_missing_dates(self._df)
+                    self._df = self._fill_missing_dates(self._df, freq)
                 else:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
                                         'Try specifying `fill_missing_dates=True`.', logger)
@@ -94,6 +74,21 @@ class TimeSeries:
 
         # The actual values
         self._values: np.ndarray = self._df.values
+
+    def _clean_df_columns(self, columns: pd._typing.Axes) -> pd.Index:
+        """clean pandas dataFrame columns for usage with TimeSeries"""
+        # convert everything to str
+        columns_list = columns.to_list()
+        for i, column in enumerate(columns_list):
+            if not isinstance(column, str):
+                columns_list[i] = str(column)
+
+        columns = pd.Index(columns_list)
+
+        if isinstance(columns, pd.RangeIndex) or not columns.is_unique:
+            columns = pd.Index([str(i) for i in range(len(columns))])  # we make sure columns are str for indexing.
+
+        return columns
 
     def _assert_univariate(self):
         """
@@ -389,6 +384,9 @@ class TimeSeries:
             A new TimeSeries, with length at most `n` and indices greater or equal than `start_ts`.
         """
         raise_if_not(n >= 0, 'n should be a positive integer.', logger)  # TODO: logically raise if n<3, cf. init
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         self._raise_if_not_within(start_ts)
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
         end_ts: pd.Timestamp = start_ts + (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
@@ -413,6 +411,9 @@ class TimeSeries:
             A new TimeSeries, with length at most `n` and indices smaller or equal than `end_ts`.
         """
         raise_if_not(n >= 0, 'n should be a positive integer.', logger)
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         self._raise_if_not_within(end_ts)
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
         start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
@@ -480,6 +481,9 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with a shifted index.
         """
+        if not isinstance(n, int):
+            logger.warning(f"Converted n to int from {n} to {int(n)}")
+            n = int(n)
         try:
             self.time_index()[-1] + n * self.freq()
         except pd.errors.OutOfBoundsDatetime:
@@ -492,7 +496,6 @@ class TimeSeries:
 
     @staticmethod
     def from_series(pd_series: pd.Series,
-                    column: Optional[str] = None,
                     freq: Optional[str] = None,
                     fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
         """
@@ -502,8 +505,6 @@ class TimeSeries:
         ----------
         pd_series
             The pandas Series instance.
-        column
-            The name of the column if any.
         freq
             Optionally, a string representing the frequency of the Pandas Series.
         fill_missing_dates
@@ -515,7 +516,7 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates, column)
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
@@ -568,7 +569,7 @@ class TimeSeries:
                               values: np.ndarray,
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True,
-                              column: Optional[str] = None,) -> 'TimeSeries':
+                              columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
         """
         Returns TimeSeries built from an index and values.
 
@@ -583,8 +584,8 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
-        column
-            Name of the column to use if any.
+        columns
+            Columns to be used by the underlying pandas DataFrame.
 
         Returns
         -------
@@ -592,8 +593,9 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
         df = pd.DataFrame(values, index=times)
-
-        return TimeSeries(df, freq, fill_missing_dates, column)
+        if columns is not None:
+            df.columns = columns
+        return TimeSeries(df, freq, fill_missing_dates)
 
     def plot(self,
              new_plot: bool = False,
@@ -709,7 +711,8 @@ class TimeSeries:
             raise_if_not(index[-1] == index[0] + self.freq(),
                          'Appended index must have the same frequency as the current one.', logger)
         values = values[new_indices]
-        new_series = pd.DataFrame(values, index=index, columns=self._df.columns)
+        new_series = pd.DataFrame(values, index=index)
+        new_series.columns = self._clean_df_columns(new_series.columns)
         series = self._df.append(new_series)
 
         return TimeSeries(series, self.freq_str())
@@ -754,8 +757,13 @@ class TimeSeries:
 
         ignored_indices = [index.get_loc(ind) for ind in (set(index) - set(self.time_index()))]
         index = index.delete(ignored_indices)  # only contains indices that are present in the TimeSeries instance
-        series = values if values is None else pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index,
-                                                            columns=self._df.columns)
+        if values is None:
+            series = values
+        else:
+            df = pd.DataFrame(np.delete(values, ignored_indices, axis=0), index=index)
+            df.columns = self._clean_df_columns(df.columns)
+            series = df
+
         raise_if_not(len(index) > 0, "Must give at least one correct index.", logger)
 
         new_series = self.pd_dataframe()
@@ -910,6 +918,35 @@ class TimeSeries:
         index = self.time_index()
         return index[0] <= ts <= index[-1]
 
+    def map(self,
+            fn: Callable[[np.number], np.number],
+            cols: Optional[Union[List[str], str]] = None) -> 'TimeSeries':
+        """
+        Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
+        values in the columns specified by the optional argument `cols`. Returns a new
+        TimeSeries instance.
+
+        Parameters
+        ----------
+        fn
+            A numerical function
+        cols
+            Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance
+        """
+        if cols is None:
+            new_dataframe = self._df.applymap(fn)
+        else:
+            if isinstance(cols, str):
+                cols = [cols]
+            new_dataframe = self.pd_dataframe()
+            new_dataframe[cols] = new_dataframe[cols].applymap(fn)
+        return TimeSeries(new_dataframe, self.freq_str())
+
     @staticmethod
     def _combine_or_none(df_a: Optional[pd.DataFrame],
                          df_b: Optional[pd.DataFrame],
@@ -976,39 +1013,46 @@ class TimeSeries:
         return TimeSeries(series_df, self.freq_str())
 
     @staticmethod
-    def _fill_missing_dates(series: pd.DataFrame) -> pd.DataFrame:
+    def _fill_missing_dates(series: pd.DataFrame, freq: Optional[str] = None) -> pd.DataFrame:
         """
         Tries to fill missing dates in series with NaN.
-        Method is successful only when explicit frequency can be determined from all consecutive triple timestamps.
+        If no value for the `freq` argument is provided, the method is successful only when explicit frequency
+        can be determined from all consecutive triple timestamps.
+        If a value for `freq` is given, this value will be used to determine the new frequency.
 
         Parameters
         ----------
         series
             The actual time series, as a pandas DataFrame with a proper time index.
+        freq
+            Optionally, the desired frequency of the TimeSeries instance.
 
         Returns
         -------
         pandas.Series
             A new Pandas DataFrame without missing dates.
         """
-        date_axis = series.index
-        samples_size = 3
-        observed_frequencies = [
-            date_axis[x:x + samples_size].inferred_freq
-            for x
-            in range(len(date_axis) - samples_size + 1)]
 
-        observed_frequencies = set(filter(None.__ne__, observed_frequencies))
+        if not freq:
+            date_axis = series.index
+            samples_size = 3
+            observed_frequencies = [
+                date_axis[x:x + samples_size].inferred_freq
+                for x
+                in range(len(date_axis) - samples_size + 1)]
 
-        raise_if_not(
-            len(observed_frequencies) == 1,
-            "Could not infer explicit frequency. Observed frequencies: "
-            + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
-            + ". Is Series too short (n=2)?",
-            logger)
+            observed_frequencies = set(filter(None.__ne__, observed_frequencies))
 
-        inferred_frequency = observed_frequencies.pop()
-        return series.resample(inferred_frequency).asfreq(fill_value=None)
+            raise_if_not(
+                len(observed_frequencies) == 1,
+                "Could not infer explicit frequency. Observed frequencies: "
+                + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
+                + ". Is Series too short (n=2)?",
+                logger)
+
+            freq = observed_frequencies.pop()
+
+        return series.resample(freq).asfreq(fill_value=None)
 
     """
     Definition of some useful statistical methods.

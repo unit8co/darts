@@ -130,7 +130,7 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.series1.univariate_component(3)
         seriesA = self.series1.univariate_component(1)
-        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15), column="1"))
+        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15), columns=["1"]))
         seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
         self.assertTrue(self.series1 == seriesB)
 

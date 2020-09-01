@@ -267,8 +267,8 @@ class TCNModel(TorchForecastingModel):
 
         super().__init__(**kwargs)
 
-    def _create_dataset(self, covariate_series, target_series):
-        return _TimeSeriesShiftedDataset(covariate_series, target_series, self.input_length, self.output_length)
+    def _create_dataset(self, training_series, target_series):
+        return _TimeSeriesShiftedDataset(training_series, target_series, self.input_length, self.output_length)
 
     @property
     def first_prediction_index(self) -> int:

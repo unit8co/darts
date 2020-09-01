@@ -28,29 +28,35 @@ class ForecastingModel(ABC):
     """ The base class for all forecasting models.
 
     All implementations of forecasting have to implement the `fit()` and `predict()` methods defined below.
-    """
 
+    Attributes
+    ----------
+    training_series
+        reference to the `TimeSeries` used for training the model.
+    target_series
+        reference to the `TimeSeries` used as target to train the model.
+    """
     @abstractmethod
     def __init__(self):
         # Stores training date information:
         self.training_series: TimeSeries = None
+        self.target_series: TimeSeries = None
 
         # state
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self) -> None:
         """ Fits/trains the model on the provided series
 
-        Parameters
-        ----------
-        series
-            the training time series on which to fit the model
+        Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
+        wether they are univariate or multivariate.
         """
-        raise_if_not(len(series) >= self.min_train_series_length,
-                     "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(series), str(self), self.min_train_series_length))
-        self.training_series = series
+        for series in (self.training_series, self.target_series):
+            if series is not None:
+                raise_if_not(len(series) >= self.min_train_series_length,
+                             "Train series only contains {} elements but {} model requires at least {} entries"
+                             .format(len(series), str(self), self.min_train_series_length))
         self._fit_called = True
 
     @abstractmethod
@@ -434,37 +440,53 @@ class ForecastingModel(ABC):
 
 
 class UnivariateForecastingModel(ForecastingModel):
-    """ The base class for univariate forecasting models.
-    """
-
+    """The base class for univariate forecasting models."""
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
         """ Fits/trains the univariate model on selected univariate series.
 
+        Implements behavior specific to calling the `fit` method on `UnivariateForecastingModel`.
+
         Parameters
         ----------
         series
-            A **univariate** training time series on which to fit the model.
+            A **univariate** timeseries on which to fit the model.
         """
         series._assert_univariate()
-        super().fit(series)
+        self.training_series = series
+        self.target_series = series
+        super().fit()
 
 
 class MultivariateForecastingModel(ForecastingModel):
     """ The base class for multivariate forecasting models.
     """
+    def _make_fitable_series(self,
+                             training_series: TimeSeries,
+                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
+        """Perform checks and returns ready to be used training and target series"""
+        if target_series is None:
+            target_series = training_series
+
+        # general checks on training / target series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()), "training and target "
+                     "timeseries must have same time indices.")
+
+        return training_series, target_series
 
     @abstractmethod
-    def fit(self, covariate_series: TimeSeries, target_series: TimeSeries) -> None:
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
 
         Parameters
         ----------
-        covariate_series
+        training_series
             The training time series on which to fit the model (can be multivariate or univariate).
         target_series
-            The target values used ad dependent variables when training the model
+            The target values used as dependent variables when training the model
         """
-        raise_if_not(len(covariate_series) == len(target_series), "covariate_series and target_series musth have same "
-                     "length.")
-        super().fit(covariate_series)
+        training_series, target_series = self._make_fitable_series(training_series, target_series)
+
+        self.training_series = training_series
+        self.target_series = target_series
+        super().fit()

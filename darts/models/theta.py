@@ -60,7 +60,8 @@ class Theta(UnivariateForecastingModel):
         self.theta = theta
         self.is_seasonal = False
         self.seasonality = None
-        self.season_period = seasonality_period
+        self.seasonality_period = seasonality_period
+        self.season_period = None
         self.season_mode = season_mode
 
         raise_if_not(season_mode in SeasonalityMode,
@@ -79,6 +80,8 @@ class Theta(UnivariateForecastingModel):
         # or infers season_period from the TimeSeries itself.
         if self.season_mode is SeasonalityMode.NONE:
             self.season_period = 1
+        else:
+            self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(ts) // 2
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
@@ -195,7 +198,8 @@ class FourTheta(UnivariateForecastingModel):
         self.theta = theta
         self.is_seasonal = False
         self.seasonality = None
-        self.season_period = seasonality_period
+        self.seasonality_period = seasonality_period
+        self.season_period = None
         self.model_mode = model_mode
         self.season_mode = season_mode
         self.trend_mode = trend_mode
@@ -230,6 +234,8 @@ class FourTheta(UnivariateForecastingModel):
         # or infers season_period from the TimeSeries itself.
         if self.season_mode is SeasonalityMode.NONE:
             self.season_period = 1
+        else:
+            self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(ts) // 2
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
