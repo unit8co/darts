@@ -430,7 +430,7 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.backtest(series, None, first_index, fcast_horizon_n, True, verbose=verbose)
+        p = self.backtest(series, None, first_index, fcast_horizon_n, 1, True, verbose=verbose)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
