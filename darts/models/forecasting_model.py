@@ -157,8 +157,8 @@ class ForecastingModel(ABC):
                  use_full_output_length: Optional[bool] = None) -> Tuple[TimeSeries, TimeSeries]:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
-        To this end, it repeatedly builds a training set from the beginning of `series`. It trains `model` on the
-        training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
+        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
+        the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
         set forward by one time step. The resulting predictions are then returned.
 
         Unless `retrain` is set to False, this always re-trains the models on the entire available history,
@@ -183,10 +183,10 @@ class ForecastingModel(ABC):
             The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `model` argument support setting `retrain` to `False`.
+            instances as `self` argument support setting `retrain` to `False`.
         use_full_output_length
             Optionally, if `self` is an instance of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`. Otherwise, if this value is set and `self` is not an
+            as argument to the predict method of `self`. Otherwise, if this value is set and `self` is not an
             instance of `TorchForecastingModel`, this will cause an error.
         trim_to_series
             Whether the predicted series has the end trimmed to match the end of the main series
@@ -198,8 +198,6 @@ class ForecastingModel(ABC):
         forecast
             A time series containing the forecast values for `target_series`, when successively applying the specified
             model with the specified forecast horizon.
-        residuals
-            Difference between the `forecast` and the actual `target_series` provided.
         """
         # handle case where target_series not specified
         if target_series is None:
