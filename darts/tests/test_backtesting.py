@@ -4,7 +4,6 @@ import pandas as pd
 import random
 import logging
 
-from ..backtesting import backtest_regression
 from ..metrics import mape, r2_score
 from ..utils.timeseries_generation import (
     linear_timeseries as lt,
@@ -105,17 +104,16 @@ class BacktestingTestCase(unittest.TestCase):
         target = st(length=50)
 
         # univariate feature test
-        pred = backtest_regression(features, target, StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        pred = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate feature test
-        pred = backtest_regression(features_multivariate, target, StandardRegressionModel(15),
-                                   pd.Timestamp('20000201'), 3)
+        pred = StandardRegressionModel(15).backtest(features_multivariate, target, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate target
-        pred = backtest_regression(features_multivariate, target.stack(target),
-                                   StandardRegressionModel(15), pd.Timestamp('20000201'), 3)
+        pred = StandardRegressionModel(15).backtest(features_multivariate, target.stack(target),
+                                                    pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
 
     def test_backtest_gridsearch(self):
