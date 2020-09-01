@@ -121,13 +121,13 @@ class ForecastingModel(ABC):
             when a check on the parameter does not pass.
         """
         # parse args and kwargs
-        covariate_series = args[0]
+        training_series = args[0]
         n = SimpleNamespace(**kwargs)
 
-        # check target and covariate series
+        # check target and training series
         if not hasattr(n, 'target_series'):
-            target_series = covariate_series
-        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "the target and covariate series"
+            target_series = training_series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
                      " must have the same time indices.")
 
         # check forecast horizon‚
@@ -139,11 +139,11 @@ class ForecastingModel(ABC):
             if isinstance(n.start, float):
                 raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
             elif isinstance(n.start, pd.Timestamp):
-                raise_if_not(n.start in covariate_series, '`start` timestamp is not in the `series`.', logger)
-                raise_if(n.start == covariate_series.end_time(), '`start` timestamp is the last timestamp of `series`',
+                raise_if_not(n.start in training_series, '`start` timestamp is not in the `series`.', logger)
+                raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of `series`',
                          logger)
             else:
-                raise_if(covariate_series[n.start].time_index()[0] == covariate_series.end_time(), '`start` timestamp '
+                raise_if(training_series[n.start].time_index()[0] == training_series.end_time(), '`start` timestamp '
                          'is the last timestamp of `series`', logger)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -152,7 +152,7 @@ class ForecastingModel(ABC):
 
     @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
     def backtest(self,
-                 covariate_series: TimeSeries,
+                 training_series: TimeSeries,
                  target_series: Optional[TimeSeries] = None,
                  start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
@@ -177,8 +177,8 @@ class ForecastingModel(ABC):
 
         Parameters
         ----------
-        covariate_series
-            The covariate time series on which to backtest
+        training_series
+            The training time series on which to backtest
         target_series
             The target time series on which to backtest
         start
@@ -207,7 +207,7 @@ class ForecastingModel(ABC):
         """
         # handle case where target_series not specified
         if target_series is None:
-            target_series = covariate_series
+            target_series = training_series
         
         # construct predict kwargs dictionary
         predict_kwargs = {}
@@ -222,20 +222,20 @@ class ForecastingModel(ABC):
 
         # prepare the start parameter -> pd.Timestamp
         if isinstance(start, float):
-            start_index = int((len(covariate_series.time_index()) - 1) * start)
-            start = covariate_series.time_index()[start_index]
+            start_index = int((len(training_series.time_index()) - 1) * start)
+            start = training_series.time_index()[start_index]
         elif isinstance(start, int):
-            start = covariate_series[start].time_index()[0]
+            start = training_series[start].time_index()[0]
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:
-            last_pred_time = covariate_series.time_index()[-forecast_horizon - stride]
+            last_pred_time = training_series.time_index()[-forecast_horizon - stride]
         else:
-            last_pred_time = covariate_series.time_index()[-stride - 1]
+            last_pred_time = training_series.time_index()[-stride - 1]
 
         pred_times = [start]
         while pred_times[-1] <= last_pred_time:
-            pred_times.append(pred_times[-1] + covariate_series.freq() * stride)
+            pred_times.append(pred_times[-1] + training_series.freq() * stride)
 
         # iterate and predict pointwise
         values = []
@@ -244,10 +244,10 @@ class ForecastingModel(ABC):
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
         if not retrain and not model._fit_called:
-            fit_function(covariate_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
+            fit_function(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
-            train = covariate_series.drop_after(pred_time)  # build the training series
+            train = training_series.drop_after(pred_time)  # build the training series
             target = target_series.drop_after(pred_time)  # build the target series
             if (retrain):
                 fit_function(train, target)
@@ -265,7 +265,7 @@ class ForecastingModel(ABC):
     @classmethod
     def backtest_gridsearch(model_class,
                             parameters: dict,
-                            covariate_series: TimeSeries,
+                            training_series: TimeSeries,
                             target_series: TimeSeries = None,
                             fcast_horizon_n: Optional[int] = None,
                             use_full_output_length: Optional[bool] = None,
@@ -286,17 +286,17 @@ class ForecastingModel(ABC):
 
         Expanding window mode (activated when `fcast_horizon_n` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
-        splits of `covariate_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
+        splits of `training_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
         forecasting horizon used when making a prediction is `fcast_horizon_n`.
         Note that the model is retrained for every single prediction, thus this mode is slower.
 
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
-        For every hyperparameter combination, the model is trained on `covariate_series` + `target_series` and
+        For every hyperparameter combination, the model is trained on `training_series` + `target_series` and
         evaluated on `val_series`.
 
         Fitted value mode (activated when `use_fitted_values` is set to `True`):
-        For every hyperparameter combination, the model is trained on `covariate_series` + `target_series`
+        For every hyperparameter combination, the model is trained on `training_series` + `target_series`
         and evaluated on the resulting fitted values.
         Not all models have fitted values, and this method raises an error if `model.fitted_values` does not exist.
         The fitted values are the result of the fit of the model on the training series. Comparing with the
@@ -310,7 +310,7 @@ class ForecastingModel(ABC):
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
-        covariate_series
+        training_series
             The TimeSeries instance used as input for training.
         target_series
             The TimeSeries instance used as target for training (and also validation in expanding window mode).
@@ -340,10 +340,10 @@ class ForecastingModel(ABC):
                     "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_target_series' or 'use_fitted_values'.",
                     logger)
 
-        # check target and covariate series
+        # check target and training series
         if target_series is None:
-            target_series = covariate_series
-        raise_if_not(all(covariate_series.time_index() == target_series.time_index()), "the target and covariate series"
+            target_series = training_series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
                         " must have the same time indices.")
 
         # construct predict kwargs dictionary
@@ -357,11 +357,11 @@ class ForecastingModel(ABC):
                         " to compare with the train TimeSeries", logger)
 
         elif val_target_series is not None:
-            raise_if_not(covariate_series.width == val_target_series.width, "Training and validation series require the same"
+            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the same"
                         " number of components.", logger)
 
         if (val_target_series is None) and (not use_fitted_values):
-            backtest_start_time = covariate_series.end_time() - (num_predictions + fcast_horizon_n) * covariate_series.freq()
+            backtest_start_time = training_series.end_time() - (num_predictions + fcast_horizon_n) * training_series.freq()
         min_error = float('inf')
         best_param_combination = {}
 
@@ -374,19 +374,19 @@ class ForecastingModel(ABC):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:
-                model.fit(covariate_series)
+                model.fit(training_series)
                 # Takes too much time to create a TimeSeries
                 # Overhead: 2-10 ms in average
-                fitted_values = TimeSeries.from_times_and_values(covariate_series.time_index(), model.fitted_values)
+                fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
-                backtest_forecast = model.backtest(covariate_series, target_series, backtest_start_time, fcast_horizon_n, use_full_output_length=use_full_output_length)
+                backtest_forecast = model.backtest(training_series, target_series, backtest_start_time, fcast_horizon_n, use_full_output_length=use_full_output_length)
                 error = metric(backtest_forecast, target_series)
             else:  # split mode
                 if isinstance(model, MultivariateForecastingModel):
-                    model.fit(covariate_series, target_series)
+                    model.fit(training_series, target_series)
                 else:
-                    model.fit(covariate_series)
+                    model.fit(training_series)
                 error = metric(model.predict(len(val_target_series), **predict_kwargs), val_target_series)
             if error < min_error:
                 min_error = error
