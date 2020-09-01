@@ -355,4 +355,3 @@ def plot_residuals_analysis(residuals: TimeSeries,
     ax3.set_ylabel('ACF value')
     ax3.set_xlabel('lag')
     ax3.set_title('ACF')
-    
