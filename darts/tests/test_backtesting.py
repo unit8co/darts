@@ -144,7 +144,7 @@ class BacktestingTestCase(unittest.TestCase):
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
-        TCNModel.ridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
+        TCNModel.gridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
                            use_full_output_length=True)
 
     def test_forecasting_residuals(self):
