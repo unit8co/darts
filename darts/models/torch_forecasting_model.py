@@ -638,22 +638,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
         for p in self.optimizer.param_groups:
             return p['lr']
 
-    def _backtest_model_specific_sanity_checks(self, retrain: bool, *args, **kwargs):
-        """Add model specific sanity check(s) on the backtest inputs.
-
-        Parameters
-        ----------
-        retrain
-            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `model` argument support setting `retrain` to `False`.
-
-        Raises
-        ------
-        ValueError
-            if an input doesn't pass sanity checks.
-        """
-        pass
-
     def _backtest_build_fit_and_predict_kwargs(self,
                                                target_indices: Optional[List[int]],
                                                component_index: Optional[int],
