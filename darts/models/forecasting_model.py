@@ -218,7 +218,7 @@ class ForecastingModel(ABC):
         if isinstance(self, MultivariateForecastingModel):
             fit_function = self.fit
         else:
-            fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)
+            fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
 
         # prepare the start parameter -> pd.Timestamp
         if isinstance(start, float):

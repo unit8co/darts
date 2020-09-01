@@ -145,7 +145,7 @@ class BacktestingTestCase(unittest.TestCase):
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
-                           use_full_output_length=True)
+                            use_full_output_length=True)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)

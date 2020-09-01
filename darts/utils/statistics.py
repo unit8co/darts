@@ -15,6 +15,7 @@ from statsmodels.tsa.stattools import acf
 
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
+from .missing_values import auto_fillna
 from .. import SeasonalityMode, ModelMode
 
 logger = get_logger(__name__)
@@ -354,3 +355,4 @@ def plot_residuals_analysis(residuals: TimeSeries,
     ax3.set_ylabel('ACF value')
     ax3.set_xlabel('lag')
     ax3.set_title('ACF')
+    
