@@ -121,12 +121,17 @@ class ForecastingModel(ABC):
             when a check on the parameter does not pass.
         """
         # parse args and kwargs
-        training_series = args[0]
+        if len(args) > 0:
+            training_series = args[0]
+        else:
+            training_series = kwargs['training_series']
         n = SimpleNamespace(**kwargs)
 
         # check target and training series
         if not hasattr(n, 'target_series'):
             target_series = training_series
+        else:
+            target_series = n.target_series
         raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
                      " must have the same time indices.")
 
