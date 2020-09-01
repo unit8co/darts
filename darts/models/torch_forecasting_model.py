@@ -375,7 +375,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if_not(input_series is None or input_series.width == self.training_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
-        raise_if_not(use_full_output_length or (self.training_series == self.target_series 
+        raise_if_not(use_full_output_length or (self.training_series == self.target_series
                                                 and self.training_series.width == 1),
                      "Please set 'use_full_output_length' to 'True' and 'n' smaller or equal to 'output_length'"
                      " when using a multivariate TimeSeries instance as input.", logger)
