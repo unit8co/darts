@@ -3,8 +3,7 @@ Backtesting Functions
 ---------------------
 """
 
-from typing import Iterable, Optional, Callable, List
-from itertools import product
+from typing import Optional, Callable
 import math
 import time
 import pandas as pd
@@ -13,9 +12,6 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from ..timeseries import TimeSeries
-from ..models.forecasting_model import ForecastingModel, UnivariateForecastingModel, MultivariateForecastingModel
-from ..models.torch_forecasting_model import TorchForecastingModel
-from ..models.regression_model import RegressionModel
 from ..models import NaiveSeasonal, AutoARIMA, ExponentialSmoothing, FFT, Prophet, Theta
 from .. import metrics
 from ..utils import _build_tqdm_iterator
@@ -80,6 +76,7 @@ def plot_residuals_analysis(residuals: TimeSeries,
     ax3.set_ylabel('ACF value')
     ax3.set_xlabel('lag')
     ax3.set_title('ACF')
+
 
 def explore_models(train_series: TimeSeries,
                    val_series: TimeSeries,
@@ -165,7 +162,7 @@ def explore_models(train_series: TimeSeries,
 
         # if necessary, tune hyperparameters using train_series and val_series
         if (len(params.keys()) > 0):
-            model = backtest_gridsearch(model_class, params, train_series, val_series=val_series, metric=metric)
+            model = model_class.backtest_gridsearch(params, train_series, val_target_series=val_series, metric=metric)
         else:
             model = model_class()
 

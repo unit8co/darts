@@ -22,6 +22,7 @@ from ..models import (
     TCNModel
 )
 
+
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
@@ -75,7 +76,7 @@ class BacktestingTestCase(unittest.TestCase):
 
         # multivariate model + univariate series
         tcn_model = TCNModel(batch_size=1, n_epochs=1)
-        pred= tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
+        pred = tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
         self.assertEqual(pred.width, 1)
 
         # multivariate model + multivariate series
@@ -86,14 +87,14 @@ class BacktestingTestCase(unittest.TestCase):
             tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
                                use_full_output_length=False)
         pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
-                                     verbose=False, use_full_output_length=True)
+                                  verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
         pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
-                                     verbose=False, use_full_output_length=True)
+                                  verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 1)
         tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
         pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0', '1']], pd.Timestamp('20000125'), 3,
-                                     verbose=False, use_full_output_length=True)
+                                  verbose=False, use_full_output_length=True)
         self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):

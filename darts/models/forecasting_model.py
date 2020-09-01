@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, Tuple, Union, Dict, Any, Callable
+from typing import Optional, Tuple, Union, Any, Callable
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -164,8 +164,8 @@ class ForecastingModel(ABC):
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
-        the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the training
-        set forward by one time step. The resulting predictions are then returned.
+        the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the
+        training set forward by one time step. The resulting predictions are then returned.
 
         Unless `retrain` is set to False, this always re-trains the models on the entire available history,
         corresponding an expending window strategy.
@@ -208,12 +208,12 @@ class ForecastingModel(ABC):
         # handle case where target_series not specified
         if target_series is None:
             target_series = training_series
-        
+
         # construct predict kwargs dictionary
         predict_kwargs = {}
         if use_full_output_length is not None:
             predict_kwargs['use_full_output_length'] = use_full_output_length
-        
+
         # construct fit function (used to ignore target series for univariate models)
         if isinstance(self, MultivariateForecastingModel):
             fit_function = self.fit
@@ -243,7 +243,7 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        if not retrain and not model._fit_called:
+        if not retrain and not self._fit_called:
             fit_function(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
@@ -261,7 +261,6 @@ class ForecastingModel(ABC):
 
         return forecast
 
-
     @classmethod
     def backtest_gridsearch(model_class,
                             parameters: dict,
@@ -269,7 +268,7 @@ class ForecastingModel(ABC):
                             target_series: TimeSeries = None,
                             fcast_horizon_n: Optional[int] = None,
                             use_full_output_length: Optional[bool] = None,
-                            val_target_series: Optional[TimeSeries] =  None,
+                            val_target_series: Optional[TimeSeries] = None,
                             num_predictions: int = 10,
                             use_fitted_values: bool = False,
                             metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -337,14 +336,14 @@ class ForecastingModel(ABC):
             An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
         """
         raise_if_not((fcast_horizon_n is not None) + (val_target_series is not None) + use_fitted_values == 1,
-                    "Please pass exactly one of the arguments 'forecast_horizon_n', 'val_target_series' or 'use_fitted_values'.",
-                    logger)
+                     "Please pass exactly one of the arguments 'forecast_horizon_n', "
+                     "'val_target_series' or 'use_fitted_values'.", logger)
 
         # check target and training series
         if target_series is None:
             target_series = training_series
         raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                        " must have the same time indices.")
+                     " must have the same time indices.")
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
@@ -354,14 +353,16 @@ class ForecastingModel(ABC):
         if use_fitted_values:
             model = model_class()
             raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
-                        " to compare with the train TimeSeries", logger)
+                         " to compare with the train TimeSeries", logger)
 
         elif val_target_series is not None:
-            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the same"
-                        " number of components.", logger)
+            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the"
+                         " same number of components.", logger)
 
         if (val_target_series is None) and (not use_fitted_values):
-            backtest_start_time = training_series.end_time() - (num_predictions + fcast_horizon_n) * training_series.freq()
+            backtest_start_time = (
+                training_series.end_time() - (num_predictions + fcast_horizon_n) * training_series.freq()
+            )
         min_error = float('inf')
         best_param_combination = {}
 
@@ -380,7 +381,8 @@ class ForecastingModel(ABC):
                 fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
-                backtest_forecast = model.backtest(training_series, target_series, backtest_start_time, fcast_horizon_n, use_full_output_length=use_full_output_length)
+                backtest_forecast = model.backtest(training_series, target_series, backtest_start_time,
+                                                   fcast_horizon_n, use_full_output_length=use_full_output_length)
                 error = metric(backtest_forecast, target_series)
             else:  # split mode
                 if isinstance(model, MultivariateForecastingModel):
@@ -393,7 +395,6 @@ class ForecastingModel(ABC):
                 best_param_combination = param_combination_dict
         logger.info('Chosen parameters: ' + str(best_param_combination))
         return model_class(**best_param_combination)
-
 
     def residuals(self,
                   series: TimeSeries,

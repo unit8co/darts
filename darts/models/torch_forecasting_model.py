@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
