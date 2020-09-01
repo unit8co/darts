@@ -262,17 +262,17 @@ class ForecastingModel(ABC):
         return forecast
 
     @classmethod
-    def backtest_gridsearch(model_class,
-                            parameters: dict,
-                            training_series: TimeSeries,
-                            target_series: TimeSeries = None,
-                            fcast_horizon_n: Optional[int] = None,
-                            use_full_output_length: Optional[bool] = None,
-                            val_target_series: Optional[TimeSeries] = None,
-                            num_predictions: int = 10,
-                            use_fitted_values: bool = False,
-                            metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                            verbose=False):
+    def gridsearch(model_class,
+                   parameters: dict,
+                   training_series: TimeSeries,
+                   target_series: TimeSeries = None,
+                   fcast_horizon_n: Optional[int] = None,
+                   use_full_output_length: Optional[bool] = None,
+                   val_target_series: Optional[TimeSeries] = None,
+                   num_predictions: int = 10,
+                   use_fitted_values: bool = False,
+                   metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                   verbose=False):
         """ A function for finding the best hyperparameters.
 
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.

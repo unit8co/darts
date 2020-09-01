@@ -337,7 +337,7 @@ class FourTheta(UnivariateForecastingModel):
         using the fitted values on the training series `ts`.
 
 
-        Uses 'backtesting.backtest_gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
+        Uses 'ForecastingModel.gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
 
         Parameters
         ----------
@@ -369,13 +369,13 @@ class FourTheta(UnivariateForecastingModel):
             model_mode = [model for model in ModelMode]
             drift_mode = [trend for trend in TrendMode]
 
-        theta = FourTheta.backtest_gridsearch({"theta": thetas,
-                                               "model_mode": model_mode,
-                                               "season_mode": season_mode,
-                                               "trend_mode": drift_mode,
-                                               "seasonality_period": [m],
-                                               "normalization": [normalization]},
-                                              ts, use_fitted_values=True, metric=mae)
+        theta = FourTheta.gridsearch({"theta": thetas,
+                                      "model_mode": model_mode,
+                                      "season_mode": season_mode,
+                                      "trend_mode": drift_mode,
+                                      "seasonality_period": [m],
+                                      "normalization": [normalization]},
+                                     ts, use_fitted_values=True, metric=mae)
         return theta
 
     def __str__(self):

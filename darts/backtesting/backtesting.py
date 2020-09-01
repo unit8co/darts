@@ -162,7 +162,7 @@ def explore_models(train_series: TimeSeries,
 
         # if necessary, tune hyperparameters using train_series and val_series
         if (len(params.keys()) > 0):
-            model = model_class.backtest_gridsearch(params, train_series, val_target_series=val_series, metric=metric)
+            model = model_class.gridsearch(params, train_series, val_target_series=val_series, metric=metric)
         else:
             model = model_class()
 

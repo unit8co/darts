@@ -26,11 +26,11 @@ from ..models import (
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.backtest_gridsearch(params, series, fcast_horizon_n=10, metric=mape)
+    best_model_1 = model_class.gridsearch(params, series, fcast_horizon_n=10, metric=mape)
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
-    best_model_2 = model_class.backtest_gridsearch(params, train, val_target_series=val, metric=mape)
+    best_model_2 = model_class.gridsearch(params, train, val_target_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random_param_choice = {}
@@ -117,7 +117,7 @@ class BacktestingTestCase(unittest.TestCase):
                                                     pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
 
-    def test_backtest_gridsearch(self):
+    def test_gridsearch(self):
 
         np.random.seed(1)
         ts_length = 50
@@ -134,7 +134,7 @@ class BacktestingTestCase(unittest.TestCase):
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
-    def test_backtest_gridsearch_multi(self):
+    def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
             'n_epochs': [1],
@@ -144,8 +144,8 @@ class BacktestingTestCase(unittest.TestCase):
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
-        TCNModel.backtest_gridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
-                                     use_full_output_length=True)
+        TCNModel.ridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
+                           use_full_output_length=True)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)
