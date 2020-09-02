@@ -321,8 +321,8 @@ class ForecastingModel(ABC):
         fcast_horizon_n
             The integer value of the forecasting horizon used in expanding window mode.
         use_full_output_length
-            In case `model` is a subclass of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `model`.
+            This should only be set if `model_class` is equal to `TorchForecastingModel`.
+            This argument will be passed along as argument to the predict method of `TorchForecastingModel`.
         val_target_series
             The TimeSeries instance used for validation in split mode.
         num_predictions:
@@ -379,10 +379,8 @@ class ForecastingModel(ABC):
         for param_combination in iterator:
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
-            if use_fitted_values:
+            if use_fitted_values:  # fitted value mode
                 model.fit(training_series)
-                # Takes too much time to create a TimeSeries
-                # Overhead: 2-10 ms in average
                 fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
