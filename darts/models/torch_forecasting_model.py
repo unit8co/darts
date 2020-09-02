@@ -53,7 +53,7 @@ class _TimeSeriesSequentialDataset(Dataset):
         training_series
             The time series to be included in the dataset.
         target_series
-            The time series used has target.
+            The time series used as target.
         data_length
             The length of the training sub-sequences.
         target_length
@@ -105,7 +105,7 @@ class _TimeSeriesShiftedDataset(Dataset):
         training_series
             The time series to be included in the dataset.
         target_series
-            The time series used has target.
+            The time series used as target.
         length
             The length of the training and target sub-sequences.
         shift
