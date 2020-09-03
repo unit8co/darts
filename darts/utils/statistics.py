@@ -26,7 +26,7 @@ def check_seasonality(ts: TimeSeries,
                       max_lag: int = 24,
                       alpha: float = 0.05):
     """
-    Returns whether the TimeSeries `ts` is seasonal with period `m` or not.
+    Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
 
     If `m` is None, we work under the assumption that there is a unique seasonality period, which is inferred
     from the Auto-correlation Function (ACF).
@@ -127,7 +127,7 @@ def extract_trend_and_seasonality(ts: TimeSeries,
                                   model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE) -> \
         Tuple[TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.
+    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.
 
     Parameters
     ----------
@@ -210,13 +210,13 @@ def remove_seasonality(ts: TimeSeries,
         The seasonality period to use.
     model
         The type of decomposition to use.
-        Must be `from darts import SeasonalityMode` Enum member.
+        Must be a `from darts import SeasonalityMode` Enum member.
         Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
         Defaults SeasonalityMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
     """
 
     ts._assert_univariate()
@@ -240,11 +240,11 @@ def remove_trend(ts: TimeSeries,
         The type of decomposition to use.
         Must be `from darts import ModelMode` Enum member.
         Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
-        Defaults modelMode.MULTIPLICATIVE.
+        Defaults to modelMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
     """
 
     ts._assert_univariate()
@@ -309,7 +309,7 @@ def plot_residuals_analysis(residuals: TimeSeries,
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
-    Please note that if the residual TimeSeries instance contains NaN values while, the plots
+    Please note that if the residual TimeSeries instance contains NaN values, the plots
     might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
     be interpolated.
 
