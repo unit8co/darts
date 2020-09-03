@@ -270,8 +270,8 @@ class ForecastingModel(ABC):
     def gridsearch(model_class,
                    parameters: dict,
                    training_series: TimeSeries,
-                   target_series: TimeSeries = None,
-                   fcast_horizon_n: Optional[int] = None,
+                   target_series: Optional[TimeSeries] = None,
+                   forecast_horizon: Optional[int] = None,
                    use_full_output_length: Optional[bool] = None,
                    val_target_series: Optional[TimeSeries] = None,
                    num_predictions: int = 10,
@@ -288,10 +288,10 @@ class ForecastingModel(ABC):
         thus the model resulting in the smallest `metric` output will be chosen.
         The relationship of the training data and test data depends on the mode of operation.
 
-        Expanding window mode (activated when `fcast_horizon_n` is passed):
+        Expanding window mode (activated when `forecast_horizon` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
         splits of `training_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
-        forecasting horizon used when making a prediction is `fcast_horizon_n`.
+        forecasting horizon used when making a prediction is `forecast_horizon`.
         Note that the model is retrained for every single prediction, thus this mode is slower.
 
         Split window mode (activated when `val_series` is passed):
@@ -318,7 +318,7 @@ class ForecastingModel(ABC):
             The TimeSeries instance used as input for training.
         target_series
             The TimeSeries instance used as target for training (and also validation in expanding window mode).
-        fcast_horizon_n
+        forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
         use_full_output_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
@@ -340,7 +340,7 @@ class ForecastingModel(ABC):
         ForecastingModel
             An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
         """
-        raise_if_not((fcast_horizon_n is not None) + (val_target_series is not None) + use_fitted_values == 1,
+        raise_if_not((forecast_horizon is not None) + (val_target_series is not None) + use_fitted_values == 1,
                      "Please pass exactly one of the arguments 'forecast_horizon_n', "
                      "'val_target_series' or 'use_fitted_values'.", logger)
 
@@ -366,7 +366,7 @@ class ForecastingModel(ABC):
 
         if (val_target_series is None) and (not use_fitted_values):
             backtest_start_time = (
-                training_series.end_time() - (num_predictions + fcast_horizon_n) * training_series.freq()
+                training_series.end_time() - (num_predictions + forecast_horizon) * training_series.freq()
             )
         min_error = float('inf')
         best_param_combination = {}
@@ -385,7 +385,7 @@ class ForecastingModel(ABC):
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
                 backtest_forecast = model.backtest(training_series, target_series, backtest_start_time,
-                                                   fcast_horizon_n, use_full_output_length=use_full_output_length)
+                                                   forecast_horizon, use_full_output_length=use_full_output_length)
                 error = metric(backtest_forecast, target_series)
             else:  # split mode
                 if isinstance(model, MultivariateForecastingModel):
@@ -401,24 +401,24 @@ class ForecastingModel(ABC):
 
     def residuals(self,
                   series: TimeSeries,
-                  fcast_horizon_n: int = 1,
+                  forecast_horizon: int = 1,
                   verbose: bool = False) -> TimeSeries:
         """ A function for computing the residuals produced by the current model and a univariate time series.
 
         This function computes the difference between the actual observations from `series`
         and the fitted values vector p obtained by training `self` on `series`.
         For every index i in `series`, p[i] is computed by training `self` on
-        series[:(i - `fcast_horizon_n`)] and forecasting `fcast_horizon_n` into the future.
+        series[:(i - `forecast_horizon`)] and forecasting `forecast_horizon` into the future.
         (p[i] will be set to the last value of the predicted vector.)
         The vector of residuals will be shorter than `series` due to the minimum
-        training series length required by `self` and the gap introduced by `fcast_horizon_n`.
-        Note that the common usage of the term residuals implies a value for `fcast_horizon_n` of 1.
+        training series length required by `self` and the gap introduced by `forecast_horizon`.
+        Note that the common usage of the term residuals implies a value for `forecast_horizon` of 1.
 
         Parameters
         ----------
         series
             The univariate TimeSeries instance which the residuals will be computed for.
-        fcast_horizon_n
+        forecast_horizon
             The forecasting horizon used to predict each fitted value.
         verbose
             Whether to print progress.
@@ -434,7 +434,7 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.backtest(series, None, first_index, fcast_horizon_n, 1, True, verbose=verbose)
+        p = self.backtest(series, None, first_index, forecast_horizon, 1, True, verbose=verbose)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)

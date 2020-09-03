@@ -88,7 +88,7 @@ class RegressionModel(ABC):
                  feature_series: Iterable[TimeSeries],
                  target_series: TimeSeries,
                  start: pd.Timestamp,
-                 fcast_horizon_n: int,
+                 forecast_horizon: int,
                  trim_to_series: bool = True,
                  verbose=False) -> TimeSeries:
         """ A function for backtesting `RegressionModel`'s.
@@ -114,7 +114,7 @@ class RegressionModel(ABC):
             The univariate target time series for the regression model (dependent variable)
         start
             The first prediction time, at which a prediction is computed for a future time
-        fcast_horizon_n
+        forecast_horizon
             The forecast horizon for the point predictions
         trim_to_series
             Whether the predicted series has the end trimmed to match the end of the main series
@@ -134,7 +134,7 @@ class RegressionModel(ABC):
         raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the '
                      'last timestamp of the time series', logger)
 
-        last_pred_time = (target_series.time_index()[-fcast_horizon_n - 2] if trim_to_series
+        last_pred_time = (target_series.time_index()[-forecast_horizon - 2] if trim_to_series
                           else target_series.time_index()[-2])
 
         # build the prediction times in advance (to be able to use tqdm)
@@ -152,7 +152,7 @@ class RegressionModel(ABC):
             # build train/val series
             train_features = [s.drop_after(pred_time) for s in feature_series]
             train_target = target_series.drop_after(pred_time)
-            val_features = [s.slice_n_points_after(pred_time + target_series.freq(), fcast_horizon_n)
+            val_features = [s.slice_n_points_after(pred_time + target_series.freq(), forecast_horizon)
                             for s in feature_series]
 
             self.fit(train_features, train_target)
