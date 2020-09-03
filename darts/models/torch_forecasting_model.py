@@ -287,9 +287,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
             loss throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
-        target_indices
-            A list of integers indicating which component(s) of the time series should be used
-            as targets for forecasting.
         """
         super().fit(training_series, target_series)
 

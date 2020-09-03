@@ -106,7 +106,7 @@ class RNNModelTestCase(unittest.TestCase):
         test_case.assertEqual(len(pred), 3)
         pred = model.predict(2, True)
         test_case.assertEqual(len(pred), 2)
-        # len(target_indices) != output_size
+        # target_series.width != output_size
         with test_case.assertRaises(ValueError):
             model.fit(series_multivariate, series_multivariate[["0", "1"]])
         model = pytorch_model(n_epochs=2, input_size=2, output_length=2, output_size=2)
