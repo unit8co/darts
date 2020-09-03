@@ -30,9 +30,9 @@ class GROECombinationModel(CombinationModel):
         Parameters
         ----------
         models
-            List of forecasting models, whose predictions to combinate.
+            List of forecasting models, whose predictions to combine.
         metrics
-            Metrics function used for the GROE cross-valisation function.
+            Metrics function used for the GROE cross-validation function.
         n_evaluation
             Number of evaluation performed by the GROE function.
         groe_args
