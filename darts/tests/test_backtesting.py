@@ -26,7 +26,7 @@ from ..models import (
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.gridsearch(params, series, fcast_horizon_n=10, metric=mape)
+    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape)
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
@@ -144,7 +144,7 @@ class BacktestingTestCase(unittest.TestCase):
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
-        TCNModel.gridsearch(tcn_params, dummy_series, fcast_horizon_n=3, metric=mape,
+        TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape,
                             use_full_output_length=True)
 
     def test_forecasting_residuals(self):
