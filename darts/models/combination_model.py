@@ -19,9 +19,8 @@ class CombinationModel:
     """
     def __init__(self, models: List[ForecastingModel]):
         raise_if_not(isinstance(models, list) and models, "Must give at least one model")
-        for model in models:
-            raise_if_not(isinstance(model, ForecastingModel),
-                         "All models must be instances of forecasting models from darts.models")
+        raise_if_not(all(isinstance(model, ForecastingModel) for model in models),
+                     "All models must be instances of forecasting models from darts.models")
         self.models = models
         self.weights = np.ones(len(self.models)) / len(self.models)
         self.train_ts = None
