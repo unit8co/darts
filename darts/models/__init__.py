@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 try:
     from .tcn_model import TCNModel
 except ModuleNotFoundError:
-    logger.warning("Support Torch based models not available. To enable it install darts[torch]")
+    logger.warning("Support of Torch based models not available. To enable it install darts[torch]")
 
 
 from .arima import ARIMA
