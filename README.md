@@ -123,7 +123,7 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ## Installation Guide
 
-The default installation supports `ARIMA `, `StandardRegressionModel`, `NaiveMean`, `NaiveSeasonal`, `NaiveDrift`, `Theta`, `FFT` and `ExponentialSmoothing`.
+The default installation supports the following forecasting models: `ARIMA `, `StandardRegressionModel`, `NaiveMean`, `NaiveSeasonal`, `NaiveDrift`, `Theta`, `FFT` and `ExponentialSmoothing`.
 
 Support for other models can be added by installing the following extras:
 - `darts[pmdarima]`: `AutoARIMA`.
