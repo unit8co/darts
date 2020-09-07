@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 class GROECombinationModel(CombinationModel):
     def __init__(self, models: List[ForecastingModel], metrics: Callable[[TimeSeries, TimeSeries], float] = smape,
-                 n_evaluation: int = 6, **groe_kwargs):
+                 n_evaluations: int = 6, **groe_kwargs):
         """
         Implementation of a Combination Model using GROE to compute its weights.
 
@@ -33,20 +33,20 @@ class GROECombinationModel(CombinationModel):
             List of forecasting models, whose predictions to combine.
         metrics
             Metrics function used for the GROE cross-validation function.
-        n_evaluation
+        n_evaluations
             Number of evaluation performed by the GROE function.
         groe_args
             Any additional args passed to the GROE function
         """
         super(GROECombinationModel, self).__init__(models)
         self.metrics = metrics
-        self.n_evaluation = n_evaluation
+        self.n_evaluations = n_evaluations
         self.groe_kwargs = groe_kwargs
         self.criterion = None
 
     def update_groe_params(self, **groe_kwargs):
-        if "n_evaluation" in groe_kwargs:
-            self.n_evaluation = groe_kwargs.pop("n_evaluation")
+        if "n_evaluations" in groe_kwargs:
+            self.n_evaluations = groe_kwargs.pop("n_evaluations")
         self.groe_kwargs = groe_kwargs
 
     def fit(self, train_ts: TimeSeries):
@@ -54,7 +54,7 @@ class GROECombinationModel(CombinationModel):
         self.criterion = []
         for model in self.models:
             self.criterion.append(groe(self.train_ts, model, self.metrics,
-                                       n_evaluation=self.n_evaluation, **self.groe_kwargs))
+                                       n_evaluations=self.n_evaluations, **self.groe_kwargs))
         if np.inf in self.criterion:
             raise_log(ValueError("Impossible to evaluate one of the models on this TimeSeries. "
                                  "Choose another fallback method"), logger)

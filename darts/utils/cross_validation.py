@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingModel,
                                           metrics: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
                                           origin1: Optional[Union[int, pd.Timestamp]] = None,
-                                          stride: Optional[int] = None, n_evaluation: Optional[int] = None,
+                                          stride: Optional[int] = None, n_evaluations: Optional[int] = None,
                                           n_prediction: Optional[int] = None) -> float:
     """
     This function implements the Generalized Rolling origin Evaluation from
@@ -30,7 +30,7 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     If `stride = 1`, the execution is similar to a Rolling Origin Evaluation.
     If `stride >= len(ts) - origin1` the execution is similar to a Fixed Origin Evaluation.
 
-    At least one parameter from `stride` and `n_evaluation` must be given.
+    At least one parameter from `stride` and `n_evaluations` must be given.
 
     If ValueErrors occur, the function will return `np.inf`.
 
@@ -47,8 +47,8 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         Optional. The index of the first origin. Defaults is the minimum between len(ts) - 10 and 5.
         Can also be the value of the DateTimeIndex.
     stride
-        Optional. The stride used for rolling the origin. Defaults is n_prediction / n_evaluation if provided.
-    n_evaluation
+        Optional. The stride used for rolling the origin. Defaults is n_prediction / n_evaluations if provided.
+    n_evaluations
         Optional. Number of evaluation. Defaults is the maximum number possible if stride is provided.
     n_prediction
         Optional. Number of predictions for each evaluation. Defaults is the size of the tail: len(ts) - origin1.
@@ -57,8 +57,8 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     Float
         The sum of the predictions errors over the different origins.
     """
-    raise_if_not((stride is not None) or (n_evaluation is not None),
-                 "At least 1 parameter between stride and n_evaluation must be given")
+    raise_if_not((stride is not None) or (n_evaluations is not None),
+                 "At least 1 parameter between stride and n_evaluations must be given")
     raise_if_not(callable(metrics) or hasattr(mfunc, metrics),
                  "The metrics should be a function that takes TimeSeries as inputs,"
                  " or a string of a function name from darts.metrics")
@@ -76,12 +76,12 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         raise_log(ValueError("origin1 must be inside the TimeSeries"), logger)
     if n_prediction is None:
         n_prediction = len_ts - origin1
-    if n_evaluation is None:
-        n_evaluation = int(1 + np.floor((len_ts - origin1) / stride))
+    if n_evaluations is None:
+        n_evaluations = int(1 + np.floor((len_ts - origin1) / stride))
     elif stride is None:
-        stride = int(np.floor(n_prediction / n_evaluation))
+        stride = int(np.floor(n_prediction / n_evaluations))
     errors = []
-    for i in range(n_evaluation):
+    for i in range(n_evaluations):
         # if origin is further than end timestamp, end function
         if origin1 + i * stride >= len_ts:
             break
