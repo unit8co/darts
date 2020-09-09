@@ -1,4 +1,5 @@
 import unittest
+import logging
 from ..utils.cross_validation import generalized_rolling_origin_evaluation as groe
 from ..models import ExponentialSmoothing, NaiveSeasonal
 from ..utils.timeseries_generation import (random_walk_timeseries as rt, constant_timeseries as ct,
@@ -15,6 +16,10 @@ class CrossValidationTestCase(unittest.TestCase):
     series3 = lt(length=50)
     model1 = NaiveSeasonal()
     model2 = ExponentialSmoothing(seasonal_periods=10)
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_groe_input_metrics(self):
         groe(self.series1, self.model1, metrics=mape, stride=5)
@@ -58,7 +63,7 @@ class CrossValidationTestCase(unittest.TestCase):
         self.assertEqual(np.inf, groe(self.series2, self.model2, metrics=mape, origin1=5, stride=1))
 
     def test_groe_ouput(self):
-        value = groe(self.series2 + self.series3, self.model1, origin1=35, n_evaluations=6, n_prediction=10)
+        value = groe(self.series2 + self.series3, self.model1, origin1=35, n_evaluations=6, n_predictions=10)
         self.assertAlmostEqual(value, 6 * 55)
 
 

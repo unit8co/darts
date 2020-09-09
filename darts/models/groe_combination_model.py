@@ -23,9 +23,12 @@ class GROECombinationModel(CombinationModel):
         Implementation of a Combination Model using GROE to compute its weights.
 
         The weights are a function of the loss function of the GROE cross-validation scheme.
-        The weights are computed as
+        The weights for each constituent model's output are computed as the inverse of the
+        value of the loss function obtained by applying GROE on that model, normalized such
+        that all weights add up to 1.
 
-        .. math:: \\frac{1}{GROE_{metrics}(model_i)}/sum_i{\\frac{1}{GROE_{metrics}(model_i)}}
+        Disclaimer: This model constitutes an experimental attempt at implementing ensembling using
+        generalized rolling window evaluation.
 
         Parameters
         ----------
@@ -65,5 +68,5 @@ class GROECombinationModel(CombinationModel):
             score = 1 / np.array(self.criterion)
             self.weights = score / score.sum()
 
-    def predict(self, n: int):
-        return super().predict(n)
+    def combination_function(self):
+        return sum(map(lambda ts, weight: ts * weight, self.predictions, self.weights))

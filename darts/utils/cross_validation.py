@@ -19,9 +19,9 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
                                           metrics: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
                                           origin1: Optional[Union[int, pd.Timestamp]] = None,
                                           stride: Optional[int] = None, n_evaluations: Optional[int] = None,
-                                          n_prediction: Optional[int] = None) -> float:
+                                          n_predictions: Optional[int] = None) -> float:
     """
-    This function implements the Generalized Rolling origin Evaluation from
+    This function implements the Generalized Rolling Origin Evaluation from
     `Fiorruci et al (2015) <https://arxiv.org/ftp/arxiv/papers/1503/1503.03529.pdf>`_
 
     Cross-Validation function to evaluate a forecasting model over a specific TimeSeries,
@@ -44,13 +44,13 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         The metrics to use. Either a function from taking 2 TimeSeries as parameters,
         or a string of the name of the function from darts.metrics.
     origin1
-        Optional. The index of the first origin. Defaults is the minimum between len(ts) - 10 and 5.
+        Optional. The index of the first origin. Defaults to the minimum between (len(ts) - 10) and 5.
         Can also be the value of the DateTimeIndex.
     stride
-        Optional. The stride used for rolling the origin. Defaults is n_prediction / n_evaluations if provided.
+        Optional. The stride used for rolling the origin. Defaults is `n_predictions / n_evaluations` if provided.
     n_evaluations
         Optional. Number of evaluation. Defaults is the maximum number possible if stride is provided.
-    n_prediction
+    n_predictions
         Optional. Number of predictions for each evaluation. Defaults is the size of the tail: len(ts) - origin1.
     Returns
     -------
@@ -74,12 +74,12 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         origin1 = ts.time_index().get_loc(origin1)
     elif origin1 >= len_ts or origin1 <= 0:
         raise_log(ValueError("origin1 must be inside the TimeSeries"), logger)
-    if n_prediction is None:
-        n_prediction = len_ts - origin1
+    if n_predictions is None:
+        n_predictions = len_ts - origin1
     if n_evaluations is None:
         n_evaluations = int(1 + np.floor((len_ts - origin1) / stride))
     elif stride is None:
-        stride = int(np.floor(n_prediction / n_evaluations))
+        stride = int(np.floor(n_predictions / n_evaluations))
     errors = []
     for i in range(n_evaluations):
         # if origin is further than end timestamp, end function
@@ -87,7 +87,7 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
             break
         # rolling origin
         origini = origin1 + i * stride
-        n_pred = min(len_ts - origini, n_prediction)
+        n_pred = min(len_ts - origini, n_predictions)
         train = ts[:origini]
         test = ts[origini:]
 

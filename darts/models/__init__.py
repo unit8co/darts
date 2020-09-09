@@ -15,3 +15,7 @@ from .fft import FFT
 
 # Regression
 from .standard_regression_model import StandardRegressionModel
+
+# Combination
+from .combination_model import CombinationModel
+from .baselines import NaiveCombinationModel

@@ -5,10 +5,11 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
-from typing import Optional
+from typing import Optional, List
 import numpy as np
 
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel, UnivariateForecastingModel
+from .combination_model import CombinationModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
 
@@ -98,3 +99,18 @@ class NaiveDrift(UnivariateForecastingModel):
         last_value = last + slope * n
         forecast = np.linspace(last, last_value, num=n)
         return self._build_forecast_series(forecast)
+
+
+class NaiveCombinationModel(CombinationModel):
+    
+    def __init__(self, models: List[ForecastingModel]):
+        """ Naive combination model
+
+        Naive implementation of `CombinationModel` which produces a prediction by simply
+        returning a weighted sum of all predictions of the constituent models, where the weights
+        are all equal to `1 / len(self.models)`
+        """
+        super().__init__(models)
+
+    def combination_function(self):
+        return sum(map(lambda ts: ts * 1 / len(self.models), self.predictions))
