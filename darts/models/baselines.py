@@ -102,7 +102,7 @@ class NaiveDrift(UnivariateForecastingModel):
 
 
 class NaiveCombinationModel(CombinationModel):
-    
+
     def __init__(self, models: List[ForecastingModel]):
         """ Naive combination model
 
