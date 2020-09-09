@@ -3,7 +3,7 @@ import logging
 
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
-from ..models import CombinationModel, NaiveCombinationModel
+from ..models import NaiveCombinationModel
 from ..models.groe_combination_model import GROECombinationModel
 
 
