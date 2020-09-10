@@ -117,6 +117,12 @@ class BacktestingTestCase(unittest.TestCase):
                                                     pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
 
+        # multivariate target with stride
+        pred = StandardRegressionModel(15).backtest(features_multivariate, target.stack(target),
+                                                    pd.Timestamp('20000201'), 3, stride=3)
+        self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
+        self.assertEqual((pred.time_index()[1] - pred.time_index()[0]).days, 3)
+
     def test_gridsearch(self):
 
         np.random.seed(1)
