@@ -158,8 +158,7 @@ class RegressionModel(ABC):
             # build train/val series
             train_features = [s.drop_after(pred_time) for s in feature_series]
             train_target = target_series.drop_after(pred_time)
-            val_features = [s.slice_n_points_after(pred_time, forecast_horizon)
-                            for s in feature_series]
+            val_features = [s.slice_n_points_after(pred_time, forecast_horizon) for s in feature_series]
 
             self.fit(train_features, train_target)
             pred = self.predict(val_features)

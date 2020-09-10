@@ -187,7 +187,14 @@ class ForecastingModel(ABC):
         target_series
             The target time series on which to backtest
         start
-            The first prediction time, at which a prediction is computed for a future time
+            The first prediction time, at which a prediction is computed for a future time.
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the first prediction point.
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
+            `training_series` that will be used as first prediction time.
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
+            directly.
         forecast_horizon
             The forecast horizon for the point prediction
         stride
