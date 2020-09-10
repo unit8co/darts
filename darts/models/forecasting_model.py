@@ -165,7 +165,7 @@ class ForecastingModel(ABC):
                  retrain: bool = True,
                  trim_to_series: bool = True,
                  verbose: bool = False,
-                 use_full_output_length: Optional[bool] = None) -> Tuple[TimeSeries, TimeSeries]:
+                 use_full_output_length: Optional[bool] = None) -> TimeSeries:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
@@ -194,10 +194,10 @@ class ForecastingModel(ABC):
             The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances as `self` argument support setting `retrain` to `False`.
+            instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
         use_full_output_length
-            Optionally, if `self` is an instance of `TorchForecastingModel`, this argument will be passed along
-            as argument to the predict method of `self`. Otherwise, if this value is set and `self` is not an
+            Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
+            as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
             instance of `TorchForecastingModel`, this will cause an error.
         trim_to_series
             Whether the predicted series has the end trimmed to match the end of the main series
@@ -206,7 +206,7 @@ class ForecastingModel(ABC):
 
         Returns
         -------
-        forecast
+        TimeSeries
             A time series containing the forecast values for `target_series`, when successively applying the specified
             model with the specified forecast horizon.
         """
@@ -277,7 +277,7 @@ class ForecastingModel(ABC):
                    num_predictions: int = 10,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                   verbose=False):
+                   verbose=False) -> TimeSeries:
         """ A function for finding the best hyperparameters.
 
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -292,7 +292,10 @@ class ForecastingModel(ABC):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
         splits of `training_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
         forecasting horizon used when making a prediction is `forecast_horizon`.
+        The `num_predictions` point predictions are obtained by predicting the last `num_predictions` points
+        of the training series with the specified `forecast_horizon`.
         Note that the model is retrained for every single prediction, thus this mode is slower.
+        This mode uses `ForecastingModel.backtest` as a subroutine to produce the historical predictions.
 
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
@@ -322,7 +325,7 @@ class ForecastingModel(ABC):
             The integer value of the forecasting horizon used in expanding window mode.
         use_full_output_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
-            This argument will be passed along as argument to the predict method of `TorchForecastingModel`.
+            This argument will be passed along to the predict method of `TorchForecastingModel`.
         val_target_series
             The TimeSeries instance used for validation in split mode.
         num_predictions:
@@ -397,21 +400,22 @@ class ForecastingModel(ABC):
                 min_error = error
                 best_param_combination = param_combination_dict
         logger.info('Chosen parameters: ' + str(best_param_combination))
+
         return model_class(**best_param_combination)
 
     def residuals(self,
                   series: TimeSeries,
                   forecast_horizon: int = 1,
                   verbose: bool = False) -> TimeSeries:
-        """ A function for computing the residuals produced by the current model and a univariate time series.
+        """ A function for computing the residuals produced by the current model on a univariate time series.
 
         This function computes the difference between the actual observations from `series`
-        and the fitted values vector p obtained by training `self` on `series`.
-        For every index i in `series`, p[i] is computed by training `self` on
+        and the fitted values vector p obtained by training the model on `series`.
+        For every index i in `series`, p[i] is computed by training the model on
         series[:(i - `forecast_horizon`)] and forecasting `forecast_horizon` into the future.
         (p[i] will be set to the last value of the predicted vector.)
         The vector of residuals will be shorter than `series` due to the minimum
-        training series length required by `self` and the gap introduced by `forecast_horizon`.
+        training series length required by the model and the gap introduced by `forecast_horizon`.
         Note that the common usage of the term residuals implies a value for `forecast_horizon` of 1.
 
         Parameters

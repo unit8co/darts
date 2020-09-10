@@ -95,7 +95,7 @@ class RegressionModel(ABC):
         """ A function for backtesting `RegressionModel`'s.
 
         This function computes the time series of historical predictions
-        that would have been obtained, if the current model had been used to predict `series`
+        that would have been obtained, if the current model had been used to predict `target_series`
         using the `feature_series`, with a certain time horizon.
 
         To this end, it repeatedly builds a training set composed of both features and targets,
