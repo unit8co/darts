@@ -175,10 +175,10 @@ class ForecastingModel(ABC):
         Unless `retrain` is set to False, this always re-trains the models on the entire available history,
         corresponding an expending window strategy.
 
-        If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances),
-        the model will only be trained only on the initial training window (up to `start` time stamp), and only if it
-        has not been trained before. Then, at every iteration, the newly expanded 'training sequence' will be fed to the
-        model to produce the new output.
+        If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances
+        like `RNNModel` and `TCNModel`), the model will only be trained on the initial training window
+        (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
+        newly expanded input sequence will be fed to the model to produce the new output.
 
         Parameters
         ----------
