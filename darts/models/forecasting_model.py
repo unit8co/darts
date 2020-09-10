@@ -144,12 +144,15 @@ class ForecastingModel(ABC):
             if isinstance(n.start, float):
                 raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
             elif isinstance(n.start, pd.Timestamp):
-                raise_if_not(n.start in training_series, '`start` timestamp is not in the `series`.', logger)
-                raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of `series`',
-                         logger)
+                raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
+                raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of the'
+                         ' series', logger)
             else:
-                raise_if(training_series[n.start].time_index()[0] == training_series.end_time(), '`start` timestamp '
-                         'is the last timestamp of `series`', logger)
+                raise_if_not(isinstance(n.start, int), "`start` needs to be either `float`, `int` or `pd.Timestamp`",
+                             logger)
+                raise_if_not(n.start >= 0, logger)
+                raise_if(training_series[n.start].start_time() >= training_series.end_time(), '`start` timestamp '
+                         'should be earlier than the last time stamp of the series', logger)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Method to be overriden in subclass for model specific sanity checks"""
@@ -170,7 +173,7 @@ class ForecastingModel(ABC):
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
         the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the
-        training set forward by one time step. The resulting predictions are then returned.
+        training set forward by `stride` time steps. The resulting predictions are then returned.
 
         Unless `retrain` is set to False, this always re-trains the models on the entire available history,
         corresponding an expending window strategy.
@@ -237,7 +240,7 @@ class ForecastingModel(ABC):
             start_index = int((len(training_series.time_index()) - 1) * start)
             start = training_series.time_index()[start_index]
         elif isinstance(start, int):
-            start = training_series[start].time_index()[0]
+            start = training_series[start].start_time()
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:

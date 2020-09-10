@@ -15,7 +15,7 @@ import pandas as pd
 
 from abc import ABC, abstractmethod
 from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger, raise_log
+from ..logging import raise_if, raise_if_not, get_logger, raise_log
 from typing import List, Iterable
 
 from ..utils import _build_tqdm_iterator
@@ -101,8 +101,8 @@ class RegressionModel(ABC):
         To this end, it repeatedly builds a training set composed of both features and targets,
         from `feature_series` and `target_series`, respectively.
         It trains the current model on the training set, emits a (point) prediction for a fixed
-        forecast horizon, and then moves the end of the training set forward by one
-        time step. The resulting predictions are then returned.
+        forecast horizon, and then moves the end of the training set forward by `stride`
+        time steps. The resulting predictions are then returned.
 
         This always re-trains the models on the entire available history,
         corresponding an expending window strategy.
@@ -134,8 +134,8 @@ class RegressionModel(ABC):
         raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                      'have the same time index', logger)
         raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
-        raise_if_not(start != target_series.end_time(), 'The provided start timestamp is the '
-                     'last timestamp of the time series', logger)
+        raise_if(start == target_series.end_time(), 'The provided start timestamp is the '
+                 'last timestamp of the time series', logger)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:
