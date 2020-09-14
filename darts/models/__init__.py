@@ -12,6 +12,7 @@ from .rnn_model import RNNModel
 from .tcn_model import TCNModel
 from .theta import Theta, FourTheta
 from .fft import FFT
+from .transformer_model import TransformerModel
 
 # Regression
 from .standard_regression_model import StandardRegressionModel
