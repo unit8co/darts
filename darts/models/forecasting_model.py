@@ -188,7 +188,12 @@ class ForecastingModel(ABC):
         training_series
             The training time series on which to backtest
         target_series
-            The target time series on which to backtest
+            The target time series on which to backtest. This parameter is only relevant for 
+            `MultivariateForecastingModel` instances. It allows for training on one `training_series`
+            and predicting another `target_series`. In many multivariate forecasting problems, the
+            `target_series` would constitute a subset of the components of the `training_series`.
+            However, any combination of univariate and multivariate series is allowed here, as long
+            as the indices all match up.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
