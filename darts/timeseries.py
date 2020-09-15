@@ -50,7 +50,7 @@ class TimeSeries:
         raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
                      ' contain only numerical values.', logger)
         raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
-                     'is not passed', logger)
+                     ' is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time **returns a copy**
         self._df.columns = self._clean_df_columns(df.columns)

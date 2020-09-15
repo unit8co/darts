@@ -144,7 +144,12 @@ class ForecastingModel(ABC):
             if isinstance(n.start, float):
                 raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
             elif isinstance(n.start, pd.Timestamp):
-                raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
+                if (hasattr(n, 'trim_to_series') and n.trim_to_series) or not hasattr(n, 'trim_to_series'):
+                    raise_if_not(n.start + training_series.freq() * n.forecast_horizon in training_series,
+                                 '`start` timestamp is too late in the series to make any predictions with'
+                                 '`trim_to_series` set to `True`.', logger)
+                else:
+                    raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
                 raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of the'
                          ' series', logger)
             else:
@@ -188,7 +193,7 @@ class ForecastingModel(ABC):
         training_series
             The training time series on which to backtest
         target_series
-            The target time series on which to backtest. This parameter is only relevant for 
+            The target time series on which to backtest. This parameter is only relevant for
             `MultivariateForecastingModel` instances. It allows for training on one `training_series`
             and predicting another `target_series`. In many multivariate forecasting problems, the
             `target_series` would constitute a subset of the components of the `training_series`.
@@ -277,7 +282,8 @@ class ForecastingModel(ABC):
             values.append(pred.values()[-1])  # store the N-th point
             times.append(pred.end_time())  # store the N-th timestamp
 
-        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values),
+                                                    freq=training_series.freq() * stride)
 
         return forecast
 
