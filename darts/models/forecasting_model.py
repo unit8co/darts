@@ -24,6 +24,15 @@ from .. import metrics
 logger = get_logger(__name__)
 
 
+def _convert_start_parameter(start: Union[pd.Timestamp, float, int], training_series: TimeSeries) -> pd.Timestamp:
+    if isinstance(start, float):
+        start_index = int((len(training_series.time_index()) - 1) * start)
+        start = training_series.time_index()[start_index]
+    elif isinstance(start, int):
+        start = training_series[start].start_time()
+    return start
+
+
 class ForecastingModel(ABC):
     """ The base class for all forecasting models.
 
@@ -246,11 +255,7 @@ class ForecastingModel(ABC):
             fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
 
         # prepare the start parameter -> pd.Timestamp
-        if isinstance(start, float):
-            start_index = int((len(training_series.time_index()) - 1) * start)
-            start = training_series.time_index()[start_index]
-        elif isinstance(start, int):
-            start = training_series[start].start_time()
+        start = _convert_start_parameter(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:
@@ -293,9 +298,9 @@ class ForecastingModel(ABC):
                    training_series: TimeSeries,
                    target_series: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
+                   start: Union[pd.Timestamp, float, int] = 0.5,
                    use_full_output_length: Optional[bool] = None,
                    val_target_series: Optional[TimeSeries] = None,
-                   num_predictions: int = 10,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    verbose=False) -> TimeSeries:
@@ -311,12 +316,11 @@ class ForecastingModel(ABC):
 
         Expanding window mode (activated when `forecast_horizon` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
-        splits of `training_series` and `target_series`. The number of splits is equal to `num_predictions`, and the
-        forecasting horizon used when making a prediction is `forecast_horizon`.
-        The `num_predictions` point predictions are obtained by predicting the last `num_predictions` points
-        of the training series with the specified `forecast_horizon`.
+        splits of `training_series` and `target_series`. This process is accomplished by using
+        `ForecastingModel.backtest` as a subroutine to produce historic forecasts starting from `start`
+        that are compared against the ground truth values of `training_series` or `target_series`, if
+        specifed.
         Note that the model is retrained for every single prediction, thus this mode is slower.
-        This mode uses `ForecastingModel.backtest` as a subroutine to produce the historical predictions.
 
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
@@ -344,13 +348,16 @@ class ForecastingModel(ABC):
             The TimeSeries instance used as target for training (and also validation in expanding window mode).
         forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
+        start
+            The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index
+            of `training_series` from which predictions will be made to evaluate the model.
+            For a detailed description of how the different data types are interpreted, please see the documentation
+            for `ForecastingModel.backtest`.
         use_full_output_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
             This argument will be passed along to the predict method of `TorchForecastingModel`.
         val_target_series
             The TimeSeries instance used for validation in split mode.
-        num_predictions:
-            The number of train/prediction cycles performed in one iteration of expanding window mode.
         use_fitted_values
             If `True`, uses the comparison with the fitted values.
             Raises an error if `fitted_values` is not an attribute of `model_class`.
@@ -380,18 +387,13 @@ class ForecastingModel(ABC):
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
         if use_fitted_values:
-            model = model_class()
-            raise_if_not(hasattr(model, "fitted_values"), "The model must have a fitted_values attribute"
+            raise_if_not(hasattr(model_class(), "fitted_values"), "The model must have a fitted_values attribute"
                          " to compare with the train TimeSeries", logger)
 
         elif val_target_series is not None:
             raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the"
                          " same number of components.", logger)
 
-        if (val_target_series is None) and (not use_fitted_values):
-            backtest_start_time = (
-                training_series.end_time() - (num_predictions + forecast_horizon) * training_series.freq()
-            )
         min_error = float('inf')
         best_param_combination = {}
 
@@ -408,7 +410,7 @@ class ForecastingModel(ABC):
                 fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
-                backtest_forecast = model.backtest(training_series, target_series, backtest_start_time,
+                backtest_forecast = model.backtest(training_series, target_series, start,
                                                    forecast_horizon, use_full_output_length=use_full_output_length)
                 error = metric(backtest_forecast, target_series)
             else:  # split mode
