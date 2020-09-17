@@ -70,8 +70,8 @@ class Theta(UnivariateForecastingModel):
         if self.theta == 0:
             raise_log(ValueError('The parameter theta cannot be equal to 0.'), logger)
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         ts = self.training_series
 
         self.length = len(ts)
@@ -215,8 +215,8 @@ class FourTheta(UnivariateForecastingModel):
         raise_if_not(season_mode in SeasonalityMode,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
-    def fit(self, ts, component_index: Optional[int] = None):
-        super().fit(ts, component_index)
+    def fit(self, ts):
+        super().fit(ts)
         # Check univariate time series
         ts._assert_univariate()
 
@@ -337,7 +337,7 @@ class FourTheta(UnivariateForecastingModel):
         using the fitted values on the training series `ts`.
 
 
-        Uses 'backtesting.backtest_gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
+        Uses 'ForecastingModel.gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
 
         Parameters
         ----------
@@ -355,7 +355,6 @@ class FourTheta(UnivariateForecastingModel):
             The best performing model on the time series.
         """
         # Only import if needed
-        from ..backtesting.backtesting import backtest_gridsearch
         from ..metrics import mae
         if thetas is None:
             thetas = [1, 2, 3]
@@ -370,15 +369,13 @@ class FourTheta(UnivariateForecastingModel):
             model_mode = [model for model in ModelMode]
             drift_mode = [trend for trend in TrendMode]
 
-        theta = backtest_gridsearch(FourTheta,
-                                    {"theta": thetas,
-                                     "model_mode": model_mode,
-                                     "season_mode": season_mode,
-                                     "trend_mode": drift_mode,
-                                     "seasonality_period": [m],
-                                     "normalization": [normalization]
-                                     },
-                                    ts, use_fitted_values=True, metric=mae)
+        theta = FourTheta.gridsearch({"theta": thetas,
+                                      "model_mode": model_mode,
+                                      "season_mode": season_mode,
+                                      "trend_mode": drift_mode,
+                                      "seasonality_period": [m],
+                                      "normalization": [normalization]},
+                                     ts, use_fitted_values=True, metric=mae)
         return theta
 
     def __str__(self):

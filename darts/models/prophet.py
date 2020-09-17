@@ -57,8 +57,8 @@ class Prophet(UnivariateForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         series = self.training_series
 
         in_df = pd.DataFrame(data={

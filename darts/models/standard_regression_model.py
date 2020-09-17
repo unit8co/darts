@@ -69,4 +69,4 @@ class StandardRegressionModel(RegressionModel):
     def predict(self, features: List[TimeSeries]):
         super().predict(features)
         y = self.model.predict(self._get_features_matrix_from_series(features))
-        return TimeSeries(pd.DataFrame(y, index=features[0].time_index()))
+        return TimeSeries(pd.DataFrame(y, index=features[0].time_index()), self.train_target.freq())
