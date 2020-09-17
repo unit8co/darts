@@ -53,7 +53,7 @@ class _TimeSeriesSequentialDataset(Dataset):
         training_series
             The time series to be included in the dataset.
         target_series
-            The time series used has target.
+            The time series used as target.
         data_length
             The length of the training sub-sequences.
         target_length
@@ -105,7 +105,7 @@ class _TimeSeriesShiftedDataset(Dataset):
         training_series
             The time series to be included in the dataset.
         target_series
-            The time series used has target.
+            The time series used as target.
         length
             The length of the training and target sub-sequences.
         shift
@@ -287,9 +287,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
             loss throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
-        target_indices
-            A list of integers indicating which component(s) of the time series should be used
-            as targets for forecasting.
         """
         super().fit(training_series, target_series)
 
@@ -375,9 +372,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if_not(input_series is None or input_series.width == self.training_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
-        raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
-                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
-                     "TimeSeries instance as input.", logger)
+        raise_if_not(use_full_output_length or (self.training_series == self.target_series
+                                                and self.training_series.width == 1),
+                     "Please set 'use_full_output_length' to 'True' and 'n' smaller or equal to 'output_length'"
+                     " when using a multivariate TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
         pred_in = self._create_predict_input(input_series)

@@ -15,6 +15,7 @@ from statsmodels.tsa.stattools import acf
 
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
+from .missing_values import auto_fillna
 from .. import SeasonalityMode, ModelMode
 
 logger = get_logger(__name__)
@@ -25,7 +26,7 @@ def check_seasonality(ts: TimeSeries,
                       max_lag: int = 24,
                       alpha: float = 0.05):
     """
-    Returns whether the TimeSeries `ts` is seasonal with period `m` or not.
+    Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
 
     If `m` is None, we work under the assumption that there is a unique seasonality period, which is inferred
     from the Auto-correlation Function (ACF).
@@ -126,7 +127,7 @@ def extract_trend_and_seasonality(ts: TimeSeries,
                                   model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE) -> \
         Tuple[TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.
+    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.
 
     Parameters
     ----------
@@ -209,13 +210,13 @@ def remove_seasonality(ts: TimeSeries,
         The seasonality period to use.
     model
         The type of decomposition to use.
-        Must be `from darts import SeasonalityMode` Enum member.
+        Must be a `from darts import SeasonalityMode` Enum member.
         Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
         Defaults SeasonalityMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
     """
 
     ts._assert_univariate()
@@ -239,11 +240,11 @@ def remove_trend(ts: TimeSeries,
         The type of decomposition to use.
         Must be `from darts import ModelMode` Enum member.
         Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
-        Defaults modelMode.MULTIPLICATIVE.
+        Defaults to modelMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
     """
 
     ts._assert_univariate()
@@ -299,3 +300,58 @@ def plot_acf(ts: TimeSeries,
 
     axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_residuals_analysis(residuals: TimeSeries,
+                            num_bins: int = 20,
+                            fill_nan: bool = True):
+    """ Plots data relevant to residuals.
+
+    This function takes a univariate TimeSeries instance of residuals and plots their values,
+    their distribution and their ACF.
+    Please note that if the residual TimeSeries instance contains NaN values, the plots
+    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    be interpolated.
+
+    Parameters
+    ----------
+    residuals
+        Univariate TimeSeries instance representing residuals.
+    num_bins
+        Optionally, an integer value determining the number of bins in the histogram.
+    fill_nan:
+        A boolean value indicating whether NaN values should be filled in the residuals.
+    """
+
+    residuals._assert_univariate()
+
+    fig = plt.figure(constrained_layout=True, figsize=(8, 6))
+    gs = fig.add_gridspec(2, 2)
+
+    if fill_nan:
+        residuals = auto_fillna(residuals)
+
+    # plot values
+    ax1 = fig.add_subplot(gs[:1, :])
+    residuals.plot(ax=ax1)
+    ax1.set_ylabel('value')
+    ax1.set_title('Residual values')
+
+    # plot distribution
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
+    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
+    x = np.linspace(res_min, res_max, 100)
+    ax2 = fig.add_subplot(gs[1:, 1:])
+    ax2.hist(residuals.univariate_values(), bins=num_bins)
+    ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax2.set_title('Distribution')
+    ax2.set_ylabel('count')
+    ax2.set_xlabel('value')
+
+    # plot ACF
+    ax3 = fig.add_subplot(gs[1:, :1])
+    plot_acf(residuals, axis=ax3)
+    ax3.set_ylabel('ACF value')
+    ax3.set_xlabel('lag')
+    ax3.set_title('ACF')
