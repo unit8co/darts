@@ -66,3 +66,13 @@ You will find below an example Jupyter notebook with a benchmark of different da
     :maxdepth: 1
 
     examples/M4_competition/M4_competition_benchmark.ipynb
+
+Facebook Prophet Examples
+=========================
+
+You will find below an example Jupyter notebook containing usage of Prophet model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/Prophet-examples.ipynb
