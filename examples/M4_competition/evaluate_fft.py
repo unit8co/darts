@@ -4,7 +4,6 @@
 
 from darts import ModelMode
 from darts.models import FFT
-from darts.backtesting import backtest_gridsearch
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils import _build_tqdm_iterator
 
