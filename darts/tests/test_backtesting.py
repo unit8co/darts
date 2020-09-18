@@ -77,6 +77,10 @@ class BacktestingTestCase(unittest.TestCase):
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
         NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), forecast_horizon=3, trim_to_series=False)
 
+        # Using forecast_horizon default value
+        NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
+        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), trim_to_series=False)
+
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
             NaiveDrift().backtest(linear_series_multi, None, pd.Timestamp('20000201'), 3)

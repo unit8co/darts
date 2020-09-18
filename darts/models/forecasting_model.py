@@ -11,6 +11,7 @@ where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 
 from typing import Optional, Tuple, Union, Any, Callable
 from types import SimpleNamespace
+from inspect import signature
 from itertools import product
 from abc import ABC, abstractmethod
 import numpy as np
@@ -113,64 +114,6 @@ class ForecastingModel(ABC):
         time_index = self._generate_new_dates(len(points_preds))
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
-
-    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Sanity checks for the backtest function
-
-        Parameters
-        ----------
-        args
-            The args parameter(s) provided to the backtest function.
-        kwargs
-            The kwargs paramter(s) provided to the backtest function.
-
-        Raises
-        ------
-        ValueError
-            when a check on the parameter does not pass.
-        """
-        # parse args and kwargs
-        if len(args) > 0:
-            training_series = args[0]
-        else:
-            training_series = kwargs['training_series']
-        n = SimpleNamespace(**kwargs)
-
-        # check target and training series
-        if not hasattr(n, 'target_series'):
-            target_series = training_series
-        else:
-            target_series = n.target_series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                     " must have the same time indices.")
-
-        # check forecast horizon‚
-        if hasattr(n, 'forecast_horizon'):
-            raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
-
-        # check start parameter
-        if hasattr(n, 'start'):
-            if isinstance(n.start, float):
-                raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
-            elif isinstance(n.start, pd.Timestamp):
-                if (hasattr(n, 'trim_to_series') and n.trim_to_series) or not hasattr(n, 'trim_to_series'):
-                    raise_if_not(n.start + training_series.freq() * n.forecast_horizon in training_series,
-                                 '`start` timestamp is too late in the series to make any predictions with'
-                                 '`trim_to_series` set to `True`.', logger)
-                else:
-                    raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
-                raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of the'
-                         ' series', logger)
-            else:
-                raise_if_not(isinstance(n.start, int), "`start` needs to be either `float`, `int` or `pd.Timestamp`",
-                             logger)
-                raise_if_not(n.start >= 0, logger)
-                raise_if(training_series[n.start].start_time() >= training_series.end_time(), '`start` timestamp '
-                         'should be earlier than the last time stamp of the series', logger)
-
-    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Method to be overriden in subclass for model specific sanity checks"""
-        pass
 
     @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
     def backtest(self,
@@ -292,6 +235,69 @@ class ForecastingModel(ABC):
 
         return forecast
 
+    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Sanity checks for the backtest function
+
+        Parameters
+        ----------
+        args
+            The args parameter(s) provided to the backtest function.
+        kwargs
+            The kwargs paramter(s) provided to the backtest function.
+
+        Raises
+        ------
+        ValueError
+            when a check on the parameter does not pass.
+        """
+        # parse args and kwargs
+        if len(args) > 0:
+            training_series = args[0]
+        else:
+            training_series = kwargs['training_series']
+        n = SimpleNamespace(**kwargs)
+
+        # check target and training series
+        if not hasattr(n, 'target_series'):
+            target_series = training_series
+        else:
+            target_series = n.target_series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
+                     " must have the same time indices.")
+
+        # check forecast horizon‚
+        if hasattr(n, 'forecast_horizon'):
+            raise_if_not(n.forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+
+        # check start parameter
+        if hasattr(n, 'start'):
+            if isinstance(n.start, float):
+                raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
+            elif isinstance(n.start, pd.Timestamp):
+                if (hasattr(n, 'trim_to_series') and n.trim_to_series) or not hasattr(n, 'trim_to_series'):
+                    if hasattr(n, 'forecast_horizon'):
+                        forecast_horizon = n.forecast_horizon
+                    else:
+                        forecast_horizon = signature(self.backtest).parameters['forecast_horizon'].default
+                    
+                    raise_if_not(n.start + training_series.freq() * forecast_horizon in training_series,
+                                '`start` timestamp is too late in the series to make any predictions with'
+                                '`trim_to_series` set to `True`.', logger)
+                else:
+                    raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
+                raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of the'
+                         ' series', logger)
+            else:
+                raise_if_not(isinstance(n.start, int), "`start` needs to be either `float`, `int` or `pd.Timestamp`",
+                             logger)
+                raise_if_not(n.start >= 0, logger)
+                raise_if(training_series[n.start].start_time() >= training_series.end_time(), '`start` timestamp '
+                         'should be earlier than the last time stamp of the series', logger)
+
+    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Method to be overriden in subclass for model specific sanity checks"""
+        pass
+
     @classmethod
     def gridsearch(model_class,
                    parameters: dict,
@@ -372,7 +378,7 @@ class ForecastingModel(ABC):
             An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
         """
         raise_if_not((forecast_horizon is not None) + (val_target_series is not None) + use_fitted_values == 1,
-                     "Please pass exactly one of the arguments 'forecast_horizon_n', "
+                     "Please pass exactly one of the arguments 'forecast_horizon', "
                      "'val_target_series' or 'use_fitted_values'.", logger)
 
         # check target and training series

@@ -9,6 +9,7 @@ from typing import List, Callable, TypeVar
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
+from functools import wraps
 
 logger = get_logger(__name__)
 
@@ -110,6 +111,7 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
             ...
     """
     def decorator(method_to_sanitize: Callable[[A, B], T]) -> Callable[[A, B], T]:
+        @wraps(method_to_sanitize)
         def sanitized_method(self, *args: A, **kwargs: B) -> T:
             for sanity_check_method in sanity_check_methods:
                 getattr(self, sanity_check_method)(*args, **kwargs)
