@@ -14,11 +14,12 @@ import numpy as np
 import pandas as pd
 
 from abc import ABC, abstractmethod
+from typing import List, Iterable, Union, Any
+from inspect import signature
+
 from ..timeseries import TimeSeries
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
-from typing import List, Iterable
-
-from ..utils import _build_tqdm_iterator
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, _backtest_convert_start, _backtest_general_checks
 
 logger = get_logger(__name__)
 
@@ -84,11 +85,48 @@ class RegressionModel(ABC):
                      'The number and dimensionalities of all given features must correspond to those used for'
                      ' training.', logger)
 
+    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Sanity checks for the backtest function
+
+        Parameters
+        ----------
+        args
+            The args parameter(s) provided to the backtest function.
+        kwargs
+            The kwargs paramter(s) provided to the backtest function.
+
+        Raises
+        ------
+        ValueError
+            when a check on the parameter does not pass.
+        """
+
+        # parse args
+        if len(args) > 0:
+            feature_series = args[0]
+        else:
+            feature_series = kwargs['feature_series']
+
+        if len(args) > 1:
+            target_series = args[1]
+        else:
+            target_series = kwargs['target_series']
+
+        raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
+                     'have the same time index', logger)
+
+        _backtest_general_checks(target_series, signature(self.backtest).parameters, kwargs)
+
+    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Method to be overriden in subclass for model specific sanity checks"""
+        pass
+
+    @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
     def backtest(self,
                  feature_series: Iterable[TimeSeries],
                  target_series: TimeSeries,
-                 start: pd.Timestamp,
-                 forecast_horizon: int,
+                 start: Union[pd.Timestamp, float, int] = 0.5,
+                 forecast_horizon: int = 1,
                  stride: int = 1,
                  trim_to_series: bool = True,
                  verbose=False) -> TimeSeries:
@@ -115,6 +153,7 @@ class RegressionModel(ABC):
             The univariate target time series for the regression model (dependent variable)
         start
             The first prediction time, at which a prediction is computed for a future time
+            TODO: Update
         forecast_horizon
             The forecast horizon for the point predictions
         stride
@@ -131,11 +170,7 @@ class RegressionModel(ABC):
             the current model with the specified forecast horizon.
         """
 
-        raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
-                     'have the same time index', logger)
-        raise_if_not(start in target_series, 'The provided start timestamp is not in the time series.', logger)
-        raise_if(start == target_series.end_time(), 'The provided start timestamp is the '
-                 'last timestamp of the time series', logger)
+        start = _backtest_convert_start(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:

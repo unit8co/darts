@@ -81,6 +81,23 @@ class BacktestingTestCase(unittest.TestCase):
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
         NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), trim_to_series=False)
 
+        # Using an int or float value for start
+        NaiveDrift().backtest(linear_series, None, start = 30)
+        NaiveDrift().backtest(linear_series, None, start=0.7, trim_to_series=False)
+
+        # Using invalid start and/or forecast_horizon values
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=0.7, forecast_horizon=-1)
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=100)
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=1.2)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, None, start='wrong type')
+
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, trim_to_series=True)
+
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
             NaiveDrift().backtest(linear_series_multi, None, pd.Timestamp('20000201'), 3)
@@ -117,6 +134,19 @@ class BacktestingTestCase(unittest.TestCase):
 
         # univariate feature test
         pred = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # Using an int or float value for start
+        pred = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # FIXME: start=0 (or very small) fails, needs fixing
+        # pred1 = StandardRegressionModel(15).backtest(features, target, start=0, forecast_horizon=3)
+        # pred 2 = StandardRegressionModel(15).backtest(features, target, start=0.0, forecast_horizon=3)
+        # self.assertEqual(pred1, pred2)
+        # self.assertEqual(r2_score(pred1, target), 1.0)
+
+        pred = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate feature test

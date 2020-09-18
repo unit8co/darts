@@ -2,14 +2,16 @@
 Additional util functions
 -------------------------
 """
+import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger
-from typing import List, Callable, TypeVar
+from ..logging import raise_log, get_logger, raise_if_not, raise_if
+from typing import List, Callable, TypeVar, Union
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 from functools import wraps
+from types import SimpleNamespace
 
 logger = get_logger(__name__)
 
@@ -118,3 +120,61 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
             return method_to_sanitize(self, *args, **kwargs)
         return sanitized_method
     return decorator
+
+#signature_params allows to get the default values used in each backtest method (in forecasting and regression models)
+#kwargs are the params specified by the caller, so we make them take precedence
+#series is either training_series if called from ForecastingModel,
+# or any of target_series / feature_series if called from RegressionModel since they all must have the same time index
+def _backtest_general_checks(series, signature_params, kwargs):
+    #parse kwargs
+    n = SimpleNamespace(**kwargs)
+
+    # check forecast horizon
+    if hasattr(n, 'forecast_horizon'):
+        forecast_horizon = n.forecast_horizon
+    else:
+        forecast_horizon = signature_params['forecast_horizon'].default
+    
+    raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+    
+    # check start parameter
+    if hasattr(n, 'start'):
+        if isinstance(n.start, float):
+            raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
+        elif isinstance(n.start, pd.Timestamp):
+            raise_if(n.start not in series, '`start` timestamp must be an entry in the time series\' time index')
+            raise_if(n.start == series.end_time(), '`start` timestamp is the last timestamp of the'
+                        ' series', logger)
+        elif isinstance(n.start, int):
+            raise_if_not(n.start >= 0, logger)
+            raise_if(n.start > len(series), '`start` index '
+                     'should be smaller than length of the series', logger)
+        else:
+            raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"),
+                         logger)
+    
+    #check that trim_to_series and start together form a valid combination
+    if hasattr(n, 'trim_to_series'):
+        trim_to_series = n.trim_to_series
+    else:
+        trim_to_series = signature_params['trim_to_series'].default
+
+    if trim_to_series:
+        if hasattr(n, 'start'):
+            start = n.start
+        else:
+            start = signature_params['start'].default
+    
+        start = _backtest_convert_start(start, series)
+
+        raise_if_not(start + series.freq() * forecast_horizon in series,
+                        '`start` timestamp is too late in the series to make any predictions with'
+                        '`trim_to_series` set to `True`.', logger)
+
+def _backtest_convert_start(start: Union[pd.Timestamp, float, int], training_series: TimeSeries) -> pd.Timestamp:
+    if isinstance(start, float):
+        start_index = int((len(training_series.time_index()) - 1) * start)
+        start = training_series.time_index()[start_index]
+    elif isinstance(start, int):
+        start = training_series[start].start_time()
+    return start
