@@ -279,10 +279,9 @@ class ForecastingModel(ABC):
                         forecast_horizon = n.forecast_horizon
                     else:
                         forecast_horizon = signature(self.backtest).parameters['forecast_horizon'].default
-                    
                     raise_if_not(n.start + training_series.freq() * forecast_horizon in training_series,
-                                '`start` timestamp is too late in the series to make any predictions with'
-                                '`trim_to_series` set to `True`.', logger)
+                                 '`start` timestamp is too late in the series to make any predictions with'
+                                 '`trim_to_series` set to `True`.', logger)
                 else:
                     raise_if_not(n.start in training_series, '`start` timestamp is not in the series.', logger)
                 raise_if(n.start == training_series.end_time(), '`start` timestamp is the last timestamp of the'
