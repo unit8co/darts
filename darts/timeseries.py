@@ -351,8 +351,7 @@ class TimeSeries:
         -------
         TimeSeries
             A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
-        """
-        
+        """        
         raise_if_not(end_ts >= start_ts, 'End timestamp must be after start timestamp when slicing.', logger)
         raise_if_not(end_ts >= self.start_time(),
                      'End timestamp must be after the start of the time series when slicing.', logger)
