@@ -6,7 +6,7 @@ Standard Regression model
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
-from typing import List
+from typing import List, Union, Iterable
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -70,3 +70,24 @@ class StandardRegressionModel(RegressionModel):
         super().predict(features)
         y = self.model.predict(self._get_features_matrix_from_series(features))
         return TimeSeries(pd.DataFrame(y, index=features[0].time_index()), self.train_target.freq())
+
+    def backtest(self,
+                 feature_series: Iterable[TimeSeries],
+                 target_series: TimeSeries,
+                 start: Union[pd.Timestamp, float, int] = None,
+                 forecast_horizon: int = 1,
+                 stride: int = 1,
+                 trim_to_series: bool = True,
+                 verbose=False) -> TimeSeries:
+
+        # Set default start value such that the model has enough training points
+        if start is None:
+            start = self.train_n_points
+
+        return super().backtest(feature_series,
+                                target_series,
+                                start=start,
+                                forecast_horizon=forecast_horizon,
+                                stride=stride,
+                                trim_to_series=trim_to_series,
+                                verbose=verbose)

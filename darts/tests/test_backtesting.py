@@ -4,15 +4,15 @@ import pandas as pd
 import random
 import logging
 
-from ..metrics import mape, r2_score
-from ..utils.timeseries_generation import (
+from darts.metrics import mape, r2_score
+from darts.utils.timeseries_generation import (
     linear_timeseries as lt,
     sine_timeseries as st,
     random_walk_timeseries as rt,
     constant_timeseries as ct,
     gaussian_timeseries as gt
 )
-from ..models import (
+from darts.models import (
     Theta,
     FFT,
     ExponentialSmoothing,
@@ -82,7 +82,7 @@ class BacktestingTestCase(unittest.TestCase):
         NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), trim_to_series=False)
 
         # Using an int or float value for start
-        NaiveDrift().backtest(linear_series, None, start = 30)
+        NaiveDrift().backtest(linear_series, None, start=30)
         NaiveDrift().backtest(linear_series, None, start=0.7, trim_to_series=False)
 
         # Using invalid start and/or forecast_horizon values
@@ -140,13 +140,18 @@ class BacktestingTestCase(unittest.TestCase):
         pred = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
-        # FIXME: start=0 (or very small) fails, needs fixing
-        # pred1 = StandardRegressionModel(15).backtest(features, target, start=0, forecast_horizon=3)
-        # pred 2 = StandardRegressionModel(15).backtest(features, target, start=0.0, forecast_horizon=3)
-        # self.assertEqual(pred1, pred2)
-        # self.assertEqual(r2_score(pred1, target), 1.0)
-
         pred = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # Using a too small start value
+        with self.assertRaises(ValueError):
+            StandardRegressionModel(15).backtest(features, target, start=0, forecast_horizon=3)
+
+        with self.assertRaises(ValueError):
+            StandardRegressionModel(15).backtest(features, target, start=0.01, forecast_horizon=3)
+
+        # Using StandardRegressionModel's start default value
+        pred = StandardRegressionModel(15).backtest(features, target, forecast_horizon=3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate feature test

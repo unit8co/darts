@@ -18,11 +18,12 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not, raise_if
+from ..logging import get_logger, raise_log, raise_if_not
 from ..utils import _build_tqdm_iterator, _with_sanity_checks, _backtest_convert_start, _backtest_general_checks
 from .. import metrics
 
 logger = get_logger(__name__)
+
 
 class ForecastingModel(ABC):
     """ The base class for all forecasting models.
