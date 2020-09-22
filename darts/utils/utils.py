@@ -12,6 +12,7 @@ from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 from functools import wraps
 from types import SimpleNamespace
+from inspect import signature, Parameter, getcallargs
 
 logger = get_logger(__name__)
 
@@ -116,13 +117,28 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
         @wraps(method_to_sanitize)
         def sanitized_method(self, *args: A, **kwargs: B) -> T:
             for sanity_check_method in sanity_check_methods:
-                getattr(self, sanity_check_method)(*args, **kwargs)
-            return method_to_sanitize(self, *args, **kwargs)
+                # Convert all arguments into keyword arguments
+                all_as_kwargs = getcallargs(method_to_sanitize, self, *args, **kwargs)
+
+                only_args = all_as_kwargs.copy()
+                only_kwargs = all_as_kwargs.copy()
+
+                # Remove positional arguments according to signature from kwargs
+                for x, p in signature(method_to_sanitize).parameters.items():
+                    if p.default == Parameter.empty and p.kind != Parameter.VAR_POSITIONAL:
+                        only_kwargs.pop(x)
+                    else:
+                        only_args.pop(x)
+
+                only_args.pop('self')
+
+                getattr(self, sanity_check_method)(*only_args.values(), **only_kwargs)
+            return method_to_sanitize(self, *only_args.values(), **only_kwargs)
         return sanitized_method
     return decorator
 
 
-def _backtest_general_checks(series, signature_params, kwargs):
+def _backtest_general_checks(series, kwargs):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
@@ -141,10 +157,7 @@ def _backtest_general_checks(series, signature_params, kwargs):
     n = SimpleNamespace(**kwargs)
 
     # check forecast horizon
-    if hasattr(n, 'forecast_horizon'):
-        forecast_horizon = n.forecast_horizon
-    else:
-        forecast_horizon = signature_params['forecast_horizon'].default
+    forecast_horizon = n.forecast_horizon
 
     raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
@@ -161,21 +174,13 @@ def _backtest_general_checks(series, signature_params, kwargs):
         else:
             raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
 
-    if hasattr(n, 'start'):
-        start = n.start
-    else:
-        start = signature_params['start'].default
-
-    start = _backtest_convert_start(start, series)
+    start = _backtest_convert_start(n.start, series)
 
     raise_if(start == series.start_time(), '`start` corresponds to the first timestamp of the series, '
              'resulting in empty training set')
 
     # check that trim_to_series and start together form a valid combination
-    if hasattr(n, 'trim_to_series'):
-        trim_to_series = n.trim_to_series
-    else:
-        trim_to_series = signature_params['trim_to_series'].default
+    trim_to_series = n.trim_to_series
 
     if trim_to_series:
         raise_if_not(start + series.freq() * forecast_horizon in series,

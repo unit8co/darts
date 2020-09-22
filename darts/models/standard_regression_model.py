@@ -86,8 +86,8 @@ class StandardRegressionModel(RegressionModel):
 
         return super().backtest(feature_series,
                                 target_series,
-                                start=start,
-                                forecast_horizon=forecast_horizon,
-                                stride=stride,
-                                trim_to_series=trim_to_series,
-                                verbose=verbose)
+                                start,
+                                forecast_horizon,
+                                stride,
+                                trim_to_series,
+                                verbose)

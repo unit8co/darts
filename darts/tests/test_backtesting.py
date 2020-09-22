@@ -68,6 +68,9 @@ class BacktestingTestCase(unittest.TestCase):
 
         # univariate model + univariate series
         pred = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3)
+
+        # raise ValueError
+
         self.assertEqual(r2_score(pred, linear_series), 1.0)
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3)
@@ -88,6 +91,9 @@ class BacktestingTestCase(unittest.TestCase):
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=0.7, forecast_horizon=-1)
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, 0.7, -1)
+
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=100)
         with self.assertRaises(ValueError):

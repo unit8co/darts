@@ -11,7 +11,6 @@ where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 
 from typing import Optional, Tuple, Union, Any, Callable
 from types import SimpleNamespace
-from inspect import signature
 from itertools import product
 from abc import ABC, abstractmethod
 import numpy as np
@@ -122,21 +121,19 @@ class ForecastingModel(ABC):
             when a check on the parameter does not pass.
         """
         # parse args and kwargs
-        if len(args) > 0:
-            training_series = args[0]
-        else:
-            training_series = kwargs['training_series']
+        training_series = args[0]
         n = SimpleNamespace(**kwargs)
 
         # check target and training series
-        if not hasattr(n, 'target_series'):
+        if n.target_series is None:
             target_series = training_series
         else:
             target_series = n.target_series
+
         raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
                      " must have the same time indices.")
 
-        _backtest_general_checks(training_series, signature(self.backtest).parameters, kwargs)
+        _backtest_general_checks(training_series, kwargs)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Method to be overriden in subclass for model specific sanity checks"""

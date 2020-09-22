@@ -15,7 +15,6 @@ import pandas as pd
 
 from abc import ABC, abstractmethod
 from typing import List, Iterable, Union, Any
-from inspect import signature
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger, raise_log
@@ -102,20 +101,13 @@ class RegressionModel(ABC):
         """
 
         # parse args
-        if len(args) > 0:
-            feature_series = args[0]
-        else:
-            feature_series = kwargs['feature_series']
-
-        if len(args) > 1:
-            target_series = args[1]
-        else:
-            target_series = kwargs['target_series']
+        feature_series = args[0]
+        target_series = args[1]
 
         raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                      'have the same time index', logger)
 
-        _backtest_general_checks(target_series, signature(self.backtest).parameters, kwargs)
+        _backtest_general_checks(target_series, kwargs)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Method to be overriden in subclass for model specific sanity checks"""
