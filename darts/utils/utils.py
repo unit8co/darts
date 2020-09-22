@@ -120,10 +120,10 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
                 # Convert all arguments into keyword arguments
                 all_as_kwargs = getcallargs(method_to_sanitize, self, *args, **kwargs)
 
+                # Then separate args from kwargs according to the function's signature
                 only_args = all_as_kwargs.copy()
                 only_kwargs = all_as_kwargs.copy()
 
-                # Remove positional arguments according to signature from kwargs
                 for x, p in signature(method_to_sanitize).parameters.items():
                     if p.default == Parameter.empty and p.kind != Parameter.VAR_POSITIONAL:
                         only_kwargs.pop(x)
