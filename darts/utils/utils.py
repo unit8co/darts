@@ -91,7 +91,10 @@ T = TypeVar('T')
 
 
 def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B], T]], Callable[[A, B], T]]:
-    """ Decorator allowing to specify some sanity check method(s) to be used on a class method.
+    """
+    Decorator allowing to specify some sanity check method(s) to be used on a class method.
+    The decorator guarantees that args and kwargs from the method to sanitize will be available in the
+    sanity check methods as specified in the sanitized method's signature, irrespective of how it was called.
 
     Parameters
     ----------
@@ -124,11 +127,11 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
                 only_args = all_as_kwargs.copy()
                 only_kwargs = all_as_kwargs.copy()
 
-                for x, p in signature(method_to_sanitize).parameters.items():
-                    if p.default == Parameter.empty and p.kind != Parameter.VAR_POSITIONAL:
-                        only_kwargs.pop(x)
+                for param_name, param in signature(method_to_sanitize).parameters.items():
+                    if param.default == Parameter.empty and param.kind != Parameter.VAR_POSITIONAL:
+                        only_kwargs.pop(param_name)
                     else:
-                        only_args.pop(x)
+                        only_args.pop(param_name)
 
                 only_args.pop('self')
 
