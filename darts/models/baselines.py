@@ -106,11 +106,10 @@ class NaiveCombinationModel(CombinationModel):
     def __init__(self, models: List[ForecastingModel]):
         """ Naive combination model
 
-        Naive implementation of `CombinationModel` which produces a prediction by simply
-        returning a weighted sum of all predictions of the constituent models, where the weights
-        are all equal to `1 / len(self.models)`
+        Naive implementation of `CombinationModel`
+        Returns the average of all predictions of the constituent models
         """
         super().__init__(models)
 
-    def combination_function(self):
-        return sum(map(lambda ts: ts * 1 / len(self.models), self.predictions))
+    def combine(self, predictions: List[TimeSeries]):
+        return sum(map(lambda ts: ts * 1 / len(self.models), predictions))

@@ -5,7 +5,7 @@ Cross-validation functions
 
 from ..timeseries import TimeSeries
 from ..metrics import metrics as mfunc
-from ..logging import get_logger, raise_if_not, raise_log
+from ..logging import get_logger, raise_if_not, raise_log, raise_if
 from typing import Union, Callable, Optional
 import numpy as np
 import pandas as pd
@@ -37,7 +37,7 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     Parameters
     ----------
     ts
-        A TimeSeres object to use for cross-validation.
+        A TimeSeries object to use for cross-validation.
     model
         The instance of ForecastingModel to cross-validate.
     metrics
@@ -57,15 +57,17 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
     Float
         The sum of the predictions errors over the different origins.
     """
-    raise_if_not((stride is not None) or (n_evaluations is not None),
-                 "At least 1 parameter between stride and n_evaluations must be given")
+    raise_if((stride is None) and (n_evaluations is None),
+             "At least 1 parameter between stride and n_evaluations must be given")
     raise_if_not(callable(metrics) or hasattr(mfunc, metrics),
                  "The metrics should be a function that takes TimeSeries as inputs,"
                  " or a string of a function name from darts.metrics")
     raise_if_not(stride is None or stride > 0,
                  "The stride parameter must be strictly positive")
+
     if type(metrics) is str and metrics != 'mase':
         metrics = getattr(mfunc, metrics)
+
     len_ts = len(ts)
     if origin1 is None:
         origin1 = max(5, len_ts - 10)
@@ -74,12 +76,15 @@ def generalized_rolling_origin_evaluation(ts: TimeSeries, model: ForecastingMode
         origin1 = ts.time_index().get_loc(origin1)
     elif origin1 >= len_ts or origin1 <= 0:
         raise_log(ValueError("origin1 must be inside the TimeSeries"), logger)
+
     if n_predictions is None:
         n_predictions = len_ts - origin1
+
     if n_evaluations is None:
         n_evaluations = int(1 + np.floor((len_ts - origin1) / stride))
     elif stride is None:
         stride = int(np.floor(n_predictions / n_evaluations))
+
     errors = []
     for i in range(n_evaluations):
         # if origin is further than end timestamp, end function

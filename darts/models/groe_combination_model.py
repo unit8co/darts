@@ -4,7 +4,7 @@ GROE combination model
 """
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log
+from ..logging import get_logger, raise_if
 from ..models.forecasting_model import ForecastingModel
 from ..models.combination_model import CombinationModel
 from ..metrics import smape
@@ -38,7 +38,7 @@ class GROECombinationModel(CombinationModel):
             Metrics function used for the GROE cross-validation function.
         n_evaluations
             Number of evaluation performed by the GROE function.
-        groe_args
+        groe_kwargs
             Any additional args passed to the GROE function
         """
         super(GROECombinationModel, self).__init__(models)
@@ -46,6 +46,7 @@ class GROECombinationModel(CombinationModel):
         self.n_evaluations = n_evaluations
         self.groe_kwargs = groe_kwargs
         self.criterion = None
+        self.weights = None
 
     def update_groe_params(self, **groe_kwargs):
         if "n_evaluations" in groe_kwargs:
@@ -58,9 +59,11 @@ class GROECombinationModel(CombinationModel):
         for model in self.models:
             self.criterion.append(groe(self.train_ts, model, self.metrics,
                                        n_evaluations=self.n_evaluations, **self.groe_kwargs))
-        if np.inf in self.criterion:
-            raise_log(ValueError("Impossible to evaluate one of the models on this TimeSeries. "
-                                 "Choose another fallback method"), logger)
+
+        raise_if(np.inf in self.criterion,
+                 "Cannot evaluate one of the models on this TimeSeries. Choose another fallback method",
+                 logger)
+
         if 0. in self.criterion:
             self.weights = np.zeros(len(self.criterion))
             self.weights[self.criterion.index(0.)] = 1.
@@ -68,5 +71,5 @@ class GROECombinationModel(CombinationModel):
             score = 1 / np.array(self.criterion)
             self.weights = score / score.sum()
 
-    def combination_function(self):
-        return sum(map(lambda ts, weight: ts * weight, self.predictions, self.weights))
+    def combine(self, predictions: List[TimeSeries]):
+        return sum(map(lambda ts, weight: ts * weight, predictions, self.weights))
