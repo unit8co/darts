@@ -3,10 +3,9 @@ Pipeline
 --------
 """
 from copy import deepcopy
-from collections import defaultdict
-from typing import List, Optional, Union, Tuple, Iterator
+from typing import List, Union, Iterator
 
-from darts.logging import raise_if_not, raise_if, get_logger
+from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
 from darts.preprocessing.base_transformer import BaseTransformer
 
@@ -16,7 +15,6 @@ logger = get_logger(__name__)
 class Pipeline:
     def __init__(self,
                  transformers: List[BaseTransformer[TimeSeries]],
-                 names: Optional[List[str]] = None,
                  deep: bool = False):
         """
         Pipeline combines multiple transformers chaining them together.
@@ -25,64 +23,21 @@ class Pipeline:
         ----------
         transformers
             List of transformers.
-        names
-            Optional list of names for transformers must have same length as transformers and names should be unique.
-            If no names are specified transformer name will be set to str value of his index in original list.
         deep
-            If set prevents changes in original transformers made by pipeline.
+            If set makes a copy of each transformer before adding them to the pipeline
         """
-
         raise_if_not(all((isinstance(t, BaseTransformer)) for t in transformers),
                      "transformers should be objects deriving from BaseTransformer", logger)
-        if deep:
+
+        if transformers is None or len(transformers) == 0:
+            logger.warning("Empty pipeline created")
+            self._transformers: List[BaseTransformer[TimeSeries]] = []
+        elif deep:
             self._transformers = deepcopy(transformers)
         else:
             self._transformers = transformers
 
-        if self._transformers is None or len(self._transformers) == 0:
-            self._transformers: List[BaseTransformer[TimeSeries]] = []
-            logger.warning("Empty pipeline created")
-
-        if names:
-            raise_if_not(len(names) == len(self._transformers), "names should have same length as transformer", logger)
-            raise_if_not(len(names) == len(set(names)), "names should be unique", logger)
-        else:
-            names = list(map(str, range(len(self._transformers))))
-
-        self._name_2_idx = {
-            str(name): idx for idx, name in enumerate(names)
-        }
-        self._names = names
-
-        self._args_for_transformers = defaultdict(tuple)
-        self._kwargs_for_transformers = defaultdict(dict)
-
         self._reversible = all((t.reversible for t in self._transformers))
-        self._can_predict = len(self._transformers) and self._transformers[-1].can_predict
-
-    def set_transformer_args_kwargs(self, key: Union[str, int], *args, **kwargs):
-        """
-        Set arguments for `transform` and `inverse_transform` functions got transformer identified by either index
-        or name. Raises value error if transformer can't be find by key.
-
-        Parameters
-        ----------
-        key
-            Either int or key to identify transformer for which args and kwargs will be set.
-        args
-            Positional arguments for the `transform` or `inverse_transform` method
-        kwargs
-            Keyword arguments for the `transform` or `inverse_transform` method
-        """
-        if isinstance(key, str):
-            raise_if_not(key in self._name_2_idx.keys(),
-                         f"No transformer named '{key}' available transformers {self._name_2_idx.keys()}", logger)
-        elif isinstance(key, int):
-            key = self._names[key]
-        else:
-            raise ValueError("Key is neither int nor str")
-        self._args_for_transformers[key] = args
-        self._kwargs_for_transformers[key] = kwargs
 
     def fit(self, data: TimeSeries):
         """
@@ -111,12 +66,12 @@ class Pipeline:
         TimeSeries
             Transformed data.
         """
-        x = data
-        for name, transformer in zip(self._names, self._transformers):
-            args = self._args_for_transformers[name]
-            kwargs = self._kwargs_for_transformers[name]
-            x = transformer(x, *args, fit=transformer.fittable, **kwargs)
-        return x
+        for transformer in self._transformers:
+            if transformer.fittable:
+                transformer.fit(data)
+
+            data = transformer.transform(data)
+        return data
 
     def transform(self, data: TimeSeries) -> TimeSeries:
         """
@@ -132,35 +87,9 @@ class Pipeline:
         TimeSeries
             Transformed data.
         """
-        x = data
-        for name, transformer in zip(self._names, self._transformers):
-            args = self._args_for_transformers[name]
-            kwargs = self._kwargs_for_transformers[name]
-            x = transformer(x, *args, **kwargs)
-        return x
-
-    def predict(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-        """
-        First transform data then on last transformer predict is run with transformed data.
-
-        Parameters
-        ----------
-        data
-            TimeSeries to be transformed and then predict on.
-        args
-            Positional arguments for the `predict` method
-        kwargs
-            Keyword arguments for the `predict` method
-
-        Returns
-        -------
-        TimeSeries
-            Predicted data.
-        """
-        raise_if_not(self._can_predict,
-                     "last object of pipeline doesn't have method called predict", logger)
-        x = self(data)
-        return self._transformers[-1].predict(x, *args, **kwargs)
+        for transformer in self._transformers:
+            data = transformer.transform(data)
+        return data
 
     def inverse_transform(self, data: TimeSeries) -> TimeSeries:
         """
@@ -179,70 +108,59 @@ class Pipeline:
             Inverse transformed data.
         """
         raise_if_not(self._reversible, "Not all transformers are able to perform inverse_transform", logger)
-        x = data
-        for name, transformer in zip(self._names, reversed(self._transformers)):
-            args = self._args_for_transformers[name]
-            kwargs = self._kwargs_for_transformers[name]
-            x = transformer(x, *args, inverse=True, **kwargs)
-        return x
 
-    def __getitem__(self, key: Union[str, int, slice]) -> 'Pipeline':
+        for transformer in reversed(self._transformers):
+            data = transformer.inverse_transform(data)
+        return data
+
+    def __getitem__(self, key: Union[int, slice]) -> 'Pipeline':
         """
-        Gets subset of Pipeline based either on index, name of transformer or slice with indexes. Transformers with
-        names are picked based on the key. Resulting pipeline will deep copy transformers of original pipeline.
+        Gets subset of Pipeline based either on index or slice with indexes.
+        Resulting pipeline will deep copy transformers of original pipeline.
 
         Parameters
         ----------
         key
-            Either int, str or slice.
+            Either int or slice indicating the subset of transformers to keep.
 
         Returns
         -------
         Pipeline
             Subset of pipeline determined by key.
         """
+        raise_if_not(isinstance(key, int) or isinstance(key, slice), "key must be either an int or a slice", logger)
+
         if isinstance(key, int):
-            return Pipeline([self._transformers[key]], [self._names[key]], deep=True)
-        elif isinstance(key, str):
-            raise_if_not(key in self._name_2_idx.keys(),
-                         f"No transformer named '{key}' available transformers {self._name_2_idx.keys()}", logger)
-            return Pipeline([self._transformers[self._name_2_idx[key]]], [key], deep=True)
-        elif isinstance(key, slice):
-            return Pipeline(self._transformers[key], self._names[key], deep=True)
-        raise_if(True, "Key must be int, str or slice", logger)
+            transformers = [self._transformers[key]]
+        else:
+            transformers = self._transformers[key]
+        return Pipeline(transformers, deep=True)
 
-    def __call__(self, data: TimeSeries, inverse: bool = False) -> TimeSeries:
-        """
-        Calls `transform` or `inverse_transform` with data based on inverse flag.
-        Parameters
-        ----------
-        data
-            TimeSeries to be transformed.
-        inverse
-            Is set inverse transform will be run instead of transform.
-        Returns
-        -------
-        TimeSeries
-            Transformed (or inverse transformed) data.
-        """
-        if inverse:
-            return self.inverse_transform(data)
-        return self.transform(data)
-
-    def __iter__(self) -> Iterator[Tuple[BaseTransformer[TimeSeries], str]]:
+    def __iter__(self) -> Iterator[BaseTransformer[TimeSeries]]:
         """
         Returns
         -------
         Iterator
-            Containing tuples of (transformer, transformer_name)
+            List of transformers
         """
-        return zip(self._transformers, self._names)
+        return self._transformers
 
     def __len__(self):
         return len(self._transformers)
 
     def __copy__(self, deep: bool = True):
-        return Pipeline(self._transformers, self._names, deep=deep)
+        return Pipeline(self._transformers, deep=deep)
 
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo=None):
         return self.__copy__(deep=True)
+
+    def __str__(self):
+        string = "Pipeline: "
+        arrow = " -> "
+        for transformer in self._transformers:
+            string += str(transformer) + arrow
+
+        return string[: -len(arrow)]
+
+    def __repr__(self):
+        return self.__str__()

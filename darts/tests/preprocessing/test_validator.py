@@ -1,10 +1,15 @@
 import unittest
+import logging
 
 from darts.preprocessing import Validator
 
 
 class ValidatorTestCase(unittest.TestCase):
     __test__ = True
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     def test_basic(self):
         # given

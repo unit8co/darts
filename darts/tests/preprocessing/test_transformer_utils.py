@@ -1,4 +1,5 @@
 import unittest
+import logging
 
 from darts.preprocessing import transformer_from_ts_functions, transformer_from_values_functions
 from darts.utils.timeseries_generation import constant_timeseries
@@ -6,6 +7,10 @@ from darts.utils.timeseries_generation import constant_timeseries
 
 class UtilsTestCase(unittest.TestCase):
     __test__ = True
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
 
     class FitCalled:
         def __init__(self):
@@ -21,11 +26,10 @@ class UtilsTestCase(unittest.TestCase):
         fit_check = self.FitCalled()
         transformer = transformer_from_ts_functions(transform=lambda x: x + other,
                                                     inverse_transform=lambda x: x + 2 * other,
-                                                    predict=lambda x: x + 2 * other,
                                                     fit=fit_check)
 
         # when
-        inverse_fitted = transformer(ts, inverse=True, fit=True)
+        inverse_fitted = transformer.fit(ts).inverse_transform(ts)
 
         # then
         self.assertSequenceEqual([[5]] * 10, inverse_fitted.values().tolist())
@@ -38,34 +42,17 @@ class UtilsTestCase(unittest.TestCase):
         fit_check = self.FitCalled()
         transformer = transformer_from_ts_functions(transform=lambda x: x + other,
                                                     inverse_transform=lambda x: x + 2 * other,
-                                                    predict=lambda x: x + 2 * other,
                                                     fit=fit_check)
 
         # when
-        transformed = transformer(ts, inverse=False, fit=True)
+        transformed = transformer.fit_transform(ts)
 
         # then
         self.assertSequenceEqual([[3]] * 10, transformed.values().tolist())
         self.assertTrue(fit_check._fit_called)
 
-    def test_predict(self):
-        # given
-        ts = constant_timeseries(1, 10)
-        other = constant_timeseries(2, 10)
-        transformer = transformer_from_ts_functions(transform=lambda x: x + other,
-                                                    inverse_transform=None,
-                                                    predict=lambda x: x + 3 * other,
-                                                    fit=None)
-
-        # when
-        transformed = transformer.predict(ts)
-
-        # then
-        self.assertSequenceEqual([[7]] * 10, transformed.values().tolist())
-
     def test_correct_properties_set(self):
         properties = {
-            'can_predict': 'predict',
             'reversible': 'inverse_transform',
             'fittable': 'fit'
         }
@@ -94,11 +81,10 @@ class UtilsTestCase(unittest.TestCase):
         fit_check = self.FitCalled()
         transformer = transformer_from_values_functions(transform=lambda x: x + other,
                                                         inverse_transform=lambda x: x + 2 * other,
-                                                        predict=lambda x: x + 2 * other,
                                                         fit=fit_check)
 
         # when
-        inverse_fitted = transformer(ts, inverse=True, fit=True)
+        inverse_fitted = transformer.fit(ts).inverse_transform(ts)
 
         # then
         self.assertSequenceEqual([[5]] * 10, inverse_fitted.values().tolist())
@@ -111,34 +97,17 @@ class UtilsTestCase(unittest.TestCase):
         fit_check = self.FitCalled()
         transformer = transformer_from_values_functions(transform=lambda x: x + other,
                                                         inverse_transform=lambda x: x + 2 * other,
-                                                        predict=lambda x: x + 2 * other,
                                                         fit=fit_check)
 
         # when
-        transformed = transformer(ts, inverse=False, fit=True)
+        transformed = transformer.fit_transform(ts)
 
         # then
         self.assertSequenceEqual([[3]] * 10, transformed.values().tolist())
         self.assertTrue(fit_check._fit_called)
 
-    def test_predict_values(self):
-        # given
-        ts = constant_timeseries(1, 10)
-        other = constant_timeseries(2, 10).values()
-        transformer = transformer_from_values_functions(transform=lambda x: x + other,
-                                                        inverse_transform=None,
-                                                        predict=lambda x: x + 3 * other,
-                                                        fit=None)
-
-        # when
-        transformed = transformer.predict(ts)
-
-        # then
-        self.assertSequenceEqual([[7]] * 10, transformed.values().tolist())
-
     def test_correct_properties_set_values(self):
         properties = {
-            'can_predict': 'predict',
             'reversible': 'inverse_transform',
             'fittable': 'fit'
         }

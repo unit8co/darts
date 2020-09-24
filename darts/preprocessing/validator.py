@@ -2,7 +2,7 @@
 Validator
 --------------
 """
-from typing import TypeVar, Generic, Callable, Optional
+from typing import TypeVar, Generic, Callable
 
 from darts.logging import get_logger
 
@@ -11,7 +11,7 @@ T = TypeVar('T')
 
 
 class Validator(Generic[T]):
-    def __init__(self, validate_func: Callable[[T], bool], reason: Optional[str] = None):
+    def __init__(self, validation_function: Callable[[T], bool], reason: str = ""):
         """
         Simple wrapper for validation purposes.
 
@@ -22,8 +22,8 @@ class Validator(Generic[T]):
         reason
             Optional string explaining what was checked during validation
         """
-        self._func = validate_func
-        self._reason = reason
+        self._func = validation_function
+        self.reason = reason
 
     def __call__(self, data: T) -> bool:
         """
@@ -38,15 +38,4 @@ class Validator(Generic[T]):
         bool
             whether validation was successful.
         """
-
         return self._func(data)
-
-    @property
-    def reason(self) -> Optional[str]:
-        """
-        Returns
-        -------
-        Optional[str]
-            Potential explanation what was checked during validation
-        """
-        return self._reason

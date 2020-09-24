@@ -19,36 +19,28 @@ class _WrapperTransformer(BaseTransformer[T]):
     def __init__(self,
                  transform: _callable_with_args_kwargs,
                  inverse_transform: Optional[_callable_with_args_kwargs] = None,
-                 predict: Optional[_callable_with_args_kwargs] = None,
                  fit: Optional[_callable_with_args_kwargs] = None,
                  name: str = "WrapperTransformer"):
         raise_if(transform is None, "transform cannot be None", logger)
 
-        _can_predict = predict is not None
         _fittable = fit is not None
         _reversible = inverse_transform is not None
-        super().__init__(can_predict=_can_predict, fittable=_fittable, reversible=_reversible)
+
+        super().__init__(fittable=_fittable, reversible=_reversible)
 
         self._transform = transform
         self._inverse_transform = inverse_transform
         self._fit = fit
-        self._predict = predict
 
         self._name = name
 
-    @property
-    def name(self):
-        return self._name
+    def transform(self, data: T, *args, **kwargs) -> T:
+        return self._transform(data, *args, **kwargs)
 
     def inverse_transform(self, data: T, *args, **kwargs) -> T:
         raise_if_not(self.reversible,
                      f"inverse_transform not implemented for transformer {self.name}", logger)
         return self._inverse_transform(data, *args, **kwargs)
-
-    def predict(self, data: T, *args, **kwargs) -> T:
-        raise_if_not(self.can_predict,
-                     f"predict not implemented for transformer {self.name}", logger)
-        return self._predict(data, *args, **kwargs)
 
     def fit(self, data: T) -> 'BaseTransformer[T]':
         raise_if_not(self.fittable,
@@ -56,13 +48,9 @@ class _WrapperTransformer(BaseTransformer[T]):
         self._fit(data)
         return self
 
-    def transform(self, data: T, *args, **kwargs) -> T:
-        return self._transform(data, *args, **kwargs)
-
 
 def transformer_from_ts_functions(transform: _callable_with_args_kwargs[TimeSeries],
                                   inverse_transform: Optional[_callable_with_args_kwargs[TimeSeries]] = None,
-                                  predict: Optional[_callable_with_args_kwargs[TimeSeries]] = None,
                                   fit: Optional[Callable[[TimeSeries], Any]] = None,
                                   name: str = "WrappedTransformer") -> BaseTransformer[TimeSeries]:
     """
@@ -75,8 +63,6 @@ def transformer_from_ts_functions(transform: _callable_with_args_kwargs[TimeSeri
         Function taking TimeSeries as an input  and returning TimeSeries.
     inverse_transform
         Function taking TimeSeries as an input and returning TimeSeries.
-    predict
-        Function taking TimeSeries as an input and returning TimeSeries.
     fit
         Function taking TimeSeries as an input.
     name
@@ -85,14 +71,13 @@ def transformer_from_ts_functions(transform: _callable_with_args_kwargs[TimeSeri
     Returns
     -------
     BaseTransformer[T]
-        Transformer created from passed function.
+        Transformer created from the provided functions.
     """
-    return _WrapperTransformer(transform, inverse_transform, predict, fit, name)
+    return _WrapperTransformer(transform, inverse_transform, fit, name)
 
 
 def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.ndarray],
                                       inverse_transform: Optional[_callable_with_args_kwargs[np.ndarray]] = None,
-                                      predict: Optional[_callable_with_args_kwargs[np.ndarray]] = None,
                                       fit: Optional[Callable[[np.ndarray], Any]] = None,
                                       name: str = "WrappedTransformer") -> BaseTransformer[TimeSeries]:
     """
@@ -105,8 +90,6 @@ def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.n
         Function taking ndarray as an input and returning ndarray.
     inverse_transform
         Function taking ndarray as an input and returning ndarray.
-    predict
-        Function taking ndarray as an input and returning ndarray.
     fit
         Function taking ndarray as an input.
     name
@@ -115,7 +98,7 @@ def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.n
     Returns
     -------
     BaseTransformer[T]
-        Transformer created from passed function.
+        Transformer created from the provided functions.
     """
 
     def apply_to_values(f: _callable_with_args_kwargs[np.ndarray], returns: bool = True):
@@ -133,7 +116,6 @@ def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.n
     return _WrapperTransformer(
         apply_to_values(transform),
         apply_to_values(inverse_transform),
-        apply_to_values(predict),
         apply_to_values(fit, returns=False),
         name
     )

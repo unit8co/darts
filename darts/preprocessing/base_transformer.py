@@ -3,7 +3,7 @@ Base Transformer
 ----------------
 """
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Callable, Optional, List, Tuple
+from typing import TypeVar, Generic, List
 
 from darts.logging import raise_if_not, get_logger
 from darts.preprocessing.validator import Validator
@@ -14,41 +14,34 @@ T = TypeVar('T')
 
 class BaseTransformer(Generic[T], ABC):
     def __init__(self,
-                 validators: Optional[List[Validator]] = None,
-                 validator_fns: Optional[List[Tuple[Callable[[T], bool], Optional[str]]]] = None,
                  reversible: bool = False,
-                 can_predict: bool = False,
-                 fittable: bool = False):
+                 fittable: bool = False,
+                 name: str = "BaseTransformer",
+                 validators: List[Validator] = []):
         """
         Abstract class for transformers. All deriving classes have to implement only one function `transform`.
-        It also has `inverse_transform`, `fit` and `predict` left unimplemented. If a child of this class implements
-        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`,
-        `can_predict`).
+        It also has `inverse_transform` and `fit` left unimplemented. If a child of this class implements
+        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`).
 
         Parameters
         ----------
-        validators
-            List of validators that will be called before transform
-        validator_fns
-            List of tuples of validating function and optional string with reason for validating.
-            From this will be created list of validators and it will be appended to validators.
         reversible
             Flag indicating whether this transformer implements inverse_transform
-        can_predict
-            Flag indicating whether this transformer implements predict
         fittable
             Flag indicating whether this transformer implements fit
+        names
+            The transformer's name
+        validators
+            List of validators that will be called before transform
+        args
+            Additional positional arguments
+        kwargs
+            Additional keyword arguments
         """
-        if validators:
-            self._validators = validators
-        else:
-            self._validators = []
-        if validator_fns:
-            self._validators.extend((Validator(f, r) for f, r in validator_fns))
-
         self._reversible = reversible
-        self._can_predict = can_predict
         self._fittable = fittable
+        self._name = name
+        self._validators = validators
 
     @property
     def reversible(self) -> bool:
@@ -59,16 +52,6 @@ class BaseTransformer(Generic[T], ABC):
             Whether transformer has inverse_transform.
         """
         return self._reversible
-
-    @property
-    def can_predict(self) -> bool:
-        """
-        Returns
-        -------
-        bool
-            Whether transformer can be used to predict.
-        """
-        return self._can_predict
 
     @property
     def fittable(self) -> bool:
@@ -88,12 +71,12 @@ class BaseTransformer(Generic[T], ABC):
         str
             Name of transformer.
         """
-        return "BaseTransformer"
+        return self._name
 
     def validate(self, data: T) -> bool:
         """
-        Validate data using validators set at init. If validation will be unsuccessful it will raise exception
-        potentially with reason/explanation why validation failed.
+        Validate data using validators set at init. Will raise an exception if validation fails
+        potentially with reason/explanation why.
 
         Parameters
         ----------
@@ -106,8 +89,7 @@ class BaseTransformer(Generic[T], ABC):
             If successful.
         """
         for validator in self._validators:
-            reason = validator.reason if validator.reason else ""
-            raise_if_not(validator(data), f"Validation failed for {self.name}\n{reason}", logger)
+            raise_if_not(validator(data), f"Validation failed for {self.name}\n{validator.reason}", logger)
         return True
 
     @abstractmethod
@@ -120,16 +102,15 @@ class BaseTransformer(Generic[T], ABC):
         data
             Object which will be transformed.
         args
-            Positional arguments for the `transform` method
+            Additional positional arguments for the `transform` method
         kwargs
-            Keyword arguments for the `transform` method
+            Additional keyword arguments for the `transform` method
 
         Returns
         -------
         T
             Transformed data.
         """
-        raise NotImplementedError(f"transform not implemented for transformer {self.name}")
 
     def inverse_transform(self, data: T, *args, **kwargs) -> T:
         """
@@ -140,9 +121,9 @@ class BaseTransformer(Generic[T], ABC):
         data
             Object which will be inverse transformed.
         args
-            Positional arguments for the `inverse_transform` method
+            Additional positional arguments for the `inverse_transform` method
         kwargs
-            Keyword arguments for the `inverse_transform` method
+            Additional keyword arguments for the `inverse_transform` method
 
         Returns
         -------
@@ -151,26 +132,6 @@ class BaseTransformer(Generic[T], ABC):
         """
         raise NotImplementedError(f"inverse_transform not implemented for transformer {self.name}")
 
-    def predict(self, data: T, *args, **kwargs) -> T:
-        """
-        Predict function. Not implemented in base class.
-
-        Parameters
-        ----------
-        data
-            Object on which predict will be performed.
-        args
-            Positional arguments for the `predict` method
-        kwargs
-            Keyword arguments for the `predict` method
-
-        Returns
-        -------
-        T
-            Predicted values.
-        """
-        raise NotImplementedError(f"predict not implemented for transformer {self.name}")
-
     def fit(self, data: T) -> 'BaseTransformer[T]':
         """
         Function which will fit transformer. Not implemented in base class.
@@ -178,12 +139,12 @@ class BaseTransformer(Generic[T], ABC):
         Parameters
         ----------
         data
-            Object on which transformer will be fitter.
+            Object on which transformer will be fitted.
 
         Returns
         -------
         BaseTransformer[T]
-            Fitted transformer.
+            Fitted transformer (typically would be self)
         """
         raise NotImplementedError(f"fit not implemented for transformer {self.name}")
 
@@ -196,9 +157,9 @@ class BaseTransformer(Generic[T], ABC):
         data
             Object used to fit and transform.
         args
-            Positional arguments for the `transform` method
+            Additional positional arguments for the `transform` method
         kwargs
-            Keyword arguments for the `transform` method
+            Additional keyword arguments for the `transform` method
 
         Returns
         -------
@@ -207,33 +168,8 @@ class BaseTransformer(Generic[T], ABC):
         """
         return self.fit(data).transform(data, *args, **kwargs)
 
-    def __call__(self, data: T, *args, fit: bool = False, inverse: bool = False, **kwargs) -> T:
-        """
-        Calling transformer will run validation and perform transformation or
-        inverse_transformation on data. If fit flag is set transformer will first be fitted.
+    def __str__(self):
+        return self._name
 
-        Parameters
-        ----------
-        data
-            On this validation, fit if applicable and transform will be run.
-        fit
-            If set transformer prior to validation will be fited.
-        inverse
-            if set inverse_transformation will be run instead of transform.
-        args
-            Positional arguments for the `transform` or `inverse_transform` method
-        kwargs
-            Keyword arguments for the `transform` or `inverse_transform` method
-
-        Returns
-        -------
-        T
-            Transformed data.
-        """
-        if fit:
-            self.fit(data)
-
-        self.validate(data)
-        if inverse:
-            return self.inverse_transform(data, *args, **kwargs)
-        return self.transform(data, *args, **kwargs)
+    def __repr__(self):
+        return self.__str__()

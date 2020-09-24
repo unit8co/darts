@@ -3,6 +3,7 @@ Scaler wrapper
 --------------
 """
 from darts.preprocessing.base_transformer import BaseTransformer
+from darts.preprocessing.validator import Validator
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
@@ -26,26 +27,20 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
             will scale all the values of a time series between 0 and 1.
         """
         super().__init__(
-            validator_fns=[(lambda x: self._is_fit_called(), 'fit() must be called before transform()')],
+            validators=[Validator(lambda x: self._fit_called, 'fit() must be called before transform()')],
             fittable=True,
             reversible=True
         )
 
-        def _raise():
+        if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
+                or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503
             raise_log(ValueError(
                       'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
                       logger)
 
-        if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
-                or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503
-            _raise()
-
         self.transformer = scaler
         self.train_series = None
         self._fit_called = False
-
-    def _is_fit_called(self) -> bool:
-        return self._fit_called
 
     def fit(self, series: TimeSeries) -> 'ScalerWrapper':
         """ Fits this transformer/scaler to the provided time series data
