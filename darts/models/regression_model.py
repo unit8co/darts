@@ -18,7 +18,7 @@ from typing import List, Iterable, Union, Any
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger, raise_log
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _backtest_convert_start, _backtest_general_checks
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
 
 logger = get_logger(__name__)
 
@@ -117,7 +117,7 @@ class RegressionModel(ABC):
     def backtest(self,
                  feature_series: Iterable[TimeSeries],
                  target_series: TimeSeries,
-                 start: Union[pd.Timestamp, float, int] = 1,
+                 start: Union[pd.Timestamp, float, int] = 0.7,
                  forecast_horizon: int = 1,
                  stride: int = 1,
                  trim_to_series: bool = True,
@@ -160,7 +160,7 @@ class RegressionModel(ABC):
             A time series containing the forecast values when successively applying
             the current model with the specified forecast horizon.
         """
-        start = _backtest_convert_start(start, target_series)
+        start = _get_timestamp_at_point(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:

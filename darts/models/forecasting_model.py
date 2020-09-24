@@ -18,7 +18,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _backtest_convert_start, _backtest_general_checks
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -143,7 +143,7 @@ class ForecastingModel(ABC):
     def backtest(self,
                  training_series: TimeSeries,
                  target_series: Optional[TimeSeries] = None,
-                 start: Union[pd.Timestamp, float, int] = 0.5,
+                 start: Union[pd.Timestamp, float, int] = 0.7,
                  forecast_horizon: int = 1,
                  stride: int = 1,
                  retrain: bool = True,
@@ -222,7 +222,7 @@ class ForecastingModel(ABC):
             fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
 
         # prepare the start parameter -> pd.Timestamp
-        start = _backtest_convert_start(start, training_series)
+        start = _get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:

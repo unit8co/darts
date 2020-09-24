@@ -6,7 +6,8 @@ Standard Regression model
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
-from typing import List, Union, Iterable
+from typing import List, Optional
+from warnings import warn
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 class StandardRegressionModel(RegressionModel):
 
     def __init__(self,
-                 train_n_points: int,
+                 train_n_points: Optional[int] = None,
                  model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
         Simple wrapper for regression models implementing a fit() predict() functions models
@@ -56,6 +57,11 @@ class StandardRegressionModel(RegressionModel):
         else:
             train_n_points = self.train_n_points
 
+            # display a warning when fitting on less than train_n_points training points
+            max_train_points = len(train_features[0])
+            if train_n_points > max_train_points:
+                warn("fitting standard regression model on less than train_n_points training points")
+
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
         last_n_points_features = [s.slice_n_points_before(last_train_ts, train_n_points) for s in train_features]
@@ -70,24 +76,3 @@ class StandardRegressionModel(RegressionModel):
         super().predict(features)
         y = self.model.predict(self._get_features_matrix_from_series(features))
         return TimeSeries(pd.DataFrame(y, index=features[0].time_index()), self.train_target.freq())
-
-    def backtest(self,
-                 feature_series: Iterable[TimeSeries],
-                 target_series: TimeSeries,
-                 start: Union[pd.Timestamp, float, int] = None,
-                 forecast_horizon: int = 1,
-                 stride: int = 1,
-                 trim_to_series: bool = True,
-                 verbose=False) -> TimeSeries:
-
-        # Set default start value such that the model has enough training points
-        if start is None:
-            start = self.train_n_points
-
-        return super().backtest(feature_series,
-                                target_series,
-                                start,
-                                forecast_horizon,
-                                stride,
-                                trim_to_series,
-                                verbose)

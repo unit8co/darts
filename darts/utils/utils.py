@@ -177,7 +177,7 @@ def _backtest_general_checks(series, kwargs):
         else:
             raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
 
-    start = _backtest_convert_start(n.start, series)
+    start = _get_timestamp_at_point(n.start, series)
 
     raise_if(start == series.start_time(), '`start` corresponds to the first timestamp of the series, '
              'resulting in empty training set')
@@ -191,10 +191,27 @@ def _backtest_general_checks(series, kwargs):
                      '`trim_to_series` set to `True`.', logger)
 
 
-def _backtest_convert_start(start: Union[pd.Timestamp, float, int], training_series: TimeSeries) -> pd.Timestamp:
-    if isinstance(start, float):
-        start_index = int((len(training_series.time_index()) - 1) * start)
-        start = training_series.time_index()[start_index]
-    elif isinstance(start, int):
-        start = training_series[start].start_time()
-    return start
+def _get_timestamp_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> pd.Timestamp:
+    """
+    Converts a point into a pandas.Timestamp in the time series
+
+    Parameters
+    ----------
+    point
+        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+        In the case of `float`, the parameter will be treated as the proportion of the time series
+        that should lie before the point.
+        In the case of `int`, the parameter will be treated as an integer index to the time index of
+        `series`.
+        In case of `pandas.Timestamp`, `point` will be returned as is
+    series
+        The time series to index in
+    """
+    if isinstance(point, float):
+        point_index = int((len(series.time_index()) - 1) * point)
+        timestamp = series.time_index()[point_index]
+    elif isinstance(point, int):
+        timestamp = series[point].start_time()
+    else:
+        timestamp = point
+    return timestamp
