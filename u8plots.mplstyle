@@ -1,0 +1,34 @@
+### Font
+font.family : Arial
+
+
+### Colors
+figure.facecolor : f0f0f0
+axes.facecolor : f0f0f0
+axes.prop_cycle: cycler('color', ['black', '003DFD', 'b512b8', '11a9ba', '0d780f', 'f77f07', 'ba0f0f'])
+
+### Lines
+lines.linewidth : 1.3
+
+### Axes
+
+axes.spines.left:   False
+axes.spines.bottom: False
+axes.spines.top:    False
+axes.spines.right:  False
+
+axes.linewidth: 1
+axes.edgecolor: black
+
+### Ticks
+
+xtick.bottom : False
+ytick.left : False
+
+### Grid
+axes.grid : True
+grid.color : d0d0d0
+grid.alpha : 0.5
+
+### Legend
+legend.frameon : False

@@ -4,6 +4,7 @@ darts
 """
 
 from .timeseries import TimeSeries
+import matplotlib.pyplot as plt
 
 # Enums
 from enum import Enum
@@ -26,3 +27,5 @@ class ModelMode(Enum):
 
 
 __version__ = 'dev'
+
+plt.style.use('../darts/u8plots.mplstyle')
