@@ -4,7 +4,7 @@ ARIMA and Auto-ARIMA
 
 Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA [1]_.
 The implementations are wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_
-and `pmdarima <https://github.com/alkaline-ml/pmdarima>`_.
+and `pmdarima.txt <https://github.com/alkaline-ml/pmdarima>`_.
 
 References
 ----------
@@ -67,20 +67,20 @@ class AutoARIMA(UnivariateForecastingModel):
         """ Auto-ARIMA
 
         This implementation is a thin wrapper around
-        `pmdarima AutoARIMA model <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
+        `pmdarima.txt AutoARIMA model <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
         which provides functionality similar
         to R's `auto.arima <https://www.rdocumentation.org/packages/forecast/versions/7.3/topics/auto.arima>`_.
 
-        This model supports the same parameters as the pmdarima AutoARIMA model.
-        See `pmdarima documentation <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_
+        This model supports the same parameters as the pmdarima.txt AutoARIMA model.
+        See `pmdarima.txt documentation <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_
         for an extensive documentation and a list of supported parameters.
 
         Parameters
         ----------
         autoarima_args
-            Positional arguments for the pmdarima AutoARIMA model
+            Positional arguments for the pmdarima.txt AutoARIMA model
         autoarima_kwargs
-            Keyword arguments for the pmdarima AutoARIMA model
+            Keyword arguments for the pmdarima.txt AutoARIMA model
         """
 
         super().__init__()
