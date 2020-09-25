@@ -293,7 +293,10 @@ def plot_acf(ts: TimeSeries,
         axis = plt
 
     for i in range(len(r)):
-        axis.plot((i, i), (0, r[i]), color=('#b512b8' if m is not None and i == m else 'black'), lw=(1 if m is not None and i == m else .5))
+        axis.plot((i, i),
+                  (0, r[i]),
+                  color=('#b512b8' if m is not None and i == m else 'black'),
+                  lw=(1 if m is not None and i == m else .5))
 
     upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
     acf_band = [upp_band * stat for stat in stats]
