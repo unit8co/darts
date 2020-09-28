@@ -15,6 +15,7 @@ class TransformerModelTestCase(unittest.TestCase):
     series: TimeSeries = TimeSeries.from_series(pd_series)
     series_multivariate = series.stack(series * 2)
     module = _TransformerModule(input_size=1,
+                                input_length=1,
                                 output_length=1,
                                 output_size=1,
                                 d_model=512,
@@ -79,10 +80,16 @@ class TransformerModelTestCase(unittest.TestCase):
 
     @staticmethod
     def helper_test_use_full_output_length(test_case, pytorch_model, series):
-        model = pytorch_model(n_epochs=2)
-        # use_full_output_length not set to False
-        with test_case.assertRaises(ValueError):
-            pred = model.predict(n=1, use_full_output_length=True)
+        model = pytorch_model(n_epochs=2, output_length=3)
+        model.fit(series)
+        pred = model.predict(7, True)
+        test_case.assertEqual(len(pred), 7)
+        pred = model.predict(2, True)
+        test_case.assertEqual(len(pred), 2)
+        test_case.assertEqual(pred.width, 1)
+        pred = model.predict(4, True)
+        test_case.assertEqual(len(pred), 4)
+        test_case.assertEqual(pred.width, 1)
 
     def test_use_full_output_length(self):
         TransformerModelTestCase.helper_test_use_full_output_length(self, TransformerModel, self.series)
