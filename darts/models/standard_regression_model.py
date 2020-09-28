@@ -6,7 +6,8 @@ Standard Regression model
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
-from typing import List
+from typing import List, Optional
+from warnings import warn
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 class StandardRegressionModel(RegressionModel):
 
     def __init__(self,
-                 train_n_points: int,
+                 train_n_points: Optional[int] = None,
                  model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """
         Simple wrapper for regression models implementing a fit() predict() functions models
@@ -55,6 +56,11 @@ class StandardRegressionModel(RegressionModel):
             train_n_points = min([len(s) for s in train_features] + [len(train_target)])
         else:
             train_n_points = self.train_n_points
+
+            # display a warning when fitting on less than train_n_points training points
+            max_train_points = len(train_features[0])
+            if train_n_points > max_train_points:
+                warn("fitting standard regression model on less than train_n_points training points")
 
         # Get (at most) the last [train_n_points] of each series
         last_train_ts = train_features[0].end_time()
