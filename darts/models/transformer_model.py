@@ -3,67 +3,22 @@ Transformer
 -------------------------
 """
 
-import numpy as np
 from numpy.random import RandomState
-import os
 import math
-import shutil
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Any, Union, List
+from typing import Optional, Any, Union
 
-from .. import TimeSeries
-from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesSequentialDataset
-
-CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
-RUNS_FOLDER = os.path.join('.darts', 'runs')
+from .torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
 
 
-def _get_checkpoint_folder(work_dir, model_name):
-    return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
-
-
-def _get_runs_folder(work_dir, model_name):
-    return os.path.join(work_dir, RUNS_FOLDER, model_name)
-
-
-class _TimeSeriesSequentialTransformerDataset(_TimeSeriesSequentialDataset):
-
-    def __init__(self,
-                 series: TimeSeries,
-                 data_length: int = 1,
-                 target_length: int = 1,
-                 target_indices: List[int] = [0]):
-        """
-        A PyTorch Dataset from a multivariate TimeSeries.
-        The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-        where `data` is a sub-sequence of length `data_length` and target is the sub-sequence of length
-        `target_length` following it in the time series.
-        """
-
-        super().__init__(series,
-                         data_length,
-                         target_length,
-                         target_indices)
-
-    def __getitem__(self, index):
-        # TODO: Cast to PyTorch tensors on the right device in advance
-        idx = index % (self.len_series - self.data_length - self.target_length + 1)
-        data = self.series_values[idx:idx + self.data_length]
-        target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float(), torch.from_numpy(target).float()
-
-
 # This implementation of positional encoding is taken from the PyTorch documentation:
 # https://pytorch.org/tutorials/beginner/transformer_tutorial.html
-class PositionalEncoding(nn.Module):
+class _PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=500):
         """ An implementation of positional encoding as described in 'Attention is All you Need' by Vaswani et al. (2017)
 
@@ -90,7 +45,7 @@ class PositionalEncoding(nn.Module):
                 y of shape `(batch_size, input_size, d_model)`
                     Tensor containing the embedded time series enhanced with positional encoding
                 """
-        super(PositionalEncoding, self).__init__()
+        super(_PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
@@ -109,6 +64,7 @@ class PositionalEncoding(nn.Module):
 class _TransformerModule(nn.Module):
     def __init__(self,
                  input_size: int,
+                 input_length: int,
                  output_length: int,
                  output_size: int,
                  d_model: int,
@@ -121,7 +77,6 @@ class _TransformerModule(nn.Module):
                  custom_encoder: nn.Module = None,
                  custom_decoder: nn.Module = None,
                  ):
-
         """ PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
         PyTorch module implementing a simple encoder-decoder transformer architecture.
@@ -130,10 +85,12 @@ class _TransformerModule(nn.Module):
         ----------
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        output_size
-            The dimensionality of the output time series.
+        input_length
+            Number of time steps to be output by the forecasting module.
         output_length
             Number of time steps to be output by the forecasting module.
+        output_size
+            The dimensionality of the output time series.
         d_model
             the number of expected features in the transformer encoder/decoder inputs.
         nhead
@@ -171,7 +128,7 @@ class _TransformerModule(nn.Module):
         self.output_length = output_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = PositionalEncoding(d_model, dropout)
+        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_length)
 
         # Defining the Transformer module
         self.transformer = nn.Transformer(d_model=d_model,
@@ -185,40 +142,42 @@ class _TransformerModule(nn.Module):
                                           custom_decoder=custom_decoder)
 
         self.tgt_mask = self.transformer.generate_square_subsequent_mask(output_length)
-        self.decoder = nn.Linear(d_model, output_size)
+        self.decoder = nn.Linear(d_model, output_length * output_size)
 
-    # if Training = 'True', we are in training mode:
-    # given src=(x_0, ..., x_n) and tgt=(x_n+1, ..., x_n+m), then
-    # encoder_src = src and decoder_src = (x_n, x_n+1, .. x_n+m-1)
-    # if Training = 'False', then we are in inference mode:
-    # given src=(x_0, ... x_n) and tgt=(), then
-    # encoder_src = src and decoder_src = (x_n)
-    def _create_transformer_inputs(self, src, tgt, training):
-        encoder_src = src.permute(1, 0, 2)
+    def _create_transformer_inputs(self, data):
+        # '_TimeSeriesSequentialDataset' stores time series in the
+        # (batch_size, input_length, input_size) format. PyTorch's nn.Transformer
+        # module needs it the (input_length, batch_size, input_size) format.
+        # Therefore, the first two dimensions need to be swapped.
+        src = data.permute(1, 0, 2)
+        tgt = src[-1:, :, :]
 
-        if training:
-            decoder_src = torch.cat((encoder_src[-1:, :, :], tgt.permute(1, 0, 2)[:-1, :, :]), dim=0)
-            tgt_mask = self.tgt_mask
-        else:
-            decoder_src = encoder_src[-1:, :, :]
-            tgt_mask = None
+        return src, tgt
 
-        return encoder_src, decoder_src, tgt_mask
+    def forward(self, data):
+        # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
+        # side of the Transformer architecture
+        src, tgt = self._create_transformer_inputs(data)
 
-    def forward(self, src, tgt, training=True):
-        encoder_src, decoder_src, tgt_mask = self._create_transformer_inputs(src, tgt, training)
+        # "math.sqrt(self.input_size)" is a normalization factor
+        # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
+        src = self.encoder(src) * math.sqrt(self.input_size)
+        src = self.positional_encoding(src)
 
-        encoder_src = self.encoder(encoder_src) * math.sqrt(self.input_size)
-        encoder_src = self.positional_encoding(encoder_src)
+        tgt = self.encoder(tgt) * math.sqrt(self.input_size)
+        tgt = self.positional_encoding(tgt)
 
-        decoder_src = self.encoder(decoder_src) * math.sqrt(self.input_size)
-        decoder_src = self.positional_encoding(decoder_src)
+        x = self.transformer(src=src,
+                             tgt=tgt)
+        out = self.decoder(x)
 
-        x = self.transformer(encoder_src, decoder_src, None, tgt_mask)
-        x = self.decoder(x)
-        x = x.permute(1, 0, 2)
+        # Here we change the data format
+        # from (1, batch_size, output_length * output_size)
+        # to (batch_size, output_length, output_size)
+        predictions = out[0, :, :]
+        predictions = predictions.view(-1, self.output_length, self.output_size)
 
-        return x
+        return predictions
 
 
 class TransformerModel(TorchForecastingModel):
@@ -226,6 +185,7 @@ class TransformerModel(TorchForecastingModel):
     def __init__(self,
                  model: nn.Module = None,
                  input_size: int = 1,
+                 input_length: int = 1,
                  output_length: int = 1,
                  output_size: int = 1,
                  d_model: int = 512,
@@ -240,7 +200,20 @@ class TransformerModel(TorchForecastingModel):
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
-        """ Transformer Model.
+        """
+        Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder
+        architecture whose core feature is the 'multi-head attention' mechanism, which is able to
+        draw intra-dependencies within the input vector and within the output vector ('self-attention')
+        as well as inter-dependencies between input and output vectors ('encoder-decoder attention').
+        The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
+        very suitable to be trained with GPUs.
+
+
+        The transformer architecture implemented here is based on the paper “Attention Is All You Need”:
+        Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
+        Illia Polosukhin. 2017. Attention is all you need. In Advances in Neural Information Processing Systems,
+        pages 6000-6010.
+        (paper can be found at https://arxiv.org/abs/1706.03762)
 
         Parameters
         ----------
@@ -249,6 +222,8 @@ class TransformerModel(TorchForecastingModel):
             `darts.models.transformer_model._TransformerModule` (default=None).
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function (default=1).
+        input_length
+            Number of time steps to be output by the forecasting module (default=1).
         output_size
             The dimensionality of the output time series (default=1).
         output_length
@@ -283,6 +258,7 @@ class TransformerModel(TorchForecastingModel):
         # set self.model
         if model is None:
             self.model = _TransformerModule(input_size=input_size,
+                                            input_length=input_length,
                                             output_length=output_length,
                                             output_size=output_size,
                                             d_model=d_model,
@@ -303,175 +279,3 @@ class TransformerModel(TorchForecastingModel):
                          logger)
 
         super().__init__(**kwargs)
-
-    def predict(self, n: int,
-                use_full_output_length: bool = False,
-                input_series: Optional[TimeSeries] = None) -> TimeSeries:
-
-        """ Predicts values for a certain number of time steps after the end of the training series
-
-        In the case of univariate training series, `n` can assume any integer value greater than 0.
-        If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
-        the first predicted value is kept as output while at the same time being fed into the input for
-        the next prediction (the first value of the previous input is discarded). This way, the input sequence
-        'rolls over' by 1 step for every prediction in 'n'.
-        If `use_full_output_length` is set to `True`, the model will predict not one, but `self.output_length` values
-        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
-        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
-        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
-        iteration. 'use_full_output_length' has to be set to 'False' when using TransformerModel, because transformer
-        architectures used with time series do not support inference with 'self.output_length' > 1.
-
-        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_output_length`
-        has to be set to `True`. In this case, only one iteration of predictions will be performed. Multivariate times
-        series are currently not supported with TransformerModel.
-
-        Parameters
-        ----------
-        n
-            The number of time steps after the end of the training time series for which to produce predictions
-        use_full_output_length
-            Boolean value indicating whether or not the full output sequence of the model prediction should be
-            used to produce the output of this function. It has to be set to 'False' when using TransformerModel,
-            because transformer architectures used with time series do not support inference
-            with 'self.output_length' > 1.
-        input_series
-            Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
-            prediction. If it is not passed, the training TimeSeries instance will be used as input.
-
-        Returns
-        -------
-        TimeSeries
-            A time series containing the `n` next points, starting after the end of the training time series
-        """
-        raise_if_not(not use_full_output_length,
-                     "'use_full_output_length' is not supported with 'TransformerModel'. Please set it to 'False'",
-                     logger)
-
-        return super().predict(n, use_full_output_length=False, input_series=input_series)
-
-    def _create_dataset(self, series):
-        return _TimeSeriesSequentialTransformerDataset(series, self.input_length, self.output_length,
-                                                       self.target_indices)
-
-    def _train(self,
-               train_loader: DataLoader,
-               val_loader: Optional[DataLoader],
-               tb_writer: Optional[SummaryWriter],
-               verbose: bool) -> None:
-        """
-        Performs the actual training
-        :param train_loader: the training data loader feeding the training data and targets
-        :param val_loader: optionally, a validation set loader
-        :param tb_writer: optionally, a TensorBoard writer
-        """
-
-        best_loss = np.inf
-
-        iterator = _build_tqdm_iterator(range(self.n_epochs), verbose)
-        for epoch in iterator:
-            epoch = epoch
-            total_loss = 0
-            total_loss_diff = 0
-
-            for batch_idx, (data, target) in enumerate(train_loader):
-                self.model.train()
-                data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
-                # Important change here for transformer: forward pass has two inputs
-                # one for the encoder and one for the decoder
-                output = self.model(data, target, training=True)
-                loss = self.criterion(output, target[:, :, self.target_indices])
-                if self.output_length == 1:
-                    loss_of_diff = self.criterion(output[1:] - output[:-1],
-                                                  target[1:, :, self.target_indices] - target[:-1, :,
-                                                                                       self.target_indices])
-                else:
-                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1],
-                                                  target[:, 1:, self.target_indices] - target[:, :-1,
-                                                                                       self.target_indices])
-                loss = loss + loss_of_diff
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                total_loss += loss.item()
-                total_loss_diff += loss_of_diff.item()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
-
-            if tb_writer is not None:
-                for name, param in self.model.named_parameters():
-                    tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
-                tb_writer.add_scalar("training/loss", total_loss / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/loss_diff", total_loss_diff / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/loss_total", (total_loss + total_loss_diff) / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
-
-            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
-
-            if epoch % self.nr_epochs_val_period == 0:
-                training_loss = (total_loss + total_loss_diff) / (batch_idx + 1)  # TODO: do not use batch_idx
-                if val_loader is not None:
-                    validation_loss = self._evaluate_validation_loss(val_loader)
-                    if tb_writer is not None:
-                        tb_writer.add_scalar("validation/loss_total", validation_loss, epoch)
-
-                    if validation_loss < best_loss:
-                        best_loss = validation_loss
-                        self._save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
-
-                    if verbose:
-                        print("Training loss: {:.4f}, validation loss: {:.4f}".
-                              format(training_loss, validation_loss), end="\r")
-                elif verbose:
-                    print("Training loss: {:.4f}".format(training_loss), end="\r")
-
-    def _evaluate_validation_loss(self, val_loader: DataLoader):
-        total_loss = 0
-        total_loss_of_diff = 0
-        self.model.eval()
-        with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(val_loader):
-                data, target = data.to(self.device), target.to(self.device)  # TODO: needed?
-                # Important modification here for transformer: forward pass has two inputs
-                # one for the encoder and one for the decoder
-                output = self.model(data, target, training=True)
-                loss = self.criterion(output, target[:, :, self.target_indices])
-                if self.output_length == 1:
-                    loss_of_diff = self.criterion(output[1:] - output[:-1],
-                                                  target[1:, :, self.target_indices] - target[:-1, :,
-                                                                                       self.target_indices])
-                else:
-                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1],
-                                                  target[:, 1:, self.target_indices] - target[:, :-1,
-                                                                                       self.target_indices])
-                total_loss += loss.item()
-                total_loss_of_diff += loss_of_diff.item()
-
-        validation_loss = (total_loss + total_loss_of_diff) / (batch_idx + 1)
-        return validation_loss
-
-    def _prepare_tensorboard_writer(self):
-        runs_folder = _get_runs_folder(self.work_dir, self.model_name)
-        if self.log_tensorboard:
-            if self.from_scratch:
-                shutil.rmtree(runs_folder, ignore_errors=True)
-                tb_writer = SummaryWriter(runs_folder)
-                #two inputs need to be saved
-                dummy_encoder_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
-                dummy_decoder_input = torch.empty(self.batch_size, self.output_length, self.output_size).to(self.device)
-                tb_writer.add_graph(self.model, (dummy_encoder_input, dummy_decoder_input))
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
-        else:
-            tb_writer = None
-        return tb_writer
-
-    def _produce_predict_output_with_single_output_steps(self, pred_in, n):
-        test_out = []
-        for i in range(n):
-            #during inference, we set 'training'=False and 'tgt'=None
-            out = self.model(pred_in, None, training=False)
-            pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
-        return test_out
