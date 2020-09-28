@@ -97,3 +97,10 @@ class RegressionModelsTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.models[0].predict(test_f)
+
+    def test_displays_warning(self):
+        series = tg.constant_timeseries(value=0, length=10)
+        model = StandardRegressionModel(train_n_points=20)
+
+        with self.assertWarns(UserWarning):
+            model.fit([series], series)
