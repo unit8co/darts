@@ -13,7 +13,7 @@ class BaseTransformerTestCase(unittest.TestCase):
 
     class TransformerMock(BaseTransformer[str]):
         def __init__(self, *args, **kwargs):
-            super().__init__(name="TransformerMock", *args, **kwargs)
+            super().__init__(name="TransformerMock", reversible=False, fittable=False, *args, **kwargs)
             self.validate_called = False
             self.transform_called = False
 

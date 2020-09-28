@@ -5,7 +5,7 @@ Base Transformer
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List
 
-from darts.logging import raise_if_not, get_logger
+from darts.logging import raise_if, get_logger
 from darts.preprocessing.validator import Validator
 
 logger = get_logger(__name__)
@@ -14,8 +14,8 @@ T = TypeVar('T')
 
 class BaseTransformer(Generic[T], ABC):
     def __init__(self,
-                 reversible: bool = False,
-                 fittable: bool = False,
+                 reversible: bool,
+                 fittable: bool,
                  name: str = "BaseTransformer",
                  validators: List[Validator] = []):
         """
@@ -88,8 +88,15 @@ class BaseTransformer(Generic[T], ABC):
         True
             If successful.
         """
+        # Collect all validation errors (if any) and throw them all at once
+        fail_reasons = []
         for validator in self._validators:
-            raise_if_not(validator(data), f"Validation failed for {self.name}\n{validator.reason}", logger)
+            if not validator(data):
+                fail_reasons.append(validator.reason)
+
+        raise_if(len(fail_reasons) != 0,
+                 f"Validation failed for {self.name}, reason(s):\n" + '\n'.join(fail_reasons),
+                 logger)
         return True
 
     @abstractmethod
