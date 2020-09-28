@@ -24,9 +24,9 @@ class _WrapperTransformer(BaseTransformer[T]):
         raise_if(transform is None, "transform cannot be None", logger)
 
         _fittable = fit is not None
-        _reversible = inverse_transform is not None
+        _invertible = inverse_transform is not None
 
-        super().__init__(fittable=_fittable, reversible=_reversible)
+        super().__init__(fittable=_fittable, invertible=_invertible)
 
         self._transform = transform
         self._inverse_transform = inverse_transform
@@ -38,7 +38,7 @@ class _WrapperTransformer(BaseTransformer[T]):
         return self._transform(data, *args, **kwargs)
 
     def inverse_transform(self, data: T, *args, **kwargs) -> T:
-        raise_if_not(self.reversible,
+        raise_if_not(self.invertible,
                      f"inverse_transform not implemented for transformer {self.name}", logger)
         return self._inverse_transform(data, *args, **kwargs)
 

@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 
 class ScalerWrapper(BaseTransformer[TimeSeries]):
-    def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1))):
+    def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1)), name="ScalerWrapper"):
         """
         Generic wrapper class for using transformers/scalers that implement `fit()`, `transform()` and
         `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.
@@ -25,11 +25,14 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
             It must provide the `fit()`, `transform()` and `inverse_transform()` methods.
             Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this
             will scale all the values of a time series between 0 and 1.
+        name
+            A specific name for the transformer
         """
         super().__init__(
-            validators=[Validator(lambda x: self._fit_called, 'fit() must be called before transform()')],
             fittable=True,
-            reversible=True
+            invertible=True,
+            validators=[Validator(lambda x: self._fit_called, 'fit() must be called before transform()')],
+            name=name
         )
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))

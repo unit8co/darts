@@ -3,7 +3,7 @@ Base Transformer
 ----------------
 """
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, List
+from typing import TypeVar, Generic, List, Optional
 
 from darts.logging import raise_if, get_logger
 from darts.preprocessing.validator import Validator
@@ -14,18 +14,18 @@ T = TypeVar('T')
 
 class BaseTransformer(Generic[T], ABC):
     def __init__(self,
-                 reversible: bool,
+                 invertible: bool,
                  fittable: bool,
                  name: str = "BaseTransformer",
-                 validators: List[Validator] = []):
+                 validators: Optional[List[Validator]] = None):
         """
         Abstract class for transformers. All deriving classes have to implement only one function `transform`.
         It also has `inverse_transform` and `fit` left unimplemented. If a child of this class implements
-        any of these methods, it should mark them with the appropriate property (`reversible`, `fittable`).
+        any of these methods, it should mark them with the appropriate property (`invertible`, `fittable`).
 
         Parameters
         ----------
-        reversible
+        invertible
             Flag indicating whether this transformer implements inverse_transform
         fittable
             Flag indicating whether this transformer implements fit
@@ -38,20 +38,24 @@ class BaseTransformer(Generic[T], ABC):
         kwargs
             Additional keyword arguments
         """
-        self._reversible = reversible
+        self._invertible = invertible
         self._fittable = fittable
         self._name = name
+
+        if validators is None:
+            validators = []
+
         self._validators = validators
 
     @property
-    def reversible(self) -> bool:
+    def invertible(self) -> bool:
         """
         Returns
         -------
         bool
             Whether transformer has inverse_transform.
         """
-        return self._reversible
+        return self._invertible
 
     @property
     def fittable(self) -> bool:

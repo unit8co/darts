@@ -53,7 +53,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_correct_properties_set(self):
         properties = {
-            'reversible': 'inverse_transform',
+            'invertible': 'inverse_transform',
             'fittable': 'fit'
         }
 
@@ -108,7 +108,7 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_correct_properties_set_values(self):
         properties = {
-            'reversible': 'inverse_transform',
+            'invertible': 'inverse_transform',
             'fittable': 'fit'
         }
 

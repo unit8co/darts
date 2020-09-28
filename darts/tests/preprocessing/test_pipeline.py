@@ -15,7 +15,7 @@ class PipelineTestCase(unittest.TestCase):
 
     class TransformerMock1(BaseTransformer[TimeSeries]):
         def __init__(self, *args, **kwargs):
-            super().__init__(reversible=False, fittable=False, *args, **kwargs)
+            super().__init__(invertible=False, fittable=False, *args, **kwargs)
             self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False
@@ -31,7 +31,7 @@ class PipelineTestCase(unittest.TestCase):
 
     class TransformerMock2(BaseTransformer[TimeSeries]):
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs, fittable=True, reversible=True)
+            super().__init__(*args, **kwargs, fittable=True, invertible=True)
             self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False

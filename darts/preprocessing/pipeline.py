@@ -37,7 +37,7 @@ class Pipeline:
         else:
             self._transformers = transformers
 
-        self._reversible = all((t.reversible for t in self._transformers))
+        self._invertible = all((t.invertible for t in self._transformers))
 
     def fit(self, data: TimeSeries):
         """
@@ -95,7 +95,7 @@ class Pipeline:
         """
         For each transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
         transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
-        reversible.
+        invertible.
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class Pipeline:
         TimeSeries
             Inverse transformed data.
         """
-        raise_if_not(self._reversible, "Not all transformers are able to perform inverse_transform", logger)
+        raise_if_not(self._invertible, "Not all transformers are able to perform inverse_transform", logger)
 
         for transformer in reversed(self._transformers):
             data = transformer.inverse_transform(data)
