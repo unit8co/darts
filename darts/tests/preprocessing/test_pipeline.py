@@ -1,7 +1,7 @@
 import unittest
 import logging
 
-from darts.preprocessing import BaseTransformer, Pipeline, transformer_from_ts_functions
+from darts.preprocessing import Pipeline, transformer_from_ts_functions, BaseTransformer, FittableTransformer, InvertibleTransformer
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
 
@@ -14,8 +14,8 @@ class PipelineTestCase(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     class TransformerMock1(BaseTransformer[TimeSeries]):
-        def __init__(self, *args, **kwargs):
-            super().__init__(invertible=False, fittable=False, *args, **kwargs)
+        def __init__(self):
+            super().__init__()
             self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False
@@ -23,15 +23,15 @@ class PipelineTestCase(unittest.TestCase):
 
         def validate(self, data: TimeSeries) -> bool:
             self.validate_called = True
-            return super().validate(data)
+            return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             self.transform_called = True
             return data.append_values(constant_timeseries(1, 3).values())
 
-    class TransformerMock2(BaseTransformer[TimeSeries]):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs, fittable=True, invertible=True)
+    class TransformerMock2(FittableTransformer[TimeSeries], InvertibleTransformer[TimeSeries]):
+        def __init__(self):
+            super().__init__()
             self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False
@@ -43,7 +43,7 @@ class PipelineTestCase(unittest.TestCase):
 
         def validate(self, data: TimeSeries) -> bool:
             self.validate_called = True
-            return super().validate(data)
+            return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             self.transform_called = True

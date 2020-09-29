@@ -12,14 +12,14 @@ class BaseTransformerTestCase(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     class TransformerMock(BaseTransformer[str]):
-        def __init__(self, *args, **kwargs):
-            super().__init__(name="TransformerMock", invertible=False, fittable=False, *args, **kwargs)
+        def __init__(self, validators=None):
+            super().__init__(name="TransformerMock", validators=validators)
             self.validate_called = False
             self.transform_called = False
 
         def validate(self, data: str) -> bool:
             self.validate_called = True
-            return super().validate(data)
+            return super()._validate(data)
 
         def transform(self, data: str, *args, **kwargs) -> str:
             self.transform_called = True
@@ -37,20 +37,6 @@ class BaseTransformerTestCase(unittest.TestCase):
         self.assertTrue(mock.validate_called)
 
         self.assertFalse(mock.transform_called)
-
-    def test_raise_unimplemented_exception(self):
-        # given
-        mock = self.TransformerMock()
-
-        # when & then
-        with self.assertRaises(NotImplementedError):
-            mock.fit("test").transform("test")
-
-        with self.assertRaises(NotImplementedError):
-            mock.inverse_transform("test")
-
-        with self.assertRaises(NotImplementedError):
-            mock.fit_transform("test")
 
     def test_input_transformed(self):
         # given

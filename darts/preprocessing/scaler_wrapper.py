@@ -2,8 +2,7 @@
 Scaler wrapper
 --------------
 """
-from darts.preprocessing.base_transformer import BaseTransformer
-from darts.preprocessing.validator import Validator
+from darts.preprocessing import FittableTransformer, InvertibleTransformer
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
@@ -12,10 +11,10 @@ from sklearn.preprocessing import MinMaxScaler
 logger = get_logger(__name__)
 
 
-class ScalerWrapper(BaseTransformer[TimeSeries]):
+class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeSeries]):
     def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1)), name="ScalerWrapper"):
         """
-        Generic wrapper class for using transformers/scalers that implement `fit()`, `transform()` and
+        Generic wrapper class for using scalers that implement `fit()`, `transform()` and
         `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.
 
         Parameters
@@ -28,12 +27,7 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
         name
             A specific name for the transformer
         """
-        super().__init__(
-            fittable=True,
-            invertible=True,
-            validators=[Validator(lambda x: self._fit_called, 'fit() must be called before transform()')],
-            name=name
-        )
+        super().__init__(validators=None, name=name)
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
                 or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503
@@ -43,7 +37,6 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
 
         self.transformer = scaler
         self.train_series = None
-        self._fit_called = False
 
     def fit(self, series: TimeSeries) -> 'ScalerWrapper':
         """ Fits this transformer/scaler to the provided time series data
@@ -55,7 +48,6 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
         """
         self.transformer.fit(series.values().reshape((-1, series.width)))
         self.train_series = series
-        self._fit_called = True
         return self
 
     def transform(self, series: TimeSeries, *args, **kwargs) -> TimeSeries:
@@ -73,7 +65,6 @@ class ScalerWrapper(BaseTransformer[TimeSeries]):
         TimeSeries
             A new time series, transformed with this (fitted) transformer.
         """
-        assert self._fit_called, 'fit() must be called before transform()'
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.transform(series.values().
                                                                            reshape((-1, series.width))))
