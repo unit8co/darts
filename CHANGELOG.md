@@ -4,7 +4,7 @@
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.2.3...develop)
 
-Changes suceptible to **break existing code** working on previous release are highlited in <span style="color:red">**red**</span>
+Changes suceptible to **break existing code** working on a previous release are marked with a "&#x1F534;".
 
 **Added:**
 
@@ -23,12 +23,12 @@ Changes suceptible to **break existing code** working on previous release are hi
 
 **Changed:**
 
-- <span style="color:red">**Refactored backtesting**</span> [\#184](https://github.com/unit8co/darts/pull/184)
+- &#x1F534; **Refactored backtesting** [\#184](https://github.com/unit8co/darts/pull/184)
   - Moved backtesting functionalities inside `ForecastingModel` and `RegressionModel`
     - Old syntax: `backtest_forecasting()` and `backtest_regression()`
     - New syntax: `model.backtest()`
   - Consequently removed the `backtesting` module
-- <span style="color:red">**`ForecastingModel` `fit()` method syntax**</span> using TimeSeries indexing instead of additional parameters [\#161](https://github.com/unit8co/darts/pull/161)
+- &#x1F534; `ForecastingModel` `fit()` **method syntax** using TimeSeries indexing instead of additional parameters [\#161](https://github.com/unit8co/darts/pull/161)
   ```python
   # old syntax:
   multivariate_model.fit(multivariate_series, target_indices=[0, 1])
