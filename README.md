@@ -97,7 +97,7 @@ from R2-scores to Mean Absolute Scaled Error.
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
 **Regressive Models:** Possibility to predict a time series from several other time series 
-(e.g., external regressors), using arbitrary regressive models.
+(e.g., external regressors), using arbitrary regressive models
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
@@ -114,7 +114,8 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
 5. Create a new branch with your fix / feature from the **develop** branch.
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
-7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
+7. Verify your tests coverage by running `./gradlew coverageTest`
+    * Additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
 8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
 9. Create a pull request from your new branch to the **develop** branch.
 
@@ -130,7 +131,7 @@ Our direct dependencies include `fbprophet` and `torch` which have non-Python de
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
-If that's not possible, first follow the official instructions to install 
+If that's not possible, first follow the official instructions to install
 [fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
 and [torch](https://pytorch.org/get-started/locally/), then skip to 
 [Install darts](#install-darts)

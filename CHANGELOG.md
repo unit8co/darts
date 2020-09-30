@@ -1,23 +1,25 @@
 # Changelog
 
+Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes suceptible to **break existing code** working on a previous release are marked with a "&#x1F534;". Sorry for the inconvenience!
+
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.2.3...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...develop)
 
-Changes suceptible to **break existing code** working on a previous release are marked with a "&#x1F534;".
+## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-dd)
 
+### For users of the library:
 **Added:**
 
 - Indexing on TimeSeries [\#150](https://github.com/unit8co/darts/pull/150)
 - New `FourTheta` forecasting model [\#123](https://github.com/unit8co/darts/pull/123), [\#156](https://github.com/unit8co/darts/pull/156)
 - `map()` method for TimeSeries [\#121](https://github.com/unit8co/darts/issues/121), [\#166](https://github.com/unit8co/darts/pull/166)
-- Gradle to build docs, docker image, run tests, … [\#112](https://github.com/unit8co/darts/pull/112), [\#127](https://github.com/unit8co/darts/pull/127), [\#159](https://github.com/unit8co/darts/pull/159)
-- Further improved Multivariate TimeSeries capabilities [\#97](https://github.com/unit8co/darts/pull/97), [\#111](https://github.com/unit8co/darts/pull/111)
+- Further improved Multivariate TimeSeries capabilities:
+  - Added multivariate support to the Neural Network based forecasting models, namely `TorchForecastingModel` and its subclasses (`TCNModel` and `RNNModel`)
+  - Added multivariate support to backtesting functions [\#111](https://github.com/unit8co/darts/pull/111)
 - Custom style for matplotlib plots [\#191](https://github.com/unit8co/darts/pull/191)
 - Option to pass a single string as value column name to the `TimeSeries.from_dataframe()` function. [\#114](https://github.com/unit8co/darts/pull/114)
 - sMAPE metric [\#129](https://github.com/unit8co/darts/pull/129)
-- M4 competition benchmark and notebook to the examples [\#138](https://github.com/unit8co/darts/pull/138)
-- Test coverage check [\#141](https://github.com/unit8co/darts/pull/141)
 - `freq` parameter for TimeSeries generating functions [\#157](https://github.com/unit8co/darts/pull/157)
 - Option to specify a `random_state` at model creation using the `@random_method` decorator on models using neural networks to allow reproducibility of results [\#118](https://github.com/unit8co/darts/pull/118)
 
@@ -49,54 +51,12 @@ Changes suceptible to **break existing code** working on a previous release are 
 - \[BUG\] ForecastingModel.backtest: Can bypass sanity checks [\#188](https://github.com/unit8co/darts/issues/188)
 - ForecastingModel.backtest\(\) fails if forecast\_horizon isn't provided [\#186](https://github.com/unit8co/darts/issues/186)
 
-**Merged pull requests:**
+### For developers of the library
 
-- Feature/pretty plots [\#191](https://github.com/unit8co/darts/pull/191) ([LeoTafti](https://github.com/LeoTafti))
-- Feature/no lint fail [\#190](https://github.com/unit8co/darts/pull/190) ([TheMP](https://github.com/TheMP))
-- Refactor/backtest checks [\#189](https://github.com/unit8co/darts/pull/189) ([LeoTafti](https://github.com/LeoTafti))
-- Refactor/backtesting [\#184](https://github.com/unit8co/darts/pull/184) ([LeoTafti](https://github.com/LeoTafti))
-- Feature/merge master [\#174](https://github.com/unit8co/darts/pull/174) ([TheMP](https://github.com/TheMP))
-- Set version to be fixed. [\#173](https://github.com/unit8co/darts/pull/173) ([Kostiiii](https://github.com/Kostiiii))
-- Fix multiplying dateoffset by float [\#172](https://github.com/unit8co/darts/pull/172) ([Kostiiii](https://github.com/Kostiiii))
-- Fix/develop after feature map [\#166](https://github.com/unit8co/darts/pull/166) ([Droxef](https://github.com/Droxef))
-- Fix PR workflow [\#165](https://github.com/unit8co/darts/pull/165) ([Droxef](https://github.com/Droxef))
-- Fix: package type information [\#164](https://github.com/unit8co/darts/pull/164) ([Seirdy](https://github.com/Seirdy))
-- Implement map method for TimeSeries [\#163](https://github.com/unit8co/darts/pull/163) ([Lovkush-A](https://github.com/Lovkush-A))
-- Refactor/fit args [\#161](https://github.com/unit8co/darts/pull/161) ([grll](https://github.com/grll))
-- Add publishing docker image by gradle in release workflow [\#159](https://github.com/unit8co/darts/pull/159) ([xfiderek](https://github.com/xfiderek))
-- Generation/pass frequency [\#157](https://github.com/unit8co/darts/pull/157) ([Kostiiii](https://github.com/Kostiiii))
-- Fix Develop [\#156](https://github.com/unit8co/darts/pull/156) ([Droxef](https://github.com/Droxef))
-- Fix readme typo [\#153](https://github.com/unit8co/darts/pull/153) ([mayvid9](https://github.com/mayvid9))
-- clean check\_seasonality function [\#152](https://github.com/unit8co/darts/pull/152) ([xfiderek](https://github.com/xfiderek))
-- Features/indexing [\#150](https://github.com/unit8co/darts/pull/150) ([grll](https://github.com/grll))
-- Fix/requirements [\#148](https://github.com/unit8co/darts/pull/148) ([xfiderek](https://github.com/xfiderek))
-- Fix/deprecation warnings [\#147](https://github.com/unit8co/darts/pull/147) ([xfiderek](https://github.com/xfiderek))
-- feature/coverage [\#141](https://github.com/unit8co/darts/pull/141) ([guillaumeraille](https://github.com/guillaumeraille))
-- Fix/r2\_score documentation [\#140](https://github.com/unit8co/darts/pull/140) ([pennfranc](https://github.com/pennfranc))
-- Examples/m4 competition [\#138](https://github.com/unit8co/darts/pull/138) ([Droxef](https://github.com/Droxef))
-- Feature/tcn improvements [\#134](https://github.com/unit8co/darts/pull/134) ([pennfranc](https://github.com/pennfranc))
-- remove mutable default arg [\#131](https://github.com/unit8co/darts/pull/131) ([hrzn](https://github.com/hrzn))
-- Fix/cleaner code for TorchForecastingModel [\#130](https://github.com/unit8co/darts/pull/130) ([pennfranc](https://github.com/pennfranc))
-- Fix/metrics [\#129](https://github.com/unit8co/darts/pull/129) ([Droxef](https://github.com/Droxef))
-- Fix/gradle [\#127](https://github.com/unit8co/darts/pull/127) ([guillaumeraille](https://github.com/guillaumeraille))
-- add .DS\_Store to .gitignore [\#124](https://github.com/unit8co/darts/pull/124) ([guillaumeraille](https://github.com/guillaumeraille))
-- Feature/four theta [\#123](https://github.com/unit8co/darts/pull/123) ([Droxef](https://github.com/Droxef))
-- Fix/TimeSeries doc [\#119](https://github.com/unit8co/darts/pull/119) ([pennfranc](https://github.com/pennfranc))
-- Fix/reproducibility RNN [\#118](https://github.com/unit8co/darts/pull/118) ([guillaumeraille](https://github.com/guillaumeraille))
-- add .darts to ignored folders [\#117](https://github.com/unit8co/darts/pull/117) ([guillaumeraille](https://github.com/guillaumeraille))
-- Cleanup after tests [\#116](https://github.com/unit8co/darts/pull/116) ([Kostiiii](https://github.com/Kostiiii))
-- fix/TimeSeries.from\_dataframe-arguments [\#114](https://github.com/unit8co/darts/pull/114) ([pennfranc](https://github.com/pennfranc))
-- fix/README.md [\#113](https://github.com/unit8co/darts/pull/113) ([guillaumeraille](https://github.com/guillaumeraille))
-- Feat/gradle [\#112](https://github.com/unit8co/darts/pull/112) ([Kostiiii](https://github.com/Kostiiii))
-- feature/multivariate - step 4 [\#111](https://github.com/unit8co/darts/pull/111) ([pennfranc](https://github.com/pennfranc))
-- add .vscode to .gitignore [\#110](https://github.com/unit8co/darts/pull/110) ([guillaumeraille](https://github.com/guillaumeraille))
-- Feature/residual analysis example [\#109](https://github.com/unit8co/darts/pull/109) ([pennfranc](https://github.com/pennfranc))
-- Fix/predict single value [\#108](https://github.com/unit8co/darts/pull/108) ([pennfranc](https://github.com/pennfranc))
-- New theme. [\#107](https://github.com/unit8co/darts/pull/107) ([endrjuskr](https://github.com/endrjuskr))
-- Update README.md [\#106](https://github.com/unit8co/darts/pull/106) ([endrjuskr](https://github.com/endrjuskr))
-- Revert "Release 0.1.0" [\#105](https://github.com/unit8co/darts/pull/105) ([endrjuskr](https://github.com/endrjuskr))
-- Remove `.darts` directory after tests. [\#103](https://github.com/unit8co/darts/pull/103) ([Kostiiii](https://github.com/Kostiiii))
-- feature/multivariate - step 3 [\#97](https://github.com/unit8co/darts/pull/97) ([pennfranc](https://github.com/pennfranc))
+**Added:**
+- Gradle to build docs, docker image, run tests, … [\#112](https://github.com/unit8co/darts/pull/112), [\#127](https://github.com/unit8co/darts/pull/127), [\#159](https://github.com/unit8co/darts/pull/159)
+- M4 competition benchmark and notebook to the examples [\#138](https://github.com/unit8co/darts/pull/138)
+- Check of test coverage [\#141](https://github.com/unit8co/darts/pull/141)
 
 ## [0.2.3](https://github.com/unit8co/darts/tree/0.2.3) (2020-07-20)
 
