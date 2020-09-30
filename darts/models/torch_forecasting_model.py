@@ -9,10 +9,6 @@ import re
 import math
 from glob import glob
 import shutil
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.tensorboard import SummaryWriter
 from typing import Optional, Dict
 
 from ..timeseries import TimeSeries
@@ -25,6 +21,14 @@ CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.darts', 'runs')
 
 logger = get_logger(__name__)
+
+try:
+    import torch
+    import torch.nn as nn
+    from torch.utils.data import DataLoader, Dataset
+    from torch.utils.tensorboard import SummaryWriter
+except ModuleNotFoundError:
+    logger.warning("Support Torch based models not available. To enable it install u8darts[torch] or u8darts[all].")
 
 
 def _get_checkpoint_folder(work_dir, model_name):

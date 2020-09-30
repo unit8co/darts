@@ -25,7 +25,7 @@ try:
     from .auto_arima import AutoARIMA
 except ModuleNotFoundError:
     logger.warning("Support AutoARIMA based models not available. To enable it install "
-                   "u8darts[pmdarima] or u8darts[all]")
+                   "u8darts[pmdarima] or u8darts[all].")
 
 
 class ARIMA(UnivariateForecastingModel):
