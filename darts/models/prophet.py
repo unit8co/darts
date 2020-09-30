@@ -4,7 +4,6 @@ Facebook Prophet
 """
 
 from typing import Optional
-import fbprophet
 import logging
 
 from ..timeseries import TimeSeries
@@ -14,6 +13,12 @@ from ..logging import get_logger, execute_and_suppress_output
 
 
 logger = get_logger(__name__)
+
+try:
+    import fbprophet
+except ModuleNotFoundError:
+    logger.warning("Support Facebook Prophet not available. To enable it install u8darts[fbprophet] or u8darts[all].")
+
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
