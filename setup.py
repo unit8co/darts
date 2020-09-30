@@ -6,7 +6,7 @@ def read_requirements(path):
     return list(Path(path).read_text().splitlines())
 
 
-base_reqs = read_requirements('requirements/main.txt')
+base_reqs = read_requirements('requirements/core.txt')
 pmdarima_reqs = read_requirements('requirements/pmdarima.txt')
 torch_reqs = read_requirements('requirements/torch.txt')
 fbprophet_reqs = read_requirements('requirements/fbprophet.txt')
