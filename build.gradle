@@ -57,7 +57,7 @@ task setupPip(type: Exec) {
 }
 
 task pipMain(type: Exec) {
-    commandLine "pip", "install", "-q", "-r", "requirements/main.txt"
+    commandLine "pip", "install", "-q", "-r", "requirements/core.txt"
 }
 
 task pipDev(type: Exec) {
