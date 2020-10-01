@@ -113,7 +113,14 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
-5. Create a new branch with your fix / feature from the **develop** branch.
+5. Create a new branch:
+    * Branch off from the **develop** branch.
+    * Prefix the branch with the type of update you are making:
+        * `feature/`
+        * `fix/`
+        * `refactor/`
+        * …
+    * Work on your fix / feature
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
 7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
 8. Create a pull request from your new branch to the **develop** branch.
