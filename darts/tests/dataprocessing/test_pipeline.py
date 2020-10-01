@@ -1,12 +1,12 @@
 import unittest
 import logging
 
-from darts.preprocessing import (
+from darts.dataprocessing import (
     Pipeline,
-    transformer_from_ts_functions,
-    BaseTransformer,
-    FittableTransformer,
-    InvertibleTransformer
+    data_transformer_from_ts_functions,
+    BaseDataTransformer,
+    FittableDataTransformer,
+    InvertibleDataTransformer
 )
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
@@ -19,7 +19,7 @@ class PipelineTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class TransformerMock1(BaseTransformer[TimeSeries]):
+    class DataTransformerMock1(BaseDataTransformer[TimeSeries]):
         def __init__(self):
             super().__init__()
             self.validate_called = False
@@ -35,7 +35,7 @@ class PipelineTestCase(unittest.TestCase):
             self.transform_called = True
             return data.append_values(constant_timeseries(1, 3).values())
 
-    class TransformerMock2(FittableTransformer[TimeSeries], InvertibleTransformer[TimeSeries]):
+    class DataTransformerMock2(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
         def __init__(self):
             super().__init__()
             self.validate_called = False
@@ -65,8 +65,8 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_transform(self):
         # given
-        mock1 = self.TransformerMock1()
-        mock2 = self.TransformerMock2()
+        mock1 = self.DataTransformerMock1()
+        mock2 = self.DataTransformerMock2()
         data = constant_timeseries(0, 3)
         transformers = [mock1] * 10 + [mock2] * 10
         p = Pipeline(transformers)
@@ -82,7 +82,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_inverse_raise_exception(self):
         # given
-        mock = self.TransformerMock1()
+        mock = self.DataTransformerMock1()
         p = Pipeline([mock])
 
         # when & then
@@ -91,7 +91,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_transformers_not_modified(self):
         # given
-        mock = self.TransformerMock1()
+        mock = self.DataTransformerMock1()
         p = Pipeline([mock], deep=True)
 
         # when
@@ -104,8 +104,8 @@ class PipelineTestCase(unittest.TestCase):
         # given
         data = constant_timeseries(0, 3)
         transformers = [
-            self.TransformerMock1() for _ in range(10)
-        ] + [self.TransformerMock2() for _ in range(10)]
+            self.DataTransformerMock1() for _ in range(10)
+        ] + [self.DataTransformerMock2() for _ in range(10)]
         p = Pipeline(transformers)
 
         # when
@@ -121,8 +121,8 @@ class PipelineTestCase(unittest.TestCase):
         # given
         data = constant_timeseries(0, 3)
         transformers = [
-            self.TransformerMock1() for _ in range(10)
-        ] + [self.TransformerMock2() for _ in range(10)]
+            self.DataTransformerMock1() for _ in range(10)
+        ] + [self.DataTransformerMock2() for _ in range(10)]
         p = Pipeline(transformers)
 
         # when
@@ -141,12 +141,12 @@ class PipelineTestCase(unittest.TestCase):
         data = constant_timeseries(0., 3)
 
         transformers = [
-            transformer_from_ts_functions(transform=lambda x: x + 10,
-                                          inverse_transform=lambda x: x - 10,
-                                          name="+10 transformer"),
-            transformer_from_ts_functions(transform=lambda x: x * 2,
-                                          inverse_transform=lambda x: x / 2,
-                                          name="*2 transformer")
+            data_transformer_from_ts_functions(transform=lambda x: x + 10,
+                                               inverse_transform=lambda x: x - 10,
+                                               name="+10 transformer"),
+            data_transformer_from_ts_functions(transform=lambda x: x * 2,
+                                               inverse_transform=lambda x: x / 2,
+                                               name="*2 transformer")
         ]
         p = Pipeline(transformers)
 
@@ -160,9 +160,9 @@ class PipelineTestCase(unittest.TestCase):
     def test_getitem(self):
         # given
 
-        transformers = [transformer_from_ts_functions(transform=lambda x: x + 10,
-                                                      inverse_transform=lambda x: x - 10,
-                                                      name="transformer{}".format(i)) for i in range(0, 10)]
+        transformers = [data_transformer_from_ts_functions(transform=lambda x: x + 10,
+                                                           inverse_transform=lambda x: x - 10,
+                                                           name="transformer{}".format(i)) for i in range(0, 10)]
         p = Pipeline(transformers)
 
         # when & then
@@ -178,7 +178,7 @@ class PipelineTestCase(unittest.TestCase):
         input_list = list(range(10))
 
         # when & then
-        with self.assertRaises(ValueError, msg="transformers should be objects deriving from BaseTransformer"):
+        with self.assertRaises(ValueError, msg="transformers should be objects deriving from BaseDataTransformer"):
             Pipeline(input_list)
 
     def test_raises_on_bad_key(self):

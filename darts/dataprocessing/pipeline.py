@@ -7,54 +7,54 @@ from typing import List, Union, Iterator
 
 from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
-from darts.preprocessing import BaseTransformer, InvertibleTransformer, FittableTransformer
+from darts.dataprocessing import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
 
 logger = get_logger(__name__)
 
 
 class Pipeline:
     def __init__(self,
-                 transformers: List[BaseTransformer[TimeSeries]],
+                 transformers: List[BaseDataTransformer[TimeSeries]],
                  deep: bool = False):
         """
-        Pipeline combines multiple transformers chaining them together.
+        Pipeline combines multiple data transformers chaining them together.
 
         Parameters
         ----------
         transformers
-            List of transformers.
+            List of data transformers.
         deep
-            If set makes a copy of each transformer before adding them to the pipeline
+            If set makes a copy of each data transformer before adding them to the pipeline
         """
-        raise_if_not(all((isinstance(t, BaseTransformer)) for t in transformers),
-                     "transformers should be objects deriving from BaseTransformer", logger)
+        raise_if_not(all((isinstance(t, BaseDataTransformer)) for t in transformers),
+                     "transformers should be objects deriving from BaseDataTransformer", logger)
 
         if transformers is None or len(transformers) == 0:
             logger.warning("Empty pipeline created")
-            self._transformers: List[BaseTransformer[TimeSeries]] = []
+            self._transformers: List[BaseDataTransformer[TimeSeries]] = []
         elif deep:
             self._transformers = deepcopy(transformers)
         else:
             self._transformers = transformers
 
-        self._invertible = all((isinstance(t, InvertibleTransformer) for t in self._transformers))
+        self._invertible = all((isinstance(t, InvertibleDataTransformer) for t in self._transformers))
 
     def fit(self, data: TimeSeries):
         """
-        Fit data to all of transformers in pipeline that are capable of fitting.
+        Fit data to all fittable transformers in pipeline.
 
         Parameters
         ----------
         data
             TimeSeries to fit on.
         """
-        for transformer in filter(lambda t: isinstance(t, FittableTransformer), self._transformers):
+        for transformer in filter(lambda t: isinstance(t, FittableDataTransformer), self._transformers):
             transformer.fit(data)
 
     def fit_transform(self, data: TimeSeries) -> TimeSeries:
         """
-        For each transformer in pipeline first fit the data if transformer is fittable and then transform data using
-        fitted transformer. Then transformed data is passed to next transformer.
+        For each data transformer in pipeline first fit the data if transformer is fittable then transform data using
+        fitted transformer. The transformed data is then passed to next transformer.
 
         Parameters
         ----------
@@ -67,7 +67,7 @@ class Pipeline:
             Transformed data.
         """
         for transformer in self._transformers:
-            if isinstance(transformer, FittableTransformer):
+            if isinstance(transformer, FittableDataTransformer):
                 transformer.fit(data)
 
             data = transformer.transform(data)
@@ -75,7 +75,7 @@ class Pipeline:
 
     def transform(self, data: TimeSeries) -> TimeSeries:
         """
-        For each transformer in pipeline transform data. Then transformed data is passed to next transformer.
+        For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
 
         Parameters
         ----------
@@ -93,7 +93,7 @@ class Pipeline:
 
     def inverse_transform(self, data: TimeSeries) -> TimeSeries:
         """
-        For each transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
+        For each data transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
         transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
         invertible.
 
@@ -107,7 +107,7 @@ class Pipeline:
         TimeSeries
             Inverse transformed data.
         """
-        raise_if_not(self._invertible, "Not all transformers are able to perform inverse_transform", logger)
+        raise_if_not(self._invertible, "Not all transformers in the pipeline can perform inverse_transform", logger)
 
         for transformer in reversed(self._transformers):
             data = transformer.inverse_transform(data)
@@ -116,12 +116,12 @@ class Pipeline:
     def __getitem__(self, key: Union[int, slice]) -> 'Pipeline':
         """
         Gets subset of Pipeline based either on index or slice with indexes.
-        Resulting pipeline will deep copy transformers of original pipeline.
+        Resulting pipeline will deep copy transformers of the original pipeline.
 
         Parameters
         ----------
         key
-            Either int or slice indicating the subset of transformers to keep.
+            Either int or slice indicating the subset of data transformers to keep.
 
         Returns
         -------
@@ -136,12 +136,12 @@ class Pipeline:
             transformers = self._transformers[key]
         return Pipeline(transformers, deep=True)
 
-    def __iter__(self) -> Iterator[BaseTransformer[TimeSeries]]:
+    def __iter__(self) -> Iterator[BaseDataTransformer[TimeSeries]]:
         """
         Returns
         -------
         Iterator
-            List of transformers
+            List of data transformers
         """
         return self._transformers
 

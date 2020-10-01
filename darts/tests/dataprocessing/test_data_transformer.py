@@ -4,11 +4,11 @@ import logging
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from darts.preprocessing import ScalerWrapper
+from darts.dataprocessing import ScalerWrapper
 from darts.utils import timeseries_generation as tg
 
 
-class TransformerTestCase(unittest.TestCase):
+class DataTransformerTestCase(unittest.TestCase):
     __test__ = True
 
     @classmethod

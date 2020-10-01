@@ -1,19 +1,19 @@
 import unittest
 import logging
 
-from darts.preprocessing import BaseTransformer, Validator
+from darts.dataprocessing import BaseDataTransformer, Validator
 
 
-class BaseTransformerTestCase(unittest.TestCase):
+class BaseDataTransformerTestCase(unittest.TestCase):
     __test__ = True
 
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class TransformerMock(BaseTransformer[str]):
+    class DataTransformerMock(BaseDataTransformer[str]):
         def __init__(self, validators=None):
-            super().__init__(name="TransformerMock", validators=validators)
+            super().__init__(name="DataTransformerMock", validators=validators)
             self.validate_called = False
             self.transform_called = False
 
@@ -29,7 +29,7 @@ class BaseTransformerTestCase(unittest.TestCase):
         # given
         validator = Validator(lambda x: False, "it was meant to fail")
 
-        mock = self.TransformerMock(validators=[validator])
+        mock = self.DataTransformerMock(validators=[validator])
 
         # when & then
         with self.assertRaises(ValueError):
@@ -41,7 +41,7 @@ class BaseTransformerTestCase(unittest.TestCase):
     def test_input_transformed(self):
         # given
         test_input = "test"
-        mock = self.TransformerMock()
+        mock = self.DataTransformerMock()
 
         # when
         transformed = mock.transform(test_input)
@@ -60,7 +60,7 @@ class BaseTransformerTestCase(unittest.TestCase):
             Validator((lambda y: lambda x: t(x, y))(i), str(i)) for i in range(10)
         ]
 
-        mock = self.TransformerMock(validators=validators)
+        mock = self.DataTransformerMock(validators=validators)
         # when
         result = mock.validate("")
 

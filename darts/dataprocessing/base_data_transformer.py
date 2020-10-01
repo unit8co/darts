@@ -6,26 +6,26 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List, Optional
 
 from darts.logging import raise_if, get_logger
-from darts.preprocessing import Validator
+from darts.dataprocessing import Validator
 
 logger = get_logger(__name__)
 T = TypeVar('T')
 
 
-class BaseTransformer(Generic[T], ABC):
+class BaseDataTransformer(Generic[T], ABC):
     def __init__(self,
-                 name: str = "BaseTransformer",
+                 name: str = "BaseDataTransformer",
                  validators: Optional[List[Validator]] = None):
         """
-        Abstract class for transformers. All deriving classes have to implement only one function `transform`.
-        Transformers requiring to be fit first before calling `transform()` should derive
-        from `FittableTransformer` instead.
-        Transformers which are invertible should derive from ´InvertibleTransformer´ instead.
+        Abstract class for data transformers. All deriving classes have to implement only one function `transform`.
+        Data transformers requiring to be fit first before calling `transform()` should derive
+        from `FittableDataTransformer` instead.
+        Data transformers which are invertible should derive from ´InvertibleDataTransformer´ instead.
 
         Parameters
         ----------
         names
-            The transformer's name
+            The data transformer's name
         validators
             List of validators that will be called before transform()
         """
@@ -90,7 +90,7 @@ class BaseTransformer(Generic[T], ABC):
         Returns
         -------
         str
-            Name of transformer.
+            Name of data transformer.
         """
         return self._name
 

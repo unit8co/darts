@@ -2,26 +2,26 @@ from abc import abstractmethod
 from typing import TypeVar, List, Optional
 
 from darts.logging import get_logger, raise_if_not
-from darts.preprocessing import Validator, BaseTransformer
+from darts.dataprocessing import Validator, BaseDataTransformer
 
 logger = get_logger(__name__)
 T = TypeVar('T')
 
 
-class InvertibleTransformer(BaseTransformer[T]):
+class InvertibleDataTransformer(BaseDataTransformer[T]):
 
     def __init__(self,
-                 name: str = "InvertibleTransformer",
+                 name: str = "InvertibleDataTransformer",
                  validators: Optional[List[Validator]] = None):
 
         """
-        Abstract class for transformers implementing a fit method. All deriving classes must implement
+        Abstract class for data transformers implementing a fit method. All deriving classes must implement
         `transform()` and `inverse_transform()`.
 
         Parameters
         ----------
         names
-            The transformer's name
+            The data transformer's name
         validators
             List of validators that will be called before transform() and inverse_transform()
         """

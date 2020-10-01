@@ -1,7 +1,7 @@
 import unittest
 import logging
 
-from darts.preprocessing import Validator
+from darts.dataprocessing import Validator
 
 
 class ValidatorTestCase(unittest.TestCase):

@@ -2,23 +2,23 @@ from abc import abstractmethod
 from typing import TypeVar, List, Optional
 
 from darts.logging import get_logger, raise_if_not
-from darts.preprocessing import Validator, BaseTransformer
+from darts.dataprocessing import Validator, BaseDataTransformer
 
 logger = get_logger(__name__)
 T = TypeVar('T')
 
 
-class FittableTransformer(BaseTransformer[T]):
+class FittableDataTransformer(BaseDataTransformer[T]):
     def __init__(self,
-                 name: str = "FittableTransformer",
+                 name: str = "FittableDataTransformer",
                  validators: Optional[List[Validator]] = None):
 
         """
-        Abstract class for transformers implementing a fit method. All deriving classes must implement
+        Abstract class for data transformers implementing a fit method. All deriving classes must implement
         `fit()` and `transform()`.
 
         names
-            The transformer's name
+            The data transformer's name
         validators
             List of validators that will be called before fit() and transform()
         """
@@ -26,20 +26,20 @@ class FittableTransformer(BaseTransformer[T]):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, data: T) -> 'FittableTransformer[T]':
+    def fit(self, data: T) -> 'FittableDataTransformer[T]':
         """
-        Perform validation and fit transformer to data.
+        Perform validation and fit data transformer to data.
         Not implemented in base class and has to be implemented by deriving classes.
 
         Parameters
         ----------
         data
-            Object on which transformer will be fitted.
+            Object on which data transformer will be fitted.
 
         Returns
         -------
-        BaseTransformer[T]
-            Fitted transformer (typically would be self)
+        BaseDataTransformer[T]
+            Fitted data transformer (typically would be self)
         """
         super()._validate(data)
         self._fit_called = True

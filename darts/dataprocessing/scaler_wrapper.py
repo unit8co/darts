@@ -2,7 +2,7 @@
 Scaler wrapper
 --------------
 """
-from darts.preprocessing import FittableTransformer, InvertibleTransformer
+from darts.dataprocessing import FittableDataTransformer, InvertibleDataTransformer
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log
@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 logger = get_logger(__name__)
 
 
-class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeSeries]):
+class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
     def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1)), name="ScalerWrapper"):
         """
         Generic wrapper class for using scalers that implement `fit()`, `transform()` and
@@ -20,12 +20,12 @@ class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeS
         Parameters
         ----------
         scaler
-            The transformer/scaler to transform the data.
+            The scaler to transform the data.
             It must provide the `fit()`, `transform()` and `inverse_transform()` methods.
             Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this
             will scale all the values of a time series between 0 and 1.
         name
-            A specific name for the transformer
+            A specific name for the scaler
         """
         super().__init__(validators=None, name=name)
 
@@ -39,12 +39,12 @@ class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeS
         self.train_series = None
 
     def fit(self, series: TimeSeries) -> 'ScalerWrapper':
-        """ Fits this transformer/scaler to the provided time series data
+        """ Fits this scaler to the provided time series data
 
         Parameters
         ----------
         series
-            The time series to fit the transformer on
+            The time series to fit the scaler on
         """
         self.transformer.fit(series.values().reshape((-1, series.width)))
         self.train_series = series
@@ -52,7 +52,7 @@ class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeS
 
     def transform(self, series: TimeSeries, *args, **kwargs) -> TimeSeries:
         """
-        Returns a new time series, transformed with this (fitted) transformer.
+        Returns a new time series, transformed with this (fitted) scaler.
         This does not handle series with confidence intervals - the intervals are discarded.
 
         Parameters
@@ -63,7 +63,7 @@ class ScalerWrapper(FittableTransformer[TimeSeries], InvertibleTransformer[TimeS
         Returns
         -------
         TimeSeries
-            A new time series, transformed with this (fitted) transformer.
+            A new time series, transformed with this (fitted) scaler.
         """
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.transform(series.values().
