@@ -1,10 +1,9 @@
 """
-ARIMA and Auto-ARIMA
---------------------
+ARIMA
+-----
 
-Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA [1]_.
-The implementations are wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_
-and `pmdarima <https://github.com/alkaline-ml/pmdarima>`_.
+Models for ARIMA (Autoregressive integrated moving average) [1]_.
+The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
 
 References
 ----------
@@ -19,13 +18,6 @@ from ..timeseries import TimeSeries
 from ..logging import get_logger
 
 logger = get_logger(__name__)
-
-
-try:
-    from .auto_arima import AutoARIMA
-except ModuleNotFoundError:
-    logger.warning("Support AutoARIMA based models not available. To enable it install "
-                   "u8darts[pmdarima] or u8darts[all].")
 
 
 class ARIMA(UnivariateForecastingModel):
