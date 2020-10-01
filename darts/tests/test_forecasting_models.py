@@ -70,6 +70,7 @@ class ForecastingModelsTestCase(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     @classmethod
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def tearDownClass(cls):
         shutil.rmtree('.darts')
 
