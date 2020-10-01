@@ -54,11 +54,6 @@ class ExponentialSmoothing(UnivariateForecastingModel):
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
 
-        Attributes
-        ----------
-        params
-            The parameters for the Exponential Smoothing model.
-
         """
         super().__init__()
         self.trend = trend
@@ -98,4 +93,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
 
     @property
     def params(self) -> Dict[Any, Any]:
+        """
+        The parameters for the Exponential Smoothing model.
+        """
         return self._params
