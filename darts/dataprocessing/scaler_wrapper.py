@@ -67,7 +67,8 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         """
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.transform(series.values().
-                                                                           reshape((-1, series.width))))
+                                                                           reshape((-1, series.width))),
+                                                series.freq())
 
     def inverse_transform(self, series: TimeSeries, *args, **kwargs) -> TimeSeries:
         """
@@ -85,4 +86,5 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         """
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.inverse_transform(series.values().
-                                                                                   reshape((-1, series.width))))
+                                                                                   reshape((-1, series.width))),
+                                                series.freq())
