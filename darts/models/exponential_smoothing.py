@@ -3,6 +3,8 @@ Exponential Smoothing
 ---------------------
 """
 
+from typing import Any
+from typing import Dict
 from typing import Optional
 import statsmodels.tsa.holtwinters as hw
 
@@ -53,6 +55,11 @@ class ExponentialSmoothing(UnivariateForecastingModel):
             `statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+
+        Attributes
+        ----------
+        params: dict
+            All the parameters for the Exponential Smoothing model.
         """
         super().__init__()
         self.trend = trend
@@ -61,6 +68,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
         self.seasonal_periods = seasonal_periods
         self.fit_kwargs = fit_kwargs
         self.model = None
+        self.params = None
 
     def __str__(self):
         return 'Exponential smoothing'
@@ -76,6 +84,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
 
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
+        self.params = hw_results.params
 
     def predict(self, n):
         super().predict(n)
