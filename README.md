@@ -120,7 +120,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
         * `fix/`
         * `refactor/`
         * …
-    * Work on your fix / feature
+    * Work on your update
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
 7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
 8. Create a pull request from your new branch to the **develop** branch.
