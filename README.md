@@ -115,7 +115,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 5. Create a new branch with your fix / feature from the **develop** branch.
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
 7. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
+    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
 8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
 9. Create a pull request from your new branch to the **develop** branch.
 

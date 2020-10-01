@@ -1,6 +1,6 @@
 # Changelog
 
-Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes suceptible to **break existing code** working on a previous release are marked with a "&#x1F534;". Sorry for the inconvenience!
+Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;". Sorry for the inconvenience!
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
@@ -13,24 +13,31 @@ Darts is still in an early development phase and we cannot always guarantee back
 ### For users of the library:
 **Added:**
 
-- Indexing on TimeSeries [\#150](https://github.com/unit8co/darts/pull/150)
+- Better indexing on TimeSeries (support for column/component indexing) [\#150](https://github.com/unit8co/darts/pull/150)
 - New `FourTheta` forecasting model [\#123](https://github.com/unit8co/darts/pull/123), [\#156](https://github.com/unit8co/darts/pull/156)
 - `map()` method for TimeSeries [\#121](https://github.com/unit8co/darts/issues/121), [\#166](https://github.com/unit8co/darts/pull/166)
-- Further improved Multivariate TimeSeries capabilities:
-  - Added multivariate support to the Neural Network based forecasting models, namely `TorchForecastingModel` and its subclasses (`TCNModel` and `RNNModel`)
-  - Added multivariate support to backtesting functions [\#111](https://github.com/unit8co/darts/pull/111)
+- Added multivariate support to backtesting functions [\#111](https://github.com/unit8co/darts/pull/111)
 - Custom style for matplotlib plots [\#191](https://github.com/unit8co/darts/pull/191)
-- Option to pass a single string as value column name to the `TimeSeries.from_dataframe()` function. [\#114](https://github.com/unit8co/darts/pull/114)
 - sMAPE metric [\#129](https://github.com/unit8co/darts/pull/129)
-- `freq` parameter for TimeSeries generating functions [\#157](https://github.com/unit8co/darts/pull/157)
 - Option to specify a `random_state` at model creation using the `@random_method` decorator on models using neural networks to allow reproducibility of results [\#118](https://github.com/unit8co/darts/pull/118)
 
 **Changed:**
 
 - &#x1F534; **Refactored backtesting** [\#184](https://github.com/unit8co/darts/pull/184)
   - Moved backtesting functionalities inside `ForecastingModel` and `RegressionModel`
-    - Old syntax: `backtest_forecasting()` and `backtest_regression()`
-    - New syntax: `model.backtest()`
+    ```python
+    # old syntax:
+    backtest_forecasting(forecasting_model, *args, **kwargs)
+
+    # new syntax:
+    forecasting_model.backtest(*args, **kwargs)
+
+    # old syntax:
+    backtest_regression(regression_model, *args, **kwargs)
+
+    # new syntax:
+    regression_model.backtest(*args, **kwargs)
+    ```
   - Consequently removed the `backtesting` module
 - &#x1F534; `ForecastingModel` `fit()` **method syntax** using TimeSeries indexing instead of additional parameters [\#161](https://github.com/unit8co/darts/pull/161)
   ```python
@@ -59,6 +66,13 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Gradle to build docs, docker image, run tests, … [\#112](https://github.com/unit8co/darts/pull/112), [\#127](https://github.com/unit8co/darts/pull/127), [\#159](https://github.com/unit8co/darts/pull/159)
 - M4 competition benchmark and notebook to the examples [\#138](https://github.com/unit8co/darts/pull/138)
 - Check of test coverage [\#141](https://github.com/unit8co/darts/pull/141)
+
+**Changed:**
+- Dependencies' versions are now fixed [\#173](https://github.com/unit8co/darts/pull/173)
+- Workflow: tests trigger on Pull Request [\#165](https://github.com/unit8co/darts/pull/165)
+
+**Fixed:**
+- Passed the `freq` parameter to the `TimeSeries` constructor in all TimeSeries generating functions [\#157](https://github.com/unit8co/darts/pull/157)
 
 ## Older releases
 
