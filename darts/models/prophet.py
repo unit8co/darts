@@ -3,7 +3,7 @@ Facebook Prophet
 ----------------
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 import fbprophet
 import logging
 
@@ -45,6 +45,11 @@ class Prophet(UnivariateForecastingModel):
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/fbprophet/forecaster.py>`_.
 
+        Attributes
+        ----------
+        params
+            The parameters for the Prophet model.
+
         """
 
         super().__init__()
@@ -53,6 +58,7 @@ class Prophet(UnivariateForecastingModel):
         self.freq = frequency
         self.prophet_kwargs = prophet_kwargs
         self.model = None
+        self._params = None
 
     def __str__(self):
         return 'Prophet'
@@ -84,6 +90,8 @@ class Prophet(UnivariateForecastingModel):
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
 
+        self._params = self.model.params
+
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
         new_dates = self._generate_new_dates(n)
@@ -93,3 +101,7 @@ class Prophet(UnivariateForecastingModel):
 
         forecast = predictions['yhat'][-n:].values
         return self._build_forecast_series(forecast)
+
+    @property
+    def params(self) -> Dict[Any, Any]:
+        return self._params
