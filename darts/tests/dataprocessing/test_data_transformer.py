@@ -18,10 +18,6 @@ class DataTransformerTestCase(unittest.TestCase):
     series1 = tg.random_walk_timeseries(length=100) * 20 - 10.
     series2 = series1.stack(tg.random_walk_timeseries(length=100) * 20 - 100.)
 
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
     def test_scaling(self):
         self.series3 = self.series1[:1]
         transformer1 = ScalerWrapper(MinMaxScaler(feature_range=(0, 2)))
@@ -39,9 +35,7 @@ class DataTransformerTestCase(unittest.TestCase):
 
         # test inverse transform
         series1_recovered = transformer2.inverse_transform(series1_tr2)
-        series2_recovered = transformer3.inverse_transform(series2_tr3)
         series3_recovered = transformer2.inverse_transform(series3_tr2)
         np.testing.assert_almost_equal(series1_recovered.values().flatten(), self.series1.values().flatten())
         self.assertEqual(series1_recovered.width, self.series1.width)
-        self.assertEqual(series2_recovered.width, self.series2.width)
         self.assertEqual(series3_recovered, series1_recovered[:1])
