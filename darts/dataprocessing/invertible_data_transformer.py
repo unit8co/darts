@@ -1,3 +1,7 @@
+"""
+Invertible Data Transformer
+---------------------------
+"""
 from abc import abstractmethod
 from typing import TypeVar, List, Optional
 

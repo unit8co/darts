@@ -1,6 +1,6 @@
 """
-Base Transformer
-----------------
+Base Data Transformer
+---------------------
 """
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List, Optional
