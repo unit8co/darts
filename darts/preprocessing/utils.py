@@ -4,55 +4,76 @@ Preprocessing Utils
 """
 import numpy as np
 
-from typing import TypeVar, Callable, Optional, Tuple, Any, Dict
+from typing import TypeVar, Callable, Optional, Tuple, List, Any, Dict, Type
 
 from darts import TimeSeries
-from darts.logging import raise_if_not, raise_if, get_logger
-from darts.preprocessing.base_transformer import BaseTransformer
+from darts.logging import raise_if, get_logger
+from darts.preprocessing import BaseTransformer, InvertibleTransformer, FittableTransformer
 
 logger = get_logger(__name__)
 T = TypeVar('T')
 _callable_with_args_kwargs = Callable[[T, Tuple[Any, ...], Dict[str, any]], T]
 
 
-class _WrapperTransformer(BaseTransformer[T]):
-    def __init__(self,
-                 transform: _callable_with_args_kwargs,
-                 inverse_transform: Optional[_callable_with_args_kwargs] = None,
-                 fit: Optional[_callable_with_args_kwargs] = None,
-                 name: str = "WrapperTransformer"):
-        raise_if(transform is None, "transform cannot be None", logger)
+def _create_wrapper_transformer(parent_classes: List[Type[BaseTransformer[T]]],
+                                transform: _callable_with_args_kwargs,
+                                inverse_transform: Optional[_callable_with_args_kwargs] = None,
+                                fit: Optional[_callable_with_args_kwargs] = None,
+                                name: str = "WrapperTransformer"):
+    class _WrapperTransformer(*parent_classes):
+        def __init__(self,
+                     transform: _callable_with_args_kwargs,
+                     inverse_transform: Optional[_callable_with_args_kwargs] = None,
+                     fit: Optional[_callable_with_args_kwargs] = None,
+                     name: str = "WrapperTransformer"):
+            raise_if(transform is None, "transform cannot be None", logger)
+            raise_if(InvertibleTransformer in parent_classes and inverse_transform is None,
+                     "WrapperTransformer marked as invertible but no inverse_transform() function was provided",
+                     logger)
+            raise_if(FittableTransformer in parent_classes and fit is None,
+                     "WrapperTransfomer marked as fittable but no fit() function was provided")
 
-        _fittable = fit is not None
-        _invertible = inverse_transform is not None
+            super().__init__(name=name, validators=None)  # TODO: Add possibility to specify validators ?
 
-        super().__init__(fittable=_fittable, invertible=_invertible)
+            self._transform = transform
+            self._inverse_transform = inverse_transform
+            self._fit = fit
 
-        self._transform = transform
-        self._inverse_transform = inverse_transform
-        self._fit = fit
+            self._name = name
 
-        self._name = name
+        def transform(self, data: T, *args, **kwargs) -> T:
+            return self._transform(data, *args, **kwargs)
 
-    def transform(self, data: T, *args, **kwargs) -> T:
-        return self._transform(data, *args, **kwargs)
+        if InvertibleTransformer in parent_classes:
+            def inverse_transform(self, data: T, *args, **kwargs) -> T:
+                return self._inverse_transform(data, *args, **kwargs)
 
-    def inverse_transform(self, data: T, *args, **kwargs) -> T:
-        raise_if_not(self.invertible,
-                     f"inverse_transform not implemented for transformer {self.name}", logger)
-        return self._inverse_transform(data, *args, **kwargs)
+        if FittableTransformer in parent_classes:
+            def fit(self, data: T) -> 'Type[BaseTransformer[T]]':
+                self._fit(data)
+                return self
 
-    def fit(self, data: T) -> 'BaseTransformer[T]':
-        raise_if_not(self.fittable,
-                     f"fit not implemented for transformer {self.name}", logger)
-        self._fit(data)
-        return self
+    return _WrapperTransformer(transform, inverse_transform, fit, name)
+
+
+def _get_parent_classes(inverse_transform: Optional[_callable_with_args_kwargs] = None,
+                        fit: Optional[_callable_with_args_kwargs] = None):
+    parent_classes = []
+    if inverse_transform is not None:
+        parent_classes.append(InvertibleTransformer)
+    if fit is not None:
+        parent_classes.append(FittableTransformer)
+
+    if not parent_classes:
+        parent_classes.append(BaseTransformer)
+
+    return parent_classes
 
 
 def transformer_from_ts_functions(transform: _callable_with_args_kwargs[TimeSeries],
                                   inverse_transform: Optional[_callable_with_args_kwargs[TimeSeries]] = None,
                                   fit: Optional[Callable[[TimeSeries], Any]] = None,
-                                  name: str = "WrappedTransformer") -> BaseTransformer[TimeSeries]:
+                                  name: str = "FromTSWrappedTransformer") -> Type[BaseTransformer[TimeSeries]]:
     """
     Utility function to create transformer from functions taking as input TimeSeries. All functions except transform
     are optional.
@@ -70,16 +91,20 @@ def transformer_from_ts_functions(transform: _callable_with_args_kwargs[TimeSeri
 
     Returns
     -------
-    BaseTransformer[T]
+    Type[BaseTransformer[TimeSeries]]
         Transformer created from the provided functions.
     """
-    return _WrapperTransformer(transform, inverse_transform, fit, name)
+    return _create_wrapper_transformer(_get_parent_classes(inverse_transform, fit),
+                                       transform,
+                                       inverse_transform,
+                                       fit,
+                                       name)
 
 
 def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.ndarray],
                                       inverse_transform: Optional[_callable_with_args_kwargs[np.ndarray]] = None,
                                       fit: Optional[Callable[[np.ndarray], Any]] = None,
-                                      name: str = "WrappedTransformer") -> BaseTransformer[TimeSeries]:
+                                      name: str = "FromValuesWrappedTransformer") -> Type[BaseTransformer[TimeSeries]]:
     """
     Utility function to create transformer from functions taking as input value series. All functions except transform
     are optional.
@@ -97,7 +122,7 @@ def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.n
 
     Returns
     -------
-    BaseTransformer[T]
+    Type[BaseTransformer[TimeSeries]]
         Transformer created from the provided functions.
     """
 
@@ -113,9 +138,12 @@ def transformer_from_values_functions(transform: _callable_with_args_kwargs[np.n
 
         return func
 
-    return _WrapperTransformer(
-        apply_to_values(transform),
-        apply_to_values(inverse_transform),
-        apply_to_values(fit, returns=False),
-        name
-    )
+    transform = apply_to_values(transform)
+    inverse_transform = apply_to_values(inverse_transform)
+    fit = apply_to_values(fit, returns=False)
+
+    return _create_wrapper_transformer(_get_parent_classes(inverse_transform, fit),
+                                       transform,
+                                       inverse_transform,
+                                       fit,
+                                       name)

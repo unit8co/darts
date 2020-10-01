@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List, Optional
 
 from darts.logging import raise_if, get_logger
-from darts.preprocessing.validator import Validator
+from darts.preprocessing import Validator
 
 logger = get_logger(__name__)
 T = TypeVar('T')

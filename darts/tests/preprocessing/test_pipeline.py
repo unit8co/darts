@@ -1,7 +1,13 @@
 import unittest
 import logging
 
-from darts.preprocessing import Pipeline, transformer_from_ts_functions, BaseTransformer, FittableTransformer, InvertibleTransformer
+from darts.preprocessing import (
+    Pipeline,
+    transformer_from_ts_functions,
+    BaseTransformer,
+    FittableTransformer,
+    InvertibleTransformer
+)
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
 

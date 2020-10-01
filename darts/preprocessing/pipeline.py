@@ -7,7 +7,7 @@ from typing import List, Union, Iterator
 
 from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
-from darts.preprocessing.base_transformer import BaseTransformer
+from darts.preprocessing import BaseTransformer, InvertibleTransformer, FittableTransformer
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class Pipeline:
         else:
             self._transformers = transformers
 
-        self._invertible = all((t.invertible for t in self._transformers))
+        self._invertible = all((isinstance(t, InvertibleTransformer) for t in self._transformers))
 
     def fit(self, data: TimeSeries):
         """
@@ -48,7 +48,7 @@ class Pipeline:
         data
             TimeSeries to fit on.
         """
-        for transformer in filter(lambda t: t.fittable, self._transformers):
+        for transformer in filter(lambda t: isinstance(t, FittableTransformer), self._transformers):
             transformer.fit(data)
 
     def fit_transform(self, data: TimeSeries) -> TimeSeries:
@@ -67,7 +67,7 @@ class Pipeline:
             Transformed data.
         """
         for transformer in self._transformers:
-            if transformer.fittable:
+            if isinstance(transformer, FittableTransformer):
                 transformer.fit(data)
 
             data = transformer.transform(data)
