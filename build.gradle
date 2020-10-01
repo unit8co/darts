@@ -116,7 +116,7 @@ task coverageTest() {
 
 task lint(type: Exec) {
     dependsOn pipDev
-    commandLine "flake8", "--config=setup.cfg", "darts"
+    commandLine "flake8", "--config=setup.cfg", "--exit-zero", "darts"
 }
 
 task test() {
