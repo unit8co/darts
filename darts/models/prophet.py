@@ -45,11 +45,6 @@ class Prophet(UnivariateForecastingModel):
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/fbprophet/forecaster.py>`_.
 
-        Attributes
-        ----------
-        params
-            The parameters for the Prophet model.
-
         """
 
         super().__init__()
@@ -104,4 +99,7 @@ class Prophet(UnivariateForecastingModel):
 
     @property
     def params(self) -> Dict[Any, Any]:
+        """
+        The parameters for the Exponential Smoothing model.
+        """
         return self._params
