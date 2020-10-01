@@ -3,8 +3,6 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Any
-from typing import Dict
 from typing import Optional
 import statsmodels.tsa.holtwinters as hw
 
