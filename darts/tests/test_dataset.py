@@ -10,7 +10,7 @@ try:
     import torch
     from ..models.torch_forecasting_model import _TimeSeriesSequentialDataset
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Torch is not available. Torch Dataset will not be tested')
     TORCH_AVAILABLE = False
 

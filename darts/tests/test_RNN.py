@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 try:
     from ..models.rnn_model import _RNNModule, RNNModel
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Torch not available. RNN tests will be skipped.')
     TORCH_AVAILABLE = False
 

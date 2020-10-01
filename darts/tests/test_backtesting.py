@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 try:
     from ..models import TCNModel
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Torch models are not installed - will not be tested for backtesting')
     TORCH_AVAILABLE = False
 

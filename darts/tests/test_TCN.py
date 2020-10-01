@@ -11,7 +11,7 @@ try:
     from ..models.tcn_model import TCNModel
     from .test_RNN import RNNModelTestCase
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')
     TORCH_AVAILABLE = False
 
