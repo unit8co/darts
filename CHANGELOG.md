@@ -16,7 +16,9 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Better indexing on TimeSeries (support for column/component indexing) [\#150](https://github.com/unit8co/darts/pull/150)
 - New `FourTheta` forecasting model [\#123](https://github.com/unit8co/darts/pull/123), [\#156](https://github.com/unit8co/darts/pull/156)
 - `map()` method for TimeSeries [\#121](https://github.com/unit8co/darts/issues/121), [\#166](https://github.com/unit8co/darts/pull/166)
-- Added multivariate support to backtesting functions [\#111](https://github.com/unit8co/darts/pull/111)
+- Further improved the backtesting functions [\#111](https://github.com/unit8co/darts/pull/111):
+  - Added support for multivariate TimeSeries and models
+  - Added `retrain` and `stride` parameters
 - Custom style for matplotlib plots [\#191](https://github.com/unit8co/darts/pull/191)
 - sMAPE metric [\#129](https://github.com/unit8co/darts/pull/129)
 - Option to specify a `random_state` at model creation using the `@random_method` decorator on models using neural networks to allow reproducibility of results [\#118](https://github.com/unit8co/darts/pull/118)
