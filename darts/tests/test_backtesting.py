@@ -157,7 +157,7 @@ class BacktestingTestCase(unittest.TestCase):
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires pandas")
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
