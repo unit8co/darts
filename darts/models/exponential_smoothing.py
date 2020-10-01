@@ -56,8 +56,9 @@ class ExponentialSmoothing(UnivariateForecastingModel):
 
         Attributes
         ----------
-        params: dict
-            All the parameters for the Exponential Smoothing model.
+        params
+            The parameters for the Exponential Smoothing model.
+
         """
         super().__init__()
         self.trend = trend
