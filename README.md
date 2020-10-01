@@ -153,7 +153,7 @@ Don't forget to activate your virtual environment
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
 
-#### Install darts
+### Install darts
 
 Install Darts with all available models: `pip install u8darts[all]`.
 
