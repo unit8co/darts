@@ -10,15 +10,10 @@ from ..timeseries import TimeSeries
 from .forecasting_model import UnivariateForecastingModel
 import pandas as pd
 from ..logging import get_logger, execute_and_suppress_output
+import fbprophet
 
 
 logger = get_logger(__name__)
-
-try:
-    import fbprophet
-except ModuleNotFoundError:
-    logger.warning("Support Facebook Prophet not available. To enable it install u8darts[fbprophet] or u8darts[all].")
-
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
