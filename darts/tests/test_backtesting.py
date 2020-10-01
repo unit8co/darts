@@ -19,8 +19,17 @@ from darts.models import (
     NaiveSeasonal,
     StandardRegressionModel,
     NaiveDrift,
-    TCNModel
 )
+
+from ..logging import get_logger
+logger = get_logger(__name__)
+
+try:
+    from ..models import TCNModel
+    TORCH_AVAILABLE = True
+except ModuleNotFoundError:
+    logger.warning('Torch models are not installed - will not be tested for backtesting')
+    TORCH_AVAILABLE = False
 
 
 def compare_best_against_random(model_class, params, series):
@@ -107,27 +116,28 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series_multi, None, pd.Timestamp('20000201'), 3)
 
         # multivariate model + univariate series
-        tcn_model = TCNModel(batch_size=1, n_epochs=1)
-        pred = tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
-        self.assertEqual(pred.width, 1)
+        if TORCH_AVAILABLE:
+            tcn_model = TCNModel(batch_size=1, n_epochs=1)
+            pred = tcn_model.backtest(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False)
+            self.assertEqual(pred.width, 1)
 
-        # multivariate model + multivariate series
-        with self.assertRaises(ValueError):
-            tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
-        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
-        with self.assertRaises(ValueError):
-            tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
-                               use_full_output_length=False)
-        pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
-                                  verbose=False, use_full_output_length=True)
-        self.assertEqual(pred.width, 1)
-        pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
-                                  verbose=False, use_full_output_length=True)
-        self.assertEqual(pred.width, 1)
-        tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
-        pred = tcn_model.backtest(linear_series_multi, linear_series_multi, pd.Timestamp('20000125'), 3,
-                                  verbose=False, use_full_output_length=True)
-        self.assertEqual(pred.width, 2)
+            # multivariate model + multivariate series
+            with self.assertRaises(ValueError):
+                tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
+            with self.assertRaises(ValueError):
+                tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
+                                   use_full_output_length=False)
+            pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
+                                      verbose=False, use_full_output_length=True)
+            self.assertEqual(pred.width, 1)
+            pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
+                                      verbose=False, use_full_output_length=True)
+            self.assertEqual(pred.width, 1)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
+            pred = tcn_model.backtest(linear_series_multi, linear_series_multi, pd.Timestamp('20000125'), 3,
+                                      verbose=False, use_full_output_length=True)
+            self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):
         gaussian_series = gt(mean=2, length=50)
@@ -190,6 +200,7 @@ class BacktestingTestCase(unittest.TestCase):
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires pandas")
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
