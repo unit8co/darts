@@ -56,8 +56,20 @@ task setupPip(type: Exec) {
     commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
 }
 
-task pipMain(type: Exec) {
+task pipCore(type: Exec) {
     commandLine "pip", "install", "-q", "-r", "requirements/core.txt"
+}
+
+task pipProphet(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/fbprophet.txt"
+}
+
+task pipPmdArima(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/pmdarima.txt"
+}
+
+task pipTorch(type: Exec) {
+    commandLine "pip", "install", "-q", "-r", "requirements/torch.txt"
 }
 
 task pipDev(type: Exec) {
@@ -72,7 +84,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pipMain, pipDev, pipRelease
+    dependsOn pipCore, pipDev, pipRelease
 }
 
 task installLocally(type:Exec) {
@@ -91,12 +103,12 @@ void coverageTestSteps() {
 }
 
 task unitTest(type: Exec) {
-    dependsOn pipMain, pipDev
+    dependsOn pipCore, pipDev
     commandLine "python", "-m", "unittest"
 }
 
 task coverageTest() {
-    dependsOn pipMain, pipDev
+    dependsOn pipCore, pipDev
     doLast {
         coverageTestSteps()
     }
