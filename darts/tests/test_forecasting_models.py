@@ -34,19 +34,19 @@ models = [
 try:
     from ..models import Prophet
     models.append((Prophet(), 13.5))
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Prophet not installed - will be skipping Prophet tests')
 
 try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 13.7))
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
 
 try:
     from ..models import RNNModel, TCNModel
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     logger.warning('Torch not installed - will be skipping Torch models tests')
     TORCH_AVAILABLE = False
 
