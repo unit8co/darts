@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 import statsmodels.tsa.holtwinters as hw
 
 from .forecasting_model import UnivariateForecastingModel
@@ -66,7 +66,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
         self.seasonal_periods = seasonal_periods
         self.fit_kwargs = fit_kwargs
         self.model = None
-        self.params = None
+        self._params = None
 
     def __str__(self):
         return 'Exponential smoothing'
@@ -82,7 +82,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
 
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
-        self.params = hw_results.params
+        self._params = hw_results.params
 
     def predict(self, n):
         super().predict(n)
@@ -94,3 +94,7 @@ class ExponentialSmoothing(UnivariateForecastingModel):
         if (self.seasonal_periods is not None and self.seasonal_periods > 1):
             return 2 * self.seasonal_periods
         return 3
+
+    @property
+    def params(self) -> Dict[Any, Any]:
+        return self._params
