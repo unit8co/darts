@@ -74,7 +74,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_release
+    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch, pip_release
 }
 
 task installLocally(type:Exec) {
