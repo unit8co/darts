@@ -40,7 +40,7 @@ from darts import TimeSeries
 
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
-train, val = series.split_after(pd.Timestamp('19590101'))
+train, val = series.split_after(pd.Timestamp('19580101'))
 ```
 
 >The dataset used in this example can be downloaded from this [link](https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv).
