@@ -4,15 +4,15 @@ import pandas as pd
 import random
 import logging
 
-from ..metrics import mape, r2_score
-from ..utils.timeseries_generation import (
+from darts.metrics import mape, r2_score
+from darts.utils.timeseries_generation import (
     linear_timeseries as lt,
     sine_timeseries as st,
     random_walk_timeseries as rt,
     constant_timeseries as ct,
     gaussian_timeseries as gt
 )
-from ..models import (
+from darts.models import (
     Theta,
     FFT,
     ExponentialSmoothing,
@@ -78,6 +78,7 @@ class BacktestingTestCase(unittest.TestCase):
         # univariate model + univariate series
         pred = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3)
         self.assertEqual(r2_score(pred, linear_series), 1.0)
+
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3)
         with self.assertRaises(ValueError):
@@ -85,6 +86,30 @@ class BacktestingTestCase(unittest.TestCase):
                                   trim_to_series=True)
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
         NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), forecast_horizon=3, trim_to_series=False)
+
+        # Using forecast_horizon default value
+        NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
+        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), trim_to_series=False)
+
+        # Using an int or float value for start
+        NaiveDrift().backtest(linear_series, None, start=30)
+        NaiveDrift().backtest(linear_series, None, start=0.7, trim_to_series=False)
+
+        # Using invalid start and/or forecast_horizon values
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=0.7, forecast_horizon=-1)
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, 0.7, -1)
+
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=100)
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=1.2)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, None, start='wrong type')
+
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, trim_to_series=True)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
@@ -123,6 +148,24 @@ class BacktestingTestCase(unittest.TestCase):
 
         # univariate feature test
         pred = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # Using an int or float value for start
+        pred = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        pred = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3)
+        self.assertEqual(r2_score(pred, target), 1.0)
+
+        # Using a too small start value
+        with self.assertRaises(ValueError):
+            StandardRegressionModel(15).backtest(features, target, start=0, forecast_horizon=3)
+
+        with self.assertRaises(ValueError):
+            StandardRegressionModel(15).backtest(features, target, start=0.01, forecast_horizon=3)
+
+        # Using StandardRegressionModel's start default value
+        pred = StandardRegressionModel(15).backtest(features, target, forecast_horizon=3)
         self.assertEqual(r2_score(pred, target), 1.0)
 
         # multivariate feature test
