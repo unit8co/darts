@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    if: ! (github.event.pull_request.head.repo.full_name == unit8co/darts')
+    if: (github.event.pull_request.head.repo.full_name == unit8co/darts') != true
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -42,7 +42,7 @@ jobs:
           ./gradlew test
 
   docs:
-    if: ! (github.event.pull_request.head.repo.full_name == unit8co/darts')
+    if: (github.event.pull_request.head.repo.full_name == unit8co/darts') != true
     runs-on: ubuntu-latest
 
     steps:
