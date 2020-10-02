@@ -31,13 +31,13 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt') }}
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
           restore-keys: |
             tests-${{ runner.os }}-pip-
 
       - name: "5. Tests"
         run: |
-          ./gradlew test
+          ./gradlew test_core
 
   release:
     needs: [tests]

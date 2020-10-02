@@ -108,7 +108,7 @@ void createPipRelatedTask(String flavour) {
    }
 
    taskName = "coverageTest_" + flavour;
-   task (taskName, type: Exec) {
+   task (taskName) {
         dependsOn(taskArgument)
         dependsOn pip_core
         dependsOn pip_dev
@@ -120,7 +120,7 @@ void createPipRelatedTask(String flavour) {
    taskName = "test_" + flavour;
    String taskArgument1 = "unitTest_" + flavour;
    String taskArgument2= "coverageTest_" + flavour;
-   task (taskName, type: Exec) {
+   task (taskName) {
         dependsOn(taskArgument1)
         dependsOn(taskArgument2)
         dependsOn lint
