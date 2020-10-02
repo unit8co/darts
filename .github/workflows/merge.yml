@@ -1,10 +1,7 @@
-name: darts PR merge workflow
+name: darts merge PR to develop workflow
 
 on:
   push:
-    branches:
-      - develop
-  pull_request:
     branches:
       - develop
 
