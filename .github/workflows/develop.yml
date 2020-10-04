@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
+        flavour: ['core', 'all', 'pmdarima', 'torch', 'fbprophet']
 
     steps:
       - name: "1. Clone repository"
@@ -31,11 +32,11 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
 
       - name: "5. Tests"
         run: |
-          ./gradlew test
+          ./gradlew "test_${{matrix.flavour}}"
 
   docs:
     runs-on: ubuntu-latest
@@ -62,7 +63,7 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          key: tests-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
 
       - name: "6. Build docs"
         run: |

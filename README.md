@@ -14,7 +14,8 @@
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors.
+and combine the predictions of several models and external regressors. Darts supports both
+univariate and multivariate time series and models.
 
 ## Install
 
@@ -24,7 +25,7 @@ We recommend to first setup a clean python environment for your project with at 
 
 Once your environment is setup you can install darts using the pip package:
 
-    pip install u8darts
+    pip install u8darts[all]
 
 ### Step-by-step Install
 
@@ -132,7 +133,7 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ### Preconditions
 
-Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+Some of the models depend on `fbprophet` and `torch`, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
@@ -151,18 +152,26 @@ Don't forget to activate your virtual environment
     conda activate <env-name>
 
 
-### MAC
+#### MAC
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
 
-### Linux and Windows
+#### Linux and Windows
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
 
 ### Install darts
 
-    pip install u8darts
+Install Darts with all available models: `pip install u8darts[all]`.
 
+As some models have relatively heavy (or non-Python) dependencies,
+we also provide the following alternate lighter install options: 
+
+* Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
+* Install core + neural networks (PyTorch): `pip install u8darts[torch]`
+* Install core + Facebook Prophet: `pip install u8darts[fbprophet]`
+* Install core + AutoARIMA: `pip install u8darts[pmdarima]`
+   
 ### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
