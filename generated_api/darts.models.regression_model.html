@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Regression Model Base Class &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Recurrent Neural Networks" href="darts.models.rnn_model.html" />
     <link rel="prev" title="Facebook Prophet" href="darts.models.prophet.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -238,6 +255,42 @@ of <span class="math notranslate nohighlight">\(N\)</span> “features” time s
 <p>Regression Model.</p>
 <p>This is the base class for all regression models.</p>
 <dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.backtest">
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.7</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for backtesting <cite>RegressionModel</cite>’s.</p>
+<p>This function computes the time series of historical predictions
+that would have been obtained, if the current model had been used to predict <cite>target_series</cite>
+using the <cite>feature_series</cite>, with a certain time horizon.</p>
+<p>To this end, it repeatedly builds a training set composed of both features and targets,
+from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
+It trains the current model on the training set, emits a (point) prediction for a fixed
+forecast horizon, and then moves the end of the training set forward by <cite>stride</cite>
+time steps. The resulting predictions are then returned.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expending window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_series</strong> – A list of time series representing the features for the regression model (independent variables)</p></li>
+<li><p><strong>target_series</strong> – The univariate target time series for the regression model (dependent variable)</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>stride</strong> – The number of time steps (the unit being the frequency of <cite>series</cite>) between two consecutive predictions.</p></li>
+<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A time series containing the forecast values when successively applying
+the current model with the specified forecast horizon.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="darts.models.regression_model.RegressionModel.fit">
 <em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the model using the provided list of features time series and the target time series.</p>
@@ -308,12 +361,15 @@ and <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> is the time 
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

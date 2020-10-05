@@ -48,7 +48,8 @@ Time Series Made Easy in Python
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors.
+and combine the predictions of several models and external regressors. Darts supports both
+univariate and multivariate time series and models.
 
 Install
 -------
@@ -58,11 +59,11 @@ We recommend to first setup a clean python environment for your project with at 
 Quick Install
 ^^^^^^^^^^^^^
 
-Once your environement is setup you can install darts using the pip package:
+Once your environment is setup you can install darts using the pip package:
 
 .. code-block::
 
-   pip install u8darts
+   pip install u8darts[all]
 
 
 Step-by-step Install
@@ -82,7 +83,7 @@ Create ``TimeSeries`` object from a Pandas DataFrame, and split in train/validat
 
    df = pd.read_csv('AirPassengers.csv', delimiter=",")
    series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
-   train, val = series.split_after(pd.Timestamp('19590101'))
+   train, val = series.split_after(pd.Timestamp('19580101'))
 
 ..
 
@@ -105,8 +106,8 @@ Plot:
 
    import matplotlib.pyplot as plt
 
-   series.plot(label='actual', lw=3)
-   prediction.plot(label='forecast', lw=3)
+   series.plot(label='actual')
+   prediction.plot(label='forecast', lw=2)
    plt.legend()
    plt.xlabel('Year')
 
@@ -149,7 +150,7 @@ from R2-scores to Mean Absolute Scaled Error.
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
 **Regressive Models:** Possibility to predict a time series from several other time series 
-(e.g., external regressors), using arbitrary regressive models.
+(e.g., external regressors), using arbitrary regressive models
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
@@ -166,7 +167,24 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 #. Fork the repository.
 #. Clone the forked repository locally.
 #. Create a clean python env and install requirements with pip: ``pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt``
-#. Create a new branch with your fix / feature from the **develop** branch.
+#. Create a new branch:
+
+   * Branch off from the **develop** branch.
+   * Prefix the branch with the type of update you are making:
+
+     * ``feature/``
+     * ``fix/``
+     * ``refactor/``
+     * …
+
+   * Work on your update
+
+#. Check that your code pass the tests / design new unit tests: ``python -m unittest``.
+#. Verify your tests coverage by running ``./gradlew coverageTest``
+
+   * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with ``./coverage.sh xml``
+
+#. If your contribution introduces a significant change, add it to ``CHANGELOG.md`` under the "Unreleased" section.
 #. Create a pull request from your new branch to the **develop** branch.
 
 Contact Us
@@ -180,11 +198,11 @@ Installation Guide
 Preconditions
 ^^^^^^^^^^^^^
 
-Our direct dependencies include ``fbprophet`` and ``torch`` which have non-Python dependencies.
+Some of the models depend on ``fbprophet`` and ``torch``\ , which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
-If that's not possible, first follow the official instructions to install 
+If that's not possible, first follow the official instructions to install
 `fbprophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
 and `torch <https://pytorch.org/get-started/locally/>`_\ , then skip to 
 `Install darts <#install-darts>`_
@@ -206,7 +224,7 @@ Don't forget to activate your virtual environment
 
 
 MAC
-^^^
+~~~
 
 .. code-block::
 
@@ -214,7 +232,7 @@ MAC
 
 
 Linux and Windows
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
@@ -224,10 +242,16 @@ Linux and Windows
 Install darts
 ^^^^^^^^^^^^^
 
-.. code-block::
+Install Darts with all available models: ``pip install u8darts[all]``.
 
-   pip install u8darts
+As some models have relatively heavy (or non-Python) dependencies,
+we also provide the following alternate lighter install options: 
 
+
+* Install core only (without neural networks, Prophet or AutoARIMA): ``pip install u8darts``
+* Install core + neural networks (PyTorch): ``pip install u8darts[torch]``
+* Install core + Facebook Prophet: ``pip install u8darts[fbprophet]``
+* Install core + AutoARIMA: ``pip install u8darts[pmdarima]``
 
 Running the examples only, without installing:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -235,11 +259,40 @@ Running the examples only, without installing:
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 
-.. code-block::
+.. code-block:: bash
 
-   cd scripts
-   ./build_docker.sh && ./run_docker.sh
+   ./gradlew docker && ./gradlew dockerRun
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
 For this setup to work you need to have a Docker service installed. You can get it at `Docker website <https://docs.docker.com/get-docker/>`_.
+
+Tests
+^^^^^
+
+Gradle setup works best with python env, but it requires only that pip is for python3.
+
+To run all tests at once just run
+
+.. code-block:: bash
+
+   ./gradlew test
+
+alternatively you can run
+
+.. code-block:: bash
+
+   ./gradlew unitTest     # to run only unittests
+   ./gradlew coverageTest # to run coverage
+   ./gradlew lint         # to run linter
+
+Documentation
+^^^^^^^^^^^^^
+
+To build documantation locally just run
+
+.. code-block:: bash
+
+   ./gradlew buildDocs
+
+After that docs will be available in ``./docs/build/html`` directory. You can just open ``./docs/build/html/index.html`` using your favourite browser.

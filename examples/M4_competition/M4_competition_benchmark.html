@@ -1,0 +1,1811 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Download and create TimeSeries &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.30270b6e4c972e43c488.js">
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="Multivariate Time Series" href="../multivariate-examples.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    
+    <a class="navbar-brand" href="../../index.html">
+      <img src="../../_static/darts-logo-trim.png" class="logo" alt="logo">
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar">
+
+
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+  <div class="bd-toc-item active">
+  
+
+  <ul class="nav bd-sidenav">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+    </ul>
+
+</nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#" class="nav-link">Download and create TimeSeries</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#dataset-info" class="nav-link">dataset info</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#evaluating-methods" class="nav-link">evaluating methods</a><ul class="nav section-nav flex-column">
+                
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#4Theta" class="nav-link">4Theta</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#run-evaluation" class="nav-link">run evaluation</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#Ensembling" class="nav-link">Ensembling</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#Visualization" class="nav-link">Visualization</a>
+        </li>
+    
+            </ul>
+        </li>
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">NaiveDrift</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">Prophet</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">Theta</span><span class="p">,</span> <span class="n">FourTheta</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">StandardRegressionModel</span>
+<span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">remove_seasonality</span><span class="p">,</span> <span class="n">extract_trend_and_seasonality</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm_notebook</span> <span class="k">as</span> <span class="n">tqdm</span>
+
+<span class="kn">import</span> <span class="nn">pickle</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">M4_metrics</span> <span class="kn">import</span> <span class="n">owa_m4</span><span class="p">,</span> <span class="n">smape_m4</span><span class="p">,</span> <span class="n">mase_m4</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">constant_timeseries</span> <span class="k">as</span> <span class="n">ct</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">download</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">preprocess</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Download-and-create-TimeSeries">
+<h1>Download and create TimeSeries<a class="headerlink" href="#Download-and-create-TimeSeries" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">if</span> <span class="n">download</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;download_data_M4.py&quot;
+<span class="k">if</span> <span class="n">preprocess</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;create_ts.py&quot;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="dataset-info">
+<h1>dataset info<a class="headerlink" href="#dataset-info" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># data_categories = [&#39;Macro&#39;, &#39;Micro&#39;, &#39;Demographic&#39;, &#39;Industry&#39;, &#39;Finance&#39;, &#39;Other&#39;]</span>
+<span class="n">data_freq</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Yearly&#39;</span><span class="p">,</span> <span class="s1">&#39;Quarterly&#39;</span><span class="p">,</span> <span class="s1">&#39;Monthly&#39;</span><span class="p">,</span> <span class="s1">&#39;Weekly&#39;</span><span class="p">,</span> <span class="s1">&#39;Daily&#39;</span><span class="p">,</span> <span class="s1">&#39;Hourly&#39;</span><span class="p">]</span>
+<span class="n">info_dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;dataset/M4-info.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;M4id&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">info_dataset</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>category</th>
+      <th>Frequency</th>
+      <th>Horizon</th>
+      <th>SP</th>
+      <th>StartingDate</th>
+    </tr>
+    <tr>
+      <th>M4id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Y1</th>
+      <td>Macro</td>
+      <td>1</td>
+      <td>6</td>
+      <td>Yearly</td>
+      <td>01-01-79 12:00</td>
+    </tr>
+    <tr>
+      <th>Y2</th>
+      <td>Macro</td>
+      <td>1</td>
+      <td>6</td>
+      <td>Yearly</td>
+      <td>01-01-79 12:00</td>
+    </tr>
+    <tr>
+      <th>Y3</th>
+      <td>Macro</td>
+      <td>1</td>
+      <td>6</td>
+      <td>Yearly</td>
+      <td>01-01-79 12:00</td>
+    </tr>
+    <tr>
+      <th>Y4</th>
+      <td>Macro</td>
+      <td>1</td>
+      <td>6</td>
+      <td>Yearly</td>
+      <td>01-01-79 12:00</td>
+    </tr>
+    <tr>
+      <th>Y5</th>
+      <td>Macro</td>
+      <td>1</td>
+      <td>6</td>
+      <td>Yearly</td>
+      <td>01-01-79 12:00</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">info_dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&#39;Other&#39;, &#39;Macro&#39;, &#39;Industry&#39;, &#39;Finance&#39;, &#39;Demographic&#39;, &#39;Micro&#39;],
+      dtype=object)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">info_dataset</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;SP&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>category</th>
+      <th>Frequency</th>
+      <th>Horizon</th>
+      <th>StartingDate</th>
+    </tr>
+    <tr>
+      <th>SP</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Daily</th>
+      <td>4227</td>
+      <td>4227</td>
+      <td>4227</td>
+      <td>4227</td>
+    </tr>
+    <tr>
+      <th>Hourly</th>
+      <td>414</td>
+      <td>414</td>
+      <td>414</td>
+      <td>414</td>
+    </tr>
+    <tr>
+      <th>Monthly</th>
+      <td>48000</td>
+      <td>48000</td>
+      <td>48000</td>
+      <td>48000</td>
+    </tr>
+    <tr>
+      <th>Quarterly</th>
+      <td>24000</td>
+      <td>24000</td>
+      <td>24000</td>
+      <td>24000</td>
+    </tr>
+    <tr>
+      <th>Weekly</th>
+      <td>359</td>
+      <td>359</td>
+      <td>359</td>
+      <td>359</td>
+    </tr>
+    <tr>
+      <th>Yearly</th>
+      <td>23000</td>
+      <td>23000</td>
+      <td>23000</td>
+      <td>23000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;SP&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">Frequency</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;SP&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">Horizon</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+SP
+Daily         [1]
+Hourly       [24]
+Monthly      [12]
+Quarterly     [4]
+Weekly        [1]
+Yearly        [1]
+Name: Frequency, dtype: object
+SP
+Daily        [14]
+Hourly       [48]
+Monthly      [18]
+Quarterly     [8]
+Weekly       [13]
+Yearly        [6]
+Name: Horizon, dtype: object
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="evaluating-methods">
+<h1>evaluating methods<a class="headerlink" href="#evaluating-methods" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Hourly&#39;</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">mase_all</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">smape_all</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">ts_train</span><span class="p">,</span> <span class="n">ts_test</span><span class="p">)):</span>
+    <span class="c1"># remove seasonality</span>
+    <span class="n">train_des</span><span class="o">=</span><span class="n">train</span>
+    <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">ct</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">start_ts</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span>
+    <span class="n">season</span> <span class="o">=</span> <span class="n">ct</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">start_ts</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="p">):</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">season</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+            <span class="n">train_des</span> <span class="o">=</span> <span class="n">remove_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+            <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">season</span><span class="p">[</span><span class="o">-</span><span class="n">m</span><span class="p">:]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">seasonOut</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seasonOut</span><span class="o">.</span><span class="n">values</span><span class="p">())[:</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span>
+    <span class="c1"># model selection</span>
+    <span class="n">naiveSeason</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">naive2</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ses</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">trend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">holt</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">damped</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s1">&#39;additive&#39;</span><span class="p">)</span>
+    <span class="n">damp</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">damped</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s1">&#39;additive&#39;</span><span class="p">)</span>
+    <span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1"># model fitting</span>
+    <span class="n">naiveSeason</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+    <span class="n">naive2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+    <span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+    <span class="n">ses</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+    <span class="n">holt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+    <span class="n">damp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+    <span class="c1"># forecasting</span>
+    <span class="n">forecast_naiveSeason</span> <span class="o">=</span> <span class="n">naiveSeason</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+    <span class="n">forecast_naive2</span> <span class="o">=</span> <span class="n">naive2</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span> <span class="o">*</span> <span class="n">seasonOut</span>
+    <span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+    <span class="n">forecast_ses</span> <span class="o">=</span> <span class="n">ses</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span><span class="o">*</span><span class="n">seasonOut</span>
+    <span class="n">forecast_holt</span> <span class="o">=</span> <span class="n">holt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span><span class="o">*</span><span class="n">seasonOut</span>
+    <span class="n">forecast_damp</span> <span class="o">=</span> <span class="n">damp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span><span class="o">*</span><span class="n">seasonOut</span>
+    <span class="c1"># baseline constant weight ensembling</span>
+    <span class="n">forecast_comb</span> <span class="o">=</span> <span class="p">((</span><span class="n">forecast_ses</span> <span class="o">+</span> <span class="n">forecast_holt</span> <span class="o">+</span> <span class="n">forecast_damp</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">mase_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_naiveSeason</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_naive2</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_ses</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_holt</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_damp</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_comb</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                              <span class="p">]))</span>
+    <span class="n">smape_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_naiveSeason</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_naive2</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_ses</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_holt</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_damp</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">forecast_comb</span><span class="p">),</span>
+                               <span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b7fda80d505449e8a274f87600712dfb", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MASE; naiveSeason: </span><span class="si">{:.3f}</span><span class="s2">, naive2: </span><span class="si">{:.3f}</span><span class="s2">, 4Theta: </span><span class="si">{:.3f}</span><span class="s2">,</span><span class="se">\n</span><span class="s2">&quot;</span>
+       <span class="s2">&quot;SES: </span><span class="si">{:.3f}</span><span class="s2">, Holt: </span><span class="si">{:.3f}</span><span class="s2">, Damp: </span><span class="si">{:.3f}</span><span class="s2">, Comb: </span><span class="si">{:.3f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;sMAPE; naiveSeason: </span><span class="si">{:.3f}</span><span class="s2">, naive2: </span><span class="si">{:.3f}</span><span class="s2">, 4Theta: </span><span class="si">{:.3f}</span><span class="s2">,</span><span class="se">\n</span><span class="s2">&quot;</span>
+       <span class="s2">&quot;SES: </span><span class="si">{:.3f}</span><span class="s2">, Holt: </span><span class="si">{:.3f}</span><span class="s2">, Damp: </span><span class="si">{:.3f}</span><span class="s2">, Comb: </span><span class="si">{:.3f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">smape_all</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;OWA; naiveSeason: </span><span class="si">{:.3f}</span><span class="s2">, naive2: </span><span class="si">{:.3f}</span><span class="s2">, 4Theta: </span><span class="si">{:.3f}</span><span class="s2">,</span><span class="se">\n</span><span class="s2">&quot;</span>
+       <span class="s2">&quot;SES: </span><span class="si">{:.3f}</span><span class="s2">, Holt: </span><span class="si">{:.3f}</span><span class="s2">, Damp: </span><span class="si">{:.3f}</span><span class="s2">, Comb: </span><span class="si">{:.3f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">owa_m4</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span>
+                                                                        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">smape_all</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)),</span>
+                                                                        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">))))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MASE; naiveSeason: 1.193, naive2: 2.400, 4Theta: 1.768,
+SES: 2.373, Holt: 8.728, Damp: 2.938, Comb: 4.237
+
+sMAPE; naiveSeason: 13.912, naive2: 18.820, 4Theta: 17.510,
+SES: 18.216, Holt: 27.997, Damp: 19.194, Comb: 21.475
+
+OWA; naiveSeason: 0.628, naive2: 1.013, 4Theta: 0.845,
+SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_naiveSeason</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;naive seasonal&#39;</span><span class="p">)</span>
+<span class="n">forecast_naive2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;naive2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x17a812b07c8&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_18_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_18_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))[:,</span><span class="mi">3</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;4Theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,))[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;naiveSeason&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_19_0.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_19_0.png" />
+</div>
+</div>
+<p>Visualization</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Monthly&#39;</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">train_des</span><span class="o">=</span><span class="n">train</span>
+<span class="n">seasonOut</span> <span class="o">=</span> <span class="n">ct</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">start_ts</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span>
+<span class="n">season</span> <span class="o">=</span> <span class="n">ct</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">start_ts</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span>
+<span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">season</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+        <span class="n">train_des</span> <span class="o">=</span> <span class="n">remove_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+        <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">season</span><span class="p">[</span><span class="o">-</span><span class="n">m</span><span class="p">:]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">seasonOut</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seasonOut</span><span class="o">.</span><span class="n">values</span><span class="p">())[:</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="c1"># model selection</span>
+<span class="n">naiveSeason</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">naive2</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">prophet</span> <span class="o">=</span> <span class="n">Prophet</span><span class="p">(</span><span class="n">yearly_seasonality</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">changepoint_range</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+<span class="n">arima</span> <span class="o">=</span> <span class="n">AutoARIMA</span><span class="p">()</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="c1"># model fitting</span>
+<span class="n">naiveSeason</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">naive2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">prophet</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">arima</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="c1"># forecasting</span>
+<span class="n">forecast_naiveSeason</span> <span class="o">=</span> <span class="n">naiveSeason</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_naive2</span> <span class="o">=</span> <span class="n">naive2</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span> <span class="o">*</span> <span class="n">seasonOut</span>
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_arima</span> <span class="o">=</span> <span class="n">arima</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_prophet</span> <span class="o">=</span> <span class="n">prophet</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train</span><span class="p">[</span><span class="o">-</span><span class="n">m</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">forecast_naiveSeason</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;naiveS&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_naive2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;naive2&#39;</span><span class="p">)</span>
+<span class="n">forecast_arima</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;ARIMA&#39;</span><span class="p">)</span>
+<span class="n">forecast_prophet</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;prophet&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x17a82c29cc8&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_24_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_24_1.png" />
+</div>
+</div>
+<div class="section" id="4Theta">
+<h2>4Theta<a class="headerlink" href="#4Theta" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Yearly&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
+Theta MASE: 1.594
+4Theta MASE: 1.485
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_26_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_26_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Quarterly&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
+Theta MASE: 1.373
+4Theta MASE: 1.501
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_27_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_27_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Monthly&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.ADDITIVE)
+Theta MASE: 1.053
+4Theta MASE: 0.992
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_28_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_28_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Weekly&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
+Theta MASE: 10.147
+4Theta MASE: 9.599
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_29_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_29_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Daily&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
+Theta MASE: 2.055
+4Theta MASE: 2.049
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_30_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_30_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Hourly&#39;</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
+Theta MASE: 0.649
+4Theta MASE: 0.646
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_31_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_31_1.png" />
+</div>
+</div>
+<p>Now, let’s try to find a better theta, and a better frequency</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Weekly&#39;</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">_id</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">ts_train</span><span class="p">[</span><span class="n">_id</span><span class="p">][</span><span class="o">-</span><span class="mi">100</span><span class="p">:]</span>
+<span class="n">test</span> <span class="o">=</span> <span class="n">ts_test</span><span class="p">[</span><span class="n">_id</span><span class="p">]</span>
+<span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="n">m</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">theta</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fourtheta</span><span class="p">)</span>
+
+<span class="n">fourtheta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+
+<span class="n">forecast_fourtheta</span> <span class="o">=</span> <span class="n">fourtheta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="n">forecast_theta</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">forecast_fourtheta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;4theta&#39;</span><span class="p">)</span>
+<span class="n">forecast_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;classic theta&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">freq</span> <span class="o">+</span> <span class="s1">&#39; frequency&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_theta</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4Theta MASE: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">forecast_fourtheta</span><span class="p">))))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+4Theta(theta:10.0, curve:TrendMode.EXPONENTIAL, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.ADDITIVE)
+Theta MASE: 1.649
+4Theta MASE: 1.074
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_33_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_33_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="run-evaluation">
+<h2>run evaluation<a class="headerlink" href="#run-evaluation" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">run_baseline</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">run_baseline</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;evaluate_baselines.py&quot;
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">run_thetas</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">run_thetas</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;evaluate_theta_methods.py&quot;
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">run_fft</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">run_fft</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;evaluate_fft.py&quot;
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">run_arima</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">run_arima</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;evaluate_arima.py&quot;
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">run_prophet</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">run_prophet</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">run</span> -i &quot;evaluate_prophet.py&quot;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Ensembling">
+<h2>Ensembling<a class="headerlink" href="#Ensembling" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LassoCV</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">evaluate_ensembling</span> <span class="kn">import</span> <span class="n">naive2_groe</span><span class="p">,</span> <span class="n">groe_owa</span><span class="p">,</span> <span class="n">DeseasonForecastingModel</span>
+<span class="n">deseason_model</span> <span class="o">=</span> <span class="n">DeseasonForecastingModel</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">freq</span> <span class="o">=</span> <span class="s1">&#39;Monthly&#39;</span>
+<span class="n">ts_train</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/train_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">ts_test</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;dataset/test_&quot;</span><span class="o">+</span><span class="n">freq</span><span class="o">+</span><span class="s2">&quot;.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+
+<span class="n">mase_all</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">smape_all</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info_dataset</span><span class="o">.</span><span class="n">Frequency</span><span class="p">[</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;1&#39;</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">ts_train</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="n">ts_test</span><span class="p">[:</span><span class="mi">5</span><span class="p">])):</span>
+    <span class="c1"># remove seasonality</span>
+    <span class="n">train_des</span><span class="o">=</span><span class="n">train</span>
+    <span class="n">seasonOut</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">season</span> <span class="o">=</span> <span class="n">ct</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">freq_str</span><span class="p">(),</span> <span class="n">start_ts</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="p">):</span>
+            <span class="k">pass</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">season</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+            <span class="n">train_des</span> <span class="o">=</span> <span class="n">remove_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span>
+            <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">season</span><span class="p">[</span><span class="o">-</span><span class="n">m</span><span class="p">:]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="n">seasonOut</span> <span class="o">=</span> <span class="n">seasonOut</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">seasonOut</span><span class="o">.</span><span class="n">values</span><span class="p">())[:</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span>
+    <span class="c1"># model choice</span>
+    <span class="n">naiveSeason</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">naiveDrift</span> <span class="o">=</span> <span class="n">NaiveDrift</span><span class="p">()</span>
+    <span class="n">naive2</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ses</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">trend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seasonal_periods</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">holt</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">damped</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s1">&#39;additive&#39;</span><span class="p">,</span> <span class="n">seasonal_periods</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">damp</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">damped</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s1">&#39;additive&#39;</span><span class="p">,</span> <span class="n">seasonal_periods</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1"># prophet = Prophet(yearly_seasonality=True, weekly_seasonality=False, daily_seasonality=False)</span>
+
+    <span class="n">fourtheta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">select_best_model</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">thetas</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">season_mode</span><span class="o">=</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span> <span class="n">seasonality_period</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">models_simple</span> <span class="o">=</span> <span class="p">[</span><span class="n">naiveSeason</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">fourtheta</span><span class="p">]</span>
+    <span class="n">models_des</span> <span class="o">=</span> <span class="p">[</span><span class="n">naive2</span><span class="p">,</span> <span class="n">ses</span><span class="p">,</span> <span class="n">holt</span><span class="p">,</span> <span class="n">damp</span><span class="p">]</span>
+
+    <span class="c1"># linear regression (with constraints)</span>
+    <span class="k">def</span> <span class="nf">train_pred</span><span class="p">(</span><span class="n">id_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id_end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models_simple</span><span class="p">:</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="n">id_start</span><span class="p">:</span><span class="n">id_end</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models_des</span><span class="p">:</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">[</span><span class="n">id_start</span><span class="p">:</span><span class="n">id_end</span><span class="p">])</span>
+        <span class="n">models_simple_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+                                     <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models_simple</span><span class="p">]</span>
+        <span class="n">id_fin</span> <span class="o">=</span> <span class="n">id_end</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">id_fin</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">id_fin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">models_des_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">seasonOut</span> <span class="k">if</span> <span class="n">id_end</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">season</span><span class="p">[</span><span class="n">id_end</span><span class="p">:</span><span class="n">id_fin</span><span class="p">])</span>
+                                  <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models_des</span><span class="p">]</span>
+
+        <span class="n">model_predictions</span> <span class="o">=</span> <span class="n">models_simple_predictions</span> <span class="o">+</span> <span class="n">models_des_predictions</span>
+
+        <span class="k">return</span> <span class="n">model_predictions</span>
+
+    <span class="n">val_predictions</span> <span class="o">=</span> <span class="n">train_pred</span><span class="p">(</span><span class="n">id_end</span><span class="o">=-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+
+    <span class="n">regr_model</span> <span class="o">=</span> <span class="n">StandardRegressionModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">),</span>
+                                         <span class="n">model</span><span class="o">=</span><span class="n">LassoCV</span><span class="p">(</span><span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">5000</span><span class="p">))</span>
+    <span class="n">target_val</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">val_predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">regr_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">val_predictions</span><span class="p">,</span> <span class="n">target_val</span><span class="p">)</span>
+    <span class="n">bktest_pred</span> <span class="o">=</span> <span class="n">val_predictions</span>
+
+    <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">models_simple</span><span class="p">:</span>
+        <span class="n">mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">models_des</span><span class="p">:</span>
+        <span class="n">mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_des</span><span class="p">)</span>
+
+    <span class="n">models_simple_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+                                 <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">models_simple</span><span class="p">]</span>
+    <span class="n">models_des_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span> <span class="o">*</span> <span class="n">seasonOut</span>
+                              <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">models_des</span><span class="p">]</span>
+
+    <span class="n">model_predictions</span> <span class="o">=</span> <span class="n">models_simple_predictions</span> <span class="o">+</span> <span class="n">models_des_predictions</span>
+
+    <span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">)</span>
+
+    <span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">)</span>
+
+    <span class="c1"># Mean ensembling</span>
+    <span class="n">mean_pred</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">model_predictions</span><span class="p">:</span>
+        <span class="n">mean_pred</span> <span class="o">=</span> <span class="n">pred</span> <span class="o">+</span> <span class="n">mean_pred</span>
+    <span class="n">mean_pred</span> <span class="o">=</span> <span class="n">mean_pred</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">)</span>
+
+    <span class="c1">## GROE OWA</span>
+    <span class="n">criterion</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">naiveSeason</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">fourtheta</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">deseason_model</span><span class="p">(</span><span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">m</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">deseason_model</span><span class="p">(</span><span class="n">ses</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">deseason_model</span><span class="p">(</span><span class="n">holt</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">criterion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">groe_owa</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">deseason_model</span><span class="p">(</span><span class="n">damp</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">/</span><span class="mi">6</span><span class="p">)),</span> <span class="mi">6</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+
+    <span class="n">Score</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">criterion</span><span class="p">)</span>
+    <span class="n">pesos</span> <span class="o">=</span> <span class="n">Score</span><span class="o">/</span><span class="n">Score</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="n">groe_ensemble</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">,</span> <span class="n">pesos</span><span class="p">):</span>
+        <span class="n">groe_ensemble</span> <span class="o">=</span> <span class="n">prediction</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">groe_ensemble</span>
+
+    <span class="c1"># BO3 ensembling</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">Score</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">pesos2</span> <span class="o">=</span> <span class="n">Score</span><span class="p">[</span><span class="n">score</span><span class="p">]</span><span class="o">/</span><span class="n">Score</span><span class="p">[</span><span class="n">score</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="n">bo3_ensemble</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">bo3_mean</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">score</span><span class="p">):</span>
+            <span class="n">bo3_ensemble</span> <span class="o">=</span> <span class="n">model_predictions</span><span class="p">[</span><span class="n">model</span><span class="p">]</span><span class="o">*</span><span class="n">pesos2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">bo3_ensemble</span>
+            <span class="n">bo3_mean</span> <span class="o">=</span> <span class="n">model_predictions</span><span class="p">[</span><span class="n">model</span><span class="p">]</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">+</span> <span class="n">bo3_mean</span>
+
+    <span class="n">mase_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">models_des_predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">mean_pred</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">groe_ensemble</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">bo3_ensemble</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                               <span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">bo3_mean</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">),</span>
+                              <span class="p">]))</span>
+    <span class="n">smape_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">models_des_predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">mean_pred</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">groe_ensemble</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">bo3_ensemble</span><span class="p">),</span>
+                                <span class="n">smape_m4</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">bo3_mean</span><span class="p">),</span>
+                               <span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ceff6262b2a4050926d35051bd9ebde", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MASE; Naive2: </span><span class="si">{:.3f}</span><span class="s2">, Linear Regression: </span><span class="si">{:.3f}</span><span class="s2">, Mean ensembling: </span><span class="si">{:.3f}</span><span class="s2">, GROE ensembling: </span><span class="si">{:.3f}</span><span class="s2">, &quot;</span>
+      <span class="s2">&quot;BO3 ensembling: </span><span class="si">{:.3f}</span><span class="s2">, BO3 Mean: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;sMAPE; Naive2: </span><span class="si">{:.3f}</span><span class="s2">, Linear Regression: </span><span class="si">{:.3f}</span><span class="s2">, Mean ensembling: </span><span class="si">{:.3f}</span><span class="s2">, GROE ensembling: </span><span class="si">{:.3f}</span><span class="s2">, &quot;</span>
+      <span class="s2">&quot;BO3 ensembling: </span><span class="si">{:.3f}</span><span class="s2">, BO3 Mean: </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">smape_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MASE; Naive2: 1.098, Linear Regression: 1.068, Mean ensembling: 0.966, GROE ensembling: 0.973, BO3 ensembling: 1.003, BO3 Mean: 0.994
+sMAPE; Naive2: 8.974, Linear Regression: 8.678, Mean ensembling: 7.705, GROE ensembling: 7.830, BO3 ensembling: 8.160, BO3 Mean: 8.026
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;OWA: &quot;</span><span class="p">,</span> <span class="n">owa_m4</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span>
+                      <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">mase_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+                      <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">smape_all</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+OWA:  [4.25921273 4.11861286 3.65788532 3.71683597 3.87316115 3.80968261]
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Visualization">
+<h2>Visualization<a class="headerlink" href="#Visualization" title="Permalink to this headline">¶</a></h2>
+<p>Linear Regression (Lasso)</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;naiveS&#39;</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">,</span> <span class="s1">&#39;4theta&#39;</span><span class="p">,</span> <span class="s1">&#39;naive2&#39;</span><span class="p">,</span><span class="s1">&#39;SES&#39;</span><span class="p">,</span> <span class="s1">&#39;holt&#39;</span><span class="p">,</span> <span class="s1">&#39;damped&#39;</span><span class="p">]</span>
+<span class="n">target_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">bktest_pred</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mod</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bktest_pred</span><span class="p">):</span>
+    <span class="n">mod</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Validation MASE = </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">)],</span> <span class="n">train</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">):],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Validation MASE = 0.432&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_48_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_48_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([0.21215518, 0.63937082, 0.00330463, 0.14516937, 0.        ,
+       0.        , 0.        ])
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;naiveS&#39;</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">,</span> <span class="s1">&#39;4theta&#39;</span><span class="p">,</span> <span class="s1">&#39;naive2&#39;</span><span class="p">,</span><span class="s1">&#39;SES&#39;</span><span class="p">,</span> <span class="s1">&#39;holt&#39;</span><span class="p">,</span> <span class="s1">&#39;damped&#39;</span><span class="p">]</span>
+<span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">ensemble_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">mod</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">):</span>
+    <span class="n">mod</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Test MASE = </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;Test MASE = 0.421&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_50_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_50_1.png" />
+</div>
+</div>
+<p>GROE and other Ensembling</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">test</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">mean_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;mean ensemble&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">groe_ensemble</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;groe ensemble&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">bo3_mean</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;bo3 ensemble&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;MASE mean = </span><span class="si">{:.3f}</span><span class="s2">, GROE = </span><span class="si">{:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">mean_pred</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)),</span>
+                                                     <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mase_m4</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">groe_ensemble</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;MASE mean = 0.430, GROE = 0.496&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_52_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_52_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># GROE weights</span>
+<span class="n">pesos</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([0.00705447, 0.14044403, 0.05853393, 0.43958416, 0.05530406,
+       0.18642169, 0.11265765])
+</pre></div></div>
+</div>
+</div>
+</div>
+
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="../multivariate-examples.html" title="previous page">Multivariate Time Series</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>darts.utils.statistics &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../../../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../../../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
@@ -22,8 +41,8 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -139,16 +158,19 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelmax</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">seasonal_decompose</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span>
 
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">.missing_values</span> <span class="kn">import</span> <span class="n">auto_fillna</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -158,7 +180,7 @@
                       <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span>
                       <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns whether the TimeSeries `ts` is seasonal with period `m` or not.</span>
+<span class="sd">    Checks whether the TimeSeries `ts` is seasonal with period `m` or not.</span>
 
 <span class="sd">    If `m` is None, we work under the assumption that there is a unique seasonality period, which is inferred</span>
 <span class="sd">    from the Auto-correlation Function (ACF).</span>
@@ -196,24 +218,12 @@
 
     <span class="n">r</span> <span class="o">=</span> <span class="n">acf</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">nlags</span><span class="o">=</span><span class="n">max_lag</span><span class="p">,</span> <span class="n">fft</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># In case user wants to check for seasonality higher than 24 steps.</span>
 
-    <span class="n">gradient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-    <span class="n">gradient_signs_changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">gradient</span><span class="p">))</span>
+    <span class="c1"># Finds local maxima of Auto-Correlation Function</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="n">argrelmax</span><span class="p">(</span><span class="n">r</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="c1"># Tries to infer seasonality from Auto-Correlation Function if no value of m has been provided.</span>
-    <span class="c1"># We look for the first positive significant local maximum of the ACF by checking the sign changes</span>
-    <span class="c1"># in the gradient.</span>
-
-    <span class="c1"># Local maximum is indicated by signs_change == -2.</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">((</span><span class="n">gradient_signs_changes</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;The ACF has no local maximum for m &lt; max_lag = </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_lag</span><span class="p">))</span>
         <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span>
-
-    <span class="c1"># Building a list of candidates for local maximum.</span>
-    <span class="n">candidates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">((</span><span class="n">gradient_signs_changes</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-
-    <span class="c1"># If a -2 value appears in gradient_signs_changes at index i, then the local</span>
-    <span class="c1"># maximum of r occurs either at index i or i+1. We check manually and change the candidates accordingly.</span>
-    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># Check for local maximum when m is user defined.</span>
@@ -268,9 +278,10 @@
 
 <div class="viewcode-block" id="extract_trend_and_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.extract_trend_and_seasonality">[docs]</a><span class="k">def</span> <span class="nf">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
                                   <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                                  <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
+                                  <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span> <span class="o">-&gt;</span> \
+        <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.</span>
+<span class="sd">    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -279,7 +290,10 @@
 <span class="sd">    freq</span>
 <span class="sd">        The seasonality period to use.</span>
 <span class="sd">    model</span>
-<span class="sd">        The type of decomposition to use (&#39;additive&#39; or &#39;multiplicative&#39;).</span>
+<span class="sd">        The type of decomposition to use.</span>
+<span class="sd">        Must be `from darts import ModelMode, SeasonalityMode` Enum member.</span>
+<span class="sd">        Either MULTIPLICATIVE or ADDITIVE.</span>
+<span class="sd">        Defaults ModelMode.MULTIPLICATIVE.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -287,8 +301,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">model</span> <span class="ow">in</span> <span class="n">ModelMode</span> <span class="ow">or</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">SeasonalityMode</span><span class="p">,</span>
+                 <span class="s2">&quot;Unknown value for model_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span> <span class="s2">&quot;The model must be either MULTIPLICATIVE or ADDITIVE.&quot;</span><span class="p">)</span>
 
-    <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s1">&#39;freq&#39;</span><span class="p">)</span>
+    <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s1">&#39;freq&#39;</span><span class="p">)</span>
 
     <span class="n">season</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="p">)</span>
     <span class="n">trend</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">decomp</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span>
@@ -298,7 +315,7 @@
 
 <div class="viewcode-block" id="remove_from_series"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_from_series">[docs]</a><span class="k">def</span> <span class="nf">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
                        <span class="n">other</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                       <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+                       <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.</span>
 <span class="sd">    Use e.g. to remove an additive or multiplicative trend from a series.</span>
@@ -310,7 +327,9 @@
 <span class="sd">    other</span>
 <span class="sd">        The TimeSeries to remove.</span>
 <span class="sd">    model</span>
-<span class="sd">        The type of model considered (either &#39;additive&#39; or &#39;multiplicative&#39;).</span>
+<span class="sd">        The type of model considered.</span>
+<span class="sd">        Must be `from darts import ModelMode, SeasonalityMode` Enums member.</span>
+<span class="sd">        Either MULTIPLICATIVE or ADDITIVE.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -319,19 +338,21 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">model</span> <span class="ow">in</span> <span class="n">ModelMode</span> <span class="ow">or</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">SeasonalityMode</span><span class="p">,</span>
+                 <span class="s2">&quot;Unknown value for model_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">:</span>
         <span class="n">new_ts</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">/</span> <span class="n">other</span>
-    <span class="k">elif</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;additive&#39;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">model</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;additive&#39;</span><span class="p">:</span>
         <span class="n">new_ts</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">-</span> <span class="n">other</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid parameter; must be either &quot;additive&quot; or &quot;multiplicative&quot;. Was: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">)))</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
 
 <div class="viewcode-block" id="remove_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_seasonality">[docs]</a><span class="k">def</span> <span class="nf">remove_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
                        <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                       <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;multiplicative&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+                       <span class="n">model</span><span class="p">:</span> <span class="n">SeasonalityMode</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.</span>
 
@@ -342,14 +363,18 @@
 <span class="sd">    freq</span>
 <span class="sd">        The seasonality period to use.</span>
 <span class="sd">    model</span>
-<span class="sd">        The type of decomposition to use (&#39;additive&#39; or &#39;multiplicative&#39;).</span>
+<span class="sd">        The type of decomposition to use.</span>
+<span class="sd">        Must be a `from darts import SeasonalityMode` Enum member.</span>
+<span class="sd">        Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.</span>
+<span class="sd">        Defaults SeasonalityMode.MULTIPLICATIVE.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
-<span class="sd">        A new time series that is the adjusted original time series</span>
+<span class="sd">        A new TimeSeries instance that corresponds to the seasonality-adjusted &#39;ts&#39;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span> <span class="s2">&quot;The model must be either MULTIPLICATIVE or ADDITIVE.&quot;</span><span class="p">)</span>
 
     <span class="n">_</span><span class="p">,</span> <span class="n">seasonality</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">seasonality</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
@@ -357,7 +382,7 @@
 
 
 <div class="viewcode-block" id="remove_trend"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_trend">[docs]</a><span class="k">def</span> <span class="nf">remove_trend</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                 <span class="n">model</span><span class="o">=</span><span class="s1">&#39;multiplicative&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+                 <span class="n">model</span><span class="p">:</span> <span class="n">ModelMode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.</span>
 
@@ -366,11 +391,14 @@
 <span class="sd">    ts</span>
 <span class="sd">        The TimeSeries to adjust.</span>
 <span class="sd">    model</span>
-<span class="sd">        The type of decomposition to use (additive or multiplicative).</span>
+<span class="sd">        The type of decomposition to use.</span>
+<span class="sd">        Must be `from darts import ModelMode` Enum member.</span>
+<span class="sd">        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.</span>
+<span class="sd">        Defaults to modelMode.MULTIPLICATIVE.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
-<span class="sd">        A new time series that is the adjusted original time series</span>
+<span class="sd">        A new TimeSeries instance that corresponds to the trend-adjusted &#39;ts&#39;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
@@ -419,13 +447,71 @@
         <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)):</span>
-        <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;red&#39;</span> <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span> <span class="k">else</span> <span class="s1">&#39;black&#39;</span><span class="p">),</span> <span class="n">lw</span><span class="o">=.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                  <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;#b512b8&#39;</span> <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span> <span class="k">else</span> <span class="s1">&#39;black&#39;</span><span class="p">),</span>
+                  <span class="n">lw</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span> <span class="k">else</span> <span class="o">.</span><span class="mi">5</span><span class="p">))</span>
 
     <span class="n">upp_band</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">norm</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">var</span><span class="p">()</span>
     <span class="n">acf_band</span> <span class="o">=</span> <span class="p">[</span><span class="n">upp_band</span> <span class="o">*</span> <span class="n">stat</span> <span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">]</span>
 
-    <span class="n">axis</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">acf_band</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">acf_band</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">acf_band</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">acf_band</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#003DFD&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">25</span><span class="p">)</span>
     <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span><span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                            <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+                            <span class="n">fill_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Plots data relevant to residuals.</span>
+
+<span class="sd">    This function takes a univariate TimeSeries instance of residuals and plots their values,</span>
+<span class="sd">    their distribution and their ACF.</span>
+<span class="sd">    Please note that if the residual TimeSeries instance contains NaN values, the plots</span>
+<span class="sd">    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will</span>
+<span class="sd">    be interpolated.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    residuals</span>
+<span class="sd">        Univariate TimeSeries instance representing residuals.</span>
+<span class="sd">    num_bins</span>
+<span class="sd">        Optionally, an integer value determining the number of bins in the histogram.</span>
+<span class="sd">    fill_nan:</span>
+<span class="sd">        A boolean value indicating whether NaN values should be filled in the residuals.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">residuals</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">gs</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fill_nan</span><span class="p">:</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">auto_fillna</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span>
+
+    <span class="c1"># plot values</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[:</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">residuals</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Residual values&#39;</span><span class="p">)</span>
+
+    <span class="c1"># plot distribution</span>
+    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
+    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">norm</span><span class="p">(</span><span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span><span class="p">)</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">res_max</span> <span class="o">-</span> <span class="n">res_min</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Distribution&#39;</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;count&#39;</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+
+    <span class="c1"># plot ACF</span>
+    <span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plot_acf</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax3</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;ACF value&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;lag&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;ACF&#39;</span><span class="p">)</span></div>
 </pre></div>
 
               </div>
@@ -442,12 +528,15 @@
       </div>
     </div>
 
-    <script src="../../../_static/js/index.js"></script>
+    
+  <script src="../../../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

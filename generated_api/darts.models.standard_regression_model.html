@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Standard Regression model &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Temporal Convolutional Network" href="darts.models.tcn_model.html" />
     <link rel="prev" title="Recurrent Neural Networks" href="darts.models.rnn_model.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -228,7 +245,7 @@
 <h1>Standard Regression model<a class="headerlink" href="#standard-regression-model" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.models.standard_regression_model.StandardRegressionModel">
-<em class="property">class </em><code class="sig-prename descclassname">darts.models.standard_regression_model.</code><code class="sig-name descname">StandardRegressionModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_n_points</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">LinearRegression(fit_intercept=False, n_jobs=- 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.standard_regression_model.</code><code class="sig-name descname">StandardRegressionModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_n_points</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">LinearRegression(fit_intercept=False, n_jobs=- 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.regression_model.html#darts.models.regression_model.RegressionModel" title="darts.models.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.regression_model.RegressionModel</span></code></a></p>
 <p>Simple wrapper for regression models implementing a fit() predict() functions models
 (e.g., scikit-learn regression).</p>
@@ -295,12 +312,15 @@ Default: <cite>sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=Fa
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

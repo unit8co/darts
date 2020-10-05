@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Time Series Made Easy in Python &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="darts" href="generated_api/darts.html" />
     <link rel="prev" title="Time Series Made Easy in Python" href="index.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -164,15 +183,17 @@
             <a href="#installation-guide" class="nav-link">Installation Guide</a><ul class="nav section-nav flex-column">
                 
         <li class="nav-item toc-entry toc-h3">
-            <a href="#preconditions" class="nav-link">Preconditions</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
+            <a href="#preconditions" class="nav-link">Preconditions</a><ul class="nav section-nav flex-column">
+                
+        <li class="nav-item toc-entry toc-h4">
             <a href="#mac" class="nav-link">MAC</a>
         </li>
     
-        <li class="nav-item toc-entry toc-h3">
+        <li class="nav-item toc-entry toc-h4">
             <a href="#linux-and-windows" class="nav-link">Linux and Windows</a>
+        </li>
+    
+            </ul>
         </li>
     
         <li class="nav-item toc-entry toc-h3">
@@ -181,6 +202,14 @@
     
         <li class="nav-item toc-entry toc-h3">
             <a href="#running-the-examples-only-without-installing" class="nav-link">Running the examples only, without installing:</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#tests" class="nav-link">Tests</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#id2" class="nav-link">Documentation</a>
         </li>
     
             </ul>
@@ -213,14 +242,15 @@
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors.</p>
+and combine the predictions of several models and external regressors. Darts supports both
+univariate and multivariate time series and models.</p>
 <div class="section" id="install">
 <h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
 <p>We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
 <div class="section" id="quick-install">
 <h3>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h3>
-<p>Once your environement is setup you can install darts using the pip package:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">u8darts</span>
+<p>Once your environment is setup you can install darts using the pip package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">u8darts</span><span class="p">[</span><span class="nb">all</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -237,7 +267,7 @@ and combine the predictions of several models and external regressors.</p>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">))</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
 <blockquote>
@@ -254,8 +284,8 @@ and combine the predictions of several models and external regressors.</p>
 <p>Plot:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">)</span>
 </pre></div>
@@ -286,7 +316,7 @@ and combine the predictions of several models and external regressors.</p>
 from R2-scores to Mean Absolute Scaled Error.</p>
 <p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
 <p><strong>Regressive Models:</strong> Possibility to predict a time series from several other time series
-(e.g., external regressors), using arbitrary regressive models.</p>
+(e.g., external regressors), using arbitrary regressive models</p>
 <p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p>
 </div>
 <div class="section" id="contribute">
@@ -299,7 +329,27 @@ We welcome pull requests and issues on github.</p>
 <li><p>Fork the repository.</p></li>
 <li><p>Clone the forked repository locally.</p></li>
 <li><p>Create a clean python env and install requirements with pip: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements/main.txt</span> <span class="pre">-r</span> <span class="pre">requirements/dev.txt</span> <span class="pre">-r</span> <span class="pre">requirements/release.txt</span></code></p></li>
-<li><p>Create a new branch with your fix / feature from the <strong>develop</strong> branch.</p></li>
+<li><p>Create a new branch:</p>
+<ul class="simple">
+<li><p>Branch off from the <strong>develop</strong> branch.</p></li>
+<li><p>Prefix the branch with the type of update you are making:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fix/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">refactor/</span></code></p></li>
+<li><p>…</p></li>
+</ul>
+</li>
+<li><p>Work on your update</p></li>
+</ul>
+</li>
+<li><p>Check that your code pass the tests / design new unit tests: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">unittest</span></code>.</p></li>
+<li><p>Verify your tests coverage by running <code class="docutils literal notranslate"><span class="pre">./gradlew</span> <span class="pre">coverageTest</span></code></p>
+<ul class="simple">
+<li><p>Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with <code class="docutils literal notranslate"><span class="pre">./coverage.sh</span> <span class="pre">xml</span></code></p></li>
+</ul>
+</li>
+<li><p>If your contribution introduces a significant change, add it to <code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code> under the “Unreleased” section.</p></li>
 <li><p>Create a pull request from your new branch to the <strong>develop</strong> branch.</p></li>
 </ol>
 </div>
@@ -311,7 +361,7 @@ We welcome pull requests and issues on github.</p>
 <h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="preconditions">
 <h3>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this headline">¶</a></h3>
-<p>Our direct dependencies include <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code> which have non-Python dependencies.
+<p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
 <p>The following steps assume running inside a conda environment.
 If that’s not possible, first follow the official instructions to install
@@ -327,35 +377,62 @@ and <a class="reference external" href="https://pytorch.org/get-started/locally/
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-</div>
 <div class="section" id="mac">
-<h3>MAC<a class="headerlink" href="#mac" title="Permalink to this headline">¶</a></h3>
+<h4>MAC<a class="headerlink" href="#mac" title="Permalink to this headline">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="linux-and-windows">
-<h3>Linux and Windows<a class="headerlink" href="#linux-and-windows" title="Permalink to this headline">¶</a></h3>
+<h4>Linux and Windows<a class="headerlink" href="#linux-and-windows" title="Permalink to this headline">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
 </pre></div>
 </div>
 </div>
+</div>
 <div class="section" id="id1">
 <h3>Install darts<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">u8darts</span>
-</pre></div>
-</div>
+<p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts[all]</span></code>.</p>
+<p>As some models have relatively heavy (or non-Python) dependencies,
+we also provide the following alternate lighter install options:</p>
+<ul class="simple">
+<li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts</span></code></p></li>
+<li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts[torch]</span></code></p></li>
+<li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts[fbprophet]</span></code></p></li>
+<li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts[pmdarima]</span></code></p></li>
+</ul>
 </div>
 <div class="section" id="running-the-examples-only-without-installing">
 <h3>Running the examples only, without installing:<a class="headerlink" href="#running-the-examples-only-without-installing" title="Permalink to this headline">¶</a></h3>
 <p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">scripts</span>
-<span class="o">./</span><span class="n">build_docker</span><span class="o">.</span><span class="n">sh</span> <span class="o">&amp;&amp;</span> <span class="o">./</span><span class="n">run_docker</span><span class="o">.</span><span class="n">sh</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew docker <span class="o">&amp;&amp;</span> ./gradlew dockerRun
 </pre></div>
 </div>
 <p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
 <p>For this setup to work you need to have a Docker service installed. You can get it at <a class="reference external" href="https://docs.docker.com/get-docker/">Docker website</a>.</p>
+</div>
+<div class="section" id="tests">
+<h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
+<p>Gradle setup works best with python env, but it requires only that pip is for python3.</p>
+<p>To run all tests at once just run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew <span class="nb">test</span>
+</pre></div>
+</div>
+<p>alternatively you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew unitTest     <span class="c1"># to run only unittests</span>
+./gradlew coverageTest <span class="c1"># to run coverage</span>
+./gradlew lint         <span class="c1"># to run linter</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>Documentation<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>To build documantation locally just run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
+</pre></div>
+</div>
+<p>After that docs will be available in <code class="docutils literal notranslate"><span class="pre">./docs/build/html</span></code> directory. You can just open <code class="docutils literal notranslate"><span class="pre">./docs/build/html/index.html</span></code> using your favourite browser.</p>
 </div>
 </div>
 </div>
@@ -377,12 +454,15 @@ To run the example notebooks without installing our libraries natively on your m
       </div>
     </div>
 
-    <script src="_static/js/index.js"></script>
+    
+  <script src="_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

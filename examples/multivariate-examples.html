@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Multivariate Time Series &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -22,9 +41,10 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Download and create TimeSeries" href="M4_competition/M4_competition_benchmark.html" />
     <link rel="prev" title="Temporal Convolutional Network" href="TCN-examples.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -372,7 +392,18 @@ div.rendered_html tbody tr:hover {
 <h1>Multivariate Time Series<a class="headerlink" href="#Multivariate-Time-Series" title="Permalink to this headline">¶</a></h1>
 <p>In this notebook, we show examples of how multivariate time series can be created and used in darts.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -390,7 +421,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>Let’s start by creating two univariate TimeSeries instances and combining them to form a multivariate one using the TimeSeries.stack method.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -405,12 +436,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_3_0.png" src="../_images/examples_multivariate-examples_3_0.png" />
+<img alt="../_images/examples_multivariate-examples_4_0.png" src="../_images/examples_multivariate-examples_4_0.png" />
 </div>
 </div>
 <p>Any individual ‘component’ of a multivariate TimeSeries instance can be retrieved using the TimeSeries.univariate_component method which takes a 0-indexed integer as an argument.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -422,12 +453,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_5_0.png" src="../_images/examples_multivariate-examples_5_0.png" />
+<img alt="../_images/examples_multivariate-examples_6_0.png" src="../_images/examples_multivariate-examples_6_0.png" />
 </div>
 </div>
 <p>In the following we will use real-world univariate data and see how we can expand upon it by creating multivariate TimeSeries objects.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -442,12 +473,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_7_0.png" src="../_images/examples_multivariate-examples_7_0.png" />
+<img alt="../_images/examples_multivariate-examples_8_0.png" src="../_images/examples_multivariate-examples_8_0.png" />
 </div>
 </div>
 <p>Any univariate or multivariate TimeSeries instance can easily be augmented by additional components that are based on the datetime index. Any integer-valued attribute of pd.DatetimeIndex can be added, such as the number of the month, as shown below. Before plotting, the data is normalized so that all features are on the same scale.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -460,12 +491,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_9_0.png" src="../_images/examples_multivariate-examples_9_0.png" />
+<img alt="../_images/examples_multivariate-examples_10_0.png" src="../_images/examples_multivariate-examples_10_0.png" />
 </div>
 </div>
 <p>Similarly, we can add a binary time series which indicates whether the current point on the time index represents a holiday in a specific country. Since the above time series is monthly, we shall use the artificial time series from before as an example.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -478,12 +509,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_11_0.png" src="../_images/examples_multivariate-examples_11_0.png" />
+<img alt="../_images/examples_multivariate-examples_12_0.png" src="../_images/examples_multivariate-examples_12_0.png" />
 </div>
 </div>
 <p>Now, how can we make use of such augmentations of TimeSeries instances? To see where it can help, let’s look at the performance of a TCN forecasting model on the above air passengers data set. First let’s fit the TCN model on the univariate series for 200 epochs and predict 13 steps into the future.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -496,18 +527,19 @@ div.rendered_html tbody tr:hover {
 
 <span class="c1"># Create TCNModel instance</span>
 <span class="n">my_model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
-    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">input_length</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
     <span class="n">output_length</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
     <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
     <span class="n">dilation_base</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">weight_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">kernel_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">num_filters</span><span class="o">=</span><span class="mi">3</span>
+    <span class="n">num_filters</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
 
 <span class="c1"># Fit model</span>
-<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">val_training_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Evaluate model</span>
 <span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
@@ -515,7 +547,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
     <span class="n">ts_transformed</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
     <span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;R2: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r2_score</span><span class="p">(</span><span class="n">pred_series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">val_transformed</span><span class="p">),</span> <span class="n">val_transformed</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="mi">0</span><span class="p">))))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;R2: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r2_score</span><span class="p">(</span><span class="n">val_transformed</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">val_transformed</span><span class="p">))))</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 <span class="n">eval_model</span><span class="p">(</span><span class="n">my_model</span><span class="p">)</span>
 </pre></div>
@@ -526,45 +558,34 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-06-16 15:16:32,544] INFO | u8timeseries.models.tcn_model | Number of layers chosen: 2
+[2020-09-28 09:15:59,266] INFO | darts.models.tcn_model | Number of layers chosen: 2
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fe0811ee274140e88043db8711ae8422", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/torch/storage.py:34: FutureWarning:
-
-pickle support for Storage will be removed in 1.5. Use `torch.save` instead
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b3f299ab1a114ffd92d2eaaee2a15818", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0255, validation loss: 0.0693
+Training loss: 0.0228, validation loss: 0.0610
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_13_4.png" src="../_images/examples_multivariate-examples_13_4.png" />
+<img alt="../_images/examples_multivariate-examples_14_3.png" src="../_images/examples_multivariate-examples_14_3.png" />
 </div>
 </div>
 <p>Limited to 20 epochs, we do not get a very good performance. Let’s try the same thing but with an enhanced series that contains information about the month. Here, we also pass the second positional argument to the ‘add_datetime_attribute’ method which refers to whether the datetime attribute should be encoded in a one-hot fashion or not. Note that for predictions of multivariate TimeSeries instances, the maximum number of steps that can be predicted into the future is equal to
 TorchForecastingModel.output_length.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -579,18 +600,25 @@ TorchForecastingModel.output_length.</p>
 <span class="c1"># Create TCNModel instance</span>
 <span class="n">my_model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
     <span class="n">input_size</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
-    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">input_length</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
     <span class="n">output_length</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
     <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
     <span class="n">dilation_base</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">weight_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">kernel_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">num_filters</span><span class="o">=</span><span class="mi">3</span>
+    <span class="n">num_filters</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
 
 <span class="c1"># Fit model</span>
-<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">,</span> <span class="n">target_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">target_series</span><span class="o">=</span><span class="n">train_transformed</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span>
+    <span class="n">training_series</span><span class="o">=</span><span class="n">train_transformed</span><span class="p">,</span>
+    <span class="n">val_target_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span>
+    <span class="n">val_training_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 
 <span class="c1">#Evaluate model</span>
 <span class="n">eval_model</span><span class="p">(</span><span class="n">my_model</span><span class="p">)</span>
@@ -602,42 +630,31 @@ TorchForecastingModel.output_length.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-06-16 15:16:40,476] INFO | u8timeseries.models.tcn_model | Number of layers chosen: 2
+[2020-09-28 09:16:05,973] INFO | darts.models.tcn_model | Number of layers chosen: 2
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3cc52bfa457041d68b019e233eca273f", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/torch/storage.py:34: FutureWarning:
-
-pickle support for Storage will be removed in 1.5. Use `torch.save` instead
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "499f0aba4c6a42489a37848e6794738f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0189, validation loss: 0.0360
+Training loss: 0.0159, validation loss: 0.0428
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_15_4.png" src="../_images/examples_multivariate-examples_15_4.png" />
+<img alt="../_images/examples_multivariate-examples_16_3.png" src="../_images/examples_multivariate-examples_16_3.png" />
 </div>
 </div>
-<p>We can see that with this limited number of training epochs, we get a significantly better performance out of the model that uses the multivariate series as input.</p>
+<p>We can see that with this limited number of training epochs, we get a better performance out of the model that uses the multivariate series as input.</p>
 </div>
 
 
@@ -647,6 +664,7 @@ Training loss: 0.0189, validation loss: 0.0360
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="TCN-examples.html" title="previous page">Temporal Convolutional Network</a>
+    <a class='right-next' id="next-link" href="M4_competition/M4_competition_benchmark.html" title="next page">Download and create TimeSeries</a>
 
               </div>
               
@@ -656,12 +674,15 @@ Training loss: 0.0189, validation loss: 0.0360
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

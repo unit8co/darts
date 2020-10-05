@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Recurrent Neural Networks &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Standard Regression model" href="darts.models.standard_regression_model.html" />
     <link rel="prev" title="Regression Model Base Class" href="darts.models.regression_model.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -228,31 +245,8 @@
 <h1>Recurrent Neural Networks<a class="headerlink" href="#recurrent-neural-networks" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.models.rnn_model.RNNModel">
-<em class="property">class </em><code class="sig-prename descclassname">darts.models.rnn_model.</code><code class="sig-name descname">RNNModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>torch.nn.modules.module.Module<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'RNN'</span></em>, <em class="sig-param"><span class="n">input_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">output_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">output_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">hidden_size</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">25</span></em>, <em class="sig-param"><span class="n">n_rnn_layers</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">hidden_fc_sizes</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dropout</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/rnn_model.html#RNNModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.rnn_model.RNNModel" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.rnn_model.</code><code class="sig-name descname">RNNModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/rnn_model.html#RNNModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.rnn_model.RNNModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.torch_forecasting_model.TorchForecastingModel</span></code></a></p>
-<p>Recurrent Neural Network Model (RNNs).</p>
-<p>This class provides three variants of RNNs:</p>
-<ul class="simple">
-<li><p>Vanilla RNN</p></li>
-<li><p>LSTM</p></li>
-<li><p>GRU</p></li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> – Either a string specifying the RNN module type (“RNN”, “LSTM” or “GRU”),
-or a PyTorch module with the same specifications as
-<cite>darts.models.rnn_model.RNNModule</cite>.</p></li>
-<li><p><strong>input_size</strong> – The dimensionality of the TimeSeries instances that will be fed to the fit function.</p></li>
-<li><p><strong>output_size</strong> – The dimensionality of the output time series.</p></li>
-<li><p><strong>output_length</strong> – Number of time steps to be output by the forecasting module.</p></li>
-<li><p><strong>hidden_size</strong> – Size for feature maps for each hidden RNN layer (<span class="math notranslate nohighlight">\(h_n\)</span>).</p></li>
-<li><p><strong>n_rnn_layers</strong> – Number of layers in the RNN module.</p></li>
-<li><p><strong>hidden_fc_sizes</strong> – Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.</p></li>
-<li><p><strong>dropout</strong> – Fraction of neurons afected by Dropout.</p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 </div>
@@ -274,12 +268,15 @@ or a PyTorch module with the same specifications as
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

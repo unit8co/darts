@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARIMA and Auto-ARIMA &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARIMA &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -22,10 +41,10 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Baseline Models" href="darts.models.baselines.html" />
+    <link rel="next" title="Auto-ARIMA" href="darts.models.auto_arima.html" />
     <link rel="prev" title="Models" href="darts.models.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="active">
-                          <a href="">ARIMA and Auto-ARIMA</a>
+                          <a href="">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -224,11 +241,10 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.arima"></span><div class="section" id="arima-and-auto-arima">
-<h1>ARIMA and Auto-ARIMA<a class="headerlink" href="#arima-and-auto-arima" title="Permalink to this headline">¶</a></h1>
-<p>Models for ARIMA (Autoregressive integrated moving average) and auto-ARIMA <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.
-The implementations are wrapped around <a class="reference external" href="https://github.com/statsmodels/statsmodels">statsmodels</a>
-and <a class="reference external" href="https://github.com/alkaline-ml/pmdarima">pmdarima</a>.</p>
+  <span class="target" id="module-darts.models.arima"></span><div class="section" id="arima">
+<h1>ARIMA<a class="headerlink" href="#arima" title="Permalink to this headline">¶</a></h1>
+<p>Models for ARIMA (Autoregressive integrated moving average) <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.
+The implementations is wrapped around <a class="reference external" href="https://github.com/statsmodels/statsmodels">statsmodels</a>.</p>
 <p class="rubric">References</p>
 <dl class="footnote brackets">
 <dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
@@ -250,15 +266,12 @@ and <a class="reference external" href="https://github.com/alkaline-ml/pmdarima"
 </dl>
 <dl class="py method">
 <dt id="darts.models.arima.ARIMA.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">component_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/arima.html#ARIMA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.arima.ARIMA.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/arima.html#ARIMA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.arima.ARIMA.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the univariate model on selected univariate series.</p>
+<p>Implements behavior specific to calling the <cite>fit</cite> method on <cite>UnivariateForecastingModel</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
-<li><p><strong>component_index</strong> – Optionally, a zero-indexed integer indicating the component to use if a multivariate
-time series is passed.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>series</strong> – A <strong>univariate</strong> timeseries on which to fit the model.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -289,67 +302,6 @@ This function/property should be overridden if a value higher than 3 is required
 
 </dd></dl>
 
-<dl class="py class">
-<dt id="darts.models.arima.AutoARIMA">
-<em class="property">class </em><code class="sig-prename descclassname">darts.models.arima.</code><code class="sig-name descname">AutoARIMA</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">autoarima_args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">autoarima_kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/arima.html#AutoARIMA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.arima.AutoARIMA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.UnivariateForecastingModel" title="darts.models.forecasting_model.UnivariateForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting_model.UnivariateForecastingModel</span></code></a></p>
-<p>Auto-ARIMA</p>
-<p>This implementation is a thin wrapper around
-<a class="reference external" href="https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html">pmdarima AutoARIMA model</a>,
-which provides functionality similar
-to R’s <a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/7.3/topics/auto.arima">auto.arima</a>.</p>
-<p>This model supports the same parameters as the pmdarima AutoARIMA model.
-See <a class="reference external" href="https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html">pmdarima documentation</a>
-for an extensive documentation and a list of supported parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>autoarima_args</strong> – Positional arguments for the pmdarima AutoARIMA model</p></li>
-<li><p><strong>autoarima_kwargs</strong> – Keyword arguments for the pmdarima AutoARIMA model</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="darts.models.arima.AutoARIMA.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">component_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/arima.html#AutoARIMA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.arima.AutoARIMA.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits/trains the univariate model on selected univariate series.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
-<li><p><strong>component_index</strong> – Optionally, a zero-indexed integer indicating the component to use if a multivariate
-time series is passed.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.models.arima.AutoARIMA.min_train_series_length">
-<em class="property">property </em><code class="sig-name descname">min_train_series_length</code><a class="headerlink" href="#darts.models.arima.AutoARIMA.min_train_series_length" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class property defining the minimum required length for the training series.
-This function/property should be overridden if a value higher than 3 is required.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.models.arima.AutoARIMA.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/arima.html#AutoARIMA.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.arima.AutoARIMA.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predicts values for a certain number of time steps after the end of the training series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>n</strong> – The number of time steps after the end of the training time series for which to produce predictions</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A time series containing the <cite>n</cite> next points, starting after the end of the training time series</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
@@ -359,7 +311,7 @@ This function/property should be overridden if a value higher than 3 is required
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.models.html" title="previous page">Models</a>
-    <a class='right-next' id="next-link" href="darts.models.baselines.html" title="next page">Baseline Models</a>
+    <a class='right-next' id="next-link" href="darts.models.auto_arima.html" title="next page">Auto-ARIMA</a>
 
               </div>
               
@@ -369,12 +321,15 @@ This function/property should be overridden if a value higher than 3 is required
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fast Fourier Transform &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Forecasting Model Base Class" href="darts.models.forecasting_model.html" />
     <link rel="prev" title="Exponential Smoothing" href="darts.models.exponential_smoothing.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -259,15 +276,12 @@ Possible values: <cite>poly</cite> or <cite>exp</cite>, for polynomial trend, or
 </dl>
 <dl class="py method">
 <dt id="darts.models.fft.FFT.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">component_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/fft.html#FFT.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.fft.FFT.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/fft.html#FFT.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.fft.FFT.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the univariate model on selected univariate series.</p>
+<p>Implements behavior specific to calling the <cite>fit</cite> method on <cite>UnivariateForecastingModel</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
-<li><p><strong>component_index</strong> – Optionally, a zero-indexed integer indicating the component to use if a multivariate
-time series is passed.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>series</strong> – A <strong>univariate</strong> timeseries on which to fit the model.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -310,12 +324,15 @@ time series is passed.</p></li>
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

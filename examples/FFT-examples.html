@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fast Fourier Transform Forecasting Model (FFT) &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Recurrent Neural Networks Models" href="RNN-examples.html" />
     <link rel="prev" title="Introduction to darts" href="darts-intro.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -408,6 +427,17 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
@@ -438,7 +468,7 @@ div.rendered_html tbody tr:hover {
 <h2>Read and format<a class="headerlink" href="#Read-and-format" title="Permalink to this headline">¶</a></h2>
 <p>Here we simply read the CSV file containing daily temperatures, and transform the values into the desired format.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -451,7 +481,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Constructing-TimeSeries-instances-for-training-and-validation">
 <h2>Constructing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances for training and validation<a class="headerlink" href="#Constructing-TimeSeries-instances-for-training-and-validation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -466,14 +496,14 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_5_0.png" src="../_images/examples_FFT-examples_5_0.png" />
+<img alt="../_images/examples_FFT-examples_6_0.png" src="../_images/examples_FFT-examples_6_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="Basic-FFT-model">
 <h2>Basic FFT model<a class="headerlink" href="#Basic-FFT-model" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -485,7 +515,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>The plot below shows us that a simple DFT with a random train-test split will most likely lead to bad results. Upon closer inspection we can see that the prediction (in green) simply repeats the training set (blue). This is the standard behavior of the DFT, and by itself it is quite useless, since repeating our training set could be done much more efficiently. Three improvements were made to this approach.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -508,7 +538,7 @@ MAPE: 416130884490747.6
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_9_1.png" src="../_images/examples_FFT-examples_9_1.png" />
+<img alt="../_images/examples_FFT-examples_10_1.png" src="../_images/examples_FFT-examples_10_1.png" />
 </div>
 </div>
 </div>
@@ -517,7 +547,7 @@ MAPE: 416130884490747.6
 <p>The first improvement consists of cropping the training set before feeding it to the FFT algorithm such that the first timestamp in the cropped series matches the first timestamp to be predicted in terms of seasonality, i.e. it has the same month, day, weekday, time of day, etc. We can achieve this by passing the optional argument ‘required_matches’ to the FFT constructor that explicitly tells our model which timestamp attributes are relevant. If we don’t set it manually, the model will attempt
 to automatically find the pd.Timestamp attributes that are relevant and crop the training set accordingly (which we will do here).</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -529,7 +559,7 @@ to automatically find the pd.Timestamp attributes that are relevant and crop the
 </div>
 <p>We can see that the results look like the seasonality of the predictions nicely aligns with the seasonality of the validation set. However, we are still just repeating the training set, including all of the noise. Looking at the error we can see that this is still a pretty bad forecast.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -552,7 +582,7 @@ MAPE: 300841486646235.06
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_13_1.png" src="../_images/examples_FFT-examples_13_1.png" />
+<img alt="../_images/examples_FFT-examples_14_1.png" src="../_images/examples_FFT-examples_14_1.png" />
 </div>
 </div>
 </div>
@@ -561,7 +591,7 @@ MAPE: 300841486646235.06
 <p>The decomposition of the DFT into the frequency domain allows us to selectively filter out waves with low amplitudes. This allows us to keep strong seasonal trends while discarding some noise. This is achieved in the FFT model by passing the optional argument <code class="docutils literal notranslate"><span class="pre">nr_freqs_to_keep</span></code>. This argument represents the total number of frequencies that will be kept. For instance, if a value of 20 is passed, only the 20 frequencies with the highest amplitudes will be utilized. The default value is set to
 10.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -573,7 +603,7 @@ MAPE: 300841486646235.06
 </div>
 <p>We get a signal that is less noisy. Depending on the data set, this might be a better forecast. Looking at the error metric, we can see that this model performs significantly better than the previous models.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -596,7 +626,7 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_17_1.png" src="../_images/examples_FFT-examples_17_1.png" />
+<img alt="../_images/examples_FFT-examples_18_1.png" src="../_images/examples_FFT-examples_18_1.png" />
 </div>
 </div>
 </div>
@@ -604,7 +634,7 @@ MAPE: 23.280281955513267
 <h2>Improvement 3: Detrending<a class="headerlink" href="#Improvement-3:-Detrending" title="Permalink to this headline">¶</a></h2>
 <p>Let’s try out a different data set that has a global upward trend</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -620,11 +650,11 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_19_0.png" src="../_images/examples_FFT-examples_19_0.png" />
+<img alt="../_images/examples_FFT-examples_20_0.png" src="../_images/examples_FFT-examples_20_0.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -636,7 +666,7 @@ MAPE: 23.280281955513267
 </div>
 <p>Clearly, our model fails completely at incorporating the upward trend. Due to the trend, our model also fails to recognize the monthly seasonality.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -650,12 +680,12 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_22_0.png" src="../_images/examples_FFT-examples_22_0.png" />
+<img alt="../_images/examples_FFT-examples_23_0.png" src="../_images/examples_FFT-examples_23_0.png" />
 </div>
 </div>
 <p>This problem can be solved by setting the optional trend argument to either ‘poly’ or ‘exp’, which fits a polynomial or exponential funtion to the data and subtracts it before moving on to DFT. When predicting, the trend is added again.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -667,7 +697,7 @@ MAPE: 23.280281955513267
 </div>
 <p>We have a much better prediction now.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -681,14 +711,14 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_26_0.png" src="../_images/examples_FFT-examples_26_0.png" />
+<img alt="../_images/examples_FFT-examples_27_0.png" src="../_images/examples_FFT-examples_27_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="New-Data:-Hourly-Nuclear-Energy-Generation">
 <h2>New Data: Hourly Nuclear Energy Generation<a class="headerlink" href="#New-Data:-Hourly-Nuclear-Energy-Generation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -708,13 +738,13 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_28_0.png" src="../_images/examples_FFT-examples_28_0.png" />
+<img alt="../_images/examples_FFT-examples_29_0.png" src="../_images/examples_FFT-examples_29_0.png" />
 </div>
 </div>
 <p>Instead of simply looking at the performance of the FFT model, we can also look at how a bunch of other forecasting models performs on this new data set in terms of MAPE. Surprisingly, on this dataset, the FFT model outperforms all of the others (at least with their default parameters). Granted, this dataset was specifically chosen because of its highly seasonal nature. However, this shows us that there definitely are use cases for FFT. Furthermore, the FFT model has a much shorter running time
 than the other models!</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -740,9 +770,9 @@ than the other models!</p>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Auto-ARIMA MAPE: 13.46753956256134
-Prophet MAPE: 11.053879954857958
-Exponential smoothing MAPE: 14.238901011612546
-Theta(0) MAPE: 13.329984933095309
+Prophet MAPE: 10.722027903040756
+Exponential smoothing MAPE: 14.234363362846892
+Theta(2) MAPE: 13.329984933305795
 FFT(nr_freqs_to_keep=10, trend=None) MAPE: 10.263184839655274
 </pre></div></div>
 </div>
@@ -766,12 +796,15 @@ FFT(nr_freqs_to_keep=10, trend=None) MAPE: 10.263184839655274
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

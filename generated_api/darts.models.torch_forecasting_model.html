@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Torch Forecasting Model &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Preprocessing" href="darts.preprocessing.html" />
     <link rel="prev" title="Theta Method" href="darts.models.theta.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -255,7 +272,7 @@ to using a constant learning rate.</p></li>
 <li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
 (default: current working directory).</p></li>
 <li><p><strong>log_tensorboard</strong> – If set, use Tensorboard to log the different parameters. The logs will be located in:
-<cite>[work_dir]/.u8timeseries/runs/</cite>.</p></li>
+<cite>[work_dir]/.darts/runs/</cite>.</p></li>
 <li><p><strong>nr_epochs_val_period</strong> – Number of epochs to wait before evaluating the validation loss (if a validation
 <cite>TimeSeries</cite> is passed to the <cite>fit()</cite> method).</p></li>
 <li><p><strong>torch_device_str</strong> – Optionally, a string indicating the torch device to use. (default: “cuda:0” if a GPU
@@ -264,11 +281,6 @@ is available, otherwise “cpu”)</p></li>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="darts.models.torch_forecasting_model.TorchForecastingModel.create_dataset">
-<code class="sig-name descname">create_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/torch_forecasting_model.html#TorchForecastingModel.create_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.create_dataset" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
 <dt id="darts.models.torch_forecasting_model.TorchForecastingModel.first_prediction_index">
 <em class="property">property </em><code class="sig-name descname">first_prediction_index</code><a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.first_prediction_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the index of the first predicted within the output of self.model.</p>
@@ -276,17 +288,13 @@ is available, otherwise “cpu”)</p></li>
 
 <dl class="py method">
 <dt id="darts.models.torch_forecasting_model.TorchForecastingModel.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">val_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">target_indices</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/torch_forecasting_model.html#TorchForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit method for torch modules</p>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; T<a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the multivariate model on the provided series with selected target components.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series</p></li>
-<li><p><strong>val_series</strong> – Optionally, a validation time series, which will be used to compute the validation loss
-throughout training and keep track of the best performing models.</p></li>
-<li><p><strong>verbose</strong> – Optionally, whether to print progress.</p></li>
-<li><p><strong>target_indices</strong> – A list of integers indicating which component(s) of the time series should be used
-as targets for forecasting.</p></li>
+<li><p><strong>training_series</strong> – The training time series on which to fit the model (can be multivariate or univariate).</p></li>
+<li><p><strong>target_series</strong> – The target values used as dependent variables when training the model</p></li>
 </ul>
 </dd>
 </dl>
@@ -317,7 +325,7 @@ if file is not given, will try to restore the most recent checkpoint.</p>
 
 <dl class="py method">
 <dt id="darts.models.torch_forecasting_model.TorchForecastingModel.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">use_full_output_length</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/torch_forecasting_model.html#TorchForecastingModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">use_full_output_length</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">input_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/torch_forecasting_model.html#TorchForecastingModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.torch_forecasting_model.TorchForecastingModel.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts values for a certain number of time steps after the end of the training series</p>
 <p>In the case of univariate training series, <cite>n</cite> can assume any integer value greater than 0.
 If <cite>use_full_output_length</cite> is set to <cite>False</cite>, the model will perform <cite>n</cite> predictions, where in each iteration
@@ -337,6 +345,8 @@ has to be set to <cite>True</cite>. In this case, only one iteration of predicti
 <li><p><strong>n</strong> – The number of time steps after the end of the training time series for which to produce predictions</p></li>
 <li><p><strong>use_full_output_length</strong> – Boolean value indicating whether or not the full output sequence of the model prediction should be
 used to produce the output of this function.</p></li>
+<li><p><strong>input_series</strong> – Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
+prediction. If it is not passed, the training TimeSeries instance will be used as input.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -369,12 +379,15 @@ used to produce the output of this function.</p></li>
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

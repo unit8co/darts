@@ -10,6 +10,7 @@
         
         
         darts.models.arima
+        darts.models.auto_arima
         darts.models.baselines
         darts.models.exponential_smoothing
         darts.models.fft

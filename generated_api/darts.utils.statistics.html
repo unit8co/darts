@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Utils for time series statistics &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Utils for time series generation" href="darts.utils.timeseries_generation.html" />
     <link rel="prev" title="Utils for filling missing values" href="darts.utils.missing_values.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -146,6 +159,10 @@
                   
                       <li class="">
                           <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.utils.torch.html">Utils for Pytorch and its usage</a>
                       </li>
                   
                       <li class="">
@@ -197,7 +214,7 @@
 <dl class="py function">
 <dt id="darts.utils.statistics.check_seasonality">
 <code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">check_seasonality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">m</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_lag</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">24</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.05</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#check_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p>
+<dd><p>Checks whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p>
 <p>If <cite>m</cite> is None, we work under the assumption that there is a unique seasonality period, which is inferred
 from the Auto-correlation Function (ACF).</p>
 <dl class="field-list simple">
@@ -221,14 +238,17 @@ and <cite>m</cite> is the seasonality period.</p>
 
 <dl class="py function">
 <dt id="darts.utils.statistics.extract_trend_and_seasonality">
-<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">extract_trend_and_seasonality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'multiplicative'</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts trend and seasonality from a time series using <cite>statsmodels.seasonal_decompose</cite>.</p>
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">extract_trend_and_seasonality</code><span class="sig-paren">(</span><em class="sig-param">ts: darts.timeseries.TimeSeries</em>, <em class="sig-param">freq: int = None</em>, <em class="sig-param">model: Union[darts.SeasonalityMode</em>, <em class="sig-param">darts.ModelMode] = &lt;ModelMode.MULTIPLICATIVE: 'multiplicative'&gt;</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts trend and seasonality from a TimeSeries instance using <cite>statsmodels.seasonal_decompose</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> – The series to decompose</p></li>
 <li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (‘additive’ or ‘multiplicative’).</p></li>
+<li><p><strong>model</strong> – The type of decomposition to use.
+Must be <cite>from darts import ModelMode, SeasonalityMode</cite> Enum member.
+Either MULTIPLICATIVE or ADDITIVE.
+Defaults ModelMode.MULTIPLICATIVE.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -259,8 +279,28 @@ and <cite>m</cite> is the seasonality period.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="darts.utils.statistics.plot_residuals_analysis">
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">plot_residuals_analysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">residuals</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">num_bins</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">20</span></em>, <em class="sig-param"><span class="n">fill_nan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots data relevant to residuals.</p>
+<p>This function takes a univariate TimeSeries instance of residuals and plots their values,
+their distribution and their ACF.
+Please note that if the residual TimeSeries instance contains NaN values, the plots
+might be displayed incorrectly. If <cite>fill_nan</cite> is set to True, the missing values will
+be interpolated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>residuals</strong> – Univariate TimeSeries instance representing residuals.</p></li>
+<li><p><strong>num_bins</strong> – Optionally, an integer value determining the number of bins in the histogram.</p></li>
+<li><p><strong>fill_nan</strong> – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="darts.utils.statistics.remove_from_series">
-<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">other</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.html#darts.SeasonalityMode" title="darts.SeasonalityMode">darts.SeasonalityMode</a><span class="p">, </span><a class="reference internal" href="darts.html#darts.ModelMode" title="darts.ModelMode">darts.ModelMode</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes the TimeSeries <cite>other</cite> from the TimeSeries <cite>ts</cite> as specified by <cite>model</cite>.
 Use e.g. to remove an additive or multiplicative trend from a series.</p>
 <dl class="field-list simple">
@@ -268,7 +308,9 @@ Use e.g. to remove an additive or multiplicative trend from a series.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> – The TimeSeries to be modified.</p></li>
 <li><p><strong>other</strong> – The TimeSeries to remove.</p></li>
-<li><p><strong>model</strong> – The type of model considered (either ‘additive’ or ‘multiplicative’).</p></li>
+<li><p><strong>model</strong> – The type of model considered.
+Must be <cite>from darts import ModelMode, SeasonalityMode</cite> Enums member.
+Either MULTIPLICATIVE or ADDITIVE.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -282,18 +324,21 @@ Use e.g. to remove an additive or multiplicative trend from a series.</p>
 
 <dl class="py function">
 <dt id="darts.utils.statistics.remove_seasonality">
-<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_seasonality</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'multiplicative'</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_seasonality</code><span class="sig-paren">(</span><em class="sig-param">ts: darts.timeseries.TimeSeries</em>, <em class="sig-param">freq: int = None</em>, <em class="sig-param">model: darts.SeasonalityMode = &lt;SeasonalityMode.MULTIPLICATIVE: 'multiplicative'&gt;</em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
 <li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (‘additive’ or ‘multiplicative’).</p></li>
+<li><p><strong>model</strong> – The type of decomposition to use.
+Must be a <cite>from darts import SeasonalityMode</cite> Enum member.
+Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
+Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new time series that is the adjusted original time series</p>
+<dd class="field-even"><p>A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
@@ -303,17 +348,20 @@ Use e.g. to remove an additive or multiplicative trend from a series.</p>
 
 <dl class="py function">
 <dt id="darts.utils.statistics.remove_trend">
-<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_trend</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">'multiplicative'</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">remove_trend</code><span class="sig-paren">(</span><em class="sig-param">ts: darts.timeseries.TimeSeries</em>, <em class="sig-param">model: darts.ModelMode = &lt;ModelMode.MULTIPLICATIVE: 'multiplicative'&gt;</em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use (additive or multiplicative).</p></li>
+<li><p><strong>model</strong> – The type of decomposition to use.
+Must be <cite>from darts import ModelMode</cite> Enum member.
+Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
+Defaults to modelMode.MULTIPLICATIVE.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new time series that is the adjusted original time series</p>
+<dd class="field-even"><p>A new TimeSeries instance that corresponds to the trend-adjusted ‘ts’.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
@@ -340,12 +388,15 @@ Use e.g. to remove an additive or multiplicative trend from a series.</p>
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

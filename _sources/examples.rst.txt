@@ -56,3 +56,13 @@ You will find below an example Jupyter notebook containing usage of multivariate
    :maxdepth: 1
 
    examples/multivariate-examples.ipynb
+
+M4 Competition Exploration
+==========================
+
+You will find below an example Jupyter notebook with a benchmark of different darts models and example usage of FourTheta model
+
+.. toctree::
+    :maxdepth: 1
+
+    examples/M4_competition/M4_competition_benchmark.ipynb

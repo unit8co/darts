@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>darts &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -22,10 +41,10 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Backtesting" href="darts.backtesting.html" />
+    <link rel="next" title="Metrics" href="darts.metrics.html" />
     <link rel="prev" title="Time Series Made Easy in Python" href="../README.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -177,7 +190,6 @@
 <blockquote>
 <div><div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="darts.backtesting.html">Backtesting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.preprocessing.html">Preprocessing</a></li>
@@ -186,6 +198,62 @@
 </ul>
 </div>
 </div></blockquote>
+<dl class="py class">
+<dt id="darts.ModelMode">
+<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">ModelMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#ModelMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.ModelMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt id="darts.ModelMode.ADDITIVE">
+<code class="sig-name descname">ADDITIVE</code><em class="property"> = 'additive'</em><a class="headerlink" href="#darts.ModelMode.ADDITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.ModelMode.MULTIPLICATIVE">
+<code class="sig-name descname">MULTIPLICATIVE</code><em class="property"> = 'multiplicative'</em><a class="headerlink" href="#darts.ModelMode.MULTIPLICATIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.SeasonalityMode">
+<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">SeasonalityMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#SeasonalityMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.SeasonalityMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt id="darts.SeasonalityMode.ADDITIVE">
+<code class="sig-name descname">ADDITIVE</code><em class="property"> = 'additive'</em><a class="headerlink" href="#darts.SeasonalityMode.ADDITIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.SeasonalityMode.MULTIPLICATIVE">
+<code class="sig-name descname">MULTIPLICATIVE</code><em class="property"> = 'multiplicative'</em><a class="headerlink" href="#darts.SeasonalityMode.MULTIPLICATIVE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.SeasonalityMode.NONE">
+<code class="sig-name descname">NONE</code><em class="property"> = None</em><a class="headerlink" href="#darts.SeasonalityMode.NONE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.TrendMode">
+<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">TrendMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#TrendMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.TrendMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt id="darts.TrendMode.EXPONENTIAL">
+<code class="sig-name descname">EXPONENTIAL</code><em class="property"> = 'exponential'</em><a class="headerlink" href="#darts.TrendMode.EXPONENTIAL" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.TrendMode.LINEAR">
+<code class="sig-name descname">LINEAR</code><em class="property"> = 'linear'</em><a class="headerlink" href="#darts.TrendMode.LINEAR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -195,7 +263,7 @@
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="../README.html" title="previous page">Time Series Made Easy in Python</a>
-    <a class='right-next' id="next-link" href="darts.backtesting.html" title="next page">Backtesting</a>
+    <a class='right-next' id="next-link" href="darts.metrics.html" title="next page">Metrics</a>
 
               </div>
               
@@ -205,12 +273,15 @@
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

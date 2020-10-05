@@ -8,7 +8,6 @@
     .. toctree::
         :maxdepth: 1
         
-        darts.backtesting
         darts.metrics
         darts.models
         darts.preprocessing

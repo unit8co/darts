@@ -1,0 +1,5 @@
+
+.. automodule:: darts.utils.torch
+   :members:
+   :undoc-members:
+   :show-inheritance:

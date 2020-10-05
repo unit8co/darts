@@ -1,17 +1,36 @@
 
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Forecasting Model Base Class &#8212; darts  documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
-    <link href="../_static/css/index.css" rel="stylesheet">
+    
+  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
     <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -24,8 +43,8 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Facebook Prophet" href="darts.models.prophet.html" />
     <link rel="prev" title="Fast Fourier Transform" href="darts.models.fft.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="docsearch:language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
@@ -108,12 +127,6 @@
         
           
               <li class="">
-                  <a href="darts.backtesting.html">Backtesting</a>
-              </li>
-          
-        
-          
-              <li class="">
                   <a href="darts.metrics.html">Metrics</a>
               </li>
           
@@ -125,7 +138,11 @@
                   <ul>
                   
                       <li class="">
-                          <a href="darts.models.arima.html">ARIMA and Auto-ARIMA</a>
+                          <a href="darts.models.arima.html">ARIMA</a>
+                      </li>
+                  
+                      <li class="">
+                          <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
                       </li>
                   
                       <li class="">
@@ -236,13 +253,133 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>The base class for all forecasting models.</p>
 <p>All implementations of forecasting have to implement the <cite>fit()</cite> and <cite>predict()</cite> methods defined below.</p>
+<dl class="py attribute">
+<dt id="darts.models.forecasting_model.ForecastingModel.training_series">
+<code class="sig-name descname">training_series</code><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.training_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>reference to the <cite>TimeSeries</cite> used for training the model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.models.forecasting_model.ForecastingModel.target_series">
+<code class="sig-name descname">target_series</code><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.target_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>reference to the <cite>TimeSeries</cite> used as target to train the model.</p>
+</dd></dl>
+
 <dl class="py method">
-<dt id="darts.models.forecasting_model.ForecastingModel.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#ForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits/trains the model on the provided series</p>
+<dt id="darts.models.forecasting_model.ForecastingModel.backtest">
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.7</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_full_output_length</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/forecasting_model.html#ForecastingModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrain and forecast values pointwise with an expanding training window over <cite>series</cite>.</p>
+<p>To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
+the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the
+training set forward by <cite>stride</cite> time steps. The resulting predictions are then returned.</p>
+<p>Unless <cite>retrain</cite> is set to False, this always re-trains the models on the entire available history,
+corresponding an expending window strategy.</p>
+<p>If <cite>retrain</cite> is set to False (useful for models with many parameter such as <cite>TorchForecastingModel</cite> instances
+like <cite>RNNModel</cite> and <cite>TCNModel</cite>), the model will only be trained on the initial training window
+(up to <cite>start</cite> time stamp), and only if it has not been trained before. Then, at every iteration, the
+newly expanded input sequence will be fed to the model to produce the new output.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – the training time series on which to fit the model</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>training_series</strong> – The training time series on which to backtest</p></li>
+<li><p><strong>target_series</strong> – The target time series on which to backtest. This parameter is only relevant for
+<cite>MultivariateForecastingModel</cite> instances. It allows for training on one <cite>training_series</cite>
+and predicting another <cite>target_series</cite>. In many multivariate forecasting problems, the
+<cite>target_series</cite> would constitute a subset of the components of the <cite>training_series</cite>.
+However, any combination of univariate and multivariate series is allowed here, as long
+as the indices all match up.</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time.
+This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
+In the case of <cite>float</cite>, the parameter will be treated as the proportion of the time series
+that should lie before the first prediction point.
+In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
+<cite>training_series</cite> that will be used as first prediction time.
+In case of <cite>pandas.Timestamp</cite>, this time stamp will be used to determine the first prediction time
+directly.</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point prediction</p></li>
+<li><p><strong>stride</strong> – The number of time steps (the unit being the frequency of <cite>series</cite>) between two consecutive predictions.</p></li>
+<li><p><strong>retrain</strong> – Whether to retrain the model for every prediction or not. Currently only <cite>TorchForecastingModel</cite>
+instances such as <cite>RNNModel</cite> and <cite>TCNModel</cite> support setting <cite>retrain</cite> to <cite>False</cite>.</p></li>
+<li><p><strong>use_full_output_length</strong> – Optionally, if the model is an instance of <cite>TorchForecastingModel</cite>, this argument will be passed along
+as argument to the <cite>predict</cite> method of the model. Otherwise, if this value is set and the model is not an
+instance of <cite>TorchForecastingModel</cite>, this will cause an error.</p></li>
+<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A time series containing the forecast values for <cite>target_series</cite>, when successively applying the specified
+model with the specified forecast horizon.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.forecasting_model.ForecastingModel.fit">
+<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#ForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model on the provided series</p>
+<p>Implements behavior that should happen when calling the <cite>fit</cite> method of every forcasting model regardless of
+wether they are univariate or multivariate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.forecasting_model.ForecastingModel.gridsearch">
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, training_series: darts.timeseries.TimeSeries, target_series: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, use_full_output_length: Optional[bool] = None, val_target_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function multivariate_support.&lt;locals&gt;.wrapper_multivariate_support&gt;, verbose=False</em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/forecasting_model.html#ForecastingModel.gridsearch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for finding the best hyperparameters.</p>
+<p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
+The three modes of operation evaluate every possible combination of hyperparameter values
+provided in the <cite>parameters</cite> dictionary by instantiating the <cite>model_class</cite> subclass
+of ForecastingModel with each combination, and returning the best-performing model with regards
+to the <cite>metric</cite> function. The <cite>metric</cite> function is expected to return an error value,
+thus the model resulting in the smallest <cite>metric</cite> output will be chosen.
+The relationship of the training data and test data depends on the mode of operation.</p>
+<p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
+For every hyperparameter combination, the model is repeatedly trained and evaluated on different
+splits of <cite>training_series</cite> and <cite>target_series</cite>. This process is accomplished by using
+<cite>ForecastingModel.backtest</cite> as a subroutine to produce historic forecasts starting from <cite>start</cite>
+that are compared against the ground truth values of <cite>training_series</cite> or <cite>target_series</cite>, if
+specifed.
+Note that the model is retrained for every single prediction, thus this mode is slower.</p>
+<p>Split window mode (activated when <cite>val_series</cite> is passed):
+This mode will be used when the <cite>val_series</cite> argument is passed.
+For every hyperparameter combination, the model is trained on <cite>training_series</cite> + <cite>target_series</cite> and
+evaluated on <cite>val_series</cite>.</p>
+<p>Fitted value mode (activated when <cite>use_fitted_values</cite> is set to <cite>True</cite>):
+For every hyperparameter combination, the model is trained on <cite>training_series</cite> + <cite>target_series</cite>
+and evaluated on the resulting fitted values.
+Not all models have fitted values, and this method raises an error if <cite>model.fitted_values</cite> does not exist.
+The fitted values are the result of the fit of the model on the training series. Comparing with the
+fitted values can be a quick way to assess the model, but one cannot see if the model overfits or underfits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_class</strong> – The ForecastingModel subclass to be tuned for ‘series’.</p></li>
+<li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
+respective hyperparameter.</p></li>
+<li><p><strong>training_series</strong> – The TimeSeries instance used as input for training.</p></li>
+<li><p><strong>target_series</strong> – The TimeSeries instance used as target for training (and also validation in expanding window mode).</p></li>
+<li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
+<li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
+of <cite>training_series</cite> from which predictions will be made to evaluate the model.
+For a detailed description of how the different data types are interpreted, please see the documentation
+for <cite>ForecastingModel.backtest</cite>.</p></li>
+<li><p><strong>use_full_output_length</strong> – This should only be set if <cite>model_class</cite> is equal to <cite>TorchForecastingModel</cite>.
+This argument will be passed along to the predict method of <cite>TorchForecastingModel</cite>.</p></li>
+<li><p><strong>val_target_series</strong> – The TimeSeries instance used for validation in split mode.</p></li>
+<li><p><strong>use_fitted_values</strong> – If <cite>True</cite>, uses the comparison with the fitted values.
+Raises an error if <cite>fitted_values</cite> is not an attribute of <cite>model_class</cite>.</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An untrained ‘model_class’ instance with the best-performing hyperparameters from the given selection.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">ForecastingModel</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -271,6 +408,35 @@ This function/property should be overridden if a value higher than 3 is required
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt id="darts.models.forecasting_model.ForecastingModel.residuals">
+<code class="sig-name descname">residuals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/forecasting_model.html#ForecastingModel.residuals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.ForecastingModel.residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for computing the residuals produced by the current model on a univariate time series.</p>
+<p>This function computes the difference between the actual observations from <cite>series</cite>
+and the fitted values vector p obtained by training the model on <cite>series</cite>.
+For every index i in <cite>series</cite>, p[i] is computed by training the model on
+series[:(i - <cite>forecast_horizon</cite>)] and forecasting <cite>forecast_horizon</cite> into the future.
+(p[i] will be set to the last value of the predicted vector.)
+The vector of residuals will be shorter than <cite>series</cite> due to the minimum
+training series length required by the model and the gap introduced by <cite>forecast_horizon</cite>.
+Note that the common usage of the term residuals implies a value for <cite>forecast_horizon</cite> of 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The vector of residuals.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -280,14 +446,13 @@ This function/property should be overridden if a value higher than 3 is required
 <p>The base class for multivariate forecasting models.</p>
 <dl class="py method">
 <dt id="darts.models.forecasting_model.MultivariateForecastingModel.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">target_indices</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#MultivariateForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.MultivariateForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#MultivariateForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.MultivariateForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the multivariate model on the provided series with selected target components.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
-<li><p><strong>target_indices</strong> – A list of integers indicating which component(s) of the time series should be used
-as targets for forecasting.</p></li>
+<li><p><strong>training_series</strong> – The training time series on which to fit the model (can be multivariate or univariate).</p></li>
+<li><p><strong>target_series</strong> – The target values used as dependent variables when training the model</p></li>
 </ul>
 </dd>
 </dl>
@@ -302,15 +467,12 @@ as targets for forecasting.</p></li>
 <p>The base class for univariate forecasting models.</p>
 <dl class="py method">
 <dt id="darts.models.forecasting_model.UnivariateForecastingModel.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">component_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#UnivariateForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.UnivariateForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#UnivariateForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.UnivariateForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the univariate model on selected univariate series.</p>
+<p>Implements behavior specific to calling the <cite>fit</cite> method on <cite>UnivariateForecastingModel</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The training time series on which to fit the model.</p></li>
-<li><p><strong>component_index</strong> – Optionally, a zero-indexed integer indicating the component to use if a multivariate
-time series is passed.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>series</strong> – A <strong>univariate</strong> timeseries on which to fit the model.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -336,12 +498,15 @@ time series is passed.</p></li>
       </div>
     </div>
 
-    <script src="../_static/js/index.js"></script>
+    
+  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+
+
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
           &copy; Copyright 2020, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.1.2.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
 </footer>

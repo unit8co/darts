@@ -1,0 +1,120 @@
+/* lato-100normal - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100;
+  src:
+    local('Lato Hairline'),
+    local('Lato-Hairline'), 
+    url('./files/lato-latin-ext-100.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-100.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-100italic - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100;
+  src:
+    local('Lato Hairline Italic'),
+    local('Lato-HairlineItalic'), 
+    url('./files/lato-latin-ext-100-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-100-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-300normal - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300;
+  src:
+    local('Lato Light'),
+    local('Lato-Light'), 
+    url('./files/lato-latin-ext-300.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-300.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-300italic - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 300;
+  src:
+    local('Lato Light Italic'),
+    local('Lato-LightItalic'), 
+    url('./files/lato-latin-ext-300-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-300-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-400normal - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src:
+    local('Lato Regular'),
+    local('Lato-Regular'), 
+    url('./files/lato-latin-ext-400.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-400.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-400italic - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src:
+    local('Lato Italic'),
+    local('Lato-Italic'), 
+    url('./files/lato-latin-ext-400-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-400-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-700normal - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src:
+    local('Lato Bold'),
+    local('Lato-Bold'), 
+    url('./files/lato-latin-ext-700.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-700.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-700italic - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 700;
+  src:
+    local('Lato Bold Italic'),
+    local('Lato-BoldItalic'), 
+    url('./files/lato-latin-ext-700-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-700-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-900normal - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  src:
+    local('Lato Black'),
+    local('Lato-Black'), 
+    url('./files/lato-latin-ext-900.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-900.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lato-900italic - latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 900;
+  src:
+    local('Lato Black Italic'),
+    local('Lato-BlackItalic'), 
+    url('./files/lato-latin-ext-900-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+    url('./files/lato-latin-ext-900-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
