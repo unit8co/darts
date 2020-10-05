@@ -38,7 +38,7 @@ jobs:
 
       - name: "5. Tests"
         run: |
-          ./gradlew test_core
+          ./gradlew test_all
 
   check-examples:
     runs-on: ubuntu-latest

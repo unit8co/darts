@@ -37,7 +37,7 @@ jobs:
 
       - name: "5. Tests"
         run: |
-          ./gradlew test_core
+          ./gradlew test_all
 
   release:
     needs: [tests]
