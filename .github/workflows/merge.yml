@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - develop
-  pull_request:
-    branches:
-      - develop
 
 jobs:
   tests:
@@ -15,6 +12,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest]
         python-version: [3.6, 3.7, 3.8]
+        flavour: ['core', 'all', 'pmdarima', 'torch', 'fbprophet']
 
     steps:
       - name: "1. Clone repository"
@@ -38,7 +36,7 @@ jobs:
 
       - name: "5. Tests"
         run: |
-          ./gradlew test_core
+          ./gradlew "test_${{matrix.flavour}}"
 
   check-examples:
     runs-on: ubuntu-latest

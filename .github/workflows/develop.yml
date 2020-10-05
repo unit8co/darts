@@ -1,9 +1,8 @@
 name: darts develop workflow
 
 on:
-  push:
-    branches-ignore:
-      - master
+  pull_request:
+    branches:
       - develop
 
 jobs:
@@ -12,7 +11,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
-        flavour: ['core', 'all', 'pmdarima', 'torch', 'fbprophet']
+        flavour: ['core', 'all']
 
     steps:
       - name: "1. Clone repository"
