@@ -25,7 +25,7 @@ We recommend to first setup a clean python environment for your project with at 
 
 Once your environment is setup you can install darts using the pip package:
 
-    pip install u8darts[all]
+    pip install 'u8darts[all]'
 
 ### Step-by-step Install
 
@@ -164,15 +164,15 @@ Don't forget to activate your virtual environment
 
 ### Install darts
 
-Install Darts with all available models: `pip install u8darts[all]`.
+Install Darts with all available models: `pip install 'u8darts[all]'`.
 
 As some models have relatively heavy (or non-Python) dependencies,
 we also provide the following alternate lighter install options: 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
-* Install core + neural networks (PyTorch): `pip install u8darts[torch]`
-* Install core + Facebook Prophet: `pip install u8darts[fbprophet]`
-* Install core + AutoARIMA: `pip install u8darts[pmdarima]`
+* Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
+* Install core + Facebook Prophet: `pip install 'u8darts[fbprophet]'`
+* Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
    
 ### Running the examples only, without installing:
 
