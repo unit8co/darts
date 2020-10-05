@@ -6,7 +6,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...develop)
 
-## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-02)
+## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.2.3...0.3.0)
 
