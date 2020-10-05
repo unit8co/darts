@@ -4,16 +4,19 @@ Utils for time series statistics
 """
 
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
+from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf
 
-from ..logging import raise_log, get_logger
+from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
+from .missing_values import auto_fillna
+from .. import SeasonalityMode, ModelMode
 
 logger = get_logger(__name__)
 
@@ -23,7 +26,7 @@ def check_seasonality(ts: TimeSeries,
                       max_lag: int = 24,
                       alpha: float = 0.05):
     """
-    Returns whether the TimeSeries `ts` is seasonal with period `m` or not.
+    Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
 
     If `m` is None, we work under the assumption that there is a unique seasonality period, which is inferred
     from the Auto-correlation Function (ACF).
@@ -61,24 +64,12 @@ def check_seasonality(ts: TimeSeries,
 
     r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
-    gradient = np.gradient(r)
-    gradient_signs_changes = np.diff(np.sign(gradient))
+    # Finds local maxima of Auto-Correlation Function
+    candidates = argrelmax(r)[0]
 
-    # Tries to infer seasonality from Auto-Correlation Function if no value of m has been provided.
-    # We look for the first positive significant local maximum of the ACF by checking the sign changes
-    # in the gradient.
-
-    # Local maximum is indicated by signs_change == -2.
-    if len(np.nonzero((gradient_signs_changes == -2))[0]) == 0:
+    if len(candidates) == 0:
         logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
-
-    # Building a list of candidates for local maximum.
-    candidates = np.nonzero((gradient_signs_changes == -2))[0].tolist()
-
-    # If a -2 value appears in gradient_signs_changes at index i, then the local
-    # maximum of r occurs either at index i or i+1. We check manually and change the candidates accordingly.
-    candidates = [i if r[i] >= r[i + 1] else i + 1 for i in candidates]
 
     if m is not None:
         # Check for local maximum when m is user defined.
@@ -133,9 +124,10 @@ def _bartlett_formula(r: np.ndarray,
 
 def extract_trend_and_seasonality(ts: TimeSeries,
                                   freq: int = None,
-                                  model: str = 'multiplicative') -> Tuple[TimeSeries, TimeSeries]:
+                                  model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE) -> \
+        Tuple[TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from a time series using `statsmodels.seasonal_decompose`.
+    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.
 
     Parameters
     ----------
@@ -144,7 +136,10 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use ('additive' or 'multiplicative').
+        The type of decomposition to use.
+        Must be `from darts import ModelMode, SeasonalityMode` Enum member.
+        Either MULTIPLICATIVE or ADDITIVE.
+        Defaults ModelMode.MULTIPLICATIVE.
 
     Returns
     -------
@@ -152,8 +147,11 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    raise_if_not(model in ModelMode or model in SeasonalityMode,
+                 "Unknown value for model_mode: {}.".format(model), logger)
+    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
 
-    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model, extrapolate_trend='freq')
+    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model.value, extrapolate_trend='freq')
 
     season = TimeSeries.from_times_and_values(ts.time_index(), decomp.seasonal)
     trend = TimeSeries.from_times_and_values(ts.time_index(), decomp.trend)
@@ -163,7 +161,7 @@ def extract_trend_and_seasonality(ts: TimeSeries,
 
 def remove_from_series(ts: TimeSeries,
                        other: TimeSeries,
-                       model: str) -> TimeSeries:
+                       model: Union[SeasonalityMode, ModelMode]) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
     Use e.g. to remove an additive or multiplicative trend from a series.
@@ -175,7 +173,9 @@ def remove_from_series(ts: TimeSeries,
     other
         The TimeSeries to remove.
     model
-        The type of model considered (either 'additive' or 'multiplicative').
+        The type of model considered.
+        Must be `from darts import ModelMode, SeasonalityMode` Enums member.
+        Either MULTIPLICATIVE or ADDITIVE.
 
     Returns
     -------
@@ -184,19 +184,21 @@ def remove_from_series(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    raise_if_not(model in ModelMode or model in SeasonalityMode,
+                 "Unknown value for model_mode: {}.".format(model), logger)
 
-    if model == 'multiplicative':
+    if model.value == 'multiplicative':
         new_ts = ts / other
-    elif model == 'additive':
+    elif model.value == 'additive':
         new_ts = ts - other
     else:
-        raise_log(ValueError('Invalid parameter; must be either "additive" or "multiplicative". Was: {}'.format(model)))
+        raise_log(ValueError('Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}'.format(model)))
     return new_ts
 
 
 def remove_seasonality(ts: TimeSeries,
                        freq: int = None,
-                       model: str = 'multiplicative') -> TimeSeries:
+                       model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
@@ -207,14 +209,18 @@ def remove_seasonality(ts: TimeSeries,
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use ('additive' or 'multiplicative').
+        The type of decomposition to use.
+        Must be a `from darts import SeasonalityMode` Enum member.
+        Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
+        Defaults SeasonalityMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
     """
 
     ts._assert_univariate()
+    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model)
     new_ts = remove_from_series(ts, seasonality, model)
@@ -222,7 +228,7 @@ def remove_seasonality(ts: TimeSeries,
 
 
 def remove_trend(ts: TimeSeries,
-                 model='multiplicative') -> TimeSeries:
+                 model: ModelMode = ModelMode.MULTIPLICATIVE) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.
 
@@ -231,11 +237,14 @@ def remove_trend(ts: TimeSeries,
     ts
         The TimeSeries to adjust.
     model
-        The type of decomposition to use (additive or multiplicative).
+        The type of decomposition to use.
+        Must be `from darts import ModelMode` Enum member.
+        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
+        Defaults to modelMode.MULTIPLICATIVE.
     Returns
     -------
     TimeSeries
-        A new time series that is the adjusted original time series
+        A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
     """
 
     ts._assert_univariate()
@@ -284,10 +293,68 @@ def plot_acf(ts: TimeSeries,
         axis = plt
 
     for i in range(len(r)):
-        axis.plot((i, i), (0, r[i]), color=('red' if m is not None and i == m else 'black'), lw=.5)
+        axis.plot((i, i),
+                  (0, r[i]),
+                  color=('#b512b8' if m is not None and i == m else 'black'),
+                  lw=(1 if m is not None and i == m else .5))
 
     upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
     acf_band = [upp_band * stat for stat in stats]
 
-    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='blue', alpha=.25)
+    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='#003DFD', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_residuals_analysis(residuals: TimeSeries,
+                            num_bins: int = 20,
+                            fill_nan: bool = True):
+    """ Plots data relevant to residuals.
+
+    This function takes a univariate TimeSeries instance of residuals and plots their values,
+    their distribution and their ACF.
+    Please note that if the residual TimeSeries instance contains NaN values, the plots
+    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    be interpolated.
+
+    Parameters
+    ----------
+    residuals
+        Univariate TimeSeries instance representing residuals.
+    num_bins
+        Optionally, an integer value determining the number of bins in the histogram.
+    fill_nan:
+        A boolean value indicating whether NaN values should be filled in the residuals.
+    """
+
+    residuals._assert_univariate()
+
+    fig = plt.figure(constrained_layout=True, figsize=(8, 6))
+    gs = fig.add_gridspec(2, 2)
+
+    if fill_nan:
+        residuals = auto_fillna(residuals)
+
+    # plot values
+    ax1 = fig.add_subplot(gs[:1, :])
+    residuals.plot(ax=ax1)
+    ax1.set_ylabel('value')
+    ax1.set_title('Residual values')
+
+    # plot distribution
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
+    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
+    x = np.linspace(res_min, res_max, 100)
+    ax2 = fig.add_subplot(gs[1:, 1:])
+    ax2.hist(residuals.univariate_values(), bins=num_bins)
+    ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax2.set_title('Distribution')
+    ax2.set_ylabel('count')
+    ax2.set_xlabel('value')
+
+    # plot ACF
+    ax3 = fig.add_subplot(gs[1:, :1])
+    plot_acf(residuals, axis=ax3)
+    ax3.set_ylabel('ACF value')
+    ax3.set_xlabel('lag')
+    ax3.set_title('ACF')

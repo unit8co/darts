@@ -23,6 +23,12 @@ readme:
 copy-examples:
 	@cp -r ../examples "$(SOURCEDIR)/examples"
 
+clean:
+	@rm -rf ./build
+	@rm -rf ./source/examples
+	@rm -rf ./source/generated_api
+	@rm -rf ./source/README.rst
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile

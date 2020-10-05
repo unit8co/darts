@@ -1,0 +1,9 @@
+numpy==1.19.0
+scipy==1.5.0
+statsmodels==0.11.1
+matplotlib==3.2.2
+pandas==1.1.0
+ipython==7.15.0
+tqdm==4.46.1
+holidays==0.10.2
+scikit-learn==0.23.2
