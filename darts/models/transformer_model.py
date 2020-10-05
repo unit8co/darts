@@ -74,8 +74,8 @@ class _TransformerModule(nn.Module):
                  dim_feedforward: int,
                  dropout: float,
                  activation: str,
-                 custom_encoder: nn.Module = None,
-                 custom_decoder: nn.Module = None,
+                 custom_encoder: Optional[nn.Module] = None,
+                 custom_decoder: Optional[nn.Module] = None,
                  ):
         """ PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -84,9 +84,9 @@ class _TransformerModule(nn.Module):
         Parameters
         ----------
         input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit function.
+            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
         input_length
-            Number of time steps to be output by the forecasting module.
+            Number of time steps to be input to the forecasting module.
         output_length
             Number of time steps to be output by the forecasting module.
         output_size
@@ -183,7 +183,7 @@ class _TransformerModule(nn.Module):
 class TransformerModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 model: nn.Module = None,
+                 model: Optional[nn.Module] = None,
                  input_size: int = 1,
                  input_length: int = 1,
                  output_length: int = 1,
@@ -195,8 +195,8 @@ class TransformerModel(TorchForecastingModel):
                  dim_feedforward: int = 2048,
                  dropout: float = 0.1,
                  activation: str = "relu",
-                 custom_encoder: Optional[Any] = None,
-                 custom_decoder: Optional[Any] = None,
+                 custom_encoder: Optional[nn.Module] = None,
+                 custom_decoder: Optional[nn.Module] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -221,9 +221,9 @@ class TransformerModel(TorchForecastingModel):
             a custom PyTorch module with the same specifications as
             `darts.models.transformer_model._TransformerModule` (default=None).
         input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit function (default=1).
+            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions (default=1).
         input_length
-            Number of time steps to be output by the forecasting module (default=1).
+            Number of time steps to be input to the forecasting module (default=1).
         output_size
             The dimensionality of the output time series (default=1).
         output_length
@@ -243,9 +243,9 @@ class TransformerModel(TorchForecastingModel):
         activation
             the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
         custom_encoder
-            a custom transformer encoder provided by the user (default=None)
+            a custom user-provided encoder module for the transformer (default=None)
         custom_decoder
-            a custom transformer decoder provided by the user (default=None)
+            a custom user-provided decoder module for the transformer (default=None)
         random_state
             Controls the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
