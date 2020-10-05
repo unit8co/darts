@@ -41,7 +41,7 @@ from darts import TimeSeries
 
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
-train, val = series.split_after(pd.Timestamp('19590101'))
+train, val = series.split_after(pd.Timestamp('19580101'))
 ```
 
 >The dataset used in this example can be downloaded from this [link](https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv).
@@ -60,8 +60,8 @@ Plot:
 ```python
 import matplotlib.pyplot as plt
 
-series.plot(label='actual', lw=3)
-prediction.plot(label='forecast', lw=3)
+series.plot(label='actual')
+prediction.plot(label='forecast', lw=2)
 plt.legend()
 plt.xlabel('Year')
 ```
@@ -113,7 +113,14 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
-5. Create a new branch with your fix / feature from the **develop** branch.
+5. Create a new branch:
+    * Branch off from the **develop** branch.
+    * Prefix the branch with the type of update you are making:
+        * `feature/`
+        * `fix/`
+        * `refactor/`
+        * …
+    * Work on your update
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
 7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
 8. Create a pull request from your new branch to the **develop** branch.
