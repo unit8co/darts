@@ -6,7 +6,8 @@ from abc import abstractmethod
 from typing import TypeVar, List, Optional
 
 from darts.logging import get_logger, raise_if_not
-from darts.dataprocessing import Validator, BaseDataTransformer
+from darts.dataprocessing import Validator
+from darts.dataprocessing.transformers import BaseDataTransformer
 
 logger = get_logger(__name__)
 T = TypeVar('T')

@@ -46,7 +46,7 @@ def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
 def auto_fillna(ts: TimeSeries,
                 **interpolate_kwargs) -> TimeSeries:
     """
-    This function fills the missing value in the TimeSeries `ts`,
+    This function fills the missing values in the TimeSeries `ts`,
     using the `pandas.Dataframe.interpolate()` method.
 
     Parameters

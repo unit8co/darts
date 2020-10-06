@@ -7,7 +7,7 @@ from typing import List, Union, Iterator
 
 from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
-from darts.dataprocessing import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
+from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
 
 logger = get_logger(__name__)
 

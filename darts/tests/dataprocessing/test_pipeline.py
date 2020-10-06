@@ -1,15 +1,10 @@
 import unittest
 import logging
 
-from darts.dataprocessing import (
-    Pipeline,
-    data_transformer_from_ts_functions,
-    BaseDataTransformer,
-    FittableDataTransformer,
-    InvertibleDataTransformer
-)
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
+from darts.dataprocessing import Pipeline, data_transformer_from_ts_functions
+from darts.dataprocessing.transformers import BaseDataTransformer, FittableDataTransformer, InvertibleDataTransformer
 
 
 class PipelineTestCase(unittest.TestCase):

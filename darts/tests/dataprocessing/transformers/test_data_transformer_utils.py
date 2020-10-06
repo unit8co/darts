@@ -1,13 +1,8 @@
 import unittest
 import logging
 
-from darts.dataprocessing import (
-    data_transformer_from_ts_functions,
-    data_transformer_from_values_functions,
-    BaseDataTransformer,
-    InvertibleDataTransformer,
-    FittableDataTransformer
-)
+from darts.dataprocessing import data_transformer_from_ts_functions, data_transformer_from_values_functions
+from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
 from darts.utils.timeseries_generation import constant_timeseries
 
 

@@ -2,10 +2,10 @@
 Scaler wrapper
 --------------
 """
-from darts.dataprocessing import FittableDataTransformer, InvertibleDataTransformer
+from darts.dataprocessing.transformers import FittableDataTransformer, InvertibleDataTransformer
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log
 from sklearn.preprocessing import MinMaxScaler
 
 logger = get_logger(__name__)

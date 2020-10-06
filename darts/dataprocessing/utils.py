@@ -8,7 +8,7 @@ from typing import TypeVar, Callable, Optional, Tuple, List, Any, Dict, Type
 
 from darts import TimeSeries
 from darts.logging import raise_if, get_logger
-from darts.dataprocessing import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
+from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer, FittableDataTransformer
 
 logger = get_logger(__name__)
 T = TypeVar('T')

@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from darts.dataprocessing import ScalerWrapper
+from darts.dataprocessing.transformers import ScalerWrapper
 from darts.utils import timeseries_generation as tg
 
 

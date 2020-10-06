@@ -1,7 +1,8 @@
 import unittest
 import logging
 
-from darts.dataprocessing import BaseDataTransformer, Validator
+from darts.dataprocessing import Validator
+from darts.dataprocessing.transformers import BaseDataTransformer
 
 
 class BaseDataTransformerTestCase(unittest.TestCase):
