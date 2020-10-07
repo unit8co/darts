@@ -6,6 +6,13 @@ def read_requirements(path):
     return list(Path(path).read_text().splitlines())
 
 
+base_reqs = read_requirements('requirements/core.txt')
+pmdarima_reqs = read_requirements('requirements/pmdarima.txt')
+torch_reqs = read_requirements('requirements/torch.txt')
+fbprophet_reqs = read_requirements('requirements/fbprophet.txt')
+
+all_reqs = base_reqs + pmdarima_reqs + torch_reqs + fbprophet_reqs
+
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
@@ -23,7 +30,7 @@ PROJECT_URLS = {
 setup(
       name='u8darts',
       version="dev",
-      description='A python library for easy manipulation and forecasting time series.',
+      description='A python library for easy manipulation and forecasting of time series.',
       long_description=LONG_DESCRIPTION,
       long_description_content_type="text/markdown",
       project_urls=PROJECT_URLS,
@@ -32,7 +39,13 @@ setup(
       maintainer_email='darts@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
-      install_requires=read_requirements('requirements/main.txt'),
+      install_requires=base_reqs,
+      extras_require={
+            'all': all_reqs,
+            'pmdarima': pmdarima_reqs,
+            'torch': torch_reqs,
+            'fbprophet': fbprophet_reqs,
+      },
       package_data={
           'darts': ['py.typed'],
       },

@@ -9,11 +9,11 @@ import re
 import math
 from glob import glob
 import shutil
+from typing import Optional, Dict
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -197,7 +197,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             (default: current working directory).
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.u8timeseries/runs/`.
+            `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             `TimeSeries` is passed to the `fit()` method).
