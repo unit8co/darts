@@ -14,7 +14,8 @@
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors.
+and combine the predictions of several models and external regressors. Darts supports both
+univariate and multivariate time series and models.
 
 ## Install
 
@@ -24,7 +25,7 @@ We recommend to first setup a clean python environment for your project with at 
 
 Once your environment is setup you can install darts using the pip package:
 
-    pip install u8darts
+    pip install 'u8darts[all]'
 
 ### Step-by-step Install
 
@@ -40,7 +41,7 @@ from darts import TimeSeries
 
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
-train, val = series.split_after(pd.Timestamp('19590101'))
+train, val = series.split_after(pd.Timestamp('19580101'))
 ```
 
 >The dataset used in this example can be downloaded from this [link](https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv).
@@ -59,8 +60,8 @@ Plot:
 ```python
 import matplotlib.pyplot as plt
 
-series.plot(label='actual', lw=3)
-prediction.plot(label='forecast', lw=3)
+series.plot(label='actual')
+prediction.plot(label='forecast', lw=2)
 plt.legend()
 plt.xlabel('Year')
 ```
@@ -97,7 +98,7 @@ from R2-scores to Mean Absolute Scaled Error.
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
 **Regressive Models:** Possibility to predict a time series from several other time series 
-(e.g., external regressors), using arbitrary regressive models.
+(e.g., external regressors), using arbitrary regressive models
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
@@ -112,10 +113,19 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
-5. Create a new branch with your fix / feature from the **develop** branch.
+5. Create a new branch:
+    * Branch off from the **develop** branch.
+    * Prefix the branch with the type of update you are making:
+        * `feature/`
+        * `fix/`
+        * `refactor/`
+        * …
+    * Work on your update
 6. Check that your code pass the tests / design new unit tests: `python -m unittest`.
-7. Verify your tests coverage with `./coverage.sh` (additionaly you can generate xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`).
-8. Create a pull request from your new branch to the **develop** branch.
+7. Verify your tests coverage by running `./gradlew coverageTest`
+    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
+8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
+9. Create a pull request from your new branch to the **develop** branch.
 
 ## Contact Us
 
@@ -125,11 +135,11 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ### Preconditions
 
-Our direct dependencies include `fbprophet` and `torch` which have non-Python dependencies.
+Some of the models depend on `fbprophet` and `torch`, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment. 
-If that's not possible, first follow the official instructions to install 
+If that's not possible, first follow the official instructions to install
 [fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
 and [torch](https://pytorch.org/get-started/locally/), then skip to 
 [Install darts](#install-darts)
@@ -144,18 +154,26 @@ Don't forget to activate your virtual environment
     conda activate <env-name>
 
 
-### MAC
+#### MAC
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch
 
-### Linux and Windows
+#### Linux and Windows
 
     conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
 
 ### Install darts
 
-    pip install u8darts
+Install Darts with all available models: `pip install 'u8darts[all]'`.
 
+As some models have relatively heavy (or non-Python) dependencies,
+we also provide the following alternate lighter install options: 
+
+* Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
+* Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
+* Install core + Facebook Prophet: `pip install 'u8darts[fbprophet]'`
+* Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
+   
 ### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.

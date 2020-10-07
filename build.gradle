@@ -56,23 +56,25 @@ task setupPip(type: Exec) {
     commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
 }
 
-task pipMain(type: Exec) {
-    commandLine "pip", "install", "-q", "-r", "requirements/main.txt"
+void createPipInstallTask(String flavour) {
+   String taskName = "pip_" + flavour;
+   String taskArgument = "requirements/" + flavour + ".txt";
+   task (taskName, type: Exec) {
+      commandLine "pip", "install", "-q", "-r", taskArgument
+   }
 }
 
-task pipDev(type: Exec) {
-    commandLine "pip", "install", "-q", "-r", "requirements/dev.txt"
-}
+String[] flavours = ["core", "fbprophet", "pmdarima", "dev", "torch", "release"];
 
-task pipRelease(type: Exec) {
-    commandLine "pip", "install", "-q", "-r", "requirements/release.txt"
+for(String flavour : flavours) {
+    createPipInstallTask(flavour);
 }
 
 task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pipMain, pipDev, pipRelease
+    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch, pip_release
 }
 
 task installLocally(type:Exec) {
@@ -90,26 +92,62 @@ void coverageTestSteps() {
     }
 }
 
-task unitTest(type: Exec) {
-    dependsOn pipMain, pipDev
+task lint(type: Exec) {
+    dependsOn pip_dev
+    commandLine "flake8", "--config=setup.cfg", "--exit-zero", "darts"
+}
+
+void createPipRelatedTask(String flavour) {
+   String taskName = "unitTest_" + flavour;
+   String taskArgument = "pip_" + flavour;
+   task (taskName, type: Exec) {
+        dependsOn(taskArgument)
+        dependsOn pip_core
+        dependsOn pip_dev
+        commandLine "python", "-m", "unittest"
+   }
+
+   taskName = "coverageTest_" + flavour;
+   task (taskName) {
+        dependsOn(taskArgument)
+        dependsOn pip_core
+        dependsOn pip_dev
+        doLast {
+            coverageTestSteps()
+        }
+   }
+
+   taskName = "test_" + flavour;
+   String taskArgument1 = "unitTest_" + flavour;
+   String taskArgument2= "coverageTest_" + flavour;
+   task (taskName) {
+        dependsOn(taskArgument1)
+        dependsOn(taskArgument2)
+        dependsOn lint
+   }
+}
+
+flavours = ["core", "fbprophet", "pmdarima", "torch"];
+
+for(String flavour : flavours) {
+    createPipRelatedTask(flavour);
+}
+
+task unitTest_all(type: Exec) {
+    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
     commandLine "python", "-m", "unittest"
 }
 
-task coverageTest() {
-    dependsOn pipMain, pipDev
+task coverageTest_all() {
+    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
     doLast {
         coverageTestSteps()
     }
 }
 
-task lint(type: Exec) {
-    dependsOn pipDev
-    commandLine "flake8", "--config=setup.cfg", "darts"
-}
-
-task test() {
-    dependsOn unitTest
-    dependsOn coverageTest
+task test_all() {
+    dependsOn unitTest_all
+    dependsOn coverageTest_all
     dependsOn lint
 }
 

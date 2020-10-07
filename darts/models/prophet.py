@@ -4,13 +4,13 @@ Facebook Prophet
 """
 
 from typing import Optional
-import fbprophet
 import logging
 
 from ..timeseries import TimeSeries
 from .forecasting_model import UnivariateForecastingModel
 import pandas as pd
 from ..logging import get_logger, execute_and_suppress_output
+import fbprophet
 
 
 logger = get_logger(__name__)
@@ -57,8 +57,8 @@ class Prophet(UnivariateForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         series = self.training_series
 
         in_df = pd.DataFrame(data={

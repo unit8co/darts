@@ -9,16 +9,16 @@ import re
 import math
 from glob import glob
 import shutil
+from typing import Optional, Dict
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from typing import Optional, Dict, List
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..logging import raise_if_not, get_logger, raise_log
+from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import MultivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
@@ -38,10 +38,10 @@ def _get_runs_folder(work_dir, model_name):
 class _TimeSeriesSequentialDataset(Dataset):
 
     def __init__(self,
-                 series: TimeSeries,
+                 training_series: TimeSeries,
+                 target_series: TimeSeries,
                  data_length: int = 1,
-                 target_length: int = 1,
-                 target_indices: List[int] = [0]):
+                 target_length: int = 1):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -50,21 +50,23 @@ class _TimeSeriesSequentialDataset(Dataset):
 
         Parameters
         ----------
-        series
+        training_series
             The time series to be included in the dataset.
+        target_series
+            The time series used as target.
         data_length
             The length of the training sub-sequences.
         target_length
             The length of the target sub-sequences, starting at the end of the training sub-sequence.
         """
 
-        self.series_values = series.values()
+        self.training_series_values = training_series.values()
+        self.target_series_values = target_series.values()
 
         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
-        self.len_series = len(series)
-        self.data_length = len(series) - 1 if data_length is None else data_length
+        self.len_series = len(training_series)
+        self.data_length = len(training_series) - 1 if data_length is None else data_length
         self.target_length = target_length
-        self.target_indices = target_indices
 
         raise_if_not(self.data_length > 0,
                      "The input sequence length must be positive. It is {}".format(self.data_length),
@@ -79,18 +81,18 @@ class _TimeSeriesSequentialDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Cast to PyTorch tensors on the right device in advance
         idx = index % (self.len_series - self.data_length - self.target_length + 1)
-        data = self.series_values[idx:idx + self.data_length]
-        target = self.series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
+        data = self.training_series_values[idx:idx + self.data_length]
+        target = self.target_series_values[idx + self.data_length:idx + self.data_length + self.target_length]
+        return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
-class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
+class _TimeSeriesShiftedDataset(Dataset):
 
     def __init__(self,
-                 series: TimeSeries,
+                 training_series: TimeSeries,
+                 target_series: TimeSeries,
                  length: int = 3,
-                 shift: int = 1,
-                 target_indices: Optional[List[int]] = None):
+                 shift: int = 1):
         """
         A PyTorch Dataset from a univariate TimeSeries.
         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
@@ -100,19 +102,21 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
         Parameters
         ----------
-        series
+        training_series
             The time series to be included in the dataset.
+        target_series
+            The time series used as target.
         length
             The length of the training and target sub-sequences.
         shift
             The number of positions that the target sequence is shifted forward compared to the training sequence.
         """
 
-        self.series_values = series.values()
-        self.len_series = len(series)
-        self.length = len(series) - 1 if length is None else length
+        self.training_series_values = training_series.values()
+        self.target_series_values = target_series.values()
+        self.len_series = len(training_series)
+        self.length = len(training_series) - 1 if length is None else length
         self.shift = shift
-        self.target_indices = target_indices if target_indices is not None else [0]
 
         raise_if_not(self.length > 0,
                      "The input sequence length must be positive. It is {}".format(self.length),
@@ -127,9 +131,9 @@ class _TimeSeriesShiftedDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         idx = index % self.__len__()
-        data = self.series_values[idx:idx + self.length]
-        target = self.series_values[idx + self.shift:idx + self.length + self.shift]
-        return torch.from_numpy(data).float(), torch.from_numpy(target[:, self.target_indices]).float()
+        data = self.training_series_values[idx:idx + self.length]
+        target = self.target_series_values[idx + self.shift:idx + self.length + self.shift]
+        return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
 class TorchForecastingModel(MultivariateForecastingModel):
@@ -193,7 +197,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             (default: current working directory).
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.u8timeseries/runs/`.
+            `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             `TimeSeries` is passed to the `fit()` method).
@@ -261,46 +265,60 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
     @random_method
     def fit(self,
-            series: TimeSeries,
-            val_series: Optional[TimeSeries] = None,
-            verbose: bool = False,
-            target_indices: Optional[List[int]] = None) -> None:
+            training_series: TimeSeries,
+            target_series: Optional[TimeSeries] = None,
+            val_training_series: Optional[TimeSeries] = None,
+            val_target_series: Optional[TimeSeries] = None,
+            verbose: bool = False) -> None:
         """ Fit method for torch modules
 
         Parameters
         ----------
-        series
-            The training time series
-        val_series
-            Optionally, a validation time series, which will be used to compute the validation loss
-            throughout training and keep track of the best performing models.
+        training_series
+            A series of training values used to predict the target series (can also include the target).
+        target_series
+            A series of target (dependent) value(s) predicted using the training_series if None specified, use the
+            training series as target.
+        val_training_series
+            Optionally, a validation training time series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
+        val_target_series
+            Optionally, a validation target time series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
         verbose
             Optionally, whether to print progress.
-        target_indices
-            A list of integers indicating which component(s) of the time series should be used
-            as targets for forecasting.
         """
-        raise_if_not(series.width == self.input_size, "The number of components of the series must be equal to "
-                     "the `input_size` defined when instantiating the current model.", logger)
+        super().fit(training_series, target_series)
 
-        super().fit(series, target_indices)
+        raise_if_not(self.training_series.width == self.input_size, "The number of components of the training series "
+                     "must be equal to the `input_size` defined when instantiating the current model.", logger)
+        raise_if_not(self.target_series.width == self.output_size, "The number of components in the target series must "
+                     "be equal to the `output_size` defined when instantiating the current model.", logger)
 
-        raise_if_not(len(self.target_indices) == self.output_size, "The number of target components must be equal to "
-                     "the `output_size` defined when instantiating the current model.", logger)
+        # perform checks on the validation series
+        raise_if(val_training_series is None and val_target_series is not None, "`val_target_series` can not be "
+                 "specified without a `val_training_series`.")
+        if val_training_series is not None:
+            val_training_series, val_target_series = self._make_fitable_series(val_training_series, val_target_series)
+            raise_if_not(self.training_series.width == val_training_series.width, "training_series must have the "
+                         "same number of component(s) as val_training_series.", logger)
+            raise_if_not(self.target_series.width == val_target_series.width, "target_series must have the same number "
+                         "of component(s) as val_target_series.", logger)
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         # Prepare training data
-        dataset = self._create_dataset(series)
-        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True,
-                                  num_workers=0, pin_memory=True, drop_last=True)
+        dataset = self._create_dataset(self.training_series, self.target_series)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0, pin_memory=True,
+                                  drop_last=True)
         raise_if_not(len(train_loader) > 0,
                      'The provided training time series is too short for obtaining even one training point.',
                      logger)
 
         # Prepare validation data
-        val_loader = self._prepare_validation_data(val_series)
+        val_loader = None if val_training_series is None else self._prepare_validation_data(val_training_series,
+                                                                                            val_target_series)
 
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer()
@@ -354,9 +372,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if_not(input_series is None or input_series.width == self.training_series.width,
                      "'input_series' must have same width as series used to fit model.", logger)
 
-        raise_if_not(use_full_output_length or self.training_series.width == 1, "Please set 'use_full_output_length'"
-                     " to 'True' and 'n' smaller or equal to 'output_length' when using a multivariate"
-                     "TimeSeries instance as input.", logger)
+        raise_if_not(use_full_output_length or (self.training_series == self.target_series
+                                                and self.training_series.width == 1),
+                     "Please set 'use_full_output_length' to 'True' and 'n' smaller or equal to 'output_length'"
+                     " when using a multivariate TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
         pred_in = self._create_predict_input(input_series)
@@ -378,8 +397,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
         """
         return 0
 
-    def _create_dataset(self, series):
-        return _TimeSeriesSequentialDataset(series, self.input_length, self.output_length, self.target_indices)
+    def _create_dataset(self, training_series, target_series):
+        return _TimeSeriesSequentialDataset(training_series, target_series, self.input_length, self.output_length)
 
     def _train(self,
                train_loader: DataLoader,
@@ -501,16 +520,13 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _prepare_validation_data(self, val_series):
-        if val_series is not None:
-            val_dataset = self._create_dataset(val_series)
-            val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
-                                    num_workers=0, pin_memory=True, drop_last=False)
-            raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
-                         'The provided validation time series is too short for this model output length.',
-                         logger)
-        else:
-            val_loader = None
+    def _prepare_validation_data(self, val_training_series, val_target_series):
+        val_dataset = self._create_dataset(val_training_series, val_target_series)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                num_workers=0, pin_memory=True, drop_last=False)
+        raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                     'The provided validation time series is too short for this model output length.',
+                     logger)
         return val_loader
 
     def _prepare_tensorboard_writer(self):
@@ -534,7 +550,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             raise_if_not(len(input_series) >= self.input_length,
                          "'input_series' must at least be as long as 'self.input_length'", logger)
             input_sequence = input_series.values()[-self.input_length:]
-            super().fit(input_series, self.target_indices)
+            super().fit(input_series)
         pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
 
         return pred_in
