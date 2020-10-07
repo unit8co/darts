@@ -65,7 +65,9 @@ if TORCH_AVAILABLE:
                     for input_length in input_lengths:
 
                         # create model with all weights set to one
-                        model = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length,
+                        model = TCNModel(kernel_size=kernel_size,
+                                         dilation_base=dilation_base,
+                                         input_length=input_length,
                                          weight_norm=False)
                         for res_block in model.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
@@ -83,8 +85,11 @@ if TORCH_AVAILABLE:
                             input_tensor[0, i, 0] = 0
 
                         # create model with all weights set to one and one layer less than is automatically detected
-                        model_2 = TCNModel(kernel_size=kernel_size, dilation_base=dilation_base, input_length=input_length,
-                                           weight_norm=False, num_layers=model.model.num_layers - 1)
+                        model_2 = TCNModel(kernel_size=kernel_size,
+                                           dilation_base=dilation_base,
+                                           input_length=input_length,
+                                           weight_norm=False,
+                                           num_layers=model.model.num_layers - 1)
                         for res_block in model_2.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
                             res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
