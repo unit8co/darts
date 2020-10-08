@@ -12,7 +12,6 @@ from .exponential_smoothing import ExponentialSmoothing
 from .theta import Theta, FourTheta
 from .arima import ARIMA
 from .fft import FFT
-from .transformer_model import TransformerModel
 
 try:
     from .auto_arima import AutoARIMA
@@ -28,6 +27,7 @@ except ModuleNotFoundError:
 try:
     from .rnn_model import RNNModel
     from .tcn_model import TCNModel
+    from .transformer_model import TransformerModel
 except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
 
