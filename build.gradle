@@ -83,12 +83,26 @@ task installLocally(type:Exec) {
 }
 
 // Tests
-void coverageTestSteps() {
+void coverageTestSteps(flavour) {
+    def omits = ["darts/models/auto_arima.py", "darts/models/prophet.py", "darts/models/rnn_model.py", "darts/models/tcn_model.py"]
+    switch(flavour) {
+        case "pmdarima":
+        omits -= "darts/models/auto_arima.py"
+        case "fbprophet":
+        omits -= "darts/models/prophet.py"
+        case "torch":
+        omits -= "darts/models/rnn_model.py"
+        omits -= "darts/models/tcn_model.py"
+        case "all":
+        omits = []
+    }
+    omits = omits.join(",") + "," + "darts/tests*,*__init__.py"
+
     exec {
-        commandLine "coverage", "run", "-m", "unittest"
+        commandLine "coverage", "run", "--source=darts/", "-m", "unittest"
     }
     exec {
-        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit='darts/tests*,*__init__.py'"
+        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit=$omits"
     }
 }
 
@@ -113,7 +127,7 @@ void createPipRelatedTask(String flavour) {
         dependsOn pip_core
         dependsOn pip_dev
         doLast {
-            coverageTestSteps()
+            coverageTestSteps(flavour)
         }
    }
 
@@ -141,7 +155,7 @@ task unitTest_all(type: Exec) {
 task coverageTest_all() {
     dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
     doLast {
-        coverageTestSteps()
+        coverageTestSteps("all")
     }
 }
 
