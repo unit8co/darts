@@ -3,7 +3,7 @@ import logging
 
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
-from darts.dataprocessing import Pipeline, data_transformer_from_ts_functions
+from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer, FittableDataTransformer, InvertibleDataTransformer
 
 
@@ -27,6 +27,7 @@ class PipelineTestCase(unittest.TestCase):
             return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().transform(data, *args, **kwargs)
             self.transform_called = True
             return data.append_values(constant_timeseries(1, 3).values())
 
@@ -39,6 +40,7 @@ class PipelineTestCase(unittest.TestCase):
             self.fit_called = False
 
         def fit(self, data):
+            super().fit(data)
             self.fit_called = True
             return self
 
@@ -47,16 +49,43 @@ class PipelineTestCase(unittest.TestCase):
             return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().transform(data, *args, **kwargs)
             self.transform_called = True
             self.args = args
             self.kwargs = kwargs
             return data.append_values(constant_timeseries(2, 3).values())
 
         def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().inverse_transform(data, *args, **kwargs)
             self.inverse_transform_called = True
             self.args = args
             self.kwargs = kwargs
             return data
+
+    class PlusTenTransformer(InvertibleDataTransformer[TimeSeries]):
+        def __init__(self, name="+10 transformer"):
+            super().__init__(name=name)
+        
+        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().transform(data, *args, **kwargs)
+            return data.map(lambda x: x+10)
+        
+        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().inverse_transform(data, *args, **kwargs)
+            return data.map(lambda x: x-10)
+
+    class TimesTwoTransformer(InvertibleDataTransformer[TimeSeries]):
+        def __init__(self):
+            super().__init__(name="*2 transformer")
+        
+        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().transform(data, *args, **kwargs)
+            return data.map(lambda x: x*2)
+        
+        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
+            super().inverse_transform(data, *args, **kwargs)
+            return data.map(lambda x: x/2)
+
 
     def test_transform(self):
         # given
@@ -66,6 +95,7 @@ class PipelineTestCase(unittest.TestCase):
         transformers = [mock1] * 10 + [mock2] * 10
         p = Pipeline(transformers)
         # when
+        p.fit(data)
         transformed = p.transform(data)
 
         # then
@@ -87,7 +117,7 @@ class PipelineTestCase(unittest.TestCase):
     def test_transformers_not_modified(self):
         # given
         mock = self.DataTransformerMock1()
-        p = Pipeline([mock], deep=True)
+        p = Pipeline([mock], copy=True)
 
         # when
         p.transform(constant_timeseries(1, 10))
@@ -112,6 +142,27 @@ class PipelineTestCase(unittest.TestCase):
         for i in range(10, 20):
             self.assertTrue(transformers[i].fit_called)
 
+    def test_fit_skips_superfluous_transforms(self):
+        #given
+        data = constant_timeseries(0, 100)
+        transformers = [self.DataTransformerMock1() for _ in range(10)]\
+            + [self.DataTransformerMock2()]\
+            + [self. DataTransformerMock1() for _ in range(10)]
+        p = Pipeline(transformers)
+
+        # when
+        p.fit(data)
+
+        # then
+        for i in range(10):
+            self.assertTrue(transformers[i].transform_called)
+        self.assertTrue(transformers[10].fit_called)
+        self.assertFalse(transformers[10].transform_called)
+        for i in range(11, 21):
+            self.assertFalse(transformers[i].transform_called)
+
+        
+
     def test_transform_fit(self):
         # given
         data = constant_timeseries(0, 3)
@@ -135,14 +186,7 @@ class PipelineTestCase(unittest.TestCase):
         # given
         data = constant_timeseries(0., 3)
 
-        transformers = [
-            data_transformer_from_ts_functions(transform=lambda x: x + 10,
-                                               inverse_transform=lambda x: x - 10,
-                                               name="+10 transformer"),
-            data_transformer_from_ts_functions(transform=lambda x: x * 2,
-                                               inverse_transform=lambda x: x / 2,
-                                               name="*2 transformer")
-        ]
+        transformers = [self.PlusTenTransformer(), self.TimesTwoTransformer()]
         p = Pipeline(transformers)
 
         # when
@@ -155,9 +199,7 @@ class PipelineTestCase(unittest.TestCase):
     def test_getitem(self):
         # given
 
-        transformers = [data_transformer_from_ts_functions(transform=lambda x: x + 10,
-                                                           inverse_transform=lambda x: x - 10,
-                                                           name="transformer{}".format(i)) for i in range(0, 10)]
+        transformers = [self.PlusTenTransformer(name="+10 transformer{}".format(i)) for i in range(0, 10)]
         p = Pipeline(transformers)
 
         # when & then

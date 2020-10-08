@@ -2,11 +2,11 @@
 Missing Values Filler
 ---------------------
 """
-from typing import Optional, List, Union
+from typing import Optional, Sequence, Union
 
 from darts.dataprocessing import Validator
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.utils.missing_values import auto_fillna, fillna
+from darts.utils.missing_values import fill_missing_values
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -18,7 +18,7 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
     def __init__(self,
                  fill: Union[str, float] = 'auto',
                  name: str = "MissingValuesFiller",
-                 validators: Optional[List[Validator]] = None):
+                 validators: Optional[Sequence[Validator]] = None):
         """
         Data transformer to fill missing values from time series
 
@@ -30,7 +30,7 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
         name
             A specific name for the transformer
         validators
-            List of validators that will be called before fit(), transform() and inverse_transform()
+            Sequence of validators that will be called before fit(), transform() and inverse_transform()
         """
         raise_if_not(isinstance(fill, str) or isinstance(fill, float),
                      "`fill` should either be a string or a float",
@@ -44,7 +44,4 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
 
     def transform(self, data: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         super().transform(data)
-        if self._fill == 'auto':
-            return auto_fillna(data, **interpolate_kwargs)
-
-        return fillna(data, self._fill)
+        return fill_missing_values(data, self._fill, **interpolate_kwargs)

@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from darts.dataprocessing.transformers import ScalerWrapper
+from darts.dataprocessing.transformers import Scaler
 from darts.utils import timeseries_generation as tg
 
 
@@ -20,8 +20,8 @@ class DataTransformerTestCase(unittest.TestCase):
 
     def test_scaling(self):
         self.series3 = self.series1[:1]
-        transformer1 = ScalerWrapper(MinMaxScaler(feature_range=(0, 2)))
-        transformer2 = ScalerWrapper(StandardScaler())
+        transformer1 = Scaler(MinMaxScaler(feature_range=(0, 2)))
+        transformer2 = Scaler(StandardScaler())
 
         series1_tr1 = transformer1.fit_transform(self.series1)
         series1_tr2 = transformer2.fit_transform(self.series1)

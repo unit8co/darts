@@ -4,7 +4,7 @@ Fittable Data Transformer
 """
 
 from abc import abstractmethod
-from typing import TypeVar, List, Optional
+from typing import TypeVar, Sequence, Optional
 
 from darts.logging import get_logger, raise_if_not
 from darts.dataprocessing import Validator
@@ -17,7 +17,7 @@ T = TypeVar('T')
 class FittableDataTransformer(BaseDataTransformer[T]):
     def __init__(self,
                  name: str = "FittableDataTransformer",
-                 validators: Optional[List[Validator]] = None):
+                 validators: Optional[Sequence[Validator]] = None):
 
         """
         Abstract class for data transformers implementing a fit method. All deriving classes must implement
@@ -26,7 +26,7 @@ class FittableDataTransformer(BaseDataTransformer[T]):
         names
             The data transformer's name
         validators
-            List of validators that will be called before fit() and transform()
+            Sequence of validators that will be called before fit() and transform()
         """
         super().__init__(name, validators)
         self._fit_called = False

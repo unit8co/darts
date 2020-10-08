@@ -1,6 +1,6 @@
 """
-Scaler wrapper
---------------
+Scaler
+------
 """
 from darts.dataprocessing.transformers import FittableDataTransformer, InvertibleDataTransformer
 
@@ -11,8 +11,8 @@ from sklearn.preprocessing import MinMaxScaler
 logger = get_logger(__name__)
 
 
-class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
-    def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1)), name="ScalerWrapper"):
+class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
+    def __init__(self, scaler=MinMaxScaler(feature_range=(0, 1)), name="Scaler"):
         """
         Generic wrapper class for using scalers that implement `fit()`, `transform()` and
         `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.
@@ -38,7 +38,7 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         self.transformer = scaler
         self.train_series = None
 
-    def fit(self, series: TimeSeries) -> 'ScalerWrapper':
+    def fit(self, series: TimeSeries) -> 'Scaler':
         """ Fits this scaler to the provided time series data
 
         Parameters
@@ -46,6 +46,7 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         series
             The time series to fit the scaler on
         """
+        super().fit(series)
         self.transformer.fit(series.values().reshape((-1, series.width)))
         self.train_series = series
         return self
@@ -65,6 +66,7 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         TimeSeries
             A new time series, transformed with this (fitted) scaler.
         """
+        super().transform(series, *args, **kwargs)
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.transform(series.values().
                                                                            reshape((-1, series.width))),
@@ -84,6 +86,7 @@ class ScalerWrapper(FittableDataTransformer[TimeSeries], InvertibleDataTransform
         TimeSeries
             The inverse transform
         """
+        super().inverse_transform(series, *args, **kwargs)
         return TimeSeries.from_times_and_values(series.time_index(),
                                                 self.transformer.inverse_transform(series.values().
                                                                                    reshape((-1, series.width))),

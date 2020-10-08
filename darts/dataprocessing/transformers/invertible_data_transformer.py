@@ -3,7 +3,7 @@ Invertible Data Transformer
 ---------------------------
 """
 from abc import abstractmethod
-from typing import TypeVar, List, Optional
+from typing import TypeVar, Sequence, Optional
 
 from darts.logging import get_logger, raise_if_not
 from darts.dataprocessing import Validator
@@ -17,7 +17,7 @@ class InvertibleDataTransformer(BaseDataTransformer[T]):
 
     def __init__(self,
                  name: str = "InvertibleDataTransformer",
-                 validators: Optional[List[Validator]] = None):
+                 validators: Optional[Sequence[Validator]] = None):
 
         """
         Abstract class for data transformers implementing a fit method. All deriving classes must implement
@@ -28,7 +28,7 @@ class InvertibleDataTransformer(BaseDataTransformer[T]):
         names
             The data transformer's name
         validators
-            List of validators that will be called before transform() and inverse_transform()
+            Sequence of validators that will be called before transform() and inverse_transform()
         """
         super().__init__(name, validators)
 

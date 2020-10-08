@@ -3,7 +3,7 @@ Pipeline
 --------
 """
 from copy import deepcopy
-from typing import List, Union, Iterator
+from typing import Sequence, Union, Iterator
 
 from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
@@ -14,25 +14,25 @@ logger = get_logger(__name__)
 
 class Pipeline:
     def __init__(self,
-                 transformers: List[BaseDataTransformer[TimeSeries]],
-                 deep: bool = False):
+                 transformers: Sequence[BaseDataTransformer[TimeSeries]],
+                 copy: bool = False):
         """
         Pipeline combines multiple data transformers chaining them together.
 
         Parameters
         ----------
         transformers
-            List of data transformers.
-        deep
-            If set makes a copy of each data transformer before adding them to the pipeline
+            Sequence of data transformers.
+        copy
+            If set makes a (deep) copy of each data transformer before adding them to the pipeline
         """
         raise_if_not(all((isinstance(t, BaseDataTransformer)) for t in transformers),
                      "transformers should be objects deriving from BaseDataTransformer", logger)
 
         if transformers is None or len(transformers) == 0:
             logger.warning("Empty pipeline created")
-            self._transformers: List[BaseDataTransformer[TimeSeries]] = []
-        elif deep:
+            self._transformers: Sequence[BaseDataTransformer[TimeSeries]] = []
+        elif copy:
             self._transformers = deepcopy(transformers)
         else:
             self._transformers = transformers
@@ -41,15 +41,28 @@ class Pipeline:
 
     def fit(self, data: TimeSeries):
         """
-        Fit data to all fittable transformers in pipeline.
+        Fit all fittable transformers in pipeline.
 
         Parameters
         ----------
         data
             TimeSeries to fit on.
         """
-        for transformer in filter(lambda t: isinstance(t, FittableDataTransformer), self._transformers):
-            transformer.fit(data)
+        
+        # Find the last fittable transformer index
+        # No need to fit (and thus transform) after this index, possibly saving a fair bit of time
+        last_fittable_idx = -1
+        for idx, transformer in enumerate(self._transformers):
+            if isinstance(transformer, FittableDataTransformer):
+                last_fittable_idx = idx
+
+        for idx, transformer in enumerate(self._transformers):
+            if idx <= last_fittable_idx and isinstance(transformer, FittableDataTransformer):
+                transformer.fit(data)
+            
+            if idx < last_fittable_idx:
+                data = transformer.transform(data)
+
 
     def fit_transform(self, data: TimeSeries) -> TimeSeries:
         """
@@ -134,22 +147,22 @@ class Pipeline:
             transformers = [self._transformers[key]]
         else:
             transformers = self._transformers[key]
-        return Pipeline(transformers, deep=True)
+        return Pipeline(transformers, copy=True)
 
     def __iter__(self) -> Iterator[BaseDataTransformer[TimeSeries]]:
         """
         Returns
         -------
         Iterator
-            List of data transformers
+            Iterator on sequence of data transformers
         """
-        return self._transformers
+        return self._transformers.__iter__()
 
     def __len__(self):
         return len(self._transformers)
 
     def __copy__(self, deep: bool = True):
-        return Pipeline(self._transformers, deep=deep)
+        return Pipeline(self._transformers, copy=deep)
 
     def __deepcopy__(self, memo=None):
         return self.__copy__(deep=True)

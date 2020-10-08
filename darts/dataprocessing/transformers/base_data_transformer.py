@@ -3,7 +3,7 @@ Base Data Transformer
 ---------------------
 """
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, List, Optional
+from typing import TypeVar, Generic, Sequence, Optional
 
 from darts.logging import raise_if, get_logger
 from darts.dataprocessing import Validator
@@ -15,7 +15,7 @@ T = TypeVar('T')
 class BaseDataTransformer(Generic[T], ABC):
     def __init__(self,
                  name: str = "BaseDataTransformer",
-                 validators: Optional[List[Validator]] = None):
+                 validators: Optional[Sequence[Validator]] = None):
         """
         Abstract class for data transformers. All deriving classes have to implement only one function `transform`.
         Data transformers requiring to be fit first before calling `transform()` should derive
@@ -27,7 +27,7 @@ class BaseDataTransformer(Generic[T], ABC):
         names
             The data transformer's name
         validators
-            List of validators that will be called before transform()
+            Sequence of validators that will be called before transform()
         """
         self._name = name
 
