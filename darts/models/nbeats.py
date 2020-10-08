@@ -3,10 +3,13 @@ N-BEATS
 -------
 """
 
-import torch
-import torch.nn as nn
 from typing import NewType
 from enum import Enum
+import torch
+import torch.nn as nn
+
+from ..utils.torch import random_method
+from .torch_forecasting_model import TorchForecastingModel
 
 
 class GType(Enum):
@@ -144,6 +147,7 @@ class _Stack(nn.Module):
             Tensor containing the forward forecast of the block.
 
         """
+        super(_Stack, self).__init__()
 
         self.input_length = input_length
         self.output_length = output_length
@@ -169,3 +173,129 @@ class _Stack(nn.Module):
 
         return stack_residual, stack_forecast
 
+
+class _NBEATSModule(nn.Module):
+
+    def __init__(self,
+                 generic_architecture: bool,
+                 num_stacks: int,
+                 num_blocks: int,
+                 num_layers: int,
+                 layer_width: int,
+                 input_length: int,
+                 output_length: int
+                 ):
+        """ PyTorch module implementing the N-BEATS architecture.
+
+        Parameters
+        ----------
+        generic_architecture
+            Boolean value indicating whether the generic architecture of N-BEATS is used.
+            If not, the interpretable architecture outlined in the paper (consisting of one trend
+            and one seasonality stack with appropriate waveform generator functions).
+        num_stacks
+            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
+        num_blocks
+            The number of blocks making up every stack. Only used if `generic_architecture` is set to `True`.
+        num_layers
+            The number of fully connected layers preceding the final forking layers in each block of every stack.
+            Only used if `generic_architecture` is set to `True`.
+        layer_width
+            The number of neurons that make up each fully connected layer in each block of every stack.
+        input_length
+            The length of the input sequence fed to the model.
+        output_length
+            The length of the forecast of the model.
+
+        Inputs
+        ------
+        x of shape `(batch_size, input_length)`
+            Tensor containing the input sequence.
+
+        Outputs
+        -------
+        y of shape `(batch_size, output_length)`
+            Tensor containing the output of the NBEATS module.
+
+        """
+        super(_NBEATSModule, self).__init__()
+
+        if generic_architecture:
+            self.stack_list = [
+                _Stack(num_blocks, num_layers, layer_width, input_length, output_length, num_stacks, GType.GENERIC)
+            ]
+        else:
+            # TODO: implement interpretable N-BEATS architecture as outlined in paper
+            raise NotImplementedError()
+
+        def forward(self, x):
+            y = torch.zeros(x.shape[0], self.output_length)
+            for stack in self.stack_list:
+                # compute stack output
+                stack_residual, stack_forecast = stack(x)
+
+                # add stack forecast to final output
+                y += stack_forecast
+
+                # set current stack residual as input for next stack
+                x = stack_residual
+            
+            return y
+
+
+class NBEATSModel(TorchForecastingModel):
+
+    @random_method
+    def __init__(self,
+                 generic_architecture: bool,
+                 num_stacks: int,
+                 num_blocks: int,
+                 num_layers: int,
+                 layer_width: int,
+                 input_length: int,
+                 output_length: int,
+                 **kwargs):
+        """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
+
+        This is an implementation of the N-BEATS architecture as outlined in this paper:
+        https://openreview.net/forum?id=r1ecqn4YwB
+
+        Parameters
+        ----------
+        generic_architecture
+            Boolean value indicating whether the generic architecture of N-BEATS is used.
+            If not, the interpretable architecture outlined in the paper (consisting of one trend
+            and one seasonality stack with appropriate waveform generator functions).
+        num_stacks
+            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
+        num_blocks
+            The number of blocks making up every stack. Only used if `generic_architecture` is set to `True`.
+        num_layers
+            The number of fully connected layers preceding the final forking layers in each block of every stack.
+            Only used if `generic_architecture` is set to `True`.
+        layer_width
+            The number of neurons that make up each fully connected layer in each block of every stack.
+        input_length
+            The length of the input sequence fed to the model.
+        output_length
+            The length of the forecast of the model.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+
+        """
+
+        self.model = _NBEATSModule(
+            generic_architecture,
+            num_stacks,
+            num_blocks,
+            num_layers,
+            layer_width,
+            input_length,
+            output_length
+        )
+
+        kwargs['input_length'] = input_length
+        kwargs['output_length'] = output_length
+
+        super().__init__(**kwargs)
