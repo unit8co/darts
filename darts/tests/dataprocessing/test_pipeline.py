@@ -65,27 +65,26 @@ class PipelineTestCase(unittest.TestCase):
     class PlusTenTransformer(InvertibleDataTransformer[TimeSeries]):
         def __init__(self, name="+10 transformer"):
             super().__init__(name=name)
-        
+
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().transform(data, *args, **kwargs)
-            return data.map(lambda x: x+10)
-        
+            return data.map(lambda x: x + 10)
+
         def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().inverse_transform(data, *args, **kwargs)
-            return data.map(lambda x: x-10)
+            return data.map(lambda x: x - 10)
 
     class TimesTwoTransformer(InvertibleDataTransformer[TimeSeries]):
         def __init__(self):
             super().__init__(name="*2 transformer")
-        
+
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().transform(data, *args, **kwargs)
-            return data.map(lambda x: x*2)
-        
+            return data.map(lambda x: x * 2)
+
         def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().inverse_transform(data, *args, **kwargs)
-            return data.map(lambda x: x/2)
-
+            return data.map(lambda x: x / 2)
 
     def test_transform(self):
         # given
@@ -143,7 +142,7 @@ class PipelineTestCase(unittest.TestCase):
             self.assertTrue(transformers[i].fit_called)
 
     def test_fit_skips_superfluous_transforms(self):
-        #given
+        # given
         data = constant_timeseries(0, 100)
         transformers = [self.DataTransformerMock1() for _ in range(10)]\
             + [self.DataTransformerMock2()]\
@@ -160,8 +159,6 @@ class PipelineTestCase(unittest.TestCase):
         self.assertFalse(transformers[10].transform_called)
         for i in range(11, 21):
             self.assertFalse(transformers[i].transform_called)
-
-        
 
     def test_transform_fit(self):
         # given

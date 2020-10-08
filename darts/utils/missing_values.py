@@ -10,6 +10,7 @@ from typing import Union
 
 logger = get_logger(__name__)
 
+
 def missing_values_ratio(series: TimeSeries) -> float:
     """
     Computes the ratio of missing values
@@ -56,7 +57,7 @@ def fill_missing_values(series: TimeSeries, fill: Union[str, float] = 'auto', **
     raise_if(isinstance(fill, str) and fill != 'auto',
              "invalid string for `fill`: can only be set to 'auto'",
              logger)
-    
+
     if fill == 'auto':
         return _auto_fill(series, **interpolate_kwargs)
     return _const_fill(series, fill)
@@ -79,11 +80,12 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(series.time_index(), series.pd_dataframe().fillna(value=fill), series.freq())
+    return TimeSeries.from_times_and_values(series.time_index(),
+                                            series.pd_dataframe().fillna(value=fill),
+                                            series.freq())
 
 
-def _auto_fill(series: TimeSeries,
-                **interpolate_kwargs) -> TimeSeries:
+def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
     """
     This function fills the missing values in the TimeSeries `series`,
     using the `pandas.Dataframe.interpolate()` method.

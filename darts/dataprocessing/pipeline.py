@@ -48,7 +48,7 @@ class Pipeline:
         data
             TimeSeries to fit on.
         """
-        
+
         # Find the last fittable transformer index
         # No need to fit (and thus transform) after this index, possibly saving a fair bit of time
         last_fittable_idx = -1
@@ -59,10 +59,9 @@ class Pipeline:
         for idx, transformer in enumerate(self._transformers):
             if idx <= last_fittable_idx and isinstance(transformer, FittableDataTransformer):
                 transformer.fit(data)
-            
+
             if idx < last_fittable_idx:
                 data = transformer.transform(data)
-
 
     def fit_transform(self, data: TimeSeries) -> TimeSeries:
         """
