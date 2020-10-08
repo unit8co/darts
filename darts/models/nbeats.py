@@ -68,6 +68,7 @@ class _Block(nn.Module):
         self.num_layers = num_layers
         self.layer_width = layer_width
         self.g_type = g_type
+        self.relu = nn.ReLU()
 
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_length, layer_width)]
@@ -90,7 +91,7 @@ class _Block(nn.Module):
     def forward(self, x):
         # fully connected layer stack
         for layer in self.linear_layer_stack_list:
-            x = nn.ReLU(layer(x))
+            x = self.relu(layer(x))
 
         # forked linear layers producing waveform generator parameters
         theta_backcast = self.backcast_linear_layer(x)
@@ -155,7 +156,7 @@ class _Stack(nn.Module):
         self.blocks_list = [
             _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type) for i in range(num_stacks)
         ]
-        self.blocks = nn.ModuleList(self.linear_layer_stack_list)
+        self.blocks = nn.ModuleList(self.blocks_list)
 
     def forward(self, x):
         stack_forecast = torch.zeros(x.shape[0], self.output_length)
@@ -164,10 +165,10 @@ class _Stack(nn.Module):
             x_hat, y_hat = block(x)
 
             # add block forecast to stack forecast
-            stack_forecast += y_hat
+            stack_forecast = stack_forecast + y_hat
 
             # subtract backcast from input to produce residual
-            x -= x_hat
+            x = x - x_hat
 
         stack_residual = x
 
@@ -220,27 +221,39 @@ class _NBEATSModule(nn.Module):
         """
         super(_NBEATSModule, self).__init__()
 
+        self.input_length = input_length
+        self.output_length = output_length
+
         if generic_architecture:
-            self.stack_list = [
+            self.stacks_list = [
                 _Stack(num_blocks, num_layers, layer_width, input_length, output_length, num_stacks, GType.GENERIC)
             ]
         else:
             # TODO: implement interpretable N-BEATS architecture as outlined in paper
             raise NotImplementedError()
 
-        def forward(self, x):
-            y = torch.zeros(x.shape[0], self.output_length)
-            for stack in self.stack_list:
-                # compute stack output
-                stack_residual, stack_forecast = stack(x)
+        self.stacks = nn.ModuleList(self.stacks_list)
 
-                # add stack forecast to final output
-                y += stack_forecast
+    def forward(self, x):
 
-                # set current stack residual as input for next stack
-                x = stack_residual
-            
-            return y
+        # squeeze last dimension (because model is univariate)
+        x = x.squeeze(dim=2)
+
+        y = torch.zeros(x.shape[0], self.output_length)
+        for stack in self.stacks_list:
+            # compute stack output
+            stack_residual, stack_forecast = stack(x)
+
+            # add stack forecast to final output
+            y = y + stack_forecast
+
+            # set current stack residual as input for next stack
+            x = stack_residual
+
+        # unsqueeze last dimension
+        y = y.unsqueeze(dim=2)
+
+        return y
 
 
 class NBEATSModel(TorchForecastingModel):

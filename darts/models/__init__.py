@@ -27,6 +27,7 @@ except ModuleNotFoundError:
 try:
     from .rnn_model import RNNModel
     from .tcn_model import TCNModel
+    from .nbeats import NBEATSModel
 except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
 
