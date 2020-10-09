@@ -29,7 +29,7 @@ PROJECT_URLS = {
 
 setup(
       name='u8darts',
-      version="0.3.0",
+      version="dev",
       description='A python library for easy manipulation and forecasting of time series.',
       long_description=LONG_DESCRIPTION,
       long_description_content_type="text/markdown",
