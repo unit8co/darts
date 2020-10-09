@@ -84,7 +84,7 @@ task installLocally(type:Exec) {
 
 // Tests
 void coverageTestSteps(flavour) {
-    def omits = ["darts/models/auto_arima.py", "darts/models/prophet.py", "darts/models/rnn_model.py", "darts/models/tcn_model.py", "darts/models/torch_forecasting_model.py"]
+    def omits = ["darts/models/auto_arima.py", "darts/models/prophet.py", "darts/models/rnn_model.py", "darts/models/tcn_model.py", "darts/models/torch_forecasting_model.py", "darts/utils/torch.py"]
     switch(flavour) {
         case "pmdarima":
         omits -= "darts/models/auto_arima.py"
@@ -94,6 +94,7 @@ void coverageTestSteps(flavour) {
         omits -= "darts/models/rnn_model.py"
         omits -= "darts/models/tcn_model.py"
         omits -= "darts/models/torch_forecasting_model.py"
+        omits -= "darts/utils/torch.py"
         case "all":
         omits = []
     }
