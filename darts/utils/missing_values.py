@@ -3,33 +3,73 @@ Utils for filling missing values
 --------------------------------
 """
 
-from ..timeseries import TimeSeries
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_if, raise_if_not
+
+from typing import Union
+
+logger = get_logger(__name__)
 
 
-def na_ratio(ts: TimeSeries) -> float:
+def missing_values_ratio(series: TimeSeries) -> float:
     """
     Computes the ratio of missing values
 
     Parameters
     ----------
-    ts
+    series
         The time series to compute ratio on
+
     Returns
     -------
     float
         The ratio of missing values
     """
 
-    return ts.pd_dataframe().isnull().sum().mean() / len(ts)
+    return series.pd_dataframe().isnull().sum().mean() / len(series)
 
 
-def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
+def fill_missing_values(series: TimeSeries, fill: Union[str, float] = 'auto', **interpolate_kwargs) -> TimeSeries:
     """
-    Fills the missing values of `ts` with only the value provided (default zeroes).
+    Fills missing values in the provided time series
 
     Parameters
     ----------
-    ts
+    series
+        The time series for which to fill missing values
+    fill
+        The value used to replace the missing values.
+        If set to 'auto', will auto-fill missing values using the `pandas.Dataframe.interpolate()` method.
+    interpolate_kwargs
+        Keyword arguments for `pandas.Dataframe.interpolate()`, only used when fit is set to 'auto'.
+        See `the documentation
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`_
+        for the list of supported parameters.
+
+    Returns
+    -------
+    TimeSeries
+        A new TimeSeries with all missing values filled according to the rules above.
+    """
+    raise_if_not(isinstance(fill, str) or isinstance(fill, float),
+                 "`fill` should either be a string or a float",
+                 logger)
+    raise_if(isinstance(fill, str) and fill != 'auto',
+             "invalid string for `fill`: can only be set to 'auto'",
+             logger)
+
+    if fill == 'auto':
+        return _auto_fill(series, **interpolate_kwargs)
+    return _const_fill(series, fill)
+
+
+def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
+    """
+    Fills the missing values of `series` with only the value provided (default zeroes).
+
+    Parameters
+    ----------
+    series
         The TimeSeries to check for missing values.
     fill
         The value used to replace the missing values.
@@ -37,24 +77,25 @@ def fillna(ts: TimeSeries, fill: float = 0) -> TimeSeries:
     Returns
     -------
     TimeSeries
-        A TimeSeries, `ts` with all missing values set to `fill`.
+        A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts.pd_dataframe().fillna(value=fill), ts.freq())
+    return TimeSeries.from_times_and_values(series.time_index(),
+                                            series.pd_dataframe().fillna(value=fill),
+                                            series.freq())
 
 
-def auto_fillna(ts: TimeSeries,
-                **interpolate_kwargs) -> TimeSeries:
+def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
     """
-    This function fills the missing value in the TimeSeries `ts`,
+    This function fills the missing values in the TimeSeries `series`,
     using the `pandas.Dataframe.interpolate()` method.
 
     Parameters
     ----------
-    ts
+    series
         The time series
     interpolate_kwargs
-        Keyword arguments  `pandas.Dataframe.interpolate()`.
+        Keyword arguments for `pandas.Dataframe.interpolate()`.
         See `the documentation
         <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`_
         for the list of supported parameters.
@@ -64,12 +105,12 @@ def auto_fillna(ts: TimeSeries,
         A new TimeSeries with all missing values filled according to the rules above.
     """
 
-    ts_temp = ts.pd_dataframe()
+    series_temp = series.pd_dataframe()
 
     # pandas interpolate wrapper, with chosen `method`
     if 'limit_direction' not in interpolate_kwargs:
         interpolate_kwargs['limit_direction'] = 'both'
     interpolate_kwargs['inplace'] = True
-    ts_temp.interpolate(**interpolate_kwargs)
+    series_temp.interpolate(**interpolate_kwargs)
 
-    return TimeSeries.from_times_and_values(ts.time_index(), ts_temp.values, ts.freq())
+    return TimeSeries.from_times_and_values(series.time_index(), series_temp.values, series.freq())

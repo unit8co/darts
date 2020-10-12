@@ -15,7 +15,7 @@ from statsmodels.tsa.stattools import acf
 
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
-from .missing_values import auto_fillna
+from .missing_values import fill_missing_values
 from .. import SeasonalityMode, ModelMode
 
 logger = get_logger(__name__)
@@ -332,7 +332,7 @@ def plot_residuals_analysis(residuals: TimeSeries,
     gs = fig.add_gridspec(2, 2)
 
     if fill_nan:
-        residuals = auto_fillna(residuals)
+        residuals = fill_missing_values(residuals)
 
     # plot values
     ax1 = fig.add_subplot(gs[:1, :])
