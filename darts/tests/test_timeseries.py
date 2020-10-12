@@ -5,7 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from ..timeseries import TimeSeries
+from darts.timeseries import TimeSeries
+from darts.utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 
 class TimeSeriesTestCase(unittest.TestCase):
@@ -434,7 +435,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(len(seriesC), 1)
 
     def test_map(self):
-        fn = np.sin
+        fn = math.sin
         series = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), np.random.randn(10, 3))
 
         df_0 = series.pd_dataframe()
@@ -460,3 +461,13 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(series_012, series.map(fn))
 
         self.assertNotEqual(series_01, series.map(fn))
+    
+    def test_map_with_timestamp(self):
+        series = linear_timeseries(start_value=1, length = 12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)
+        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+
+        def function(ts, x):
+            return x - ts.month
+
+        new_series = series.map(function)
+        self.assertEqual(new_series, zeroes)

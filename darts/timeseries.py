@@ -11,6 +11,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any, List, Union
+from inspect import signature
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -919,7 +920,7 @@ class TimeSeries:
         return index[0] <= ts <= index[-1]
 
     def map(self,
-            fn: Callable[[np.number], np.number],
+            fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
             cols: Optional[Union[List[str], str]] = None) -> 'TimeSeries':
         """
         Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
@@ -929,7 +930,8 @@ class TimeSeries:
         Parameters
         ----------
         fn
-            A numerical function
+            Either a function which takes a value and returns a value ie. f(x) = y
+            Or a function which takes a value and it's timestamp and returns a value ie. f(timestamp, x) = y
         cols
             Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
 
@@ -938,13 +940,27 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries instance
         """
+        if not isinstance(fn, Callable):
+            raise_log(TypeError("fn should be callable"), logger)
+        if len(signature(fn).parameters) not in [1, 2]:
+            raise_log(TypeError("fn must either take one or two parameters"))
+    
         if cols is None:
-            new_dataframe = self._df.applymap(fn)
-        else:
-            if isinstance(cols, str):
-                cols = [cols]
-            new_dataframe = self.pd_dataframe()
+            cols = list(self._df) # list of all column names
+        elif isinstance(cols, str):
+            cols = [cols]
+        
+        new_dataframe = self.pd_dataframe()
+
+        if len(signature(fn).parameters) == 1: # simple map function f(x)
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
+        else: # map function uses timestamp f(timestamp, x)
+            def apply_fn_wrapper(row):
+                timestamp = row.name
+                return row.map(lambda x: fn(timestamp, x))
+            
+            new_dataframe[cols] = new_dataframe[cols].apply(apply_fn_wrapper, axis=1)
+        
         return TimeSeries(new_dataframe, self.freq_str())
 
     @staticmethod
