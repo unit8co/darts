@@ -90,7 +90,7 @@ Currently, the library contains the following features:
 * Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),
 * Temporal convolutional network.
 
-**Preprocessing:** Transformer tool for easily scaling / normalizing time series.
+**Data processing:** Data transformer tool for easily scaling / normalizing time series.
 
 **Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
 from R2-scores to Mean Absolute Scaled Error.

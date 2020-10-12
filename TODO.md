@@ -23,7 +23,7 @@ The following could be useful TimeSeries:
 - Correlation coefficient
 
 # Utils
-- More preprocessing: moving average, filters, ...
+- More data processing: moving average, filters, ...
 - A function such as `checkresiduals()` used here https://otexts.com/fpp2/regression-evaluation.html
 
 # Vizualisation
