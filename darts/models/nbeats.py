@@ -3,14 +3,18 @@ N-BEATS
 -------
 """
 
-from typing import NewType
+from typing import NewType, Optional, Union
 from enum import Enum
+import numpy as np
+from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
+from ..logging import raise_log
 from ..utils.torch import random_method
 from .torch_forecasting_model import TorchForecastingModel
 
+logger = get_logger(__name__)
 
 class GType(Enum):
     GENERIC = 1
@@ -19,6 +23,33 @@ class GType(Enum):
 
 
 GTypes = NewType('GTypes', GType)
+
+
+class _TrendGenerator(nn.Module):
+
+    def __init__(self,
+                 num_stacks,
+                 output_length):
+        super(_TrendGenerator, self).__init__()
+        self.T = torch.stack([torch.arange(output_length)**i for i in range(num_stacks)], 1)
+
+    def forward(self, x):
+        return torch.matmul(self.T, x)
+
+
+class _SeasonalityGenerator(nn.Module):
+
+    def __init__(self,
+                 num_stacks,
+                 output_length):
+        super(_SeasonalityGenerator, self).__init__()
+        half_minus_one = int(output_length / 2 - 1)
+        cos_vectors = [torch.cos(torch.arange(output_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
+        sin_vectors = [torch.sin(torch.arange(output_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
+        self.S = torch.stack([torch.ones(output_length)] + cos_vectors + sin_vectors, 1)
+
+    def forward(self, x):
+        return torch.matmul(self.S, x)
 
 
 class _Block(nn.Module):
@@ -84,9 +115,12 @@ class _Block(nn.Module):
         if g_type == GType.GENERIC:
             self.backcast_g = nn.Linear(num_stacks, input_length)
             self.forecast_g = nn.Linear(num_stacks, output_length)
+        elif g_type == GType.TREND:
+            self.backcast_g = _TrendGenerator(num_stacks, output_length)
+        elif g_type == GType.SEASONALITY:
+            self.backcast_g = _SeasonalityGenerator(num_stacks, output_length)
         else:
-            # TODO: implement seasonality and trend waveform generators
-            raise NotImplementedError()
+            raise_log(ValueError("g_type not supported"), logger)
 
     def forward(self, x):
         # fully connected layer stack
@@ -145,7 +179,7 @@ class _Stack(nn.Module):
             Tensor containing the 'backcast' of the block, which represents an approximation of `x`
             given the constraints of the functional space determined by `g`.
         stack_forecast of shape `(batch_size, output_length)`
-            Tensor containing the forward forecast of the block.
+            Tensor containing the forward forecast of the stack.
 
         """
         super(_Stack, self).__init__()
@@ -153,9 +187,16 @@ class _Stack(nn.Module):
         self.input_length = input_length
         self.output_length = output_length
 
-        self.blocks_list = [
-            _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type) for i in range(num_stacks)
-        ]
+        if g_type == GType.GENERIC:
+            self.blocks_list = [
+                _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type)
+                for i in range(num_blocks)
+            ]
+        else:
+            # same block instance is used for weight sharing
+            interpretable_block = _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type)
+            self.blocks_list = [interpretable_block] * num_blocks
+
         self.blocks = nn.ModuleList(self.blocks_list)
 
     def forward(self, x):
@@ -227,10 +268,14 @@ class _NBEATSModule(nn.Module):
         if generic_architecture:
             self.stacks_list = [
                 _Stack(num_blocks, num_layers, layer_width, input_length, output_length, num_stacks, GType.GENERIC)
+                for i in range(num_stacks)
             ]
         else:
-            # TODO: implement interpretable N-BEATS architecture as outlined in paper
-            raise NotImplementedError()
+            trend_stack = _Stack(num_blocks, num_layers, layer_width, input_length,
+                                 output_length, num_stacks, GType.TREND)
+            seasonality_stack = _Stack(num_blocks, num_layers, layer_width, input_length,
+                                       output_length, num_stacks, GType.SEASONALITY)
+            self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
 
@@ -267,6 +312,7 @@ class NBEATSModel(TorchForecastingModel):
                  layer_width: int,
                  input_length: int,
                  output_length: int,
+                 random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
