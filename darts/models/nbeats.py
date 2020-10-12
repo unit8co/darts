@@ -6,15 +6,17 @@ N-BEATS
 from typing import NewType, Optional, Union
 from enum import Enum
 import numpy as np
+import math
 from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
-from ..logging import raise_log
+from ..logging import get_logger, raise_log
 from ..utils.torch import random_method
 from .torch_forecasting_model import TorchForecastingModel
 
 logger = get_logger(__name__)
+
 
 class GType(Enum):
     GENERIC = 1
@@ -28,28 +30,27 @@ GTypes = NewType('GTypes', GType)
 class _TrendGenerator(nn.Module):
 
     def __init__(self,
-                 num_stacks,
-                 output_length):
+                 expansion_coefficient_dim,
+                 output_dim):
         super(_TrendGenerator, self).__init__()
-        self.T = torch.stack([torch.arange(output_length)**i for i in range(num_stacks)], 1)
+        self.T = torch.stack([torch.arange(output_dim)**i for i in range(expansion_coefficient_dim)], 1)
 
     def forward(self, x):
-        return torch.matmul(self.T, x)
+        return torch.matmul(x, self.T.float().T)
 
 
 class _SeasonalityGenerator(nn.Module):
 
     def __init__(self,
-                 num_stacks,
-                 output_length):
+                 output_dim):
         super(_SeasonalityGenerator, self).__init__()
-        half_minus_one = int(output_length / 2 - 1)
-        cos_vectors = [torch.cos(torch.arange(output_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        sin_vectors = [torch.sin(torch.arange(output_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        self.S = torch.stack([torch.ones(output_length)] + cos_vectors + sin_vectors, 1)
+        half_minus_one = math.ceil(output_dim / 2 - 1)
+        cos_vectors = [torch.cos(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
+        sin_vectors = [torch.sin(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
+        self.S = torch.stack([torch.ones(output_dim)] + cos_vectors + sin_vectors, 1)
 
     def forward(self, x):
-        return torch.matmul(self.S, x)
+        return torch.matmul(x, self.S.float().T)
 
 
 class _Block(nn.Module):
@@ -57,9 +58,9 @@ class _Block(nn.Module):
     def __init__(self,
                  num_layers: int,
                  layer_width: int,
+                 expansion_coefficient_dim: int,
                  input_length: int,
                  output_length: int,
-                 num_stacks: int,
                  g_type: GTypes):
         """ PyTorch module implementing the basic building block of the N-BEATS architecture.
 
@@ -69,14 +70,13 @@ class _Block(nn.Module):
             The number of fully connected layers preceding the final forking layers.
         layer_width
             The number of neurons that make up each fully connected layer.
+        expansion_coefficient_dim
+            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
+            Only used if `generic_architecture` is set to `True`.
         input_length
             The length of the input sequence fed to the model.
         output_length
             The length of the forecast of the model.
-        num_stacks
-            The number of stacks (each comprised of 1 or more `_Block` instances) that make up the whole model.
-            This information is needed on the `_Block` level since it dictates the dimensionality of the waveform
-            generator parameters.
         g_type
             The type of function that is implemented by the waveform generator.
 
@@ -106,19 +106,24 @@ class _Block(nn.Module):
         self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for i in range(num_layers - 1)]
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
-        # fully connected layer producing backcast waveform generator parameters
-        self.backcast_linear_layer = nn.Linear(layer_width, num_stacks)
+        # fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)
+        if g_type == GType.SEASONALITY:
+            self.backcast_linear_layer = nn.Linear(layer_width, input_length)
+            self.forecast_linear_layer = nn.Linear(layer_width, output_length)
+        else:
+            self.backcast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
+            self.forecast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
 
-        # fully connected layer producing forecast waveform generator parameters
-        self.forecast_linear_layer = nn.Linear(layer_width, num_stacks)
-
+        # waveform generator functions
         if g_type == GType.GENERIC:
-            self.backcast_g = nn.Linear(num_stacks, input_length)
-            self.forecast_g = nn.Linear(num_stacks, output_length)
+            self.backcast_g = nn.Linear(expansion_coefficient_dim, input_length)
+            self.forecast_g = nn.Linear(expansion_coefficient_dim, output_length)
         elif g_type == GType.TREND:
-            self.backcast_g = _TrendGenerator(num_stacks, output_length)
+            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_length)
+            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, output_length)
         elif g_type == GType.SEASONALITY:
-            self.backcast_g = _SeasonalityGenerator(num_stacks, output_length)
+            self.backcast_g = _SeasonalityGenerator(input_length)
+            self.forecast_g = _SeasonalityGenerator(output_length)
         else:
             raise_log(ValueError("g_type not supported"), logger)
 
@@ -144,9 +149,9 @@ class _Stack(nn.Module):
                  num_blocks: int,
                  num_layers: int,
                  layer_width: int,
+                 expansion_coefficient_dim: int,
                  input_length: int,
                  output_length: int,
-                 num_stacks: int,
                  g_type: GTypes,
                  ):
         """ PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
@@ -159,12 +164,13 @@ class _Stack(nn.Module):
             The number of fully connected layers preceding the final forking layers in each block.
         layer_width
             The number of neurons that make up each fully connected layer in each block.
+        expansion_coefficient_dim
+            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
+            Only used if `generic_architecture` is set to `True`.
         input_length
             The length of the input sequence fed to the model.
         output_length
             The length of the forecast of the model.
-        num_stacks
-            The number of stacks that make up the whole model.
         g_type
             The function that is implemented by the waveform generators in each block.
 
@@ -189,12 +195,13 @@ class _Stack(nn.Module):
 
         if g_type == GType.GENERIC:
             self.blocks_list = [
-                _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type)
+                _Block(num_layers, layer_width, expansion_coefficient_dim, input_length, output_length, g_type)
                 for i in range(num_blocks)
             ]
         else:
             # same block instance is used for weight sharing
-            interpretable_block = _Block(num_layers, layer_width, input_length, output_length, num_stacks, g_type)
+            interpretable_block = _Block(num_layers, layer_width, expansion_coefficient_dim,
+                                         input_length, output_length, g_type)
             self.blocks_list = [interpretable_block] * num_blocks
 
         self.blocks = nn.ModuleList(self.blocks_list)
@@ -224,6 +231,8 @@ class _NBEATSModule(nn.Module):
                  num_blocks: int,
                  num_layers: int,
                  layer_width: int,
+                 expansion_coefficient_dim: int,
+                 trend_polynomial_degree: int,
                  input_length: int,
                  output_length: int
                  ):
@@ -238,12 +247,18 @@ class _NBEATSModule(nn.Module):
         num_stacks
             The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
         num_blocks
-            The number of blocks making up every stack. Only used if `generic_architecture` is set to `True`.
+            The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
             Only used if `generic_architecture` is set to `True`.
         layer_width
             The number of neurons that make up each fully connected layer in each block of every stack.
+        expansion_coefficient_dim
+            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
+            Only used if `generic_architecture` is set to `True`.
+        trend_polynomial_degree
+            The degree of the polynomial used as waveform generator in trend stacks. Only used if
+            `generic_architecture` is set to `False`.
         input_length
             The length of the input sequence fed to the model.
         output_length
@@ -267,14 +282,15 @@ class _NBEATSModule(nn.Module):
 
         if generic_architecture:
             self.stacks_list = [
-                _Stack(num_blocks, num_layers, layer_width, input_length, output_length, num_stacks, GType.GENERIC)
-                for i in range(num_stacks)
+                _Stack(num_blocks, num_layers, layer_width, expansion_coefficient_dim,
+                       input_length, output_length, GType.GENERIC) for i in range(num_stacks)
             ]
         else:
-            trend_stack = _Stack(num_blocks, num_layers, layer_width, input_length,
-                                 output_length, num_stacks, GType.TREND)
-            seasonality_stack = _Stack(num_blocks, num_layers, layer_width, input_length,
-                                       output_length, num_stacks, GType.SEASONALITY)
+            num_stacks = 2
+            trend_stack = _Stack(num_blocks, num_layers, layer_width, trend_polynomial_degree + 1,
+                                 input_length, output_length, GType.TREND)
+            seasonality_stack = _Stack(num_blocks, num_layers, layer_width, -1,
+                                       input_length, output_length, GType.SEASONALITY)
             self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
@@ -305,13 +321,15 @@ class NBEATSModel(TorchForecastingModel):
 
     @random_method
     def __init__(self,
-                 generic_architecture: bool,
-                 num_stacks: int,
-                 num_blocks: int,
-                 num_layers: int,
-                 layer_width: int,
-                 input_length: int,
-                 output_length: int,
+                 generic_architecture: bool = True,
+                 num_stacks: int = 30,
+                 num_blocks: int = 1,
+                 num_layers: int = 4,
+                 layer_width: int = 256,
+                 expansion_coefficient_dim: int = 5,
+                 trend_polynomial_degree: int = 3,
+                 input_length: int = 12,
+                 output_length: int = 1,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -328,12 +346,18 @@ class NBEATSModel(TorchForecastingModel):
         num_stacks
             The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
         num_blocks
-            The number of blocks making up every stack. Only used if `generic_architecture` is set to `True`.
+            The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
             Only used if `generic_architecture` is set to `True`.
         layer_width
             The number of neurons that make up each fully connected layer in each block of every stack.
+        expansion_coefficient_dim
+            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
+            Only used if `generic_architecture` is set to `True`.
+        trend_polynomial_degree
+            The degree of the polynomial used as waveform generator in trend stacks. Only used if
+            `generic_architecture` is set to `False`.
         input_length
             The length of the input sequence fed to the model.
         output_length
@@ -350,6 +374,8 @@ class NBEATSModel(TorchForecastingModel):
             num_blocks,
             num_layers,
             layer_width,
+            expansion_coefficient_dim,
+            trend_polynomial_degree,
             input_length,
             output_length
         )
