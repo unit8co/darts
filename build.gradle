@@ -83,28 +83,12 @@ task installLocally(type:Exec) {
 }
 
 // Tests
-void coverageTestSteps(flavour) {
-    def omits = ["darts/models/auto_arima.py", "darts/models/prophet.py", "darts/models/rnn_model.py", "darts/models/tcn_model.py", "darts/models/torch_forecasting_model.py", "darts/utils/torch.py"]
-    switch(flavour) {
-        case "pmdarima":
-        omits -= "darts/models/auto_arima.py"
-        case "fbprophet":
-        omits -= "darts/models/prophet.py"
-        case "torch":
-        omits -= "darts/models/rnn_model.py"
-        omits -= "darts/models/tcn_model.py"
-        omits -= "darts/models/torch_forecasting_model.py"
-        omits -= "darts/utils/torch.py"
-        case "all":
-        omits = []
-    }
-    omits = omits.join(",") + "," + "darts/tests*,*__init__.py"
-
+void coverageTestSteps() {
     exec {
         commandLine "coverage", "run", "--source=darts/", "-m", "unittest"
     }
     exec {
-        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit=$omits"
+        commandLine "coverage", "report", "-m", "--fail-under=80"
     }
 }
 
@@ -123,22 +107,10 @@ void createPipRelatedTask(String flavour) {
         commandLine "python", "-m", "unittest"
    }
 
-   taskName = "coverageTest_" + flavour;
-   task (taskName) {
-        dependsOn(taskArgument)
-        dependsOn pip_core
-        dependsOn pip_dev
-        doLast {
-            coverageTestSteps(flavour)
-        }
-   }
-
    taskName = "test_" + flavour;
    String taskArgument1 = "unitTest_" + flavour;
-   String taskArgument2= "coverageTest_" + flavour;
    task (taskName) {
         dependsOn(taskArgument1)
-        dependsOn(taskArgument2)
         dependsOn lint
    }
 }
@@ -157,7 +129,7 @@ task unitTest_all(type: Exec) {
 task coverageTest_all() {
     dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
     doLast {
-        coverageTestSteps("all")
+        coverageTestSteps()
     }
 }
 
