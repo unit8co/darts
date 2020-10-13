@@ -435,7 +435,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(len(seriesC), 1)
 
     def test_map(self):
-        fn = lambda x: math.sin(x)
+        fn = lambda x: math.sin(x)  # noqa: E731
         series = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), np.random.randn(10, 3))
 
         df_0 = series.pd_dataframe()
