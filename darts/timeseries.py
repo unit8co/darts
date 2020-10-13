@@ -920,8 +920,7 @@ class TimeSeries:
         return index[0] <= ts <= index[-1]
 
     def map(self,
-            fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
-            cols: Optional[Union[List[str], str]] = None) -> 'TimeSeries':
+            fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
         Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
         values in the columns specified by the optional argument `cols`. Returns a new
@@ -945,21 +944,14 @@ class TimeSeries:
         if len(signature(fn).parameters) not in [1, 2]:
             raise_log(TypeError("fn must either take one or two parameters"))
 
-        if cols is None:
-            cols = list(self._df)  # list of all column names
-        elif isinstance(cols, str):
-            cols = [cols]
-
-        new_dataframe = self.pd_dataframe()
-
         if len(signature(fn).parameters) == 1:  # simple map function f(x)
-            new_dataframe[cols] = new_dataframe[cols].applymap(fn)
+            new_dataframe = self.pd_dataframe().applymap(fn)
         else:  # map function uses timestamp f(timestamp, x)
             def apply_fn_wrapper(row):
                 timestamp = row.name
                 return row.map(lambda x: fn(timestamp, x))
 
-            new_dataframe[cols] = new_dataframe[cols].apply(apply_fn_wrapper, axis=1)
+            new_dataframe = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
 
         return TimeSeries(new_dataframe, self.freq_str())
 
