@@ -29,13 +29,13 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Changed:**
 - &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
   ```python
-  # Assuming a multivariate TimeSeries named series with at least 3 columns or variables.
+  # Assuming a multivariate TimeSeries named series with 3 columns or variables.
   # To apply fn to columns with names '0' and '2':
 
   #old syntax
-  series = series.map(fn, cols=['0', '2'])
+  series.map(fn, cols=['0', '2']) # returned a time series with 3 columns
   #new syntax
-  series[['0', '2']] = series[['0', '2']].map(fn)
+  series[['0', '2']].map(fn) # returns a time series with only 2 columns
   ```
 - &#x1F534; Renamed `ScalerWrapper` into `Scaler`
 - &#x1F534; Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
