@@ -931,7 +931,7 @@ class TimeSeries:
         ----------
         fn
             Either a function which takes a value and returns a value ie. f(x) = y
-            Or a function which takes a value and it's timestamp and returns a value ie. f(timestamp, x) = y
+            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
         cols
             Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
 
@@ -944,23 +944,23 @@ class TimeSeries:
             raise_log(TypeError("fn should be callable"), logger)
         if len(signature(fn).parameters) not in [1, 2]:
             raise_log(TypeError("fn must either take one or two parameters"))
-    
+
         if cols is None:
-            cols = list(self._df) # list of all column names
+            cols = list(self._df)  # list of all column names
         elif isinstance(cols, str):
             cols = [cols]
-        
+
         new_dataframe = self.pd_dataframe()
 
-        if len(signature(fn).parameters) == 1: # simple map function f(x)
+        if len(signature(fn).parameters) == 1:  # simple map function f(x)
             new_dataframe[cols] = new_dataframe[cols].applymap(fn)
-        else: # map function uses timestamp f(timestamp, x)
+        else:  # map function uses timestamp f(timestamp, x)
             def apply_fn_wrapper(row):
                 timestamp = row.name
                 return row.map(lambda x: fn(timestamp, x))
-            
+
             new_dataframe[cols] = new_dataframe[cols].apply(apply_fn_wrapper, axis=1)
-        
+
         return TimeSeries(new_dataframe, self.freq_str())
 
     @staticmethod

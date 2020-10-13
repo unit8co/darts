@@ -453,17 +453,17 @@ class TimeSeriesTestCase(unittest.TestCase):
         series_01 = TimeSeries(df_01, 'D')
         series_012 = TimeSeries(df_012, 'D')
 
-        self.assertEqual(series_0, series.map(fn, "0"))
-        self.assertEqual(series_0, series.map(fn, ["0"]))
-        self.assertEqual(series_2, series.map(fn, "2"))
-        self.assertEqual(series_01, series.map(fn, ["0", "1"]))
-        self.assertEqual(series_012, series.map(fn, ["0", "1", "2"]))
+        self.assertEqual(series_0, series.map(fn, cols="0"))
+        self.assertEqual(series_0, series.map(fn, cols=["0"]))
+        self.assertEqual(series_2, series.map(fn, cols="2"))
+        self.assertEqual(series_01, series.map(fn, cols=["0", "1"]))
+        self.assertEqual(series_012, series.map(fn, cols=["0", "1", "2"]))
         self.assertEqual(series_012, series.map(fn))
 
         self.assertNotEqual(series_01, series.map(fn))
-    
+
     def test_map_with_timestamp(self):
-        series = linear_timeseries(start_value=1, length = 12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
         zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
 
         def function(ts, x):
