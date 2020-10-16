@@ -4,67 +4,88 @@ on:
   pull_request:
     branches:
       - develop
+  push:
+    ignore-branches:
+      - master
 
 jobs:
-  tests:
+  # tests:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.6, 3.7, 3.8]
+  #       flavour: ['core', 'all']
+
+  #   steps:
+  #     - name: "1. Clone repository"
+  #       uses: actions/checkout@v2
+
+  #     - name: "2. Set up Python ${{ matrix.python-version }}"
+  #       uses: actions/setup-python@v1
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+
+  #     - name: "3. Setup pip"
+  #       run: |
+  #         ./gradlew setupPip
+
+  #     - name: "4. Attach cache for pip"
+  #       uses: actions/cache@v1
+  #       id: cache
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
+
+  #     - name: "5. Tests"
+  #       run: |
+  #         ./gradlew "test_${{matrix.flavour}}"
+
+  # docs:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: "1. Clone repository"
+  #       uses: actions/checkout@v2
+
+  #     - name: "2. Set up Python 3.6"
+  #       uses: actions/setup-python@v1
+  #       with:
+  #         python-version: 3.6
+
+  #     - name: "3. Install pandoc"
+  #       run: |
+  #         sudo apt-get install -y pandoc
+
+  #     - name: "4. Setup pip"
+  #       run: |
+  #         ./gradlew setupPip
+
+  #     - name: "5. Attach cache for pip"
+  #       uses: actions/cache@v1
+  #       id: cache
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: tests-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
+
+  #     - name: "6. Build docs"
+  #       run: |
+  #         ./gradlew buildDocs
+  
+  check-examples:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
-        flavour: ['core', 'all']
-
+        example-name: [FFT-examples.ipynb, TCN-examples.ipynb, RNN-examples.ipynb, darts-intro.ipynb, multivariate-examples.ipynb, Transformer-examples.ipynb]
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
 
-      - name: "2. Set up Python ${{ matrix.python-version }}"
+      - name: "2. Set up Python 3.7"
         uses: actions/setup-python@v1
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.7
 
-      - name: "3. Setup pip"
+      - name: "3. Run examples ${{matrix.example-name}}"
         run: |
-          ./gradlew setupPip
-
-      - name: "4. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
-
-      - name: "5. Tests"
-        run: |
-          ./gradlew "test_${{matrix.flavour}}"
-
-  docs:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
-
-      - name: "2. Set up Python 3.6"
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.6
-
-      - name: "3. Install pandoc"
-        run: |
-          sudo apt-get install -y pandoc
-
-      - name: "4. Setup pip"
-        run: |
-          ./gradlew setupPip
-
-      - name: "5. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-3.6-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
-
-      - name: "6. Build docs"
-        run: |
-          ./gradlew buildDocs
+          ./gradlew checkExample -PexampleName=${{matrix.example-name}}
 
