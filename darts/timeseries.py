@@ -931,8 +931,6 @@ class TimeSeries:
         fn
             Either a function which takes a value and returns a value ie. f(x) = y
             Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
-        cols
-            Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
 
         Returns
         -------
@@ -941,17 +939,30 @@ class TimeSeries:
         """
         if not isinstance(fn, Callable):
             raise_log(TypeError("fn should be callable"), logger)
-        if len(signature(fn).parameters) not in [1, 2]:
-            raise_log(TypeError("fn must either take one or two parameters"))
+        
+        if isinstance(fn, np.ufunc):
+            if fn.nin == 1 and fn.nout == 1:
+                num_args = 1
+            elif fn.nin == 2 and fn.nout == 1:
+                num_args = 2
+            else:
+                raise_log(ValueError("fn must have either one or two arguments and return a single value"), logger)
+        else:
+            try:
+                num_args = len(signature(fn).parameters)
+            except ValueError:
+                raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"), logger)
 
-        if len(signature(fn).parameters) == 1:  # simple map function f(x)
+        if num_args == 1:  # simple map function f(x)
             new_dataframe = self.pd_dataframe().applymap(fn)
-        else:  # map function uses timestamp f(timestamp, x)
+        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
             def apply_fn_wrapper(row):
                 timestamp = row.name
                 return row.map(lambda x: fn(timestamp, x))
 
             new_dataframe = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
+        else:
+            raise_log(ValueError("fn must have either one or two arguments"), logger)
 
         return TimeSeries(new_dataframe, self.freq_str())
 

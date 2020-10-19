@@ -61,16 +61,15 @@ class InvertibleMapper(InvertibleDataTransformer[TimeSeries]):
         fn
             Either a function which takes a value and returns a value ie. f(x) = y
             Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
+        inverse_fn
+            Similarly to `fn`, either a function which takes a value and returns a value ie. f(x) = y
+            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
+            `inverse_fn` should be such that `inverse_fn(fn(x)) == x`
         name
             A specific name for the transformer
         validators
             Sequence of validators that will be called before transform()
         """
-        if not isinstance(fn, Callable) or not isinstance(inverse_fn, Callable):
-            raise_log(TypeError("fn and inverse_fn should be callable"), logger)
-        if len(signature(fn).parameters) not in [1, 2] or len(signature(inverse_fn).parameters) not in [1, 2]:
-            raise_log(TypeError("fn and inverse_fn must either take one or two parameters"))
-
         super().__init__(name=name, validators=validators)
         self._fn = fn
         self._inverse_fn = inverse_fn
