@@ -67,7 +67,7 @@ class EnsembleModelsTestCase(unittest.TestCase):
         theta = Theta()
         comb = GROEEnsembleModel([naive, theta])
         comb.fit(self.series1)
-        self.assertTrue(comb.weights[0] == 1.)
+        self.assertAlmostEqual(comb.weights[0], 1)
 
 
 if __name__ == '__main__':

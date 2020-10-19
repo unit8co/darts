@@ -17,8 +17,11 @@ logger = get_logger(__name__)
 
 
 class GROEEnsembleModel(EnsembleModel):
-    def __init__(self, models: List[ForecastingModel], metrics: Callable[[TimeSeries, TimeSeries], float] = smape,
-                 n_evaluations: int = 6, **groe_kwargs):
+    def __init__(self,
+                 models: List[ForecastingModel],
+                 metric: Callable[[TimeSeries, TimeSeries], float] = smape,
+                 n_evaluations: int = 6,
+                 **groe_kwargs):
         """
         Implementation of an EnsembleModel using GROE to compute the weights.
 
@@ -34,31 +37,29 @@ class GROEEnsembleModel(EnsembleModel):
         ----------
         models
             List of forecasting models, whose predictions to ensemble.
-        metrics
-            Metrics function used for the GROE cross-validation function.
+        metric
+            Metric function used for the GROE cross-validation function.
         n_evaluations
             Number of evaluation performed by the GROE function.
         groe_kwargs
             Any additional args passed to the GROE function
         """
-        super(GROEEnsembleModel, self).__init__(models)
-        self.metrics = metrics
+        super().__init__(models)
+        self.metric = metric
         self.n_evaluations = n_evaluations
         self.groe_kwargs = groe_kwargs
         self.criteria = None
         self.weights = None
 
-    def update_groe_params(self, **groe_kwargs):
-        if "n_evaluations" in groe_kwargs:
-            self.n_evaluations = groe_kwargs.pop("n_evaluations")
-        self.groe_kwargs = groe_kwargs
-
-    def fit(self, train_ts: TimeSeries):
-        super().fit(train_ts)
+    def fit(self, training_series: TimeSeries):
+        super().fit(training_series)
         self.criteria = []
         for model in self.models:
-            self.criteria.append(groe(self.train_ts, model, self.metrics,
-                                       n_evaluations=self.n_evaluations, **self.groe_kwargs))
+            self.criteria.append(groe(self.training_series,
+                                      model,
+                                      self.metric,
+                                      n_evaluations=self.n_evaluations,
+                                      **self.groe_kwargs))
 
         raise_if(np.inf in self.criteria,
                  "Cannot evaluate one of the models on this TimeSeries. Choose another fallback method",
@@ -66,7 +67,7 @@ class GROEEnsembleModel(EnsembleModel):
 
         if 0. in self.criteria:
             self.weights = np.zeros(len(self.criteria))
-            self.weights[self.criteria.index(0.)] = 1.
+            self.weights[self.criteria.index(0.)] = 1
         else:
             scores = 1 / np.array(self.criteria)
             self.weights = scores / scores.sum()
