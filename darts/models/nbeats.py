@@ -399,3 +399,12 @@ class NBEATSModel(TorchForecastingModel):
         kwargs['output_length'] = output_length
 
         super().__init__(**kwargs)
+
+    @random_method
+    def fit(self, *args, **kwargs):
+        if 'training_series' in kwargs:
+            training_series = kwargs['training_series']
+        else:
+            training_series = args[0]
+        training_series._assert_univariate()
+        super().fit(*args, **kwargs)
