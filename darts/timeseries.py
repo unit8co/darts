@@ -939,7 +939,7 @@ class TimeSeries:
         """
         if not isinstance(fn, Callable):
             raise_log(TypeError("fn should be callable"), logger)
-        
+
         if isinstance(fn, np.ufunc):
             if fn.nin == 1 and fn.nout == 1:
                 num_args = 1
@@ -951,7 +951,8 @@ class TimeSeries:
             try:
                 num_args = len(signature(fn).parameters)
             except ValueError:
-                raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"), logger)
+                raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
+                          logger)
 
         if num_args == 1:  # simple map function f(x)
             new_dataframe = self.pd_dataframe().applymap(fn)
