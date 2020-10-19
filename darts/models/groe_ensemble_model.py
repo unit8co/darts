@@ -45,7 +45,7 @@ class GROEEnsembleModel(EnsembleModel):
         self.metrics = metrics
         self.n_evaluations = n_evaluations
         self.groe_kwargs = groe_kwargs
-        self.criterion = None
+        self.criteria = None
         self.weights = None
 
     def update_groe_params(self, **groe_kwargs):
@@ -55,21 +55,21 @@ class GROEEnsembleModel(EnsembleModel):
 
     def fit(self, train_ts: TimeSeries):
         super().fit(train_ts)
-        self.criterion = []
+        self.criteria = []
         for model in self.models:
-            self.criterion.append(groe(self.train_ts, model, self.metrics,
+            self.criteria.append(groe(self.train_ts, model, self.metrics,
                                        n_evaluations=self.n_evaluations, **self.groe_kwargs))
 
-        raise_if(np.inf in self.criterion,
+        raise_if(np.inf in self.criteria,
                  "Cannot evaluate one of the models on this TimeSeries. Choose another fallback method",
                  logger)
 
-        if 0. in self.criterion:
-            self.weights = np.zeros(len(self.criterion))
-            self.weights[self.criterion.index(0.)] = 1.
+        if 0. in self.criteria:
+            self.weights = np.zeros(len(self.criteria))
+            self.weights[self.criteria.index(0.)] = 1.
         else:
-            score = 1 / np.array(self.criterion)
-            self.weights = score / score.sum()
+            scores = 1 / np.array(self.criteria)
+            self.weights = scores / scores.sum()
 
     def ensemble(self, predictions: List[TimeSeries]):
         return sum(map(lambda ts, weight: ts * weight, predictions, self.weights))
