@@ -57,6 +57,16 @@ You will find below an example Jupyter notebook showcasing the usage of the Tran
 
    examples/Transformer-examples.ipynb
 
+N-BEATS Model Examples
+==========================
+
+You will find below an example Jupyter notebook showcasing the usage of the N-BEATS model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/NBEATS-examples.ipynb
+
 Multivariate Examples
 =====================
 
