@@ -26,7 +26,6 @@ if TORCH_AVAILABLE:
         def fit(self, some_params=None):
             self.fit_value = torch.randn(5)
 
-
     class RandomMethodTestCase(unittest.TestCase):
         def test_it_raises_error_if_used_on_function(self):
             with self.assertRaises(ValueError):

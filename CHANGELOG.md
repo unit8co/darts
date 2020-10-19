@@ -6,6 +6,40 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...develop)
 
+### For users of the library:
+**Added:**
+- Data (pre) processing abilities using `DataTransformer`, `Pipeline` and `Validator`:
+  - `Validator` are used by data transformers to perform data validation at run time. They are built with a `validation_function()` that is applied on the data, and allow to specify a `reason` that will be displayed if the validation fails.
+  - `DataTransformer`:
+    - provide a unified interface to apply transformations on `TimeSeries`, using their `transform()` method
+    - allow to automatically perform checks by specifiying a sequence of `Validator` entities
+  - `Pipeline`:
+    - allow chaining of `DataTransformers`
+    - provide `fit()`, `transform()`, `fit_transform()` and `inverse_transform()` methods.
+  - Implementing your own data transformers:
+    - Data transformers which need to be fitted first should derive from the `FittableDataTransformer` base class and implement a `fit()` method. Fittable transformers also provide a `fit_transform()` method, which fits the transformer and then transforms the data with a single call.
+    - Data transformers which perform an invertible transformation should derive from the `InvertibleDataTransformer` base class and implement a `inverse_transform()` method.
+    - Data transformers wich are neither fittable nor invertible should derive from the `BaseDataTransformer` base class
+    - All data transformers must implement a `transform()` method.
+
+**Changed:**
+- &#x1F534; Renamed `ScalerWrapper` into `Scaler`
+- &#x1F534; Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
+  ```python
+  #old syntax
+  fillna(series, fill=0)
+
+  #new syntax
+  fill_missing_values(series, fill=0)
+
+  #old syntax
+  auto_fillna(series, **interpolate_kwargs)
+
+  #new syntax
+  fill_missing_values(series, fill='auto', **interpolate_kwargs)
+  fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
+  ```
+
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.2.3...0.3.0)

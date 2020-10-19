@@ -85,10 +85,10 @@ task installLocally(type:Exec) {
 // Tests
 void coverageTestSteps() {
     exec {
-        commandLine "coverage", "run", "-m", "unittest"
+        commandLine "coverage", "run", "--source=darts/", "-m", "unittest"
     }
     exec {
-        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit='darts/tests*,*__init__.py'"
+        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit=darts/tests*,*__init__.py"
     }
 }
 
@@ -107,22 +107,10 @@ void createPipRelatedTask(String flavour) {
         commandLine "python", "-m", "unittest"
    }
 
-   taskName = "coverageTest_" + flavour;
-   task (taskName) {
-        dependsOn(taskArgument)
-        dependsOn pip_core
-        dependsOn pip_dev
-        doLast {
-            coverageTestSteps()
-        }
-   }
-
    taskName = "test_" + flavour;
    String taskArgument1 = "unitTest_" + flavour;
-   String taskArgument2= "coverageTest_" + flavour;
    task (taskName) {
         dependsOn(taskArgument1)
-        dependsOn(taskArgument2)
         dependsOn lint
    }
 }
