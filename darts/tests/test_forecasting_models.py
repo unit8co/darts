@@ -16,20 +16,20 @@ logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [
-        (ExponentialSmoothing(), 4.8),
-        (ARIMA(0, 1, 1), 17.1),
-        (ARIMA(1, 1, 1), 14.2),
-        (Theta(), 11.3),
-        (Theta(1), 20.2),
-        (Theta(-1), 9.8),
-        (FourTheta(1), 20.2),
-        (FourTheta(-1), 9.8),
-        (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
-        (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
-        (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
-        (FFT(trend='poly'), 11.4),
-        (NaiveSeasonal(), 32.4),
-    ]
+    (ExponentialSmoothing(), 4.8),
+    (ARIMA(0, 1, 1), 17.1),
+    (ARIMA(1, 1, 1), 14.2),
+    (Theta(), 11.3),
+    (Theta(1), 20.2),
+    (Theta(-1), 9.8),
+    (FourTheta(1), 20.2),
+    (FourTheta(-1), 9.8),
+    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
+    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
+    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
+    (FFT(trend='poly'), 11.4),
+    (NaiveSeasonal(), 32.4),
+]
 
 try:
     from ..models import Prophet
@@ -44,7 +44,7 @@ except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
 
 try:
-    from ..models import RNNModel, TCNModel
+    from ..models import TCNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not installed - will be skipping Torch models tests')

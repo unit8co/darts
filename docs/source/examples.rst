@@ -9,7 +9,7 @@ Here you will find some example notebooks to get more familiar with the API.
 darts intro
 ===========
 
-You will find below an example Jupyter notebook containing an intro to usage of darts.
+You will find below an example Jupyter notebook containing an intro to the usage of darts.
 
 .. toctree::
    :maxdepth: 1
@@ -20,7 +20,7 @@ You will find below an example Jupyter notebook containing an intro to usage of 
 Fast Fourier Transform
 ======================
 
-You will find below an example Jupyter notebook containing usage of FFT model
+You will find below an example Jupyter notebook showcasing the usage of the FFT model
 
 .. toctree::
    :maxdepth: 1
@@ -30,7 +30,7 @@ You will find below an example Jupyter notebook containing usage of FFT model
 Recurrent Neural Networks
 =========================
 
-You will find below an example Jupyter notebook containing usage of RNN model
+You will find below an example Jupyter notebook showcasing the usage of the RNN model
 
 .. toctree::
    :maxdepth: 1
@@ -40,17 +40,27 @@ You will find below an example Jupyter notebook containing usage of RNN model
 Temporal Convolutional Networks
 ===============================
 
-You will find below an example Jupyter notebook containing usage of TCN model
+You will find below an example Jupyter notebook showcasing the usage of the TCN model
 
 .. toctree::
    :maxdepth: 1
 
    examples/TCN-examples.ipynb
 
+Transformer Model Examples
+==========================
+
+You will find below an example Jupyter notebook showcasing the usage of the Transformer model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/Transformer-examples.ipynb
+
 Multivariate Examples
 =====================
 
-You will find below an example Jupyter notebook containing usage of multivariate TimeSeries instances
+You will find below an example Jupyter notebook showcasing the usage of multivariate TimeSeries instances
 
 .. toctree::
    :maxdepth: 1
