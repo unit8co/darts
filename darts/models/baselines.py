@@ -9,7 +9,7 @@ from typing import List
 import numpy as np
 
 from .forecasting_model import ForecastingModel, UnivariateForecastingModel
-from .combination_model import CombinationModel
+from .ensemble_model import EnsembleModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
 
@@ -101,15 +101,15 @@ class NaiveDrift(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveCombinationModel(CombinationModel):
+class NaiveEnsembleModel(EnsembleModel):
 
     def __init__(self, models: List[ForecastingModel]):
         """ Naive combination model
 
-        Naive implementation of `CombinationModel`
+        Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
         """
         super().__init__(models)
 
-    def combine(self, predictions: List[TimeSeries]):
+    def ensemble(self, predictions: List[TimeSeries]):
         return sum(map(lambda ts: ts * 1 / len(self.models), predictions))

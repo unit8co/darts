@@ -34,6 +34,6 @@ except ModuleNotFoundError:
 # Regression
 from .standard_regression_model import StandardRegressionModel
 
-# Combination
-from .combination_model import CombinationModel
-from .baselines import NaiveCombinationModel
+# Ensembling
+from .ensemble_model import EnsembleModel
+from .baselines import NaiveEnsembleModel

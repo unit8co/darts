@@ -3,11 +3,11 @@ import logging
 
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
-from ..models import NaiveCombinationModel
-from ..models.groe_combination_model import GROECombinationModel
+from ..models import NaiveEnsembleModel
+from ..models.groe_ensemble_model import GROEEnsembleModel
 
 
-class CombinationModelsTestCase(unittest.TestCase):
+class EnsembleModelsTestCase(unittest.TestCase):
     series1 = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     series2 = tg.linear_timeseries(length=50)
 
@@ -17,16 +17,16 @@ class CombinationModelsTestCase(unittest.TestCase):
 
     def test_input_models(self):
         with self.assertRaises(ValueError):
-            NaiveCombinationModel([])
+            NaiveEnsembleModel([])
         with self.assertRaises(ValueError):
-            NaiveCombinationModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
+            NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
         with self.assertRaises(ValueError):
-            NaiveCombinationModel([NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()])
-        NaiveCombinationModel([NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()])
+            NaiveEnsembleModel([NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()])
+        NaiveEnsembleModel([NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()])
 
     def test_call_predict(self):
-        naive_comb = NaiveCombinationModel([NaiveSeasonal(), Theta()])
-        groe_comb = GROECombinationModel([NaiveSeasonal(), Theta()])
+        naive_comb = NaiveEnsembleModel([NaiveSeasonal(), Theta()])
+        groe_comb = GROEEnsembleModel([NaiveSeasonal(), Theta()])
         with self.assertRaises(Exception):
             naive_comb.predict(5)
         with self.assertRaises(Exception):
@@ -36,10 +36,10 @@ class CombinationModelsTestCase(unittest.TestCase):
         naive_comb.predict(5)
         groe_comb.predict(5)
 
-    def test_predict_combination(self):
+    def test_predict_ensemble(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        naive_comb = NaiveCombinationModel([naive, theta])
+        naive_comb = NaiveEnsembleModel([naive, theta])
         naive_comb.fit(self.series1 + self.series2)
         forecast_naive_comb = naive_comb.predict(5)
         naive.fit(self.series1 + self.series2)
@@ -50,7 +50,7 @@ class CombinationModelsTestCase(unittest.TestCase):
     def test_fit_groe(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        comb = GROECombinationModel([naive, theta])
+        comb = GROEEnsembleModel([naive, theta])
         comb.fit(self.series1 + self.series2)
         self.assertTrue((1 >= comb.weights).all())
         self.assertTrue((comb.weights >= 0).all())
@@ -58,14 +58,14 @@ class CombinationModelsTestCase(unittest.TestCase):
     def test_bad_fit_groe(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        comb = GROECombinationModel([naive, theta])
+        comb = GROEEnsembleModel([naive, theta])
         with self.assertRaises(ValueError):
             comb.fit(tg.constant_timeseries(0, length=50))
 
     def test_perfect_fit_groe(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        comb = GROECombinationModel([naive, theta])
+        comb = GROEEnsembleModel([naive, theta])
         comb.fit(self.series1)
         self.assertTrue(comb.weights[0] == 1.)
 

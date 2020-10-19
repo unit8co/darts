@@ -1,12 +1,12 @@
 """
-GROE combination model
+GROE ensemble model
 -------------------------
 """
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if
 from ..models.forecasting_model import ForecastingModel
-from ..models.combination_model import CombinationModel
+from ..models.ensemble_model import EnsembleModel
 from ..metrics import smape
 from typing import List, Callable
 import numpy as np
@@ -16,11 +16,11 @@ from ..utils.cross_validation import generalized_rolling_origin_evaluation as gr
 logger = get_logger(__name__)
 
 
-class GROECombinationModel(CombinationModel):
+class GROEEnsembleModel(EnsembleModel):
     def __init__(self, models: List[ForecastingModel], metrics: Callable[[TimeSeries, TimeSeries], float] = smape,
                  n_evaluations: int = 6, **groe_kwargs):
         """
-        Implementation of a Combination Model using GROE to compute its weights.
+        Implementation of an EnsembleModel using GROE to compute the weights.
 
         The weights are a function of the loss function of the GROE cross-validation scheme.
         The weights for each constituent model's output are computed as the inverse of the
@@ -33,7 +33,7 @@ class GROECombinationModel(CombinationModel):
         Parameters
         ----------
         models
-            List of forecasting models, whose predictions to combine.
+            List of forecasting models, whose predictions to ensemble.
         metrics
             Metrics function used for the GROE cross-validation function.
         n_evaluations
@@ -41,7 +41,7 @@ class GROECombinationModel(CombinationModel):
         groe_kwargs
             Any additional args passed to the GROE function
         """
-        super(GROECombinationModel, self).__init__(models)
+        super(GROEEnsembleModel, self).__init__(models)
         self.metrics = metrics
         self.n_evaluations = n_evaluations
         self.groe_kwargs = groe_kwargs
@@ -71,5 +71,5 @@ class GROECombinationModel(CombinationModel):
             score = 1 / np.array(self.criterion)
             self.weights = score / score.sum()
 
-    def combine(self, predictions: List[TimeSeries]):
+    def ensemble(self, predictions: List[TimeSeries]):
         return sum(map(lambda ts, weight: ts * weight, predictions, self.weights))

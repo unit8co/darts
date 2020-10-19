@@ -1,6 +1,6 @@
 """
-Mean Combination model
--------------------------
+Ensemble model
+--------------
 """
 
 from abc import ABC, abstractmethod
@@ -13,9 +13,9 @@ from ..models.forecasting_model import ForecastingModel
 logger = get_logger(__name__)
 
 
-class CombinationModel(ABC):
+class EnsembleModel(ABC):
     """
-    Base class for combination models.
+    Abstract base class for ensemble models
     """
     def __init__(self, models: List[ForecastingModel]):
         raise_if_not(isinstance(models, list) and models, "Must give at least one model")
@@ -37,21 +37,21 @@ class CombinationModel(ABC):
         predictions = []
         for model in self.models:
             predictions.append(model.predict(n))
-        return self.combine(predictions)
+        return self.ensemble(predictions)
 
     @abstractmethod
-    def combine(self, predictions: List[TimeSeries]):
+    def ensemble(self, predictions: List[TimeSeries]):
         """
-        This function should be implemented to return the combined prediction of the `CombinationModel` instance.
+        This function should be implemented to return the ensembled prediction of the `EnsembleModel` instance.
 
         Parameters
         ----------
         predictions
-            Individual predictions to combine
+            Individual predictions to ensemble
 
         Returns
         -------
         TimeSeries
-            The predicted `TimeSeries` obtained by combining the individual predictions
+            The predicted `TimeSeries` obtained by ensembling the individual predictions
         """
         pass
