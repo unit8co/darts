@@ -14,6 +14,7 @@ import darts.metrics as metrics
 
 logger = get_logger(__name__)
 
+
 def generalized_rolling_origin_evaluation(series: TimeSeries,
                                           model: ForecastingModel,
                                           metric: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
@@ -54,7 +55,8 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
     n_evaluations
         Optional. Number of evaluation. By default the maximum value possible if stride is provided.
     n_predictions
-        Optional. Number of predictions for each evaluation. Defaults is the size of the tail: len(series) - first_origin.
+        Optional. Number of predictions for each evaluation.
+        Default value is the size of the tail: len(series) - first_origin.
     Returns
     -------
     Float
@@ -74,7 +76,7 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
         metric = getattr(metrics, metric)
 
     len_series = len(series)
-    
+
     if first_origin is None:
         first_origin = min(5, len_series - 10)
     elif isinstance(first_origin, pd.Timestamp):

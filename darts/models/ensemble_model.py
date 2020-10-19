@@ -24,8 +24,9 @@ class EnsembleModel(ABC):
                      "Cannot instantiate EnsembleModel with an empty list of models",
                      logger)
         raise_if_not(all(isinstance(model, ForecastingModel) for model in models),
-                     "All models must be instances of darts.models.ForecastingModel")
-        
+                     "All models must be instances of darts.models.ForecastingModel",
+                     logger)
+
         self.models = models
         self.training_series = None
         self._fit_called = False
@@ -45,7 +46,7 @@ class EnsembleModel(ABC):
         predictions = []
         for model in self.models:
             predictions.append(model.predict(n))
-        
+
         return self.ensemble(predictions)
 
     @abstractmethod
