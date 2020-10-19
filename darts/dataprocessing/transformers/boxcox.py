@@ -51,6 +51,9 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
             If a single float is given, the same lmbda value will be used for all dimensions of the series.
             Also allows to specify a different lmbda value for each dimension of the time series by passing
             a sequence of values.
+        optim_method
+            Specifies which method to use to find an optimal value for the lmbda parameter.
+            Either 'mle' or 'pearsonr'.
 
         Returns
         -------
@@ -64,14 +67,14 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
 
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series
-            lmbda = data.pd_dataframe().apply(boxcox_normmax, method=optim_method)
+            lmbda = data._df.apply(boxcox_normmax, method=optim_method)
         elif isinstance(lmbda, Sequence):
-            raise_if(len(lmbda) != len(data.pd_dataframe().columns),
+            raise_if(len(lmbda) != data.width,
                      "lmbda should have one value per dimension (ie. column or variable) of the time series",
                      logger)
         else:
             # Replicate lmbda to match dimensions of the time series
-            lmbda = [lmbda] * len(data.pd_dataframe().columns)
+            lmbda = [lmbda] * data.width
 
         self._lmbda = lmbda
 
@@ -81,22 +84,16 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         super().transform(data, *args, **kwargs)
 
         def _boxcox_wrapper(col):
-            idx = data.pd_dataframe().columns.get_loc(col.name)  # get index from col name
+            idx = data._df.columns.get_loc(col.name)  # get index from col name
             return boxcox(col, self._lmbda[idx])
 
-        return TimeSeries.from_dataframe(data.pd_dataframe().apply(_boxcox_wrapper))
+        return TimeSeries.from_dataframe(data._df.apply(_boxcox_wrapper))
 
     def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
         super().inverse_transform(data, *args, *kwargs)
 
         def _inv_boxcox_wrapper(col):
-            idx = data.pd_dataframe().columns.get_loc(col.name)  # get index from col name
+            idx = data._df.columns.get_loc(col.name)  # get index from col name
             return inv_boxcox(col, self._lmbda[idx])
 
-        return TimeSeries.from_dataframe(data.pd_dataframe().apply(_inv_boxcox_wrapper))
-
-    # def biasadj_factor(self, y, forecast_variance):
-    #     if self._lmbda == 0:
-    #         return 1 + forecast_variance / 2
-
-    #     return 1 + (forecast_variance * (1 - self._lmbda)) / (2 * (self._lmbda * y + 1) ** 2)
+        return TimeSeries.from_dataframe(data._df.apply(_inv_boxcox_wrapper))
