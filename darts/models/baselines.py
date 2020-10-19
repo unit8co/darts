@@ -5,7 +5,7 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
-from typing import Optional, List
+from typing import List
 import numpy as np
 
 from .forecasting_model import ForecastingModel, UnivariateForecastingModel
@@ -29,8 +29,8 @@ class NaiveMean(UnivariateForecastingModel):
     def __str__(self):
         return 'Naive mean predictor model'
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         self.mean_val = np.mean(series.univariate_values())
 
     def predict(self, n: int):
@@ -63,8 +63,8 @@ class NaiveSeasonal(UnivariateForecastingModel):
     def __str__(self):
         return 'Naive seasonal model, with K={}'.format(self.K)
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         raise_if_not(len(series) >= self.K, 'The time series requires at least K={} points'.format(self.K), logger)
         self.last_k_vals = series.univariate_values()[-self.K:]
 
@@ -88,8 +88,8 @@ class NaiveDrift(UnivariateForecastingModel):
     def __str__(self):
         return 'Naive drift model'
 
-    def fit(self, series: TimeSeries, component_index: Optional[int] = None):
-        super().fit(series, component_index)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         series = self.training_series
 
     def predict(self, n: int):

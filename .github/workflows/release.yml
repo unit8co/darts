@@ -1,46 +1,14 @@
 name: darts release workflow
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+        bump_type:
+          description: "Bump type (#major, #minor, #patch)"
+          required: true
 
 jobs:
-  tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest]
-        python-version: [3.6, 3.7, 3.8]
-
-    steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
-
-      - name: "2. Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v1
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: "3. Setup pip"
-        run: |
-          ./gradlew setupPip
-
-      - name: "4. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/dev.txt') }}
-          restore-keys: |
-            tests-${{ runner.os }}-pip-
-
-      - name: "5. Tests"
-        run: |
-          ./gradlew test
-
   release:
-    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - name: "1. Clone repository"
@@ -71,12 +39,12 @@ jobs:
           pip install -q -r requirements/release.txt
 
       - name: "6. Determine next version"
-        uses: endrjuskr/github-tag-action@master
+        uses: LeoTafti/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INITIAL_VERSION: 0.0.2
           DRY_RUN: true
+          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
 
       - name: "7. Bump version"
         run: |
@@ -91,12 +59,12 @@ jobs:
           commit_user_email: info@unit8.co
 
       - name: "9. Publish new tag"
-        uses: endrjuskr/github-tag-action@master
+        uses: LeoTafti/github-tag-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
 
-      - name: "10. Create new release draft"
+      - name: "10. Create new release"
         id: create_release
         uses: actions/create-release@latest
         env:
@@ -104,7 +72,7 @@ jobs:
         with:
           tag_name: ${{ steps.bump_dry.outputs.new_tag }}
           release_name: Release ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
-          draft: true
+          draft: false
 
   deploy-docker:
     needs: [release]
@@ -114,7 +82,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: "2. Determine current version"
-        uses: endrjuskr/github-tag-action@master
+        uses: LeoTafti/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -162,7 +130,7 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/main.txt', 'requirements/release.txt') }}
+          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
           restore-keys: |
             release-${{ runner.os }}-pip-
 

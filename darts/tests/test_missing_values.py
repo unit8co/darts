@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from ..timeseries import TimeSeries
-from ..utils.missing_values import auto_fillna, na_ratio
+from ..utils.missing_values import fill_missing_values, missing_values_ratio
 
 
 class MissingValuesTestCase(unittest.TestCase):
@@ -25,35 +25,35 @@ class MissingValuesTestCase(unittest.TestCase):
         )
 
         # Check that no changes are made if there are no missing values
-        self.assertEqual(self.series1, auto_fillna(self.series1))
+        self.assertEqual(self.series1, fill_missing_values(self.series1, 'auto'))
 
         # Check that a constant function is filled to a constant function
-        self.assertEqual(self.series1, auto_fillna(seriesA))
+        self.assertEqual(self.series1, fill_missing_values(seriesA, 'auto'))
 
     def test_linear(self):
         seriesB: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.lin[:10] + [np.nan] * 10 + self.lin[-10:]))
 
         # Check for linear interpolation part
-        self.assertEqual(self.series2, auto_fillna(seriesB))
+        self.assertEqual(self.series2, fill_missing_values(seriesB, 'auto'))
 
     def test_bfill(self):
         seriesC: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array([np.nan] * 10 + self.lin[-20:]))
 
         # Check that auto-backfill works properly
-        self.assertEqual(self.series3, auto_fillna(seriesC))
+        self.assertEqual(self.series3, fill_missing_values(seriesC, 'auto'))
 
     def test_ffil(self):
         seriesD: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.lin[:20] + [np.nan] * 10))
 
-        self.assertEqual(self.series4, auto_fillna(seriesD))
+        self.assertEqual(self.series4, fill_missing_values(seriesD, 'auto'))
 
     def test_fill_quad(self):
         seriesE: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.cub[:10] + [np.nan] * 10 + self.cub[-10:]))
-        self.assertEqual(self.series5, round(auto_fillna(seriesE, method='quadratic'), 7))
+        self.assertEqual(self.series5, round(fill_missing_values(seriesE, 'auto', method='quadratic'), 7))
 
     def test_multivariate_fill(self):
         seriesA: TimeSeries = TimeSeries.from_times_and_values(
@@ -62,13 +62,13 @@ class MissingValuesTestCase(unittest.TestCase):
         )
         seriesB: TimeSeries = TimeSeries.from_times_and_values(self.time,
                                                                np.array(self.lin[:10] + [np.nan] * 10 + self.lin[-10:]))
-        self.assertEqual(self.series1.stack(self.series2), auto_fillna(seriesA.stack(seriesB)))
+        self.assertEqual(self.series1.stack(self.series2), fill_missing_values(seriesA.stack(seriesB), 'auto'))
 
-    def test__na_ratio(self):
+    def test_missing_values_ratio(self):
         seriesF = TimeSeries.from_times_and_values(self.time, list(range(27)) + [np.nan] * 3)
 
         # univariate case
-        self.assertEqual(na_ratio(seriesF), 0.1)
+        self.assertEqual(missing_values_ratio(seriesF), 0.1)
 
         # multivariate case
-        self.assertEqual(na_ratio(seriesF.stack(seriesF)), 0.1)
+        self.assertEqual(missing_values_ratio(seriesF.stack(seriesF)), 0.1)
