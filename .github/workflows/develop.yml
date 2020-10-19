@@ -39,7 +39,6 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
