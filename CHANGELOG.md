@@ -24,6 +24,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Concrete `DataTransformer` implementations:
   - `MissingValuesFiller` wraps around `fill_missing_value()` and allows to fill missing values using either a constant value or the `pd.interpolate()` method.
   - `Mapper` and `InvertibleMapper` allow to easily perform the equivalent of a `map()` function on a TimeSeries, and can be made part of a `Pipeline`
+  - `BoxCox` allows to apply a BoxCox transformation to the data
 - Extended `map()` on `TimeSeries` to accept functions which use both a value and its timestamp to compute a new value e.g.`f(timestamp, datapoint) = new_datapoint`
 
 **Changed:**
