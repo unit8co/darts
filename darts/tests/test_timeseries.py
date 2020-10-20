@@ -435,7 +435,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(len(seriesC), 1)
 
     def test_map(self):
-        fn = lambda x: math.sin(x)  # noqa: E731
+        fn = np.sin  # noqa: E731
         series = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), np.random.randn(10, 3))
 
         df_0 = series.pd_dataframe()
@@ -470,3 +470,17 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         new_series = series.map(function)
         self.assertEqual(new_series, zeroes)
+
+    def test_map_wrong_fn(self):
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+
+        def add(x, y, z):
+            return x + y + z
+
+        with self.assertRaises(ValueError):
+            series.map(add)
+
+        ufunc_add = np.frompyfunc(add, 3, 1)
+
+        with self.assertRaises(ValueError):
+            series.map(ufunc_add)

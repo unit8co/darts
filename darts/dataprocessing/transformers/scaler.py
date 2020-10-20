@@ -39,12 +39,17 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         self.train_series = None
 
     def fit(self, series: TimeSeries) -> 'Scaler':
-        """ Fits this scaler to the provided time series data
+        """
+        Fits this scaler to the provided time series data
 
         Parameters
         ----------
         series
             The time series to fit the scaler on
+
+        Returns
+        -------
+            Fitted scaler (self)
         """
         super().fit(series)
         self.transformer.fit(series.values().reshape((-1, series.width)))
