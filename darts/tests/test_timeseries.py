@@ -5,7 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from ..timeseries import TimeSeries
+from darts.timeseries import TimeSeries
+from darts.utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 
 class TimeSeriesTestCase(unittest.TestCase):
@@ -434,7 +435,7 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(len(seriesC), 1)
 
     def test_map(self):
-        fn = np.sin
+        fn = np.sin  # noqa: E731
         series = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), np.random.randn(10, 3))
 
         df_0 = series.pd_dataframe()
@@ -452,11 +453,34 @@ class TimeSeriesTestCase(unittest.TestCase):
         series_01 = TimeSeries(df_01, 'D')
         series_012 = TimeSeries(df_012, 'D')
 
-        self.assertEqual(series_0, series.map(fn, "0"))
-        self.assertEqual(series_0, series.map(fn, ["0"]))
-        self.assertEqual(series_2, series.map(fn, "2"))
-        self.assertEqual(series_01, series.map(fn, ["0", "1"]))
-        self.assertEqual(series_012, series.map(fn, ["0", "1", "2"]))
+        self.assertEqual(series_0['0'], series['0'].map(fn))
+        self.assertEqual(series_2['2'], series['2'].map(fn))
+        self.assertEqual(series_01[['0', '1']], series[['0', '1']].map(fn))
+        self.assertEqual(series_012, series[['0', '1', '2']].map(fn))
         self.assertEqual(series_012, series.map(fn))
 
-        self.assertNotEqual(series_01, series.map(fn))
+        self.assertNotEqual(series_01, series[['0', '1']].map(fn))
+
+    def test_map_with_timestamp(self):
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+
+        def function(ts, x):
+            return x - ts.month
+
+        new_series = series.map(function)
+        self.assertEqual(new_series, zeroes)
+
+    def test_map_wrong_fn(self):
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+
+        def add(x, y, z):
+            return x + y + z
+
+        with self.assertRaises(ValueError):
+            series.map(add)
+
+        ufunc_add = np.frompyfunc(add, 3, 1)
+
+        with self.assertRaises(ValueError):
+            series.map(ufunc_add)
