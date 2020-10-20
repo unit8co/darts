@@ -21,8 +21,22 @@ Darts is still in an early development phase and we cannot always guarantee back
     - Data transformers which perform an invertible transformation should derive from the `InvertibleDataTransformer` base class and implement a `inverse_transform()` method.
     - Data transformers wich are neither fittable nor invertible should derive from the `BaseDataTransformer` base class
     - All data transformers must implement a `transform()` method.
+- Concrete `DataTransformer` implementations:
+  - `MissingValuesFiller` wraps around `fill_missing_value()` and allows to fill missing values using either a constant value or the `pd.interpolate()` method.
+  - `Mapper` and `InvertibleMapper` allow to easily perform the equivalent of a `map()` function on a TimeSeries, and can be made part of a `Pipeline`
+- Extended `map()` on `TimeSeries` to accept functions which use both a value and its timestamp to compute a new value e.g.`f(timestamp, datapoint) = new_datapoint`
 
 **Changed:**
+- &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
+  ```python
+  # Assuming a multivariate TimeSeries named series with 3 columns or variables.
+  # To apply fn to columns with names '0' and '2':
+
+  #old syntax
+  series.map(fn, cols=['0', '2']) # returned a time series with 3 columns
+  #new syntax
+  series[['0', '2']].map(fn) # returns a time series with only 2 columns
+  ```
 - &#x1F534; Renamed `ScalerWrapper` into `Scaler`
 - &#x1F534; Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
   ```python
