@@ -18,7 +18,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, get_timestamp_at_point, _backtest_general_checks
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -187,7 +187,7 @@ class ForecastingModel(ABC):
             However, any combination of univariate and multivariate series is allowed here, as long
             as the indices all match up.
         start
-            The first prediction time, at which a prediction is computed for a future time.
+            The first point at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
@@ -196,7 +196,7 @@ class ForecastingModel(ABC):
             In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         forecast_horizon
-            The forecast horizon for the point prediction
+            The forecast horizon for the point predictions
         stride
             The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
         retrain
@@ -233,7 +233,7 @@ class ForecastingModel(ABC):
             fit_function = self.fit
 
         # prepare the start parameter -> pd.Timestamp
-        start = _get_timestamp_at_point(start, training_series)
+        start = get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:
@@ -275,7 +275,7 @@ class ForecastingModel(ABC):
                    training_series: TimeSeries,
                    target_series: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
-                   start: Union[pd.Timestamp, float, int] = 0.5,
+                   start: Union[pd.Timestamp, float, int] = 0.7,
                    use_full_output_length: Optional[bool] = None,
                    val_target_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,

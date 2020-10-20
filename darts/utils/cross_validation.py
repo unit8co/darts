@@ -11,6 +11,7 @@ from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if_not, raise_log, raise_if
 from darts.models.forecasting_model import ForecastingModel
 import darts.metrics as metrics
+from darts.utils import get_index_at_point
 
 logger = get_logger(__name__)
 
@@ -18,10 +19,10 @@ logger = get_logger(__name__)
 def generalized_rolling_origin_evaluation(series: TimeSeries,
                                           model: ForecastingModel,
                                           metric: Union[Callable[[TimeSeries, TimeSeries], float], str] = 'mase',
-                                          first_origin: Optional[Union[int, pd.Timestamp]] = None,
+                                          first_origin: Optional[Union[pd.Timestamp, float, int]] = None,
+                                          forecast_horizon: Optional[int] = None,
                                           stride: Optional[int] = None,
-                                          n_evaluations: Optional[int] = None,
-                                          n_predictions: Optional[int] = None) -> float:
+                                          n_prediction_steps: Optional[int] = None) -> float:
     """
     This function implements the Generalized Rolling Origin Evaluation from
     `Fiorruci et al (2015) <https://arxiv.org/ftp/arxiv/papers/1503/1503.03529.pdf>`_
@@ -32,7 +33,7 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
     If `stride = 1`, the execution is similar to a Rolling Origin Evaluation.
     If `stride >= len(series) - first_origin` the execution is similar to a Fixed Origin Evaluation.
 
-    At least one parameter from `stride` and `n_evaluations` must be given.
+    At least one parameter from `stride` and `n_prediction_steps` must be given.
 
     If ValueErrors occur, the function will return `np.inf`.
 
@@ -47,27 +48,34 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
         Can be either any function that takes two `TimeSeries` and computes an score value (float),
         or a string of the name of the function from darts.metrics.
     first_origin
-        Optional. The index of the first origin. Defaults to the minimum between (len(series) - 10) and 5.
+        Optional. The first point at which a prediction is computed for a future time.
+        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+        In the case of `float`, the parameter will be treated as the proportion of the time series
+        that should lie before the first prediction point.
+        In the case of `int`, the parameter will be treated as an integer index to the time index of
+        `series`.
+        In case of a `pandas.Timestamp`, the parameter will be converted to the index corresponding
+        to the timestamp in the series provided that the timestamp is present in the series time index
+        Defaults to the minimum between (len(series) - 10) and 5.
         Can also be the value of the DateTimeIndex.
+    forecast_horizon
+        Optional. The forecast horizon for the point predictions.
+        Default value is the size of the tail: len(series) - first_origin.
     stride
         Optional. The stride used for rolling the origin.
-        Default value is `n_predictions / n_evaluations`
-    n_evaluations
-        Optional. Number of evaluation. By default the maximum value possible if stride is provided.
-    n_predictions
-        Optional. Number of predictions for each evaluation.
-        Default value is the size of the tail: len(series) - first_origin.
+        Default value is `(len(series) - first_origin) / n_prediction_steps`
+    n_prediction_steps
+        Optional. The number of prediction steps (ie. max number of calls to predict()).
+        By default the maximum value possible if stride is provided.
     Returns
     -------
     Float
         The sum of the predictions errors over the different origins.
     """
-    raise_if((stride is None) and (n_evaluations is None),
-             "At least 1 parameter between stride and n_evaluations must be given",
+    raise_if((stride is None) and (n_prediction_steps is None),
+             "At least 1 parameter between stride and n_prediction_steps must be given",
              logger)
-    raise_if(stride is not None and stride <= 0,
-             "stride must be strictly positive",
-             logger)
+    raise_if(stride is not None and stride <= 0, "stride must be strictly positive", logger)
 
     if isinstance(metric, str):
         raise_if_not(hasattr(metrics, metric),
@@ -79,32 +87,26 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
 
     if first_origin is None:
         first_origin = min(5, len_series - 10)
-    elif isinstance(first_origin, pd.Timestamp):
-        raise_if_not(series.is_within_range(first_origin), "first_origin must be inside the TimeSeries")
-        first_origin = series.time_index().get_loc(first_origin)
-    elif isinstance(first_origin, int):
-        raise_if(first_origin >= len_series or first_origin <= 0,
-                 "first_origin must be inside the TimeSeries",
-                 logger)
-    else:
-        raise_log(ValueError("first_origin should be either a pd.Timestamp or an int"))
+    first_origin = get_index_at_point(first_origin, series)
 
-    if n_predictions is None:
-        n_predictions = len_series - first_origin
+    if forecast_horizon is None:
+        forecast_horizon = len_series - first_origin
 
-    if n_evaluations is None:
-        n_evaluations = int(1 + np.floor((len_series - first_origin) / stride))
+    if n_prediction_steps is None:
+        n_prediction_steps = int(np.floor((len_series - first_origin) / stride))
     elif stride is None:
-        stride = int(np.floor(n_predictions / n_evaluations))
+        stride = int(np.floor((len_series - first_origin) / n_prediction_steps))
+
+    max_origin = first_origin + (n_prediction_steps-1) * stride
+    raise_if(max_origin >= len_series,
+             "The combination formed by the first_origin, n_prediction_steps and stride parameters is invalid"
+             " (it will result in setting the `origin` outside of `series`). Try setting smaller values,"
+             " or let n_prediction_steps be set to the max possible value by default",
+             logger)
 
     errors = []
-    for i in range(n_evaluations):
-        origin = first_origin + i * stride
-
-        if origin >= len_series:
-            break
-
-        n_pred = min(len_series - origin, n_predictions)
+    for origin in range(first_origin, max_origin, stride):
+        n_pred = min(len_series - origin, forecast_horizon)
         train = series[:origin]
         test = series[origin:]
 

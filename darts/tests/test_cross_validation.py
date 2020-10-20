@@ -30,11 +30,11 @@ class CrossValidationTestCase(unittest.TestCase):
             groe(self.series1, self.model1, metric='plop', stride=5)
 
     def test_groe_input_params(self):
-        groe(self.series1, self.model1, metric=mape, stride=5, n_evaluations=10)
+        groe(self.series1, self.model1, metric=mape, stride=5, n_prediction_steps=9)
         with self.assertRaises(ValueError):
             groe(self.series1, self.model1, metric=mape)
         with self.assertRaises(ValueError):
-            groe(self.series1, self.model1, metric=mape, stride=-5, n_evaluations=10)
+            groe(self.series1, self.model1, metric=mape, stride=-5, n_prediction_steps=10)
 
     def test_groe_input_origin(self):
         # small time series
@@ -63,7 +63,7 @@ class CrossValidationTestCase(unittest.TestCase):
         self.assertEqual(np.inf, groe(self.series2, self.model2, metric=mape, first_origin=5, stride=1))
 
     def test_groe_ouput(self):
-        value = groe(self.series2 + self.series3, self.model1, first_origin=35, n_evaluations=6, n_predictions=10)
+        value = groe(self.series2 + self.series3, self.model1, first_origin=35, n_prediction_steps=6, forecast_horizon=10)
         self.assertAlmostEqual(value, 6 * 55)
 
 

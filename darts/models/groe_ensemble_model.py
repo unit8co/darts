@@ -20,7 +20,7 @@ class GROEEnsembleModel(EnsembleModel):
     def __init__(self,
                  models: List[ForecastingModel],
                  metric: Callable[[TimeSeries, TimeSeries], float] = smape,
-                 n_evaluations: int = 6,
+                 n_prediction_steps: int = 6,
                  **groe_kwargs):
         """
         Implementation of an EnsembleModel using GROE to compute the weights.
@@ -39,14 +39,15 @@ class GROEEnsembleModel(EnsembleModel):
             List of forecasting models, whose predictions to ensemble.
         metric
             Metric function used for the GROE cross-validation function.
-        n_evaluations
-            Number of evaluation performed by the GROE function.
+        n_prediction_steps
+            The maximum number of predictions (ie. max number of calls to predict())
+            performed by the GROE function.
         groe_kwargs
             Any additional args passed to the GROE function
         """
         super().__init__(models)
         self.metric = metric
-        self.n_evaluations = n_evaluations
+        self.n_prediction_steps = n_prediction_steps
         self.groe_kwargs = groe_kwargs
         self.criteria = None
         self.weights = None
@@ -58,7 +59,7 @@ class GROEEnsembleModel(EnsembleModel):
             self.criteria.append(groe(self.training_series,
                                       model,
                                       self.metric,
-                                      n_evaluations=self.n_evaluations,
+                                      n_prediction_steps=self.n_prediction_steps,
                                       **self.groe_kwargs))
 
         raise_if(np.inf in self.criteria,
