@@ -4,7 +4,7 @@ Ensemble model
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
@@ -13,11 +13,11 @@ from ..models.forecasting_model import ForecastingModel
 logger = get_logger(__name__)
 
 
-class EnsembleModel(ABC):
+class EnsembleModel(ForecastingModel):
     """
     Abstract base class for ensemble models.
-    Ensemble models take in a list of models and ensemble their predictions to make a single
-    one according to the rule defined by their `ensemble()` method.
+    Ensemble models take in a list of forecasting models and ensemble their predictions
+    to make a single one according to the rule defined by their `ensemble()` method.
     """
     def __init__(self, models: List[ForecastingModel]):
         raise_if_not(isinstance(models, list) and models,
@@ -26,22 +26,17 @@ class EnsembleModel(ABC):
         raise_if_not(all(isinstance(model, ForecastingModel) for model in models),
                      "All models must be instances of darts.models.ForecastingModel",
                      logger)
-
+        super().__init__()
         self.models = models
-        self.training_series = None
-        self._fit_called = False
 
-    def fit(self, training_series: TimeSeries) -> None:
-        self.training_series = training_series
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries]) -> None:
+        super().fit(training_series, target_series)
 
         for model in self.models:
             model.fit(self.training_series)
 
-        self._fit_called = True
-
     def predict(self, n: int) -> TimeSeries:
-        if not self._fit_called:
-            raise_log(Exception('fit() must be called before predict()'), logger)
+        super().predict(n)
 
         predictions = []
         for model in self.models:

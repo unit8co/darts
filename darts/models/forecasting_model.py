@@ -46,17 +46,28 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self) -> None:
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries]) -> None:
         """ Fits/trains the model on the provided series
 
         Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
         wether they are univariate or multivariate.
         """
+        self.training_series = training_series
+        
+        if target_series is None:
+            target_series = training_series
+        self.target_series = target_series
+
+        raise_if_not(all(training_series.time_index() == target_series.time_index()),
+                     "training and target series must have same time indices.",
+                     logger)
+
         for series in (self.training_series, self.target_series):
             if series is not None:
                 raise_if_not(len(series) >= self.min_train_series_length,
                              "Train series only contains {} elements but {} model requires at least {} entries"
-                             .format(len(series), str(self), self.min_train_series_length))
+                             .format(len(series), str(self), self.min_train_series_length),
+                             logger)
         self._fit_called = True
 
     @abstractmethod
@@ -216,10 +227,10 @@ class ForecastingModel(ABC):
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
         # construct fit function (used to ignore target series for univariate models)
-        if isinstance(self, MultivariateForecastingModel):
-            fit_function = self.fit
-        else:
+        if isinstance(self, UnivariateForecastingModel):
             fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
+        else:
+            fit_function = self.fit
 
         # prepare the start parameter -> pd.Timestamp
         start = _get_timestamp_at_point(start, training_series)
@@ -256,7 +267,6 @@ class ForecastingModel(ABC):
 
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values),
                                                     freq=training_series.freq() * stride)
-
         return forecast
 
     @classmethod
@@ -451,27 +461,12 @@ class UnivariateForecastingModel(ForecastingModel):
             A **univariate** timeseries on which to fit the model.
         """
         series._assert_univariate()
-        self.training_series = series
-        self.target_series = series
-        super().fit()
+        super().fit(series)
 
 
 class MultivariateForecastingModel(ForecastingModel):
     """ The base class for multivariate forecasting models.
     """
-    def _make_fitable_series(self,
-                             training_series: TimeSeries,
-                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
-        """Perform checks and returns ready to be used training and target series"""
-        if target_series is None:
-            target_series = training_series
-
-        # general checks on training / target series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "training and target "
-                     "timeseries must have same time indices.")
-
-        return training_series, target_series
-
     @abstractmethod
     def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
@@ -483,8 +478,4 @@ class MultivariateForecastingModel(ForecastingModel):
         target_series
             The target values used as dependent variables when training the model
         """
-        training_series, target_series = self._make_fitable_series(training_series, target_series)
-
-        self.training_series = training_series
-        self.target_series = target_series
-        super().fit()
+        super().fit(training_series, target_series)
