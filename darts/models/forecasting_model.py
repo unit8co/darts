@@ -46,7 +46,7 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries]) -> None:
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the model on the provided series
 
         Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
@@ -352,11 +352,12 @@ class ForecastingModel(ABC):
                      "Please pass exactly one of the arguments 'forecast_horizon', "
                      "'val_target_series' or 'use_fitted_values'.", logger)
 
-        # check target and training series
         if target_series is None:
             target_series = training_series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                     " must have the same time indices.")
+        # check target and training series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()),
+                     "the target and training series must have the same time indices.",
+                     logger)
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
@@ -364,12 +365,14 @@ class ForecastingModel(ABC):
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
         if use_fitted_values:
-            raise_if_not(hasattr(model_class(), "fitted_values"), "The model must have a fitted_values attribute"
-                         " to compare with the train TimeSeries", logger)
+            raise_if_not(hasattr(model_class(), "fitted_values"),
+                         "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                         logger)
 
         elif val_target_series is not None:
-            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the"
-                         " same number of components.", logger)
+            raise_if_not(training_series.width == val_target_series.width,
+                         "Training and validation series require the same number of components.",
+                         logger)
 
         min_error = float('inf')
         best_param_combination = {}

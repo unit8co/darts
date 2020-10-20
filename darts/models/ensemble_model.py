@@ -29,7 +29,7 @@ class EnsembleModel(ForecastingModel):
         super().__init__()
         self.models = models
 
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries]) -> None:
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         super().fit(training_series, target_series)
 
         for model in self.models:
@@ -60,3 +60,7 @@ class EnsembleModel(ForecastingModel):
             The predicted `TimeSeries` obtained by ensembling the individual predictions
         """
         pass
+
+    @property
+    def min_train_series_length(self) -> int:
+        return max(model.min_train_series_length for model in self.models)
