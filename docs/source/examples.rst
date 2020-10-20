@@ -16,6 +16,16 @@ You will find below an example Jupyter notebook containing an intro to the usage
 
    examples/darts-intro.ipynb
 
+Data (pre) Processing
+=====================
+
+You will find below an example Jupyter notebook showcasing the data processing abilities of darts.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/data-processing.ipynb
+
 
 Fast Fourier Transform
 ======================
