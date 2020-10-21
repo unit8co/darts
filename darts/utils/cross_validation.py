@@ -57,7 +57,6 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
         In case of a `pandas.Timestamp`, the parameter will be converted to the index corresponding
         to the timestamp in the series provided that the timestamp is present in the series time index
         Defaults to the minimum between (len(series) - 10) and 5.
-        Can also be the value of the DateTimeIndex.
     forecast_horizon
         Optional. The forecast horizon for the point predictions.
         Default value is the size of the tail: len(series) - first_origin.
@@ -105,7 +104,7 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
              logger)
 
     errors = []
-    for origin in range(first_origin, max_origin, stride):
+    for origin in range(first_origin, max_origin+1, stride):
         n_pred = min(len_series - origin, forecast_horizon)
         train = series[:origin]
         test = series[origin:]
