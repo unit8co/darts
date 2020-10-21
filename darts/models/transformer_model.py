@@ -30,8 +30,10 @@ class _PositionalEncoding(nn.Module):
                 dropout
                     Fraction of neurons affected by Dropout (default=0.1).
                 max_len
-                    The dimensionality of the computed positional encoding array. Only its first "input_size"
-                    elements will be considered in the output
+                    The dimensionality of the computed positional encoding array.
+                    Only its first "input_size" elements will be considered in the output
+
+
 
                 Inputs
                 ------
@@ -219,7 +221,7 @@ class TransformerModel(TorchForecastingModel):
             a custom PyTorch module with the same specifications as
             `darts.models.transformer_model._TransformerModule` (default=None).
         input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit and predict functions (default=1)
+            The dimensionality of the TimeSeries that will be fed to the fit and predict functions (default=1).
         input_length
             Number of time steps to be input to the forecasting module (default=1).
         output_size

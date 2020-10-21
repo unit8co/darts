@@ -11,6 +11,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any, List, Union
+from inspect import signature
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -919,8 +920,7 @@ class TimeSeries:
         return index[0] <= ts <= index[-1]
 
     def map(self,
-            fn: Callable[[np.number], np.number],
-            cols: Optional[Union[List[str], str]] = None) -> 'TimeSeries':
+            fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
         Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
         values in the columns specified by the optional argument `cols`. Returns a new
@@ -929,22 +929,42 @@ class TimeSeries:
         Parameters
         ----------
         fn
-            A numerical function
-        cols
-            Optionally, a string or list of strings specifying the column(s) onto which fn should be applied
+            Either a function which takes a value and returns a value ie. f(x) = y
+            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
 
         Returns
         -------
         TimeSeries
             A new TimeSeries instance
         """
-        if cols is None:
-            new_dataframe = self._df.applymap(fn)
+        if not isinstance(fn, Callable):
+            raise_log(TypeError("fn should be callable"), logger)
+
+        if isinstance(fn, np.ufunc):
+            if fn.nin == 1 and fn.nout == 1:
+                num_args = 1
+            elif fn.nin == 2 and fn.nout == 1:
+                num_args = 2
+            else:
+                raise_log(ValueError("fn must have either one or two arguments and return a single value"), logger)
         else:
-            if isinstance(cols, str):
-                cols = [cols]
-            new_dataframe = self.pd_dataframe()
-            new_dataframe[cols] = new_dataframe[cols].applymap(fn)
+            try:
+                num_args = len(signature(fn).parameters)
+            except ValueError:
+                raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
+                          logger)
+
+        if num_args == 1:  # simple map function f(x)
+            new_dataframe = self.pd_dataframe().applymap(fn)
+        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
+            def apply_fn_wrapper(row):
+                timestamp = row.name
+                return row.map(lambda x: fn(timestamp, x))
+
+            new_dataframe = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
+        else:
+            raise_log(ValueError("fn must have either one or two arguments"), logger)
+
         return TimeSeries(new_dataframe, self.freq_str())
 
     @staticmethod
