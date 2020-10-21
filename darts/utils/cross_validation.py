@@ -8,7 +8,7 @@ import pandas as pd
 from typing import Union, Callable, Optional
 
 from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log, raise_if
+from darts.logging import get_logger, raise_if_not, raise_if
 from darts.models.forecasting_model import ForecastingModel
 import darts.metrics as metrics
 from darts.utils import get_index_at_point
@@ -96,7 +96,7 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
     elif stride is None:
         stride = int(np.floor((len_series - first_origin) / n_prediction_steps))
 
-    max_origin = first_origin + (n_prediction_steps-1) * stride
+    max_origin = first_origin + (n_prediction_steps - 1) * stride
     raise_if(max_origin >= len_series,
              "The combination formed by the first_origin, n_prediction_steps and stride parameters is invalid"
              " (it will result in setting the `origin` outside of `series`). Try setting smaller values,"
@@ -104,7 +104,7 @@ def generalized_rolling_origin_evaluation(series: TimeSeries,
              logger)
 
     errors = []
-    for origin in range(first_origin, max_origin+1, stride):
+    for origin in range(first_origin, max_origin + 1, stride):
         n_pred = min(len_series - origin, forecast_horizon)
         train = series[:origin]
         test = series[origin:]

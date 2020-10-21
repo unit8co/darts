@@ -299,7 +299,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if(val_training_series is None and val_target_series is not None, "`val_target_series` can not be "
                  "specified without a `val_training_series`.")
         if val_training_series is not None:
-            if  val_target_series is None:
+            if val_target_series is None:
                 val_target_series = val_training_series
             raise_if_not(all(val_training_series.time_index() == val_target_series.time_index()),
                          "the validation target and training series must have the same time indices.",

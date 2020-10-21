@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, Tuple, Union, Any, Callable
+from typing import Optional, Union, Any, Callable
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -53,7 +53,7 @@ class ForecastingModel(ABC):
         wether they are univariate or multivariate.
         """
         self.training_series = training_series
-        
+
         if target_series is None:
             target_series = training_series
         self.target_series = target_series

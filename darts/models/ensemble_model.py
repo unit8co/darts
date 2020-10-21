@@ -3,11 +3,11 @@ Ensemble model
 --------------
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import List, Optional
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
+from ..logging import get_logger, raise_if_not
 from ..models.forecasting_model import ForecastingModel
 
 logger = get_logger(__name__)

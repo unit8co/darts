@@ -214,6 +214,7 @@ def get_timestamp_at_point(point: Union[pd.Timestamp, float, int], series: TimeS
         raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
     return timestamp
 
+
 def get_index_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> int:
     """
     Converts a point into the corresponding index in the time series
@@ -233,4 +234,3 @@ def get_index_at_point(point: Union[pd.Timestamp, float, int], series: TimeSerie
     """
     timestamp = get_timestamp_at_point(point, series)
     return series._df.index.get_loc(timestamp)
-
