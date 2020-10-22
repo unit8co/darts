@@ -7,6 +7,7 @@ from inspect import signature
 
 from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
+from numpy.random import randint
 
 from ..logging import raise_if_not, get_logger
 
@@ -14,6 +15,7 @@ T = TypeVar('T')
 logger = get_logger(__name__)
 
 MAX_TORCH_SEED_VALUE = (1 << 63) - 1
+MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
 
 
 def _is_method(func: Callable[..., Any]) -> bool:
@@ -51,14 +53,13 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     raise_if_not(_is_method(decorated), "@random_method can only be used on methods.", logger)
 
     def decorator(self, *args, **kwargs) -> T:
-        if "random_state" in kwargs.keys() or hasattr(self, "_random_instance"):
-            if "random_state" in kwargs.keys():
-                self._random_instance = check_random_state(kwargs["random_state"])
+        if "random_state" in kwargs.keys():
+            self._random_instance = check_random_state(kwargs["random_state"])
+        elif not hasattr(self, "_random_instance"):
+            self._random_instance = check_random_state(randint(0, high=MAX_NUMPY_SEED_VALUE))
 
-            with fork_rng():
-                manual_seed(self._random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
-                decorated(self, *args, **kwargs)
-        else:
+        with fork_rng():
+            manual_seed(self._random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
             decorated(self, *args, **kwargs)
 
     return decorator

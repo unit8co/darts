@@ -8,6 +8,7 @@ from typing import Optional, List
 from darts.timeseries import TimeSeries
 from darts.models import EnsembleModel, StandardRegressionModel
 from darts.models.forecasting_model import ForecastingModel
+from darts.models.torch_forecasting_model import TorchForecastingModel
 from darts.logging import get_logger, raise_if, raise_if_not
 
 logger = get_logger(__name__)
@@ -70,6 +71,10 @@ class RegressionEnsembleModel(EnsembleModel):
     
         # prepare the forecasting models for further predicting by fitting
         # them with the entire data
+
+        # Neural-Network based models need to be retrained from scratch.
+        self.models = [model.untrained_model() if isinstance(model, TorchForecastingModel) else model for model in models]
+
         super().fit(training_series, target_series)
 
     def ensemble(self, predictions: List[TimeSeries]) -> TimeSeries:
