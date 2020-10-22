@@ -1,6 +1,6 @@
 """
 Regression ensemble model
------------------------
+-------------------------
 """
 from sklearn.linear_model import LinearRegression
 from typing import Optional, List
