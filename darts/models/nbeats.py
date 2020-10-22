@@ -102,7 +102,7 @@ class _Block(nn.Module):
 
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_length, layer_width)]
-        self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for i in range(num_layers - 1)]
+        self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for _ in range(num_layers - 1)]
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
         # fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)
@@ -195,7 +195,7 @@ class _Stack(nn.Module):
         if g_type == GType.GENERIC:
             self.blocks_list = [
                 _Block(num_layers, layer_width, expansion_coefficient_dim, input_length, output_length, g_type)
-                for i in range(num_blocks)
+                for _ in range(num_blocks)
             ]
         else:
             # same block instance is used for weight sharing
