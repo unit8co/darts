@@ -20,7 +20,6 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(self,
                  forecasting_models: List[ForecastingModel],
@@ -93,7 +92,7 @@ class RegressionEnsembleModel(EnsembleModel):
         if TORCH_AVAILABLE:
             # Neural-Network based models need to be retrained from scratch.
             self.models = [model.untrained_model() if isinstance(model, TorchForecastingModel) else model
-                        for model in self.models]
+                           for model in self.models]
 
         super().fit(training_series, target_series)
 

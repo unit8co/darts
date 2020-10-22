@@ -68,7 +68,7 @@ class RegressionEnsembleModelsTestCase(unittest.TestCase):
         ensemble = RegressionEnsembleModel(self.get_models(), 45)
         with self.assertRaises(ValueError):
             ensemble.fit(self.combined)
-    
+
     if TORCH_AVAILABLE:
         def test_torch_models_retrain(self):
             model1 = RNNModel(random_state=0)
