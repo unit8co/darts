@@ -60,6 +60,10 @@ class RegressionEnsembleModel(EnsembleModel):
                      logger)
 
         # spare train_n_points points to serve as regression target
+        raise_if(len(training_series) <= self.regression_model.train_n_points,
+                 "regression_train_n_points parameter too big (greater or equal"
+                 " the number of points in training_series)",
+                 logger)
         forecast_training = training_series[:-self.regression_model.train_n_points]
         forecast_target = target_series[:-self.regression_model.train_n_points]
 

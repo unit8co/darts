@@ -22,7 +22,7 @@ class EnsembleModel(ForecastingModel):
     Parameters
     ----------
     models
-        A list of forecasting models whose predictions to ensemble
+        List of forecasting models whose predictions to ensemble
     """
     def __init__(self, models: List[ForecastingModel]):
         raise_if_not(isinstance(models, list) and models,
