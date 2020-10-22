@@ -31,8 +31,10 @@ logger = get_logger(__name__)
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
 
+
 def _get_untrained_models_folder(work_dir, model_name):
     return os.path.join(work_dir, UNTRAINED_MODELS_FOLDER, model_name)
+
 
 def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
@@ -264,7 +266,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
             self.lr_scheduler = _create_from_cls_and_kwargs(lr_scheduler_cls, lr_scheduler_kwargs)
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
-        
+
         self._save_untrained_model(_get_untrained_models_folder(work_dir, model_name))
 
     @random_method
@@ -537,10 +539,10 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
         with open(filename, 'wb') as f:
             torch.save(self, f)
-    
+
     def _load_untrained_model(self, folder):
         filename = os.path.join(folder, 'model.pth.tar')
-        
+
         with open(filename, 'rb') as f:
             model = torch.load(f)
         return model

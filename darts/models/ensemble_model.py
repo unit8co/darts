@@ -18,6 +18,11 @@ class EnsembleModel(ForecastingModel):
     Abstract base class for ensemble models.
     Ensemble models take in a list of forecasting models and ensemble their predictions
     to make a single one according to the rule defined by their `ensemble()` method.
+
+    Parameters
+    ----------
+    models
+        A list of forecasting models whose predictions to ensemble
     """
     def __init__(self, models: List[ForecastingModel]):
         raise_if_not(isinstance(models, list) and models,
