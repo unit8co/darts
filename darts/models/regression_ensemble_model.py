@@ -10,6 +10,8 @@ from darts.models import EnsembleModel, StandardRegressionModel
 from darts.models.forecasting_model import ForecastingModel
 from darts.logging import get_logger, raise_if, raise_if_not
 
+logger = get_logger(__name__)
+
 try:
     from darts.models.torch_forecasting_model import TorchForecastingModel
     TORCH_AVAILABLE = True
@@ -17,7 +19,6 @@ except ImportError:
     logger.warning('Torch not available')
     TORCH_AVAILABLE = False
 
-logger = get_logger(__name__)
 
 
 class RegressionEnsembleModel(EnsembleModel):

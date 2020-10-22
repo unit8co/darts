@@ -7,6 +7,9 @@ from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal
 from ..models import StandardRegressionModel
 from ..models import RegressionEnsembleModel
+from ..logging import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from ..models import RNNModel
