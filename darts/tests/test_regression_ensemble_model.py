@@ -4,9 +4,16 @@ import logging
 from sklearn.ensemble import RandomForestRegressor
 
 from ..utils import timeseries_generation as tg
-from ..models import NaiveDrift, NaiveSeasonal, RNNModel
+from ..models import NaiveDrift, NaiveSeasonal
 from ..models import StandardRegressionModel
 from ..models import RegressionEnsembleModel
+
+try:
+    from ..models import RNNModel
+    TORCH_AVAILABLE = True
+except ImportError:
+    logger.warning('Torch not available. Some tests will be skipped.')
+    TORCH_AVAILABLE = False
 
 
 class RegressionEnsembleModelsTestCase(unittest.TestCase):
@@ -58,21 +65,22 @@ class RegressionEnsembleModelsTestCase(unittest.TestCase):
         ensemble = RegressionEnsembleModel(self.get_models(), 45)
         with self.assertRaises(ValueError):
             ensemble.fit(self.combined)
+    
+    if TORCH_AVAILABLE:
+        def test_torch_models_retrain(self):
+            model1 = RNNModel(random_state=0)
+            model2 = RNNModel(random_state=0)
 
-    def test_torch_models_retrain(self):
-        model1 = RNNModel(random_state=0)
-        model2 = RNNModel(random_state=0)
+            ensemble = RegressionEnsembleModel([model1], 5)
+            ensemble.fit(self.combined)
 
-        ensemble = RegressionEnsembleModel([model1], 5)
-        ensemble.fit(self.combined)
+            model1_fitted = ensemble.models[0]
+            forecast1 = model1_fitted.predict(10)
 
-        model1_fitted = ensemble.models[0]
-        forecast1 = model1_fitted.predict(10)
+            model2.fit(self.combined)
+            forecast2 = model2.predict(10)
 
-        model2.fit(self.combined)
-        forecast2 = model2.predict(10)
-
-        self.assertEqual(forecast1, forecast2)
+            self.assertEqual(forecast1, forecast2)
 
 
 if __name__ == '__main__':
