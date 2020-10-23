@@ -29,7 +29,10 @@ Darts is still in an early development phase and we cannot always guarantee back
 - A new function to perform cross-validation on forecasting models: `generalized_rolling_origin_evaluation()`
 - Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions
   - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
-  - A concrete implementation of `EnsembleModel`: `GROEEnsembleModel`, which uses scores obtained from `generalized_rolling_origin_evaluation()` to assign weights to its constituent models and ensemble their predictions.
+  - Two concrete implementations of `EnsembleModel`:
+    - `GROEEnsembleModel`, which uses scores obtained from `generalized_rolling_origin_evaluation()` to assign weights to its constituent models and ensemble their predictions.
+    - `RegressionEnsembleModel`, which allows to specify any regression model (providing `fit()` and `predict()` methods) to use to ensemble the constituent models' predictions.
+- A new method to `TorchForecastingModel`: `untrained_model()` returns the model as it was initally created, allowing to retrain the exact same model from scratch. Works both when specifying a `random_state` or not.
 
 **Changed:**
 - &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
@@ -58,6 +61,10 @@ Darts is still in an early development phase and we cannot always guarantee back
   fill_missing_values(series, fill='auto', **interpolate_kwargs)
   fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
   ```
+
+### For developers of the library
+**Changed:**
+- `@random_method` decorator now always assigns a `_random_instance` field to decorated methods (seeded with a random seed). This doesn't change the observed behavior, but allows to deterministically "reset" `TorchForecastingModel` by saving `_random_instance` along with the other parameters of the model upon creation.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
