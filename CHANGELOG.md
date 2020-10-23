@@ -26,6 +26,10 @@ Darts is still in an early development phase and we cannot always guarantee back
   - `Mapper` and `InvertibleMapper` allow to easily perform the equivalent of a `map()` function on a TimeSeries, and can be made part of a `Pipeline`
   - `BoxCox` allows to apply a BoxCox transformation to the data
 - Extended `map()` on `TimeSeries` to accept functions which use both a value and its timestamp to compute a new value e.g.`f(timestamp, datapoint) = new_datapoint`
+- A new function to perform cross-validation on forecasting models: `generalized_rolling_origin_evaluation()`
+- Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions
+  - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
+  - A concrete implementation of `EnsembleModel`: `GROEEnsembleModel`, which uses scores obtained from `generalized_rolling_origin_evaluation()` to assign weights to its constituent models and ensemble their predictions.
 
 **Changed:**
 - &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
