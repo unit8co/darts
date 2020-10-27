@@ -89,8 +89,10 @@ Currently, the library contains the following features:
 * FFT (Fast Fourier Transform),
 * Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),
 * Temporal convolutional network.
+* Transformer
+* N-BEATS
 
-**Data processing:** Data transformer tool for easily scaling / normalizing time series.
+**Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
 
 **Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
 from R2-scores to Mean Absolute Scaled Error.

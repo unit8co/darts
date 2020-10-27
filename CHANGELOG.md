@@ -26,6 +26,9 @@ Darts is still in an early development phase and we cannot always guarantee back
   - `Mapper` and `InvertibleMapper` allow to easily perform the equivalent of a `map()` function on a TimeSeries, and can be made part of a `Pipeline`
   - `BoxCox` allows to apply a BoxCox transformation to the data
 - Extended `map()` on `TimeSeries` to accept functions which use both a value and its timestamp to compute a new value e.g.`f(timestamp, datapoint) = new_datapoint`
+- Two new forecasting models:
+  - `TransformerModel`, an implementation based on the architecture described in [Attention Is All You Need](https://arxiv.org/abs/1706.03762) by Vaswani et al. (2017)
+  - `NBEATSModel`, an implementation based on the N-BEATS architecture described in [N-BEATS: Neural basis expansion analysis for interpretable time series forecasting](https://openreview.net/forum?id=r1ecqn4YwB) by Boris N. Oreshkin et al. (2019)
 
 **Changed:**
 - &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
@@ -39,6 +42,7 @@ Darts is still in an early development phase and we cannot always guarantee back
   series[['0', '2']].map(fn) # returns a time series with only 2 columns
   ```
 - &#x1F534; Renamed `ScalerWrapper` into `Scaler`
+- &#x1F534; Renamed the `preprocessing` module into `dataprocessing`
 - &#x1F534; Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
   ```python
   #old syntax
@@ -54,6 +58,11 @@ Darts is still in an early development phase and we cannot always guarantee back
   fill_missing_values(series, fill='auto', **interpolate_kwargs)
   fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
   ```
+
+### For developers of the library
+### Changed
+- GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
+- (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
