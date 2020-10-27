@@ -1,6 +1,6 @@
 """
 Transformer
--------------------------
+-----------
 """
 
 from numpy.random import RandomState
