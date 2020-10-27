@@ -17,14 +17,9 @@ class PipelineTestCase(unittest.TestCase):
     class DataTransformerMock1(BaseDataTransformer[TimeSeries]):
         def __init__(self):
             super().__init__()
-            self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
-
-        def validate(self, data: TimeSeries) -> bool:
-            self.validate_called = True
-            return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().transform(data, *args, **kwargs)
@@ -34,7 +29,6 @@ class PipelineTestCase(unittest.TestCase):
     class DataTransformerMock2(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
         def __init__(self):
             super().__init__()
-            self.validate_called = False
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
@@ -43,10 +37,6 @@ class PipelineTestCase(unittest.TestCase):
             super().fit(data)
             self.fit_called = True
             return self
-
-        def validate(self, data: TimeSeries) -> bool:
-            self.validate_called = True
-            return super()._validate(data)
 
         def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
             super().transform(data, *args, **kwargs)

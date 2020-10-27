@@ -27,7 +27,7 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         name
             A specific name for the scaler
         """
-        super().__init__(validators=None, name=name)
+        super().__init__(name)
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
                 or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503

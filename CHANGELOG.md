@@ -8,11 +8,8 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ### For users of the library:
 **Added:**
-- Data (pre) processing abilities using `DataTransformer`, `Pipeline` and `Validator`:
-  - `Validator` are used by data transformers to perform data validation at run time. They are built with a `validation_function()` that is applied on the data, and allow to specify a `reason` that will be displayed if the validation fails.
-  - `DataTransformer`:
-    - provide a unified interface to apply transformations on `TimeSeries`, using their `transform()` method
-    - allow to automatically perform checks by specifiying a sequence of `Validator` entities
+- Data (pre) processing abilities using `DataTransformer`, `Pipeline`:
+  - `DataTransformer` provide a unified interface to apply transformations on `TimeSeries`, using their `transform()` method
   - `Pipeline`:
     - allow chaining of `DataTransformers`
     - provide `fit()`, `transform()`, `fit_transform()` and `inverse_transform()` methods.
