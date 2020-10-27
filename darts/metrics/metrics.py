@@ -13,6 +13,7 @@ from ..logging import raise_if_not, get_logger
 from warnings import warn
 from typing import Optional, Callable
 from inspect import signature
+from functools import wraps
 
 logger = get_logger(__name__)
 
@@ -24,7 +25,7 @@ def multivariate_support(func):
     metrics for components with the same indices, and returns a float value that is computed as a function of all the
     univariate metrics using a `reduction` subroutine passed as argument to the metric function.
     """
-
+    @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs):
         series1 = kwargs['series1'] if 'series1' in kwargs else args[0]
         series2 = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs else args[1]
