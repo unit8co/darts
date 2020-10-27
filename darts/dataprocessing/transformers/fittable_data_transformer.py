@@ -4,10 +4,9 @@ Fittable Data Transformer
 """
 
 from abc import abstractmethod
-from typing import TypeVar, Sequence, Optional
+from typing import TypeVar
 
 from darts.logging import get_logger, raise_if_not
-from darts.dataprocessing import Validator
 from darts.dataprocessing.transformers import BaseDataTransformer
 
 logger = get_logger(__name__)
@@ -16,8 +15,7 @@ T = TypeVar('T')
 
 class FittableDataTransformer(BaseDataTransformer[T]):
     def __init__(self,
-                 name: str = "FittableDataTransformer",
-                 validators: Optional[Sequence[Validator]] = None):
+                 name: str = "FittableDataTransformer"):
 
         """
         Abstract class for data transformers implementing a fit method. All deriving classes must implement
@@ -25,16 +23,14 @@ class FittableDataTransformer(BaseDataTransformer[T]):
 
         names
             The data transformer's name
-        validators
-            Sequence of validators that will be called before fit() and transform()
         """
-        super().__init__(name, validators)
+        super().__init__(name)
         self._fit_called = False
 
     @abstractmethod
     def fit(self, data: T) -> 'FittableDataTransformer[T]':
         """
-        Perform validation and fit data transformer to data.
+        Fit the data transformer to data.
         Not implemented in base class and has to be implemented by deriving classes.
 
         Parameters
@@ -47,13 +43,12 @@ class FittableDataTransformer(BaseDataTransformer[T]):
         BaseDataTransformer[T]
             Fitted data transformer (typically would be self)
         """
-        super()._validate(data)
         self._fit_called = True
 
     @abstractmethod
     def transform(self, data: T, *args, **kwargs) -> T:
         """
-        Perform validation and inverse transformation of data. Not implemented in base class.
+        Transform the data. Not implemented in base class.
         Will raise an error if called before a call to `fit()`
 
         Parameters
@@ -61,30 +56,30 @@ class FittableDataTransformer(BaseDataTransformer[T]):
         data
             Object which will be inverse transformed.
         args
-            Additional positional arguments for the `inverse_transform` method
+            Additional positional arguments for the `transform()` method
         kwargs
-            Additional keyword arguments for the `inverse_transform` method
+            Additional keyword arguments for the `transform()` method
 
         Returns
         -------
         T
-            Inverse transformed data.
+            Transformed data.
         """
         raise_if_not(self._fit_called, "fit() must have been called before transform()", logger)
         super().transform(data, args, kwargs)
 
     def fit_transform(self, data: T, *args, **kwargs) -> T:
         """
-        Perform validation, fit transformer to data and then transform data.
+        Fit the transformer to data and then transform data.
 
         Parameters
         ----------
         data
             Object used to fit and transform.
         args
-            Additional positional arguments for the `transform` method
+            Additional positional arguments for the `transform()` method
         kwargs
-            Additional keyword arguments for the `transform` method
+            Additional keyword arguments for the `transform()` method
 
         Returns
         -------

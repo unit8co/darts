@@ -3,19 +3,14 @@ Base Data Transformer
 ---------------------
 """
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Sequence, Optional
+from typing import TypeVar, Generic
 
-from darts.logging import raise_if, get_logger
-from darts.dataprocessing import Validator
-
-logger = get_logger(__name__)
 T = TypeVar('T')
 
 
 class BaseDataTransformer(Generic[T], ABC):
     def __init__(self,
-                 name: str = "BaseDataTransformer",
-                 validators: Optional[Sequence[Validator]] = None):
+                 name: str = "BaseDataTransformer"):
         """
         Abstract class for data transformers. All deriving classes have to implement only one function `transform`.
         Data transformers requiring to be fit first before calling `transform()` should derive
@@ -26,20 +21,13 @@ class BaseDataTransformer(Generic[T], ABC):
         ----------
         names
             The data transformer's name
-        validators
-            Sequence of validators that will be called before transform()
         """
         self._name = name
-
-        if validators is None:
-            validators = []
-
-        self._validators = validators
 
     @abstractmethod
     def transform(self, data: T, *args, **kwargs) -> T:
         """
-        Perform validation and transform data.
+        Transform the data.
         Not implemented in base class and has to be implemented by deriving classes.
 
         Parameters
@@ -56,33 +44,7 @@ class BaseDataTransformer(Generic[T], ABC):
         T
             Transformed data.
         """
-        self._validate(data)
-
-    def _validate(self, data: T) -> bool:
-        """
-        Validate data using validators set at init. Will raise an exception if validation fails
-        potentially with reason/explanation why.
-
-        Parameters
-        ----------
-        data
-            Object on which validation functions will be run.
-
-        Returns
-        -------
-        True
-            If successful.
-        """
-        # Collect all validation errors (if any) and throw them all at once
-        fail_reasons = []
-        for validator in self._validators:
-            if not validator(data):
-                fail_reasons.append(validator.reason)
-
-        raise_if(len(fail_reasons) != 0,
-                 f"Validation failed for {self.name}, reason(s):\n" + '\n'.join(fail_reasons),
-                 logger)
-        return True
+        pass
 
     @property
     def name(self):

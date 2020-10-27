@@ -2,9 +2,8 @@
 Missing Values Filler
 ---------------------
 """
-from typing import Optional, Sequence, Union
+from typing import Union
 
-from darts.dataprocessing import Validator
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.missing_values import fill_missing_values
 
@@ -17,8 +16,7 @@ logger = get_logger(__name__)
 class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
     def __init__(self,
                  fill: Union[str, float] = 'auto',
-                 name: str = "MissingValuesFiller",
-                 validators: Optional[Sequence[Validator]] = None):
+                 name: str = "MissingValuesFiller"):
         """
         Data transformer to fill missing values from time series
 
@@ -29,8 +27,6 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
             If set to 'auto', will auto-fill missing values using the `pandas.Dataframe.interpolate()` method.
         name
             A specific name for the transformer
-        validators
-            Sequence of validators that will be called before transform()
         """
         raise_if_not(isinstance(fill, str) or isinstance(fill, float),
                      "`fill` should either be a string or a float",
@@ -39,7 +35,7 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
                  "invalid string for `fill`: can only be set to 'auto'",
                  logger)
 
-        super().__init__(name=name, validators=validators)
+        super().__init__(name)
         self._fill = fill
 
     def transform(self, data: TimeSeries, **interpolate_kwargs) -> TimeSeries:
