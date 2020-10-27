@@ -30,7 +30,7 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
         name
             A specific name for the transformer
         validators
-            Sequence of validators that will be called before fit(), transform() and inverse_transform()
+            Sequence of validators that will be called before transform()
         """
         raise_if_not(isinstance(fill, str) or isinstance(fill, float),
                      "`fill` should either be a string or a float",
