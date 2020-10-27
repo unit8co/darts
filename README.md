@@ -114,7 +114,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
 2. Fork the repository.
 3. Clone the forked repository locally.
-4. Create a clean python env and install requirements with pip: `pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt`
+4. Create a clean python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
 5. Create a new branch:
     * Branch off from the **develop** branch.
     * Prefix the branch with the type of update you are making:
