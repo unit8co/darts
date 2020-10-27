@@ -1,6 +1,6 @@
 """
 Transformer
--------------------------
+-----------
 """
 
 from numpy.random import RandomState
@@ -141,7 +141,6 @@ class _TransformerModule(nn.Module):
                                           custom_encoder=custom_encoder,
                                           custom_decoder=custom_decoder)
 
-        self.tgt_mask = self.transformer.generate_square_subsequent_mask(output_length)
         self.decoder = nn.Linear(d_model, output_length * output_size)
 
     def _create_transformer_inputs(self, data):
@@ -214,6 +213,15 @@ class TransformerModel(TorchForecastingModel):
         Illia Polosukhin. 2017. Attention is all you need. In Advances in Neural Information Processing Systems,
         pages 6000-6010.
         (paper can be found at https://arxiv.org/abs/1706.03762)
+
+        Disclaimer:
+        This current implementation is fully functional and can already produce some good predictions. However,
+        it is still limited in how it uses the Transformer architecture because the `tgt` input of
+        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the
+        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
+        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
+        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
+        added to it. Of course, the training of the model would have to be adapted accordingly.
 
         Parameters
         ----------
