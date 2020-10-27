@@ -39,7 +39,6 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
@@ -67,4 +66,22 @@ jobs:
       - name: "6. Build docs"
         run: |
           ./gradlew buildDocs
+  
+  check-examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example-name: [FFT-examples.ipynb, RNN-examples.ipynb, darts-intro.ipynb, multivariate-examples.ipynb, data-processing.ipynb]
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python 3.7"
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: "3. Run examples ${{matrix.example-name}}"
+        run: |
+          ./gradlew checkExample -PexampleName=${{matrix.example-name}}
 
