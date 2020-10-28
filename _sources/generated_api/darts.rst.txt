@@ -8,9 +8,9 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.dataprocessing
         darts.metrics
         darts.models
-        darts.preprocessing
         darts.utils
         
         darts.timeseries

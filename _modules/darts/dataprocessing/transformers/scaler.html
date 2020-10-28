@@ -5,42 +5,42 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.preprocessing.scaler_wrapper &#8212; darts  documentation</title>
+    <title>darts.dataprocessing.transformers.scaler &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../../../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
-    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
 
     
       
   <link rel="stylesheet"
-    href="../../../_static/vendor/open-sans_all/1.44.1/index.css">
+    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
   <link rel="stylesheet"
-    href="../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
 
     
-    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../../../_static/js/index.30270b6e4c972e43c488.js">
+  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
 
-    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/language_data.js"></script>
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -49,11 +49,11 @@
     <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
 <div class="container-xl">
 
+    <a class="navbar-brand" href="../../../../index.html">
     
-    <a class="navbar-brand" href="../../../index.html">
-      <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
     </a>
-    
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -63,22 +63,22 @@
         
         
         <li class="nav-item ">
-            <a class="nav-link" href="../../../README.html">Home</a>
+            <a class="nav-link" href="../../../../README.html">Home</a>
         </li>
         
         <li class="nav-item ">
-            <a class="nav-link" href="../../../generated_api/darts.html">API Reference</a>
+            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
-            <a class="nav-link" href="../../../examples.html">Examples</a>
+            <a class="nav-link" href="../../../../examples.html">Examples</a>
         </li>
         
         
       </ul>
 
 
-      <form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form>
@@ -108,26 +108,22 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar">
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
 
-
-
-<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-  <div class="bd-toc-item active">
+    <div class="bd-toc-item active">
+    
   
-
-  <ul class="nav bd-sidenav">
-      
-      
-      
-      
-      
-      
-      
-    </ul>
-
-</nav>
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
           </div>
           
 
@@ -151,61 +147,68 @@
               
               <div>
                 
-  <h1>Source code for darts.preprocessing.scaler_wrapper</h1><div class="highlight"><pre>
+  <h1>Source code for darts.dataprocessing.transformers.scaler</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Scaler wrapper</span>
-<span class="sd">--------------</span>
+<span class="sd">Scaler</span>
+<span class="sd">------</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span>
+
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MinMaxScaler</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ScalerWrapper"><a class="viewcode-back" href="../../../generated_api/darts.preprocessing.scaler_wrapper.html#darts.preprocessing.scaler_wrapper.ScalerWrapper">[docs]</a><span class="k">class</span> <span class="nc">ScalerWrapper</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=</span><span class="n">MinMaxScaler</span><span class="p">(</span><span class="n">feature_range</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))):</span>
+<div class="viewcode-block" id="Scaler"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler">[docs]</a><span class="k">class</span> <span class="nc">Scaler</span><span class="p">(</span><span class="n">FittableDataTransformer</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">InvertibleDataTransformer</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=</span><span class="n">MinMaxScaler</span><span class="p">(</span><span class="n">feature_range</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Scaler&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generic wrapper class for using transformers/scalers that implement `fit()`, `transform()` and</span>
+<span class="sd">        Generic wrapper class for using scalers that implement `fit()`, `transform()` and</span>
 <span class="sd">        `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        scaler</span>
-<span class="sd">            The transformer/scaler to transform the data.</span>
+<span class="sd">            The scaler to transform the data.</span>
 <span class="sd">            It must provide the `fit()`, `transform()` and `inverse_transform()` methods.</span>
 <span class="sd">            Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this</span>
 <span class="sd">            will scale all the values of a time series between 0 and 1.</span>
+<span class="sd">        name</span>
+<span class="sd">            A specific name for the scaler</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">def</span> <span class="nf">_raise</span><span class="p">():</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))):</span> <span class="c1"># noqa W503</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span>
                       <span class="s1">&#39;The provided transformer object must have fit(), transform() and inverse_transform() methods&#39;</span><span class="p">),</span>
                       <span class="n">logger</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
-                <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))):</span> <span class="c1"># noqa W503 </span>
-            <span class="n">_raise</span><span class="p">()</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">scaler</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_series</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="ScalerWrapper.fit"><a class="viewcode-back" href="../../../generated_api/darts.preprocessing.scaler_wrapper.html#darts.preprocessing.scaler_wrapper.ScalerWrapper.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ScalerWrapper&#39;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Fits this transformer/scaler to the provided time series data</span>
+<div class="viewcode-block" id="Scaler.fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Scaler&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fits this scaler to the provided time series data</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
-<span class="sd">            The time series to fit the transformer on</span>
+<span class="sd">            The time series to fit the scaler on</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            Fitted scaler (self)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">)))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_series</span> <span class="o">=</span> <span class="n">series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="ScalerWrapper.transform"><a class="viewcode-back" href="../../../generated_api/darts.preprocessing.scaler_wrapper.html#darts.preprocessing.scaler_wrapper.ScalerWrapper.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<div class="viewcode-block" id="Scaler.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a new time series, transformed with this (fitted) transformer.</span>
+<span class="sd">        Returns a new time series, transformed with this (fitted) scaler.</span>
 <span class="sd">        This does not handle series with confidence intervals - the intervals are discarded.</span>
 
 <span class="sd">        Parameters</span>
@@ -216,29 +219,15 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
-<span class="sd">            A new time series, transformed with this (fitted) transformer.</span>
+<span class="sd">            A new time series, transformed with this (fitted) scaler.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span> <span class="s1">&#39;fit() must be called before transform()&#39;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span>
                                                                            <span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">))),</span>
                                                 <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="ScalerWrapper.fit_transform"><a class="viewcode-back" href="../../../generated_api/darts.preprocessing.scaler_wrapper.html#darts.preprocessing.scaler_wrapper.ScalerWrapper.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Applies `fit()` and `transform()` in one go.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            The time series to fit the transformer and to transform</span>
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            A new time series, transformed with this (fitted) transformer.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="ScalerWrapper.inverse_transform"><a class="viewcode-back" href="../../../generated_api/darts.preprocessing.scaler_wrapper.html#darts.preprocessing.scaler_wrapper.ScalerWrapper.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<div class="viewcode-block" id="Scaler.inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Performs the inverse transformation on a time series</span>
 
@@ -252,6 +241,7 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            The inverse transform</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span>
                                                 <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span>
                                                                                    <span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">))),</span>
@@ -273,7 +263,7 @@
     </div>
 
     
-  <script src="../../../_static/js/index.30270b6e4c972e43c488.js"></script>
+  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

@@ -15,6 +15,7 @@
         darts.models.exponential_smoothing
         darts.models.fft
         darts.models.forecasting_model
+        darts.models.nbeats
         darts.models.prophet
         darts.models.regression_model
         darts.models.rnn_model
@@ -22,3 +23,4 @@
         darts.models.tcn_model
         darts.models.theta
         darts.models.torch_forecasting_model
+        darts.models.transformer_model

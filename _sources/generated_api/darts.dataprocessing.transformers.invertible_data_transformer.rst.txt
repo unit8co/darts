@@ -1,0 +1,5 @@
+
+.. automodule:: darts.dataprocessing.transformers.invertible_data_transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:

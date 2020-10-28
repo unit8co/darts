@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Timeseries &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -51,11 +51,11 @@
     <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
 <div class="container-xl">
 
-    
     <a class="navbar-brand" href="../index.html">
-      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-    </a>
     
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -110,58 +110,54 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar">
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
 
-
-
-<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-  <div class="bd-toc-item active">
+    <div class="bd-toc-item active">
+    
   
-
-  <ul class="nav bd-sidenav">
-      
-      
-      
-      
+    <ul class="nav bd-sidenav">
+        
+        
+        
         
           
-              <li class="">
-                  <a href="darts.metrics.html">Metrics</a>
-              </li>
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="active">
+                    <a href="">Timeseries</a>
+                </li>
+            
           
         
-          
-              <li class="">
-                  <a href="darts.models.html">Models</a>
-              </li>
-          
         
-          
-              <li class="">
-                  <a href="darts.preprocessing.html">Preprocessing</a>
-              </li>
-          
         
-          
-              <li class="">
-                  <a href="darts.utils.html">Utils</a>
-              </li>
-          
         
-          
-              <li class="active">
-                  <a href="">Timeseries</a>
-              </li>
-          
-        
-      
-      
-      
-      
-    </ul>
-
-</nav>
+      </ul>
+  
+  </nav>
           </div>
           
 
@@ -574,16 +570,14 @@ Note that the timestamp does not need to be <em>in</em> the time series.</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.map">
-<code class="sig-name descname">map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span>numpy.number<span class="p">, </span>numpy.number<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.map" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span>numpy.number<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies the function <cite>fn</cite> elementwise to all values in this TimeSeries, or, to only those
 values in the columns specified by the optional argument <cite>cols</cite>. Returns a new
 TimeSeries instance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fn</strong> – A numerical function</p></li>
-<li><p><strong>cols</strong> – Optionally, a string or list of strings specifying the column(s) onto which fn should be applied</p></li>
-</ul>
+<dd class="field-odd"><p><strong>fn</strong> – Either a function which takes a value and returns a value ie. f(x) = y
+Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A new TimeSeries instance</p>
@@ -999,7 +993,7 @@ Use <cite>numpy.nan</cite> to ignore a specific index in a series.</p>
     </div>
 
     
-  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

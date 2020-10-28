@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transformer &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Utils" href="darts.utils.html" />
+    <link rel="prev" title="Torch Forecasting Model" href="darts.models.torch_forecasting_model.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../index.html">
+    
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.models.html">Models</a>
+                    <ul>
+                    
+                        <li class="">
+                            <a href="darts.models.arima.html">ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.baselines.html">Baseline Models</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.fft.html">Fast Fourier Transform</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.forecasting_model.html">Forecasting Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.nbeats.html">N-BEATS</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_model.html">Regression Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.rnn_model.html">Recurrent Neural Networks</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.tcn_model.html">Temporal Convolutional Network</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.theta.html">Theta Method</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.torch_forecasting_model.html">Torch Forecasting Model</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="">Transformer</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.models.transformer_model"></span><div class="section" id="transformer">
+<h1>Transformer<a class="headerlink" href="#transformer" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.models.transformer_model.TransformerModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.transformer_model.</code><code class="sig-name descname">TransformerModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/transformer_model.html#TransformerModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.transformer_model.TransformerModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.torch_forecasting_model.TorchForecastingModel</span></code></a></p>
+<p>Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder
+architecture whose core feature is the ‘multi-head attention’ mechanism, which is able to
+draw intra-dependencies within the input vector and within the output vector (‘self-attention’)
+as well as inter-dependencies between input and output vectors (‘encoder-decoder attention’).
+The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
+very suitable to be trained with GPUs.</p>
+<p>The transformer architecture implemented here is based on the paper “Attention Is All You Need”:
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
+Illia Polosukhin. 2017. Attention is all you need. In Advances in Neural Information Processing Systems,
+pages 6000-6010.
+(paper can be found at <a class="reference external" href="https://arxiv.org/abs/1706.03762">https://arxiv.org/abs/1706.03762</a>)</p>
+<p>Disclaimer:
+This current implementation is fully functional and can already produce some good predictions. However,
+it is still limited in how it uses the Transformer architecture because the <cite>tgt</cite> input of
+<cite>torch.nn.Transformer</cite> is not utlized to its full extent. Currently, we simply pass the last value of the
+<cite>src</cite> input to <cite>tgt</cite>. To get closer to the way the Transformer is usually used in language models, we
+should allow the model to consume its own output as part of the <cite>tgt</cite> argument, such that when predicting
+sequences of values, the input to the <cite>tgt</cite> argument would grow as outputs of the transformer model would be
+added to it. Of course, the training of the model would have to be adapted accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – a custom PyTorch module with the same specifications as
+<cite>darts.models.transformer_model._TransformerModule</cite> (default=None).</p></li>
+<li><p><strong>input_size</strong> – The dimensionality of the TimeSeries that will be fed to the fit and predict functions (default=1).</p></li>
+<li><p><strong>input_length</strong> – Number of time steps to be input to the forecasting module (default=1).</p></li>
+<li><p><strong>output_size</strong> – The dimensionality of the output time series (default=1).</p></li>
+<li><p><strong>output_length</strong> – Number of time steps to be output by the forecasting module (default=1).</p></li>
+<li><p><strong>d_model</strong> – the number of expected features in the transformer encoder/decoder inputs (default=512).</p></li>
+<li><p><strong>nhead</strong> – the number of heads in the multiheadattention model (default=8).</p></li>
+<li><p><strong>num_encoder_layers</strong> – the number of encoder layers in the encoder (default=6).</p></li>
+<li><p><strong>num_decoder_layers</strong> – the number of decoder layers in the decoder (default=6).</p></li>
+<li><p><strong>dim_feedforward</strong> – the dimension of the feedforward network model (default=2048).</p></li>
+<li><p><strong>dropout</strong> – Fraction of neurons affected by Dropout (default=0.1).</p></li>
+<li><p><strong>activation</strong> – the activation function of encoder/decoder intermediate layer, ‘relu’ or ‘gelu’ (default=’relu’).</p></li>
+<li><p><strong>custom_encoder</strong> – a custom user-provided encoder module for the transformer (default=None)</p></li>
+<li><p><strong>custom_decoder</strong> – a custom user-provided decoder module for the transformer (default=None)</p></li>
+<li><p><strong>random_state</strong> – Controls the randomness of the weights initialization. Check this
+<a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random-state">link</a> for more details.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="darts.models.torch_forecasting_model.html" title="previous page">Torch Forecasting Model</a>
+    <a class='right-next' id="next-link" href="darts.utils.html" title="next page">Utils</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

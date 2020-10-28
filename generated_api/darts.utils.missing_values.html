@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Utils for filling missing values &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.d431a4ee1c1efae0e38bdfebc22debff.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.30270b6e4c972e43c488.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -51,11 +51,11 @@
     <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
 <div class="container-xl">
 
-    
     <a class="navbar-brand" href="../index.html">
-      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-    </a>
     
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -110,82 +110,78 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar">
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
 
-
-
-<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-  <div class="bd-toc-item active">
+    <div class="bd-toc-item active">
+    
   
-
-  <ul class="nav bd-sidenav">
-      
-      
-      
-      
+    <ul class="nav bd-sidenav">
+        
+        
+        
         
           
-              <li class="">
-                  <a href="darts.metrics.html">Metrics</a>
-              </li>
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.utils.html">Utils</a>
+                    <ul>
+                    
+                        <li class="active">
+                            <a href="">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.torch.html">Utils for Pytorch and its usage</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.utils.html">Additional util functions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
           
         
-          
-              <li class="">
-                  <a href="darts.models.html">Models</a>
-              </li>
-          
         
-          
-              <li class="">
-                  <a href="darts.preprocessing.html">Preprocessing</a>
-              </li>
-          
         
-          
-
-              <li class="active">
-                  <a href="darts.utils.html">Utils</a>
-                  <ul>
-                  
-                      <li class="active">
-                          <a href="">Utils for filling missing values</a>
-                      </li>
-                  
-                      <li class="">
-                          <a href="darts.utils.statistics.html">Utils for time series statistics</a>
-                      </li>
-                  
-                      <li class="">
-                          <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
-                      </li>
-                  
-                      <li class="">
-                          <a href="darts.utils.torch.html">Utils for Pytorch and its usage</a>
-                      </li>
-                  
-                      <li class="">
-                          <a href="darts.utils.utils.html">Additional util functions</a>
-                      </li>
-                  
-                  </ul>
-              </li>
-          
         
-          
-              <li class="">
-                  <a href="darts.timeseries.html">Timeseries</a>
-              </li>
-          
-        
-      
-      
-      
-      
-    </ul>
-
-</nav>
+      </ul>
+  
+  </nav>
           </div>
           
 
@@ -212,15 +208,16 @@
   <span class="target" id="module-darts.utils.missing_values"></span><div class="section" id="utils-for-filling-missing-values">
 <h1>Utils for filling missing values<a class="headerlink" href="#utils-for-filling-missing-values" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="darts.utils.missing_values.auto_fillna">
-<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">auto_fillna</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">interpolate_kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/missing_values.html#auto_fillna"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.auto_fillna" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function fills the missing value in the TimeSeries <cite>ts</cite>,
-using the <cite>pandas.Dataframe.interpolate()</cite> method.</p>
+<dt id="darts.utils.missing_values.fill_missing_values">
+<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">fill_missing_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fill</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'auto'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">interpolate_kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/missing_values.html#fill_missing_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.fill_missing_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fills missing values in the provided time series</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The time series</p></li>
-<li><p><strong>interpolate_kwargs</strong> – Keyword arguments  <cite>pandas.Dataframe.interpolate()</cite>.
+<li><p><strong>series</strong> – The time series for which to fill missing values</p></li>
+<li><p><strong>fill</strong> – The value used to replace the missing values.
+If set to ‘auto’, will auto-fill missing values using the <cite>pandas.Dataframe.interpolate()</cite> method.</p></li>
+<li><p><strong>interpolate_kwargs</strong> – Keyword arguments for <cite>pandas.Dataframe.interpolate()</cite>, only used when fit is set to ‘auto’.
 See <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html">the documentation</a>
 for the list of supported parameters.</p></li>
 </ul>
@@ -235,32 +232,12 @@ for the list of supported parameters.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt id="darts.utils.missing_values.fillna">
-<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">fillna</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fill</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/missing_values.html#fillna"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.fillna" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fills the missing values of <cite>ts</cite> with only the value provided (default zeroes).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to check for missing values.</p></li>
-<li><p><strong>fill</strong> – The value used to replace the missing values.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A TimeSeries, <cite>ts</cite> with all missing values set to <cite>fill</cite>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.utils.missing_values.na_ratio">
-<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">na_ratio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/utils/missing_values.html#na_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.na_ratio" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.utils.missing_values.missing_values_ratio">
+<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">missing_values_ratio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/utils/missing_values.html#missing_values_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.missing_values_ratio" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the ratio of missing values</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ts</strong> – The time series to compute ratio on</p>
+<dd class="field-odd"><p><strong>series</strong> – The time series to compute ratio on</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The ratio of missing values</p>
@@ -291,7 +268,7 @@ for the list of supported parameters.</p></li>
     </div>
 
     
-  <script src="../_static/js/index.30270b6e4c972e43c488.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

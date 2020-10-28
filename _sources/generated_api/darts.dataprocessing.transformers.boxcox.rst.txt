@@ -1,0 +1,5 @@
+
+.. automodule:: darts.dataprocessing.transformers.boxcox
+   :members:
+   :undoc-members:
+   :show-inheritance:

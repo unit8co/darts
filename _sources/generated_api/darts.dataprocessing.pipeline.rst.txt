@@ -1,5 +1,5 @@
 
-.. automodule:: darts.preprocessing.scaler_wrapper
+.. automodule:: darts.dataprocessing.pipeline
    :members:
    :undoc-members:
    :show-inheritance:

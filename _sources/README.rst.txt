@@ -74,7 +74,7 @@ For more detailed install instructions you can refer to our installation guide a
 Example Usage
 -------------
 
-Create ``TimeSeries`` object from a Pandas DataFrame, and split in train/validation series:
+Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/validation series:
 
 .. code-block:: python
 
@@ -141,8 +141,10 @@ Currently, the library contains the following features:
 * FFT (Fast Fourier Transform),
 * Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),
 * Temporal convolutional network.
+* Transformer
+* N-BEATS
 
-**Preprocessing:** Transformer tool for easily scaling / normalizing time series.
+**Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
 
 **Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
 from R2-scores to Mean Absolute Scaled Error.
@@ -158,7 +160,7 @@ Contribute
 ----------
 
 The development is ongoing, and there are many new features that we want to add. 
-We welcome pull requests and issues on github.
+We welcome pull requests and issues on GitHub.
 
 Before working on a contribution (a new feature or a fix) make sure you can't find anything related in `issues <https://github.com/unit8co/darts/issues>`_. If there is no on-going effort on what you plan to do then we recommend to do the following:
 
@@ -166,7 +168,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 #. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
 #. Fork the repository.
 #. Clone the forked repository locally.
-#. Create a clean python env and install requirements with pip: ``pip install -r requirements/main.txt -r requirements/dev.txt -r requirements/release.txt``
+#. Create a clean python env and install requirements with pip: ``pip install -r requirements/dev-all.txt``
 #. Create a new branch:
 
    * Branch off from the **develop** branch.
@@ -179,7 +181,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 
    * Work on your update
 
-#. Check that your code pass the tests / design new unit tests: ``python -m unittest``.
+#. Check that your code passes all the tests and design new unit tests if needed: ``./gradlew unitTest_all``.
 #. Verify your tests coverage by running ``./gradlew coverageTest``
 
    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with ``./coverage.sh xml``
@@ -270,21 +272,23 @@ For this setup to work you need to have a Docker service installed. You can get 
 Tests
 ^^^^^
 
-Gradle setup works best with python env, but it requires only that pip is for python3.
+The gradle setup works best when used in a python environment, but the only requirement is to have ``pip`` installed for Python 3+
 
 To run all tests at once just run
 
 .. code-block:: bash
 
-   ./gradlew test
+   ./gradlew test_all
 
 alternatively you can run
 
 .. code-block:: bash
 
-   ./gradlew unitTest     # to run only unittests
+   ./gradlew unitTest_all # to run only unittests
    ./gradlew coverageTest # to run coverage
    ./gradlew lint         # to run linter
+
+To run the tests for specific flavours of the library, replace ``_all`` with ``_core``\ , ``_fbprophet``\ , ``_pmdarima`` or ``_torch``.
 
 Documentation
 ^^^^^^^^^^^^^

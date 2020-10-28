@@ -1,0 +1,5 @@
+
+.. automodule:: darts.dataprocessing.transformers.fittable_data_transformer
+   :members:
+   :undoc-members:
+   :show-inheritance:
