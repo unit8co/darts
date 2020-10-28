@@ -28,7 +28,7 @@ class ModelMode(Enum):
     ADDITIVE = 'additive'
 
 
-__version__ = 'dev'
+__version__ = '0.4.0'
 
 colors = cycler(color=['black', '003DFD', 'b512b8', '11a9ba', '0d780f', 'f77f07', 'ba0f0f'])
 
