@@ -98,24 +98,40 @@ class TimeSeries:
         if (self._df.shape[1] != 1):
             raise_log(AssertionError('Only univariate TimeSeries instances support this method'), logger)
 
-    def pd_series(self) -> pd.Series:
+    def pd_series(self, copy=True) -> pd.Series:
         """
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+
         Returns
         -------
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
         self._assert_univariate()
-        return self._df.iloc[:, 0].copy()
+        if copy:
+            return self._df.iloc[:, 0].copy()
+        else:
+            return self._df.iloc[:, 0]
 
-    def pd_dataframe(self) -> pd.DataFrame:
+    def pd_dataframe(self, copy=True) -> pd.DataFrame:
         """
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+
         Returns
         -------
         pandas.DataFrame
-            A copy of the Pandas Dataframe underlying this time series
+            The Pandas Dataframe underlying this time series
         """
-        return self._df.copy()
+        if copy:
+            return self._df.copy()
+        else:
+            return self._df
 
     def start_time(self) -> pd.Timestamp:
         """
@@ -173,24 +189,40 @@ class TimeSeries:
         """
         return self._values[-1]
 
-    def values(self) -> np.ndarray:
+    def values(self, copy=True) -> np.ndarray:
         """
-        Returns
-        -------
-        numpy.ndarray
-            A copy of the values composing the time series
-        """
-        return np.copy(self._values)
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values. Leave it to True unless you know what you are doing.
 
-    def univariate_values(self) -> np.ndarray:
-        """
         Returns
         -------
         numpy.ndarray
-            A copy of the values composing the time series guaranteed to be univariate.
+            The values composing the time series.
+        """
+        if copy:
+            return np.copy(self._values)
+        else:
+            return self._values
+
+    def univariate_values(self, copy=True) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values. Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing the time series guaranteed to be univariate.
         """
         self._assert_univariate()
-        return np.copy(self._df.iloc[:, 0].values)
+        if copy:
+            return np.copy(self._df.iloc[:, 0].values)
+        else:
+            return self._df.iloc[:, 0].values
 
     def time_index(self) -> pd.DatetimeIndex:
         """
@@ -336,7 +368,7 @@ class TimeSeries:
         start_series: pd.Timestamp = ts + self.freq()  # new series does not include ts
         return self.slice(start_series, self.end_time())
 
-    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> 'TimeSeries':
+    def slice(self, start_ts: pd.Timestamp, end_ts: pd.Timestamp, copy=True) -> 'TimeSeries':
         """
         Returns a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.
         The timestamps don't have to be in the series.
@@ -347,6 +379,8 @@ class TimeSeries:
             The timestamp that indicates the left cut-off.
         end_ts
             The timestamp that indicates the right cut-off.
+        copy
+            If True, the returned series will contain a copy of this serie's dataframe, otherwise a view
 
         Returns
         -------
@@ -364,9 +398,9 @@ class TimeSeries:
                 s_a = s[s.index >= start_ts]
                 return s_a[s_a.index <= end_ts]
             return None
-        return TimeSeries(_slice_not_none(self._df), self.freq_str())
+        return TimeSeries(_slice_not_none(self.pd_dataframe(copy=copy)), self.freq_str())
 
-    def slice_n_points_after(self, start_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+    def slice_n_points_after(self, start_ts: pd.Timestamp, n: int, copy=True) -> 'TimeSeries':
         """
         Returns a new TimeSeries, starting later than `start_ts` (included) and having at most `n` points.
 
@@ -378,6 +412,8 @@ class TimeSeries:
             The timestamp that indicates the splitting time.
         n
             The maximal length of the new TimeSeries.
+        copy
+            If True, the returned series will contain a copy of this serie's dataframe, otherwise a view
 
         Returns
         -------
@@ -391,9 +427,9 @@ class TimeSeries:
         self._raise_if_not_within(start_ts)
         start_ts = self.time_index()[self.time_index() >= start_ts][0]  # closest index after start_ts (new start_ts)
         end_ts: pd.Timestamp = start_ts + (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
-        return self.slice(start_ts, end_ts)
+        return self.slice(start_ts, end_ts, copy)
 
-    def slice_n_points_before(self, end_ts: pd.Timestamp, n: int) -> 'TimeSeries':
+    def slice_n_points_before(self, end_ts: pd.Timestamp, n: int, copy=True) -> 'TimeSeries':
         """
         Returns a new TimeSeries, ending before `end_ts` (included) and having at most `n` points.
 
@@ -405,6 +441,8 @@ class TimeSeries:
             The timestamp that indicates the splitting time.
         n
             The maximal length of the new time series.
+        copy
+            If True, the returned series will contain a copy of this serie's dataframe, otherwise a view
 
         Returns
         -------
@@ -418,7 +456,7 @@ class TimeSeries:
         self._raise_if_not_within(end_ts)
         end_ts = self.time_index()[self.time_index() <= end_ts][-1]
         start_ts: pd.Timestamp = end_ts - (n - 1) * self.freq()  # (n-1) because slice() is inclusive on both sides
-        return self.slice(start_ts, end_ts)
+        return self.slice(start_ts, end_ts, copy)
 
     def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
         """
