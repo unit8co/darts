@@ -130,9 +130,11 @@ class RegressionModel(ABC):
 
         To this end, it repeatedly builds a training set composed of both features and targets,
         from `feature_series` and `target_series`, respectively.
-        It trains the current model on the training set, emits a (point) prediction for a fixed
+        It trains the current model on the training set, emits a prediction for a fixed
         forecast horizon, and then moves the end of the training set forward by `stride`
         time steps. The resulting predictions are then returned.
+
+        .. image:: ../static/backtest_diagram.png
 
         This always re-trains the models on the entire available history,
         corresponding an expending window strategy.
@@ -163,17 +165,13 @@ class RegressionModel(ABC):
         start = _get_timestamp_at_point(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if trim_to_series:
-            last_pred_time = target_series.time_index()[-forecast_horizon - stride]
-        else:
-            last_pred_time = target_series.time_index()[-stride - 1]
+        last_pred_time = target_series.time_index()[-forecast_horizon]
 
         # build the prediction times in advance (to be able to use tqdm)
         pred_times = [start]
-        while pred_times[-1] <= last_pred_time:
+        while pred_times[-1] < last_pred_time:
             pred_times.append(pred_times[-1] + target_series.freq() * stride)
 
-        # what we'll return
         values = []
         times = []
 
@@ -187,10 +185,22 @@ class RegressionModel(ABC):
 
             self.fit(train_features, train_target)
             pred = self.predict(val_features)
-            values.append(pred.values()[-1])  # store the N-th point
-            times.append(pred.end_time())  # store the N-th timestamp
 
-        return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+            if pred_time == start:  # use the full forecast in the first loop
+                values.extend(pred.values())
+                times.extend(pred.time_index())
+            else:
+                values.extend(pred.values()[-stride:])      # store the last stride points
+                times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
+
+        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times),
+                                                    np.array(values),
+                                                    freq=target_series.freq())
+
+        if trim_to_series:
+            forecast = forecast[:target_series.end_time()]
+
+        return forecast
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series

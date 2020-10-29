@@ -153,8 +153,10 @@ class ForecastingModel(ABC):
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
-        the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the
+        the training set, emits a prediction for a fixed forecast horizon, and then moves the end of the
         training set forward by `stride` time steps. The resulting predictions are then returned.
+
+        .. image:: ../static/backtest_diagram.png
 
         Unless `retrain` is set to False, this always re-trains the models on the entire available history,
         corresponding an expending window strategy.
@@ -225,16 +227,12 @@ class ForecastingModel(ABC):
         start = _get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if trim_to_series:
-            last_pred_time = training_series.time_index()[-forecast_horizon - stride]
-        else:
-            last_pred_time = training_series.time_index()[-stride - 1]
+        last_pred_time = training_series.time_index()[-forecast_horizon - 1]
 
         pred_times = [start]
-        while pred_times[-1] <= last_pred_time:
+        while pred_times[-1] < last_pred_time:
             pred_times.append(pred_times[-1] + training_series.freq() * stride)
 
-        # iterate and predict pointwise
         values = []
         times = []
 
@@ -244,18 +242,26 @@ class ForecastingModel(ABC):
             fit_function(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
-            train = training_series.drop_after(pred_time)  # build the training series
-            target = target_series.drop_after(pred_time)  # build the target series
+            train = training_series.drop_after(pred_time)   # build the training series
+            target = target_series.drop_after(pred_time)    # build the target series
             if (retrain):
                 fit_function(train, target)
                 pred = self.predict(forecast_horizon, **predict_kwargs)
             else:
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
-            values.append(pred.values()[-1])  # store the N-th point
-            times.append(pred.end_time())  # store the N-th timestamp
 
-        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values),
-                                                    freq=training_series.freq() * stride)
+            if pred_time == start:  # use the full forecast in the first loop
+                values.extend(pred.values())
+                times.extend(pred.time_index())
+            else:
+                values.extend(pred.values()[-stride:])      # store the last stride points
+                times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
+
+        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times),
+                                                    np.array(values),
+                                                    freq=training_series.freq())
+        if trim_to_series:
+            forecast = forecast[:training_series.end_time()]
 
         return forecast
 

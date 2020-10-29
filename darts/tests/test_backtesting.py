@@ -35,7 +35,7 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape)
+    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape, start=series.time_index()[-21])  # noqa: E501
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
@@ -181,7 +181,6 @@ class BacktestingTestCase(unittest.TestCase):
         pred = StandardRegressionModel(15).backtest(features_multivariate, target.stack(target),
                                                     pd.Timestamp('20000201'), 3, stride=3)
         self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
-        self.assertEqual((pred.time_index()[1] - pred.time_index()[0]).days, 3)
 
     def test_gridsearch(self):
 

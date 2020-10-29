@@ -161,8 +161,14 @@ def _backtest_general_checks(series, kwargs):
 
     # check forecast horizon
     forecast_horizon = n.forecast_horizon
-
     raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
+
+    # check stride
+    stride = n.stride
+    raise_if_not(stride > 0, 'The provided stride parameter must be a positive integer.', logger)
+
+    # check that forecast horizon and stride parameter form a valid combination
+    raise_if_not(forecast_horizon >= stride, 'forecast horizon must be greater or equal stride', logger)
 
     # check start parameter
     if hasattr(n, 'start'):
