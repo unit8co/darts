@@ -186,12 +186,8 @@ class RegressionModel(ABC):
             self.fit(train_features, train_target)
             pred = self.predict(val_features)
 
-            if pred_time == start:  # use the full forecast in the first loop
-                values.extend(pred.values())
-                times.extend(pred.time_index())
-            else:
-                values.extend(pred.values()[-stride:])      # store the last stride points
-                times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
+            values.extend(pred.values()[-stride:])      # store the last stride points
+            times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
 
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times),
                                                     np.array(values),

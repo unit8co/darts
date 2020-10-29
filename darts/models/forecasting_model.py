@@ -250,12 +250,8 @@ class ForecastingModel(ABC):
             else:
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
 
-            if pred_time == start:  # use the full forecast in the first loop
-                values.extend(pred.values())
-                times.extend(pred.time_index())
-            else:
-                values.extend(pred.values()[-stride:])      # store the last stride points
-                times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
+            values.extend(pred.values()[-stride:])      # store the last stride points
+            times.extend(pred.time_index()[-stride:])   # store the last stride timestamps
 
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times),
                                                     np.array(values),
