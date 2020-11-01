@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
 
 
-class TimeSeriesDataset(Dataset):
+class TimeSeriesTrainDataset(Dataset):
     def __init__(self,
                  horizon: int,
                  data_series: Union[TimeSeries, Sequence[TimeSeries]],
