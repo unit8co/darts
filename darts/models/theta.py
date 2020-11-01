@@ -10,7 +10,7 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
 from .. import SeasonalityMode, TrendMode, ModelMode
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 ALPHA_START = 0.2
 
 
-class Theta(UnivariateForecastingModel):
+class Theta(ForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(self,
@@ -139,7 +139,7 @@ class Theta(UnivariateForecastingModel):
         return 'Theta({})'.format(self.theta)
 
 
-class FourTheta(UnivariateForecastingModel):
+class FourTheta(ForecastingModel):
     def __init__(self,
                  theta: int = 2,
                  seasonality_period: Optional[int] = None,

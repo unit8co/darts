@@ -7,14 +7,14 @@ A collection of simple benchmark models.
 
 import numpy as np
 
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(UnivariateForecastingModel):
+class NaiveMean(ForecastingModel):
     def __init__(self):
         """ Naive Mean Model
 
@@ -37,7 +37,7 @@ class NaiveMean(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(UnivariateForecastingModel):
+class NaiveSeasonal(ForecastingModel):
     def __init__(self, K: int = 1):
         """ Naive Seasonal Model
 
@@ -72,7 +72,7 @@ class NaiveSeasonal(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(UnivariateForecastingModel):
+class NaiveDrift(ForecastingModel):
     def __init__(self):
         """ Naive Drift Model
 

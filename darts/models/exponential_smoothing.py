@@ -6,7 +6,7 @@ Exponential Smoothing
 from typing import Optional
 import statsmodels.tsa.holtwinters as hw
 
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..logging import get_logger
 from ..timeseries import TimeSeries
 from .. import ModelMode
@@ -14,7 +14,7 @@ from .. import ModelMode
 logger = get_logger(__name__)
 
 
-class ExponentialSmoothing(UnivariateForecastingModel):
+class ExponentialSmoothing(ForecastingModel):
     def __init__(self,
                  trend: Optional[ModelMode] = ModelMode.ADDITIVE,
                  damped: Optional[bool] = False,

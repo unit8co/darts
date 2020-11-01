@@ -402,8 +402,8 @@ class NBEATSModel(TorchForecastingModel):
 
     @random_method
     def fit(self, *args, **kwargs):
-        if 'training_series' in kwargs:
-            training_series = kwargs['training_series']
+        if 'series' in kwargs:
+            training_series = kwargs['series']
         else:
             training_series = args[0]
         training_series._assert_univariate()
