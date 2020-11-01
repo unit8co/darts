@@ -13,7 +13,7 @@ one or several time series. The function `predict()` applies `f()` in order to o
 desired number of time stamps into the future.
 """
 
-from typing import Optional, Sequence, Union, Any, Callable
+from typing import Optional, Tuple, Union, Any, Callable, Dict
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -69,11 +69,9 @@ class ForecastingModel(ABC):
         dimensions. At the moment such functionalities can be used for PyTorch-based models,
         using the `TimeSeriesTrainDataset`, and calling the `multi_fit()` method.
         """
-        for series in (self.training_series, self.target_series):
-            if series is not None:
-                raise_if_not(len(series) >= self.min_train_series_length,
-                             "Train series only contains {} elements but {} model requires at least {} entries"
-                             .format(len(series), str(self), self.min_train_series_length))
+        raise_if_not(len(training_series) >= self.min_train_series_length,
+                     "Train series only contains {} elements but {} model requires at least {} entries"
+                     .format(len(training_series), str(self), self.min_train_series_length))
 
         self.training_series = training_series
         self._is_fitted = True
@@ -99,9 +97,6 @@ class ForecastingModel(ABC):
 
         if not self._is_fitted:
             raise_log(Exception('The model must be fit before calling predict()'), logger)
-        if self.training_series is None and input_series is None:
-            raise_log(Exception('The model should either be fit by calling the fit() method and providing'
-                                'a training series, or an input_series must be provided in argument of predict().'))
 
     def multi_predict(self, n: int, optional_input_series_dataset):
         """
