@@ -70,7 +70,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred4), 1)
 
             # test validation series input
-            model3.fit(self.series[:60], val_training_series=self.series[60:], val_target_series=self.series[60:])
+            model3.fit(self.series[:60], val_series=self.series[60:], val_target_series=self.series[60:])
             pred4 = model3.predict(n=6)
             self.assertEqual(len(pred4), 6)
 

@@ -148,7 +148,7 @@ def _backtest_general_checks(series, kwargs):
     Parameters
     ----------
     series
-        Either training_series when called from ForecastingModel, or target_series if called from RegressionModel
+        Either series when called from ForecastingModel, or target_series if called from RegressionModel
     signature_params
         A dictionary of the signature parameters of the calling method, to get the default values
         Typically would be signature(self.backtest).parameters
