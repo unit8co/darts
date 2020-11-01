@@ -7,9 +7,13 @@ A forecasting model captures the future values of a time series as a function of
 .. math:: y_{t+1} = f(y_t, y_{t-1}, ..., y_1),
 
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
+
+The main functions are `fit()` and `predict()`. `fit()` learns the function `f()`, over the history of
+one or several time series. The function `predict()` applies `f()` in order to obtain forecasts for a
+desired number of time stamps into the future.
 """
 
-from typing import Optional, Tuple, Union, Any, Callable
+from typing import Optional, Sequence, Union, Any, Callable
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -28,54 +32,88 @@ class ForecastingModel(ABC):
     """ The base class for all forecasting models.
 
     All implementations of forecasting have to implement the `fit()` and `predict()` methods defined below.
+    The `fit()` method is meant to train the model on one training time series.
+
+    In addition, models can optionally implement the `multi_fit()` method. This method is meant to train the model
+    on several time series, or to handle cases where the "features" and "target" dimensions are not the same.
+    `fit()` will typically be the entry point for quickly fitting reasonably simple models to one series,
+     while `multi_fit()` will typically be the path taken by the more sophisticated machine learning models.
+
+    Depending whether a model has been trained using `fit()` or `multi_fit()` defines two possible behaviors:
+    * `fit()`: store the training series, to predict its future "automatically" when `predict()` is called.
+    * `multi_fit()` does not store the dataset. The caller of `predict()` has to provide the input series for
+    which the forecast has to be made.
 
     Attributes
     ----------
     training_series
-        reference to the `TimeSeries` used for training the model.
-    target_series
-        reference to the `TimeSeries` used as target to train the model.
+        Reference to the `TimeSeries` used for training the model through the `fit()` function.
     """
     @abstractmethod
     def __init__(self):
         # Stores training date information:
         self.training_series: TimeSeries = None
-        self.target_series: TimeSeries = None
 
-        # state
-        self._fit_called = False
+        # state; whether the model has been fit or not
+        self._is_fitted = False
 
     @abstractmethod
-    def fit(self) -> None:
+    def fit(self, training_series: TimeSeries) -> None:
         """ Fits/trains the model on the provided series
 
-        Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
-        wether they are univariate or multivariate.
+        Defines behavior that should happen when calling the `fit()` method of every forecasting model.
+
+        This is the entry point for training the model on one series.
+
+        Some models support training on several time series, or differentiating between "data" and "feature"
+        dimensions. At the moment such functionalities can be used for PyTorch-based models,
+        using the `TimeSeriesTrainDataset`, and calling the `multi_fit()` method.
         """
         for series in (self.training_series, self.target_series):
             if series is not None:
                 raise_if_not(len(series) >= self.min_train_series_length,
                              "Train series only contains {} elements but {} model requires at least {} entries"
                              .format(len(series), str(self), self.min_train_series_length))
-        self._fit_called = True
+
+        self.training_series = training_series
+        self._is_fitted = True
+
+    def multi_fit(self, time_series_train_dataset):
+        raise NotImplemented('This model does not support multi_fit(). Currently only PyTorch-based models'
+                             '(neural nets) support this functionality.')
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
-        """ Predicts values for a certain number of time steps after the end of the training series
+        """ Forecasts values for a certain number of time steps after the end of the training series.
 
         Parameters
         ----------
         n
-            The number of time steps after the end of the training time series for which to produce predictions
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
 
         Returns
         -------
         TimeSeries
-            A time series containing the `n` next points, starting after the end of the training time series
+            A time series containing the `n` next points, starting after the end of the series to forecast.
         """
 
-        if (not self._fit_called):
-            raise_log(Exception('fit() must be called before predict()'), logger)
+        if not self._is_fitted:
+            raise_log(Exception('The model must be fit before calling predict()'), logger)
+        if self.training_series is None and input_series is None:
+            raise_log(Exception('The model should either be fit by calling the fit() method and providing'
+                                'a training series, or an input_series must be provided in argument of predict().'))
+
+    def multi_predict(self, n: int, optional_input_series_dataset):
+        """
+        TODO: Implement
+        :param n:
+        :param optional_input_series_dataset: A TimeSeriesDataset containing TimeSeries whose future we want
+                                              to forecast. If not specified, will simply forecast the future of
+                                              the series in the training dataset.
+        :return: TimeSeriesDataset
+        """
+        raise NotImplemented('This model does not support multi_predict(). Currently only PyTorch-based models'
+                             '(neural nets) support this functionality.')
 
     @property
     def min_train_series_length(self) -> int:
@@ -94,13 +132,11 @@ class ForecastingModel(ABC):
         ]
         return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
 
-    def _build_forecast_series(self,
-                               points_preds: np.ndarray) -> TimeSeries:
+    def _build_forecast_series(self, points_preds: np.ndarray) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index.
         """
-
         time_index = self._generate_new_dates(len(points_preds))
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
@@ -141,8 +177,7 @@ class ForecastingModel(ABC):
 
     @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
     def backtest(self,
-                 training_series: TimeSeries,
-                 target_series: Optional[TimeSeries] = None,
+                 series: TimeSeries,
                  start: Union[pd.Timestamp, float, int] = 0.7,
                  forecast_horizon: int = 1,
                  stride: int = 1,
@@ -164,24 +199,19 @@ class ForecastingModel(ABC):
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
 
+        This backtesting method is meant to backtest the model on one time series.
+
         Parameters
         ----------
-        training_series
+        series
             The training time series on which to backtest
-        target_series
-            The target time series on which to backtest. This parameter is only relevant for
-            `MultivariateForecastingModel` instances. It allows for training on one `training_series`
-            and predicting another `target_series`. In many multivariate forecasting problems, the
-            `target_series` would constitute a subset of the components of the `training_series`.
-            However, any combination of univariate and multivariate series is allowed here, as long
-            as the indices all match up.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
             In the case of `int`, the parameter will be treated as an integer index to the time index of
-            `training_series` that will be used as first prediction time.
+            `series` that will be used as first prediction time.
             In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         forecast_horizon
@@ -206,33 +236,24 @@ class ForecastingModel(ABC):
             A time series containing the forecast values for `target_series`, when successively applying the specified
             model with the specified forecast horizon.
         """
-        # handle case where target_series not specified
-        if target_series is None:
-            target_series = training_series
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
         if use_full_output_length is not None:
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
-        # construct fit function (used to ignore target series for univariate models)
-        if isinstance(self, MultivariateForecastingModel):
-            fit_function = self.fit
-        else:
-            fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
-
         # prepare the start parameter -> pd.Timestamp
-        start = _get_timestamp_at_point(start, training_series)
+        start = _get_timestamp_at_point(start, series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if trim_to_series:
-            last_pred_time = training_series.time_index()[-forecast_horizon - stride]
+            last_pred_time = series.time_index()[-forecast_horizon - stride]
         else:
-            last_pred_time = training_series.time_index()[-stride - 1]
+            last_pred_time = series.time_index()[-stride - 1]
 
         pred_times = [start]
         while pred_times[-1] <= last_pred_time:
-            pred_times.append(pred_times[-1] + training_series.freq() * stride)
+            pred_times.append(pred_times[-1] + series.freq() * stride)
 
         # iterate and predict pointwise
         values = []
@@ -240,37 +261,37 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        if not retrain and not self._fit_called:
-            fit_function(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
+        if not retrain and not self._is_fitted:
+            self.fit(series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
-            train = training_series.drop_after(pred_time)  # build the training series
-            target = target_series.drop_after(pred_time)  # build the target series
-            if (retrain):
-                fit_function(train, target)
+            train = series.drop_after(pred_time)  # build the training series
+            if retrain:
+                self.fit(train)
                 pred = self.predict(forecast_horizon, **predict_kwargs)
             else:
+                # TODO: remove this case (which can fail for non-torch models)
+                # TODO: and implement dedicated backtest() method for torch/ML models
                 pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
             values.append(pred.values()[-1])  # store the N-th point
             times.append(pred.end_time())  # store the N-th timestamp
 
         forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values),
-                                                    freq=training_series.freq() * stride)
+                                                    freq=series.freq() * stride)
 
         return forecast
 
     @classmethod
     def gridsearch(model_class,
                    parameters: dict,
-                   training_series: TimeSeries,
-                   target_series: Optional[TimeSeries] = None,
+                   series: TimeSeries,
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
                    use_full_output_length: Optional[bool] = None,
-                   val_target_series: Optional[TimeSeries] = None,
+                   val_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                   verbose=False) -> TimeSeries:
+                   verbose=False) -> Tuple['ForecastingModel', Dict]:
         """ A function for finding the best hyperparameters.
 
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -283,24 +304,25 @@ class ForecastingModel(ABC):
 
         Expanding window mode (activated when `forecast_horizon` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
-        splits of `training_series` and `target_series`. This process is accomplished by using
-        `ForecastingModel.backtest` as a subroutine to produce historic forecasts starting from `start`
-        that are compared against the ground truth values of `training_series` or `target_series`, if
-        specifed.
+        splits of `series`. This process is accomplished by using `ForecastingModel.backtest`
+        as a subroutine to produce historic forecasts starting from `start`
+        that are compared against the ground truth values of `series`.
         Note that the model is retrained for every single prediction, thus this mode is slower.
 
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
-        For every hyperparameter combination, the model is trained on `training_series` + `target_series` and
+        For every hyperparameter combination, the model is trained on `series` and
         evaluated on `val_series`.
 
         Fitted value mode (activated when `use_fitted_values` is set to `True`):
-        For every hyperparameter combination, the model is trained on `training_series` + `target_series`
+        For every hyperparameter combination, the model is trained on `series`
         and evaluated on the resulting fitted values.
         Not all models have fitted values, and this method raises an error if `model.fitted_values` does not exist.
         The fitted values are the result of the fit of the model on the training series. Comparing with the
         fitted values can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
 
+        Note that this method is meant to gridsearch and backtest over one training series (along with a possible
+        validation series).
 
         Parameters
         ----------
@@ -309,21 +331,19 @@ class ForecastingModel(ABC):
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
-        training_series
+        series
             The TimeSeries instance used as input for training.
-        target_series
-            The TimeSeries instance used as target for training (and also validation in expanding window mode).
         forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
         start
             The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index
-            of `training_series` from which predictions will be made to evaluate the model.
+            of `series` from which predictions will be made to evaluate the model.
             For a detailed description of how the different data types are interpreted, please see the documentation
             for `ForecastingModel.backtest`.
         use_full_output_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
             This argument will be passed along to the predict method of `TorchForecastingModel`.
-        val_target_series
+        val_series
             The TimeSeries instance used for validation in split mode.
         use_fitted_values
             If `True`, uses the comparison with the fitted values.
@@ -335,18 +355,13 @@ class ForecastingModel(ABC):
 
         Returns
         -------
-        ForecastingModel
-            An untrained 'model_class' instance with the best-performing hyperparameters from the given selection.
+        Tuple[ForecastingModel, Dict]
+            An untrained 'model_class' instance, created with the best-performing hyperparameters,
+            along with a dictionary containing these hyperparameters.
         """
-        raise_if_not((forecast_horizon is not None) + (val_target_series is not None) + use_fitted_values == 1,
+        raise_if_not((forecast_horizon is not None) + (val_series is not None) + use_fitted_values == 1,
                      "Please pass exactly one of the arguments 'forecast_horizon', "
-                     "'val_target_series' or 'use_fitted_values'.", logger)
-
-        # check target and training series
-        if target_series is None:
-            target_series = training_series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                     " must have the same time indices.")
+                     "'val_series' or 'use_fitted_values'.", logger)
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
@@ -357,8 +372,8 @@ class ForecastingModel(ABC):
             raise_if_not(hasattr(model_class(), "fitted_values"), "The model must have a fitted_values attribute"
                          " to compare with the train TimeSeries", logger)
 
-        elif val_target_series is not None:
-            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the"
+        elif val_series is not None:
+            raise_if_not(series.width == val_series.width, "Training and validation series require the"
                          " same number of components.", logger)
 
         min_error = float('inf')
@@ -373,25 +388,24 @@ class ForecastingModel(ABC):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
-                model.fit(training_series)
-                fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
-                error = metric(fitted_values, target_series)
-            elif val_target_series is None:  # expanding window mode
-                backtest_forecast = model.backtest(training_series, target_series, start,
-                                                   forecast_horizon, use_full_output_length=use_full_output_length)
-                error = metric(backtest_forecast, target_series)
+                model.fit(series)
+                fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
+                error = metric(fitted_values, series)
+            elif val_series is None:  # expanding window mode
+                backtest_forecast = model.backtest(series,
+                                                   start,
+                                                   forecast_horizon,
+                                                   use_full_output_length=use_full_output_length)
+                error = metric(backtest_forecast, series)
             else:  # split mode
-                if isinstance(model, MultivariateForecastingModel):
-                    model.fit(training_series, target_series)
-                else:
-                    model.fit(training_series)
-                error = metric(model.predict(len(val_target_series), **predict_kwargs), val_target_series)
+                model.fit(series)
+                error = metric(model.predict(len(val_series), **predict_kwargs), val_series)
             if error < min_error:
                 min_error = error
                 best_param_combination = param_combination_dict
-        logger.info('Chosen parameters: ' + str(best_param_combination))
+        logger.info('Best performing hyper-parameters: ' + str(best_param_combination))
 
-        return model_class(**best_param_combination)
+        return model_class(**best_param_combination), best_param_combination
 
     def residuals(self,
                   series: TimeSeries,
@@ -421,70 +435,16 @@ class ForecastingModel(ABC):
         TimeSeries
             The vector of residuals.
         """
-
         series._assert_univariate()
 
         # get first index not contained in the first training set
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.backtest(series, None, first_index, forecast_horizon, 1, True, verbose=verbose)
+        p = self.backtest(series, first_index, forecast_horizon, 1, True, verbose=verbose)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
         residuals = series_trimmed - p
 
         return residuals
-
-
-class UnivariateForecastingModel(ForecastingModel):
-    """The base class for univariate forecasting models."""
-    @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
-        """ Fits/trains the univariate model on selected univariate series.
-
-        Implements behavior specific to calling the `fit` method on `UnivariateForecastingModel`.
-
-        Parameters
-        ----------
-        series
-            A **univariate** timeseries on which to fit the model.
-        """
-        series._assert_univariate()
-        self.training_series = series
-        self.target_series = series
-        super().fit()
-
-
-class MultivariateForecastingModel(ForecastingModel):
-    """ The base class for multivariate forecasting models.
-    """
-    def _make_fitable_series(self,
-                             training_series: TimeSeries,
-                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
-        """Perform checks and returns ready to be used training and target series"""
-        if target_series is None:
-            target_series = training_series
-
-        # general checks on training / target series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "training and target "
-                     "timeseries must have same time indices.")
-
-        return training_series, target_series
-
-    @abstractmethod
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        """ Fits/trains the multivariate model on the provided series with selected target components.
-
-        Parameters
-        ----------
-        training_series
-            The training time series on which to fit the model (can be multivariate or univariate).
-        target_series
-            The target values used as dependent variables when training the model
-        """
-        training_series, target_series = self._make_fitable_series(training_series, target_series)
-
-        self.training_series = training_series
-        self.target_series = target_series
-        super().fit()
