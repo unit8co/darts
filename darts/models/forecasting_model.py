@@ -203,15 +203,16 @@ class ForecastingModel(ABC):
         overlapp_series_end
             Whether the forecasts can go beyond the series' end or not
         last_points_only
-            
+            Whether to keep the whole forecasts or only the last point of each forecast
         verbose
             Whether to print progress
 
         Returns
         -------
-        TimeSeries
-            A time series containing the forecast values for `target_series`, when successively applying the specified
-            model with the specified forecast horizon.
+        List[TimeSeries] or TimeSeries
+            By default, a list of the historical forecasts
+            If last_points_only is set to True, a single TimeSeries instance created from the last point of each
+            individual forecast.
         """
         # handle case where target_series not specified
         if target_series is None:
@@ -450,7 +451,7 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.historical_forecasts(series, None, first_index, forecast_horizon, 1, True, verbose=verbose)
+        p = self.historical_forecasts(series, None, first_index, forecast_horizon, 1, True, verbose=verbose, last_points_only=True)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
