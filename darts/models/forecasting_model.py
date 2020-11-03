@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, Tuple, Union, Any, Callable
+from typing import Optional, Tuple, Union, Any, Callable, List
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -140,25 +140,30 @@ class ForecastingModel(ABC):
         pass
 
     @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
-    def backtest(self,
-                 training_series: TimeSeries,
-                 target_series: Optional[TimeSeries] = None,
-                 start: Union[pd.Timestamp, float, int] = 0.7,
-                 forecast_horizon: int = 1,
-                 stride: int = 1,
-                 retrain: bool = True,
-                 trim_to_series: bool = True,
-                 verbose: bool = False,
-                 use_full_output_length: Optional[bool] = None) -> TimeSeries:
-        """ Retrain and forecast values pointwise with an expanding training window over `series`.
+    def historical_forecasts(self,
+                             training_series: TimeSeries,
+                             target_series: Optional[TimeSeries] = None,
+                             start: Union[pd.Timestamp, float, int] = 0.7,
+                             forecast_horizon: int = 1,
+                             stride: int = 1,
+                             retrain: bool = True,
+                             overlapp_series_end: bool = False,
+                             last_points_only: bool = False,
+                             verbose: bool = False,
+                             use_full_output_length: Optional[bool] = None) -> Union[List[TimeSeries], TimeSeries]:
+        
+        """ Compute the historical forecasts the model would have produced with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
-        the training set, emits a (point) prediction for a fixed forecast horizon, and then moves the end of the
-        training set forward by `stride` time steps. The resulting predictions are then returned.
+        the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
+        training set forward by `stride` time steps.
+        
+        By default, this method will return a list of the historical forecasts.
+        If `last_points_only` is set to True, it will return a single time series made up of the last point of each
+        historical forecast. This time series will thus have a frequency of training_series.freq() * stride
 
-        Unless `retrain` is set to False, this always re-trains the models on the entire available history,
-        corresponding an expending window strategy.
-
+        By default, this method always re-trains the models on the entire available history,
+        corresponding to an expanding window strategy.
         If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances
         like `RNNModel` and `TCNModel`), the model will only be trained on the initial training window
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
@@ -167,9 +172,9 @@ class ForecastingModel(ABC):
         Parameters
         ----------
         training_series
-            The training time series on which to backtest
+            The training time series to use to compute the historical forecasts
         target_series
-            The target time series on which to backtest. This parameter is only relevant for
+            The target time series to use to compute the historical forecasts. This parameter is only relevant for
             `MultivariateForecastingModel` instances. It allows for training on one `training_series`
             and predicting another `target_series`. In many multivariate forecasting problems, the
             `target_series` would constitute a subset of the components of the `training_series`.
@@ -195,8 +200,10 @@ class ForecastingModel(ABC):
             Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
             instance of `TorchForecastingModel`, this will cause an error.
-        trim_to_series
-            Whether the predicted series has the end trimmed to match the end of the main series
+        overlapp_series_end
+            Whether the forecasts can go beyond the series' end or not
+        last_points_only
+            
         verbose
             Whether to print progress
 
@@ -225,39 +232,54 @@ class ForecastingModel(ABC):
         start = _get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if trim_to_series:
-            last_pred_time = training_series.time_index()[-forecast_horizon - stride]
+        if not overlapp_series_end:
+            last_valid_pred_time = training_series.time_index()[-1 - forecast_horizon]
         else:
-            last_pred_time = training_series.time_index()[-stride - 1]
+            last_valid_pred_time = training_series.time_index()[-2]
 
         pred_times = [start]
-        while pred_times[-1] <= last_pred_time:
+        while pred_times[-1] < last_valid_pred_time:
+            # compute the next prediction time and add it to pred times
             pred_times.append(pred_times[-1] + training_series.freq() * stride)
 
-        # iterate and predict pointwise
-        values = []
-        times = []
+        # the last prediction time computed might have overshot last_valid_pred_time
+        if pred_times[-1] > last_valid_pred_time:
+            pred_times.pop(-1)
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
+        
+        # iterate and forecast
+
+        # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
+        forecasts = []
+
+        last_points_times = []
+        last_points_values = []
 
         if not retrain and not self._fit_called:
             fit_function(training_series.drop_after(start), target_series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
-            train = training_series.drop_after(pred_time)  # build the training series
-            target = target_series.drop_after(pred_time)  # build the target series
+            train = training_series.drop_after(pred_time)   # build the training series
+            target = target_series.drop_after(pred_time)    # build the target series
+
             if (retrain):
                 fit_function(train, target)
-                pred = self.predict(forecast_horizon, **predict_kwargs)
+                forecast = self.predict(forecast_horizon, **predict_kwargs)
             else:
-                pred = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
-            values.append(pred.values()[-1])  # store the N-th point
-            times.append(pred.end_time())  # store the N-th timestamp
+                forecast = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
 
-        forecast = TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values),
-                                                    freq=training_series.freq() * stride)
+            if last_points_only:
+                last_points_values.append(forecast.values()[-1])
+                last_points_times.append(forecast.end_time())
+            else:
+                forecasts.append(forecast)
 
-        return forecast
+        if last_points_only:
+            return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
+                                                      np.array(last_points_values),
+                                                      freq=training_series.freq() * stride)
+        return forecasts
 
     @classmethod
     def gridsearch(model_class,
@@ -428,7 +450,7 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.backtest(series, None, first_index, forecast_horizon, 1, True, verbose=verbose)
+        p = self.historical_forecasts(series, None, first_index, forecast_horizon, 1, True, verbose=verbose)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)

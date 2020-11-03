@@ -35,7 +35,7 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape)
+    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape, start=series.time_index()[-21])
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
@@ -83,17 +83,17 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3)
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3,
-                                  trim_to_series=True)
+                                  overlapp_series_end=False)
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
-        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), forecast_horizon=3, trim_to_series=False)
+        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), forecast_horizon=3, overlapp_series_end=True)
 
         # Using forecast_horizon default value
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
-        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), trim_to_series=False)
+        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), overlapp_series_end=True)
 
         # Using an int or float value for start
         NaiveDrift().backtest(linear_series, None, start=30)
-        NaiveDrift().backtest(linear_series, None, start=0.7, trim_to_series=False)
+        NaiveDrift().backtest(linear_series, None, start=0.7, overlapp_series_end=True)
 
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
@@ -109,7 +109,7 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series, None, start='wrong type')
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, trim_to_series=True)
+            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, overlapp_series_end=False)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
