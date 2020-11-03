@@ -63,7 +63,7 @@ class TimeSeriesTrainDataset(Dataset):
 
         self.data_series = [data_series] if isinstance(data_series, TimeSeries) else data_series
         if target_series is None:
-            self.target_series = data_series
+            self.target_series = self.data_series
         else:
             self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.H = horizon
