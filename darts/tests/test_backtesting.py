@@ -35,7 +35,11 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.gridsearch(params, series, forecast_horizon=10, metric=mape, start=series.time_index()[-21])
+    best_model_1 = model_class.gridsearch(params,
+                                          series,
+                                          forecast_horizon=10,
+                                          metric=mape,
+                                          start=series.time_index()[-21])
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
@@ -85,7 +89,11 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3,
                                   overlapp_series_end=False)
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
-        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), forecast_horizon=3, overlapp_series_end=True)
+        NaiveDrift().backtest(linear_series,
+                              None,
+                              pd.Timestamp('20000217'),
+                              forecast_horizon=3,
+                              overlapp_series_end=True)
 
         # Using forecast_horizon default value
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
@@ -118,7 +126,12 @@ class BacktestingTestCase(unittest.TestCase):
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
             tcn_model = TCNModel(batch_size=1, n_epochs=1)
-            pred = tcn_model.historical_forecasts(linear_series, None, pd.Timestamp('20000125'), 3, verbose=False, last_points_only=True)
+            pred = tcn_model.historical_forecasts(linear_series,
+                                                  None,
+                                                  pd.Timestamp('20000125'),
+                                                  3,
+                                                  verbose=False,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 1)
 
             # multivariate model + multivariate series
@@ -126,17 +139,39 @@ class BacktestingTestCase(unittest.TestCase):
                 tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
             tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
             with self.assertRaises(ValueError):
-                tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
+                tcn_model.backtest(linear_series_multi,
+                                   None,
+                                   pd.Timestamp('20000125'),
+                                   3,
+                                   verbose=False,
                                    use_full_output_length=False)
-            pred = tcn_model.historical_forecasts(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
-                                      verbose=False, use_full_output_length=True, last_points_only=True)
+
+            pred = tcn_model.historical_forecasts(linear_series_multi,
+                                                  linear_series_multi[['0']],
+                                                  pd.Timestamp('20000125'),
+                                                  1,
+                                                  verbose=False,
+                                                  use_full_output_length=True,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 1)
-            pred = tcn_model.historical_forecasts(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
-                                      verbose=False, use_full_output_length=True, last_points_only=True)
+
+            pred = tcn_model.historical_forecasts(linear_series_multi,
+                                                  linear_series_multi[['1']],
+                                                  pd.Timestamp('20000125'),
+                                                  3,
+                                                  verbose=False,
+                                                  use_full_output_length=True,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 1)
+
             tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
-            pred = tcn_model.historical_forecasts(linear_series_multi, linear_series_multi, pd.Timestamp('20000125'), 3,
-                                      verbose=False, use_full_output_length=True, last_points_only=True)
+            pred = tcn_model.historical_forecasts(linear_series_multi,
+                                                  linear_series_multi,
+                                                  pd.Timestamp('20000125'),
+                                                  3,
+                                                  verbose=False,
+                                                  use_full_output_length=True,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):
@@ -222,7 +257,10 @@ class BacktestingTestCase(unittest.TestCase):
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
-        TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape,
+        TCNModel.gridsearch(tcn_params,
+                            dummy_series,
+                            forecast_horizon=3,
+                            metric=mape,
                             use_full_output_length=True)
 
     def test_forecasting_residuals(self):

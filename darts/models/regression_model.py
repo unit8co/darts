@@ -18,7 +18,12 @@ from typing import List, Iterable, Union, Any, Callable
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger, raise_log
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _historical_forecasts_general_checks
+from ..utils import (
+    _build_tqdm_iterator,
+    _with_sanity_checks,
+    _get_timestamp_at_point,
+    _historical_forecasts_general_checks
+)
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -199,11 +204,11 @@ class RegressionModel(ABC):
                 last_points_times.append(forecast.end_time())
             else:
                 forecasts.append(forecast)
-        
+
         if last_points_only:
             return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
-                                                      np.array(last_points_values),
-                                                      freq=target_series.freq() * stride)
+                                                    np.array(last_points_values),
+                                                    freq=target_series.freq() * stride)
 
         return forecasts
 
@@ -219,7 +224,7 @@ class RegressionModel(ABC):
                  verbose: bool = False) -> float:
         """Computes the average error between the historical forecasts the model would have produced
         with an expanding training window over `series` and the actual series.
-        
+
         To this end, it repeatedly builds a training set composed of both features and targets,
         from `feature_series` and `target_series`, respectively.
         It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
@@ -267,13 +272,12 @@ class RegressionModel(ABC):
 
         if last_points_only:
             return metric(target_series, forecasts)
-        
+
         error = 0
         for forecast in forecasts:
             error += metric(target_series, forecast)
-        
-        return error / len(forecasts)
 
+        return error / len(forecasts)
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series

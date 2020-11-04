@@ -18,7 +18,12 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _historical_forecasts_general_checks
+from ..utils import (
+    _build_tqdm_iterator,
+    _with_sanity_checks,
+    _get_timestamp_at_point,
+    _historical_forecasts_general_checks
+)
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -146,13 +151,13 @@ class ForecastingModel(ABC):
                              last_points_only: bool = False,
                              verbose: bool = False,
                              use_full_output_length: Optional[bool] = None) -> Union[List[TimeSeries], TimeSeries]:
-        
+
         """ Computes the historical forecasts the model would have produced with an expanding training window
 
         To this end, it repeatedly builds a training set from the beginning of `training_series`. It trains the
         current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
         the end of the training set forward by `stride` time steps.
-        
+
         By default, this method will return a list of the historical forecasts.
         If `last_points_only` is set to True, it will return a single time series made up of the last point of each
         historical forecast. This time series will thus have a frequency of training_series.freq() * stride
@@ -243,7 +248,7 @@ class ForecastingModel(ABC):
             pred_times.pop(-1)
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
-        
+
         # iterate and forecast
 
         # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
@@ -273,8 +278,8 @@ class ForecastingModel(ABC):
 
         if last_points_only:
             return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
-                                                      np.array(last_points_values),
-                                                      freq=training_series.freq() * stride)
+                                                    np.array(last_points_values),
+                                                    freq=training_series.freq() * stride)
         return forecasts
 
     def backtest(self,
@@ -289,14 +294,14 @@ class ForecastingModel(ABC):
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  use_full_output_length: Optional[bool] = None,
                  verbose: bool = False) -> float:
-        
+
         """ Computes the average error between the historical forecasts the model would have produced
         with an expanding training window over `training_series` and the actual series.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
         the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
         training set forward by `stride` time steps.
-        
+
         By default, this method will use each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical forecast.
 
@@ -367,14 +372,12 @@ class ForecastingModel(ABC):
 
         if last_points_only:
             return metric(target_series, forecasts)
-        
+
         error = 0
         for forecast in forecasts:
             error += metric(target_series, forecast)
-        
+
         return error / len(forecasts)
-
-
 
     @classmethod
     def gridsearch(model_class,
@@ -383,7 +386,7 @@ class ForecastingModel(ABC):
                    target_series: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
-                   last_points_only:bool = False,
+                   last_points_only: bool = False,
                    use_full_output_length: Optional[bool] = None,
                    val_target_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
@@ -501,7 +504,7 @@ class ForecastingModel(ABC):
                                        target_series,
                                        start,
                                        forecast_horizon,
-                                       metric = metric,
+                                       metric=metric,
                                        last_points_only=last_points_only,
                                        use_full_output_length=use_full_output_length)
             else:  # split mode
