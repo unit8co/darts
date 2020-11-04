@@ -147,11 +147,11 @@ class ForecastingModel(ABC):
                              verbose: bool = False,
                              use_full_output_length: Optional[bool] = None) -> Union[List[TimeSeries], TimeSeries]:
         
-        """ Computes the historical forecasts the model would have produced with an expanding training window over `series`.
+        """ Computes the historical forecasts the model would have produced with an expanding training window
 
-        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
-        the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
-        training set forward by `stride` time steps.
+        To this end, it repeatedly builds a training set from the beginning of `training_series`. It trains the
+        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
+        the end of the training set forward by `stride` time steps.
         
         By default, this method will return a list of the historical forecasts.
         If `last_points_only` is set to True, it will return a single time series made up of the last point of each
@@ -187,7 +187,7 @@ class ForecastingModel(ABC):
         forecast_horizon
             The forecast horizon for the point prediction
         stride
-            The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
+            The number of time steps between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
@@ -288,10 +288,10 @@ class ForecastingModel(ABC):
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  use_full_output_length: Optional[bool] = None,
-                 verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
+                 verbose: bool = False) -> float:
         
-        """ Computse the average error between the historical forecasts the model would have produced
-        with an expanding training window over `series` and the actual series.
+        """ Computes the average error between the historical forecasts the model would have produced
+        with an expanding training window over `training_series` and the actual series.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
         the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
@@ -349,10 +349,8 @@ class ForecastingModel(ABC):
 
         Returns
         -------
-        List[TimeSeries] or TimeSeries
-            By default, a list of the historical forecasts
-            If last_points_only is set to True, a single TimeSeries instance created from the last point of each
-            individual forecast.
+        float
+            The average error score
         """
         forecasts = self.historical_forecasts(training_series,
                                               target_series,

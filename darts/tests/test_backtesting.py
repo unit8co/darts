@@ -147,15 +147,15 @@ class BacktestingTestCase(unittest.TestCase):
         target = st(length=50)
 
         # univariate feature test
-        pred = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3)
-        self.assertEqual(r2_score(pred, target), 1.0)
+        score = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # Using an int or float value for start
-        pred = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3)
-        self.assertEqual(r2_score(pred, target), 1.0)
+        score = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
-        pred = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3)
-        self.assertEqual(r2_score(pred, target), 1.0)
+        score = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # Using a too small start value
         with self.assertRaises(ValueError):
@@ -165,23 +165,34 @@ class BacktestingTestCase(unittest.TestCase):
             StandardRegressionModel(15).backtest(features, target, start=0.01, forecast_horizon=3)
 
         # Using StandardRegressionModel's start default value
-        pred = StandardRegressionModel(15).backtest(features, target, forecast_horizon=3)
-        self.assertEqual(r2_score(pred, target), 1.0)
+        score = StandardRegressionModel(15).backtest(features, target, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # multivariate feature test
-        pred = StandardRegressionModel(15).backtest(features_multivariate, target, pd.Timestamp('20000201'), 3)
-        self.assertEqual(r2_score(pred, target), 1.0)
+        score = StandardRegressionModel(15).backtest(features_multivariate,
+                                                     target,
+                                                     pd.Timestamp('20000201'),
+                                                     forecast_horizon=3,
+                                                     metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # multivariate target
-        pred = StandardRegressionModel(15).backtest(features_multivariate, target.stack(target),
-                                                    pd.Timestamp('20000201'), 3)
-        self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
+        score = StandardRegressionModel(15).backtest(features_multivariate,
+                                                     target.stack(target),
+                                                     pd.Timestamp('20000201'),
+                                                     forecast_horizon=3,
+                                                     metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # multivariate target with stride
-        pred = StandardRegressionModel(15).backtest(features_multivariate, target.stack(target),
-                                                    pd.Timestamp('20000201'), 3, stride=3)
-        self.assertEqual(r2_score(pred, target.stack(target)), 1.0)
-        self.assertEqual((pred.time_index()[1] - pred.time_index()[0]).days, 3)
+        hist = StandardRegressionModel(15).historical_forecasts(features_multivariate,
+                                                                target.stack(target),
+                                                                pd.Timestamp('20000201'),
+                                                                forecast_horizon=3,
+                                                                stride=3,
+                                                                last_points_only=True)
+        self.assertEqual(r2_score(target.stack(target), hist), 1.0)
+        self.assertEqual((hist.time_index()[1] - hist.time_index()[0]).days, 3)
 
     def test_gridsearch(self):
 
