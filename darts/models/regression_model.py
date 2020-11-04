@@ -18,7 +18,7 @@ from typing import List, Iterable, Union, Any
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger, raise_log
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _historical_forecasts_general_checks
 
 logger = get_logger(__name__)
 
@@ -107,17 +107,13 @@ class RegressionModel(ABC):
         raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                      'have the same time index', logger)
 
-        _backtest_general_checks(target_series, kwargs)
+        _historical_forecasts_general_checks(target_series, kwargs)
 
-    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Method to be overriden in subclass for model specific sanity checks"""
-        pass
-
-    @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
+    @_with_sanity_checks("_backtest_sanity_checks")
     def backtest(self,
                  feature_series: Iterable[TimeSeries],
                  target_series: TimeSeries,
-                 start: Union[pd.Timestamp, float, int] = 0.7,
+                 start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
                  stride: int = 1,
                  trim_to_series: bool = True,

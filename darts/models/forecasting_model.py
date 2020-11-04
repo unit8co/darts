@@ -18,7 +18,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
+from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _historical_forecasts_general_checks
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -105,15 +105,15 @@ class ForecastingModel(ABC):
 
         return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
 
-    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Sanity checks for the backtest function
+    def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Sanity checks for the historical_forecasts function
 
         Parameters
         ----------
         args
-            The args parameter(s) provided to the backtest function.
+            The args parameter(s) provided to the historical_forecasts function.
         kwargs
-            The kwargs paramter(s) provided to the backtest function.
+            The kwargs paramter(s) provided to the historical_forecasts function.
 
         Raises
         ------
@@ -125,25 +125,20 @@ class ForecastingModel(ABC):
         n = SimpleNamespace(**kwargs)
 
         # check target and training series
-        if n.target_series is None:
+        target_series = n.target_series
+        if target_series is None:
             target_series = training_series
-        else:
-            target_series = n.target_series
 
         raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
                      " must have the same time indices.")
 
-        _backtest_general_checks(training_series, kwargs)
+        _historical_forecasts_general_checks(training_series, kwargs)
 
-    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Method to be overriden in subclass for model specific sanity checks"""
-        pass
-
-    @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
+    @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(self,
                              training_series: TimeSeries,
                              target_series: Optional[TimeSeries] = None,
-                             start: Union[pd.Timestamp, float, int] = 0.7,
+                             start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
                              retrain: bool = True,
@@ -152,7 +147,7 @@ class ForecastingModel(ABC):
                              verbose: bool = False,
                              use_full_output_length: Optional[bool] = None) -> Union[List[TimeSeries], TimeSeries]:
         
-        """ Compute the historical forecasts the model would have produced with an expanding training window over `series`.
+        """ Computes the historical forecasts the model would have produced with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
         the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
@@ -201,7 +196,7 @@ class ForecastingModel(ABC):
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
             instance of `TorchForecastingModel`, this will cause an error.
         overlapp_series_end
-            Whether the forecasts can go beyond the series' end or not
+            Whether the returned forecasts can go beyond the series' end or not
         last_points_only
             Whether to keep the whole forecasts or only the last point of each forecast
         verbose
@@ -282,6 +277,107 @@ class ForecastingModel(ABC):
                                                       freq=training_series.freq() * stride)
         return forecasts
 
+    def backtest(self,
+                 training_series: TimeSeries,
+                 target_series: Optional[TimeSeries] = None,
+                 start: Union[pd.Timestamp, float, int] = 0.5,
+                 forecast_horizon: int = 1,
+                 stride: int = 1,
+                 retrain: bool = True,
+                 overlapp_series_end: bool = False,
+                 last_points_only: bool = False,
+                 metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                 use_full_output_length: Optional[bool] = None,
+                 verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
+        
+        """ Computse the average error between the historical forecasts the model would have produced
+        with an expanding training window over `series` and the actual series.
+
+        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
+        the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
+        training set forward by `stride` time steps.
+        
+        By default, this method will use each historical forecast (whole) to compute error scores.
+        If `last_points_only` is set to True, it will use only the last point of each historical forecast.
+
+        By default, this method always re-trains the models on the entire available history,
+        corresponding to an expanding window strategy.
+        If `retrain` is set to False (useful for models with many parameter such as `TorchForecastingModel` instances
+        like `RNNModel` and `TCNModel`), the model will only be trained on the initial training window
+        (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
+        newly expanded input sequence will be fed to the model to produce the new output.
+
+        Parameters
+        ----------
+        training_series
+            The training time series to use to compute the historical forecasts
+        target_series
+            The target time series to use to compute the historical forecasts. This parameter is only relevant for
+            `MultivariateForecastingModel` instances. It allows for training on one `training_series`
+            and predicting another `target_series`. In many multivariate forecasting problems, the
+            `target_series` would constitute a subset of the components of the `training_series`.
+            However, any combination of univariate and multivariate series is allowed here, as long
+            as the indices all match up.
+        start
+            The first prediction time, at which a prediction is computed for a future time.
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In the case of `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the first prediction point.
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
+            `training_series` that will be used as first prediction time.
+            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
+            directly.
+        forecast_horizon
+            The forecast horizon for the point prediction
+        stride
+            The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
+        retrain
+            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
+            instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
+        overlapp_series_end
+            Whether the returned forecasts can go beyond the series' end or not
+        last_points_only
+            Whether to use the whole forecasts or only the last point of each forecast to compute the error
+        metric
+            A function that takes two TimeSeries instances as inputs and returns a float error value.
+        use_full_output_length
+            Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
+            as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
+            instance of `TorchForecastingModel`, this will cause an error.
+        verbose
+            Whether to print progress
+
+        Returns
+        -------
+        List[TimeSeries] or TimeSeries
+            By default, a list of the historical forecasts
+            If last_points_only is set to True, a single TimeSeries instance created from the last point of each
+            individual forecast.
+        """
+        forecasts = self.historical_forecasts(training_series,
+                                              target_series,
+                                              start,
+                                              forecast_horizon,
+                                              stride,
+                                              retrain,
+                                              overlapp_series_end,
+                                              last_points_only,
+                                              verbose,
+                                              use_full_output_length)
+        if target_series is None:
+            target_series = training_series
+
+        if last_points_only:
+            return metric(target_series, forecasts)
+        
+        error = 0
+        for forecast in forecasts:
+            error += metric(target_series, forecast)
+        
+        return error / len(forecasts)
+
+
+
     @classmethod
     def gridsearch(model_class,
                    parameters: dict,
@@ -289,6 +385,7 @@ class ForecastingModel(ABC):
                    target_series: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
+                   last_points_only:bool = False,
                    use_full_output_length: Optional[bool] = None,
                    val_target_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
@@ -343,6 +440,8 @@ class ForecastingModel(ABC):
             of `training_series` from which predictions will be made to evaluate the model.
             For a detailed description of how the different data types are interpreted, please see the documentation
             for `ForecastingModel.backtest`.
+        last_points_only
+            Whether to use the whole forecasts or only the last point of each forecast to compute the error
         use_full_output_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
             This argument will be passed along to the predict method of `TorchForecastingModel`.
@@ -351,9 +450,9 @@ class ForecastingModel(ABC):
         use_fitted_values
             If `True`, uses the comparison with the fitted values.
             Raises an error if `fitted_values` is not an attribute of `model_class`.
-        metric:
+        metric
             A function that takes two TimeSeries instances as inputs and returns a float error value.
-        verbose:
+        verbose
             Whether to print progress.
 
         Returns
@@ -400,9 +499,13 @@ class ForecastingModel(ABC):
                 fitted_values = TimeSeries.from_times_and_values(training_series.time_index(), model.fitted_values)
                 error = metric(fitted_values, target_series)
             elif val_target_series is None:  # expanding window mode
-                backtest_forecast = model.backtest(training_series, target_series, start,
-                                                   forecast_horizon, use_full_output_length=use_full_output_length)
-                error = metric(backtest_forecast, target_series)
+                error = model.backtest(training_series,
+                                       target_series,
+                                       start,
+                                       forecast_horizon,
+                                       metric = metric,
+                                       last_points_only=last_points_only,
+                                       use_full_output_length=use_full_output_length)
             else:  # split mode
                 if isinstance(model, MultivariateForecastingModel):
                     model.fit(training_series, target_series)
@@ -451,7 +554,14 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.historical_forecasts(series, None, first_index, forecast_horizon, 1, True, verbose=verbose, last_points_only=True)
+        p = self.historical_forecasts(series,
+                                      None,
+                                      first_index,
+                                      forecast_horizon,
+                                      1,
+                                      True,
+                                      last_points_only=True,
+                                      verbose=verbose)
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)

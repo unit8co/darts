@@ -141,7 +141,7 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
     return decorator
 
 
-def _backtest_general_checks(series, kwargs):
+def _historical_forecasts_general_checks(series, kwargs):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
