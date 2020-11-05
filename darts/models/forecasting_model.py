@@ -55,7 +55,7 @@ class ForecastingModel(ABC):
         self.training_series: TimeSeries = None
 
         # state; whether the model has been fit or not
-        self._is_fitted = False
+        self._fit_called = False
 
     @abstractmethod
     def fit(self, training_series: TimeSeries) -> None:
@@ -65,16 +65,21 @@ class ForecastingModel(ABC):
 
         This is the entry point for training the model on one series.
 
-        Some models support training on several time series, or differentiating between "data" and "feature"
+        Some models support training on several time series, or differentiating between "input" and "target"
         dimensions. At the moment such functionalities can be used for PyTorch-based models,
-        using the `TimeSeriesTrainDataset`, and calling the `multi_fit()` method.
+        using some `TimeSeriesDataset`, and calling the `multi_fit()` method.
+
+        Parameters
+        ----------
+        training_series
+            The time series on which to train the model, and the future of which can then be forecast using `predict()`.
         """
         raise_if_not(len(training_series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
                      .format(len(training_series), str(self), self.min_train_series_length))
 
         self.training_series = training_series
-        self._is_fitted = True
+        self._fit_called = True
 
     def multi_fit(self, time_series_train_dataset):
         raise NotImplemented('This model does not support multi_fit(). Currently only PyTorch-based models'
@@ -95,7 +100,7 @@ class ForecastingModel(ABC):
             A time series containing the `n` next points, starting after the end of the series to forecast.
         """
 
-        if not self._is_fitted:
+        if not self._fit_called:
             raise_log(Exception('The model must be fit before calling predict()'), logger)
 
     def multi_predict(self, n: int, optional_input_series_dataset):
@@ -256,7 +261,7 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        if not retrain and not self._is_fitted:
+        if not retrain and not self._fit_called:
             self.fit(series.drop_after(start), verbose=verbose)
 
         for pred_time in iterator:
