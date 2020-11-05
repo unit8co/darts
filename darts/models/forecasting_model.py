@@ -148,19 +148,20 @@ class ForecastingModel(ABC):
                              stride: int = 1,
                              retrain: bool = True,
                              overlapp_series_end: bool = False,
-                             last_points_only: bool = False,
+                             last_points_only: bool = True,
                              verbose: bool = False,
-                             use_full_output_length: Optional[bool] = None) -> Union[List[TimeSeries], TimeSeries]:
+                             use_full_output_length: Optional[bool] = None) -> Union[TimeSeries, List[TimeSeries]]:
 
         """ Computes the historical forecasts the model would have produced with an expanding training window
+        and (by default) returns a time series created from the last point of each of these individual forecasts
 
         To this end, it repeatedly builds a training set from the beginning of `training_series`. It trains the
         current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
         the end of the training set forward by `stride` time steps.
 
-        By default, this method will return a list of the historical forecasts.
-        If `last_points_only` is set to True, it will return a single time series made up of the last point of each
+        By default, this method will return a single time series made up of the last point of each
         historical forecast. This time series will thus have a frequency of training_series.freq() * stride
+        If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
 
         By default, this method always re-trains the models on the entire available history,
         corresponding to an expanding window strategy.
@@ -203,16 +204,15 @@ class ForecastingModel(ABC):
         overlapp_series_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to keep the whole forecasts or only the last point of each forecast
+            Whether to keep and return the whole forecasts or only the last point of each forecast
         verbose
             Whether to print progress
 
         Returns
         -------
-        List[TimeSeries] or TimeSeries
-            By default, a list of the historical forecasts
-            If last_points_only is set to True, a single TimeSeries instance created from the last point of each
-            individual forecast.
+        TimeSeries or List[TimeSeries]
+            By default, a single TimeSeries instance created from the last point of each individual forecast.
+            If `last_points_only` is set to False, a list of the historical forecasts.
         """
         # handle case where target_series not specified
         if target_series is None:
@@ -292,10 +292,11 @@ class ForecastingModel(ABC):
                  overlapp_series_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                 reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
                  use_full_output_length: Optional[bool] = None,
-                 verbose: bool = False) -> float:
+                 verbose: bool = False) -> Union[float, List[float]]:
 
-        """ Computes the average error between the historical forecasts the model would have produced
+        """ Computes an error score between the historical forecasts the model would have produced
         with an expanding training window over `training_series` and the actual series.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
@@ -345,6 +346,10 @@ class ForecastingModel(ABC):
             Whether to use the whole forecasts or only the last point of each forecast to compute the error
         metric
             A function that takes two TimeSeries instances as inputs and returns a float error value.
+        reduction
+            A function used to combine the individual error scores obtained when `last_points_only` is set to False
+            If explicitely set to `None`, the method will return a list of the individual error scores instead
+            Set to np.mean by default
         use_full_output_length
             Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
@@ -354,8 +359,8 @@ class ForecastingModel(ABC):
 
         Returns
         -------
-        float
-            The average error score
+        float or List[float]
+            The error score, or the list of individual error scores if `reduction` is `None`
         """
         forecasts = self.historical_forecasts(training_series,
                                               target_series,
@@ -373,11 +378,14 @@ class ForecastingModel(ABC):
         if last_points_only:
             return metric(target_series, forecasts)
 
-        error = 0
+        errors = []
         for forecast in forecasts:
-            error += metric(target_series, forecast)
+            errors.append(metric(target_series, forecast))
 
-        return error / len(forecasts)
+        if reduction is None:
+            return errors
+
+        return reduction(errors)
 
     @classmethod
     def gridsearch(model_class,
@@ -391,6 +399,7 @@ class ForecastingModel(ABC):
                    val_target_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                   reduction: Callable[[np.ndarray], float] = np.mean,
                    verbose=False) -> TimeSeries:
         """ A function for finding the best hyperparameters.
 
@@ -505,6 +514,7 @@ class ForecastingModel(ABC):
                                        start,
                                        forecast_horizon,
                                        metric=metric,
+                                       reduction=reduction,
                                        last_points_only=last_points_only,
                                        use_full_output_length=use_full_output_length)
             else:  # split mode

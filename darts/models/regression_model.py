@@ -123,18 +123,19 @@ class RegressionModel(ABC):
                              forecast_horizon: int = 1,
                              stride: int = 1,
                              overlapp_series_end: bool = False,
-                             last_points_only: bool = False,
+                             last_points_only: bool = True,
                              verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
         """ Computes the historical forecasts the model would have produced with an expanding training window
+        and (by default) returns a time series created from the last point of each of these individual forecasts
 
         To this end, it repeatedly builds a training set composed of both features and targets,
         from `feature_series` and `target_series`, respectively.
         It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
         and then moves the end of the training set forward by `stride` time steps.
 
-        By default, this method will return a list of the historical forecasts.
-        If `last_points_only` is set to True, it will return a single time series made up of the last point of each
+        By default, this method will return a single time series made up of the last point of each
         historical forecast. This time series will thus have a frequency of training_series.freq() * stride
+        If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
 
         This always re-trains the models on the entire available history,
         corresponding an expanding window strategy.
@@ -154,16 +155,15 @@ class RegressionModel(ABC):
         overlapp_series_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to keep the whole forecasts or only the last point of each forecast
+            Whether to keep and return the whole forecasts or only the last point of each forecast
         verbose
             Whether to print progress
 
         Returns
         -------
-        List[TimeSeries] or TimeSeries
-            By default, a list of the historical forecasts
-            If last_points_only is set to True, a single TimeSeries instance created from the last point of each
-            individual forecast.
+        TimeSeries or List[TimeSeries]
+            By default, a single TimeSeries instance created from the last point of each individual forecast.
+            If `last_points_only` is set to False, a list of the historical forecasts
         """
         start = _get_timestamp_at_point(start, target_series)
 
@@ -221,8 +221,9 @@ class RegressionModel(ABC):
                  overlapp_series_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                 verbose: bool = False) -> float:
-        """Computes the average error between the historical forecasts the model would have produced
+                 reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+                 verbose: bool = False) -> Union[float, List[float]]:
+        """Computes an error score between the historical forecasts the model would have produced
         with an expanding training window over `series` and the actual series.
 
         To this end, it repeatedly builds a training set composed of both features and targets,
@@ -254,12 +255,17 @@ class RegressionModel(ABC):
             Whether to keep the whole forecasts or only the last point of each forecast
         metric
             A function that takes two TimeSeries instances as inputs and returns a float error value.
+        reduction
+            A function used to combine the individual error scores obtained when `last_points_only` is set to False
+            If explicitely set to `None`, the method will return a list of the individual error scores instead
+            Set to np.mean by default
         verbose
             Whether to print progress
 
         Returns
         -------
-        The average error score
+        float or List[float]
+            The error score, or the list of individual error scores if `reduction` is `None`
         """
         forecasts = self.historical_forecasts(feature_series,
                                               target_series,
@@ -273,11 +279,14 @@ class RegressionModel(ABC):
         if last_points_only:
             return metric(target_series, forecasts)
 
-        error = 0
+        errors = []
         for forecast in forecasts:
-            error += metric(target_series, forecast)
+            errors.append(metric(target_series, forecast))
 
-        return error / len(forecasts)
+        if reduction is None:
+            return errors
+
+        return reduction(errors)
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series
