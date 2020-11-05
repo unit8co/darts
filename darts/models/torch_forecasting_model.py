@@ -9,7 +9,7 @@ import re
 import math
 from glob import glob
 import shutil
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple, Union
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -18,7 +18,8 @@ from torch.utils.tensorboard import SummaryWriter
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesTrainDataset
+from ..utils.data.timeseries_dataset import TimeSeriesDataset
+from ..utils.data.horizon_based_dataset import HorizonBasedTrainDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import ForecastingModel
 
@@ -135,6 +136,34 @@ def _get_runs_folder(work_dir, model_name):
 #         data = self.training_series_values[idx:idx + self.length]
 #         target = self.target_series_values[idx + self.shift:idx + self.length + self.shift]
 #         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
+
+
+class TimeSeriesTorchDataset(Dataset):
+    def __init__(self, ts_dataset: TimeSeriesDataset):
+        """
+        Wraps around `TimeSeriesDataset`, in order to provide translation
+        from `TimeSeries` to torch tensors.
+        """
+        self.ts_dataset = ts_dataset
+
+    @staticmethod
+    def _ts_to_tensor(ts: TimeSeries):
+        vals = ts.values(copy=False)
+        return torch.from_numpy(vals).float()
+
+    def __len__(self):
+        return len(self.ts_dataset)
+
+    def __getitem__(self, idx: int) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        """
+        Cast the content of the dataset to torch tensors
+        """
+        item = self.ts_dataset[idx]
+        if isinstance(item, TimeSeries):
+            return TimeSeriesTorchDataset._ts_to_tensor(item)
+        else:
+            return (TimeSeriesTorchDataset._ts_to_tensor(item[0]),
+                    TimeSeriesTorchDataset._ts_to_tensor(item[1]))
 
 
 class TorchForecastingModel(ForecastingModel):
@@ -272,7 +301,7 @@ class TorchForecastingModel(ForecastingModel):
         """ Fit method for torch modules. This is the entry point to fit the model on one time series only,
             and it wraps around the `multi_fit()` method.
             If you need to fit over several time series, or to differentiate between the "feature"
-            and "target" dimensions of your series, consider building a `TimeSeriesTrainDataset` and calling
+            and "target" dimensions of your series, consider building a `HorizonBasedTrainDataset` and calling
             `multi_fit()` instead.
 
         Parameters
@@ -292,14 +321,14 @@ class TorchForecastingModel(ForecastingModel):
         raise_if_not(self.training_series.width == self.output_size, "The number of components in the training series "
                      "be equal to the `output_size` defined when instantiating the current model.", logger)
 
-        train_dataset = TimeSeriesTrainDataset(self.output_length, series)
-        val_dataset = None if val_series is None else TimeSeriesTrainDataset(self.output_length, val_series)
+        train_dataset = HorizonBasedTrainDataset(self.output_length, series)
+        val_dataset = None if val_series is None else HorizonBasedTrainDataset(self.output_length, val_series)
         self.multi_fit(train_dataset, val_dataset)
 
     @random_method
     def multi_fit(self,
-                  train_dataset: TimeSeriesTrainDataset,
-                  val_dataset: Optional[TimeSeriesTrainDataset] = None,
+                  train_dataset: TimeSeriesDataset,
+                  val_dataset: Optional[TimeSeriesDataset] = None,
                   verbose: bool = False) -> None:
 
         raise_if(len(train_dataset) == 0,
@@ -309,10 +338,21 @@ class TorchForecastingModel(ForecastingModel):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
+        # Check that the items in the dataset are time series tuples (required as we need (input, target) tuples).
+        item_0_train, item_0_val = train_dataset[0], val_dataset[0]
+        raise_if_not(isinstance(item_0_train, Tuple) and isinstance(item_0_val, Tuple),
+                     'The datasets need to return tuples of (input, target) series for training the model.')
+        # Check that the returned types are TimeSeries
+        raise_if_not(isinstance(item_0_train[0], TimeSeries) and isinstance(item_0_val[0], TimeSeries),
+                     'The types of the input and target inside the tuples emitted by the dataset must be TimeSeries.')
+
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        train_loader = DataLoader(train_dataset,
+        torch_train_dataset = TimeSeriesTorchDataset(train_dataset)
+        torch_val_dataset = TimeSeriesTorchDataset(val_dataset)
+
+        train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
                                   num_workers=0,
@@ -320,7 +360,7 @@ class TorchForecastingModel(ForecastingModel):
                                   drop_last=True)
 
         # Prepare validation data
-        val_loader = None if val_dataset is None else DataLoader(val_dataset,
+        val_loader = None if val_dataset is None else DataLoader(torch_val_dataset,
                                                                  batch_size=self.batch_size,
                                                                  shuffle=False,
                                                                  num_workers=0,
