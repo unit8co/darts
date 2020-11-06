@@ -20,6 +20,7 @@ from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesDataset
 from ..utils.data.horizon_based_dataset import HorizonBasedTrainDataset
+from ..utils.data.simple_dataset import SimpleTimeSeriesDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import ForecastingModel
 
@@ -139,17 +140,37 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: TimeSeriesDataset):
+    def __init__(self,
+                 ts_dataset: TimeSeriesDataset,
+                 device,
+                 always_produce_tuples: bool = False,
+                 never_produce_tuples: bool = False):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
-        from `TimeSeries` to torch tensors.
-        """
-        self.ts_dataset = ts_dataset
+        from `TimeSeries` to torch tensors. Inherits from torch `Dataset`.
 
-    @staticmethod
-    def _ts_to_tensor(ts: TimeSeries):
-        vals = ts.values(copy=False)
-        return torch.from_numpy(vals).float()
+        Parameters
+        ----------
+        ts_dataset
+            the `TimeSeriesDataset` underlying this torch Dataset.
+        always_produce_tuples
+            Whether to always emmit tuples. If True and the underlying `ts_dataset` does not contain tuples,
+            this will duplicate the emitted time series into a two-tuple.
+            Cannot be set if `never_produce_tuples` is set.
+        never_produce_tuples
+            Whether to always emmit simple `TimeSeries`. If True and the underlying `ts_dataset` does contain tuples,
+            this will only return the first element of the tuple.
+            Cannot be set if `always_produce_tuples` is set.
+        """
+        raise_if(always_produce_tuples and never_produce_tuples,
+                 'Only one of `always_produce_tuples` and `never_produce_tuples` can be set.')
+        self.ts_dataset = ts_dataset
+        self.device = device
+        self.always_produce_tuples = always_produce_tuples
+        self.never_produce_tuples = never_produce_tuples
+
+    def _ts_to_tensor(self, ts: TimeSeries):
+        return torch.from_numpy(ts.values(copy=False)).float().to(self.device)
 
     def __len__(self):
         return len(self.ts_dataset)
@@ -159,11 +180,18 @@ class TimeSeriesTorchDataset(Dataset):
         Cast the content of the dataset to torch tensors
         """
         item = self.ts_dataset[idx]
-        if isinstance(item, TimeSeries):
-            return TimeSeriesTorchDataset._ts_to_tensor(item)
+        if isinstance(item, Tuple):
+            if self.never_produce_tuples:
+                return self._ts_to_tensor(item[0])
+            else:
+                return (self._ts_to_tensor(item[0]),
+                        self._ts_to_tensor(item[1]))
         else:
-            return (TimeSeriesTorchDataset._ts_to_tensor(item[0]),
-                    TimeSeriesTorchDataset._ts_to_tensor(item[1]))
+            if self.always_produce_tuples:
+                tsr = self._ts_to_tensor(item)
+                return tsr, tsr
+            else:
+                return self._ts_to_tensor(item)
 
 
 class TorchForecastingModel(ForecastingModel):
@@ -339,18 +367,19 @@ class TorchForecastingModel(ForecastingModel):
                  logger)
 
         # Check that the items in the dataset are time series tuples (required as we need (input, target) tuples).
-        item_0_train, item_0_val = train_dataset[0], val_dataset[0]
-        raise_if_not(isinstance(item_0_train, Tuple) and isinstance(item_0_val, Tuple),
-                     'The datasets need to return tuples of (input, target) series for training the model.')
+        # item_0_train, item_0_val = train_dataset[0], val_dataset[0]
+        # do the datasets contain tuples?
+        # split_input_target = isinstance(item_0_train, Tuple) and isinstance(item_0_val, Tuple)
+        # 'The datasets need to return tuples of (input, target) series for training the model.')
         # Check that the returned types are TimeSeries
-        raise_if_not(isinstance(item_0_train[0], TimeSeries) and isinstance(item_0_val[0], TimeSeries),
-                     'The types of the input and target inside the tuples emitted by the dataset must be TimeSeries.')
+        # raise_if_not(isinstance(item_0_train[0], TimeSeries) and isinstance(item_0_val[0], TimeSeries),
+        #              'The types of the input and target inside the tuples emitted by the dataset must be TimeSeries.')
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        torch_train_dataset = TimeSeriesTorchDataset(train_dataset)
-        torch_val_dataset = TimeSeriesTorchDataset(val_dataset)
+        torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device, always_produce_tuples=True)
+        torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device, always_produce_tuples=True)
 
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
@@ -378,7 +407,8 @@ class TorchForecastingModel(ForecastingModel):
             tb_writer.flush()
             tb_writer.close()
 
-    def predict(self, n: int,
+    def predict(self,
+                n: int,
                 use_full_output_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
         """ Predicts values for a certain number of time steps after the end of the training series
@@ -423,21 +453,44 @@ class TorchForecastingModel(ForecastingModel):
                      " when using a multivariate TimeSeries instance as input.", logger)
 
         # create input sequence for prediction
-        pred_in = self._create_predict_input(input_series)
-
-        # produce output
-        self.model.eval()
-        if use_full_output_length:
-            test_out = self._produce_predict_output_with_full_output_length(pred_in, n)
+        # pred_in = self._create_predict_input(input_series)
+        if input_series is None:
+            dataset = SimpleTimeSeriesDataset(self.training_series)
         else:
-            test_out = self._produce_predict_output_with_single_output_steps(pred_in, n)
+            dataset = SimpleTimeSeriesDataset(input_series)
+        return self.multi_predict(n, dataset)[0]
 
-        test_out = np.stack(test_out)
-        return self._build_forecast_series(test_out.reshape(n, -1))
+    def multi_predict(self,
+                      n: int,
+                      input_series_dataset: TimeSeriesDataset,
+                      use_full_output_length: bool = False) -> TimeSeriesDataset:
 
-    def multi_predict(self, n: int, optional_input_series_dataset):
-        # TODO
-        raise NotImplementedError()
+        self.model.eval()
+
+        # TODO use a torch Dataset and DataLoader for parallel loading and batching - but that requires a bit more work
+        # TODO also currently we assume all forecasts fit in memory...
+        ts_forecasts = []
+        for input_ts in input_series_dataset:
+            if isinstance(input_ts, Tuple):
+                input_ts = input_ts[0]
+
+            raise_if_not(len(input_ts) >= self.input_length,
+                         'All input series must have length >= `input_length` ({}).'.format(self.input_length))
+            in_sequence = input_ts.values(copy=False)[-self.input_length:]
+            in_sequence = torch.from_numpy(in_sequence).float().to(self.device).view(1, self.input_length, -1)
+
+            # TODO: check self._produce_predict_output_with_full_output_length
+            # TODO: check self._produce_predict_output_with_single_output_steps
+            if use_full_output_length:
+                out_seq = self._produce_predict_output_with_full_output_length(in_sequence, n)
+            else:
+                out_seq = self._produce_predict_output_with_single_output_steps(in_sequence, n)
+
+            # produce output
+            test_out = np.stack(out_seq)
+            ts_forecasts.append(self._build_forecast_series(test_out.reshape(n, -1),
+                                                            input_series=input_ts))
+        return SimpleTimeSeriesDataset(ts_forecasts)
 
     def multi_backtest(self):
         # TODO
@@ -587,19 +640,6 @@ class TorchForecastingModel(ForecastingModel):
         else:
             tb_writer = None
         return tb_writer
-
-    def _create_predict_input(self, input_series):
-        if input_series is None:
-            input_sequence = self.training_series.values()[-self.input_length:]
-        else:
-            raise_if_not(len(input_series) >= self.input_length,
-                         "'input_series' must at least be as long as 'self.input_length'", logger)
-            input_sequence = input_series.values()[-self.input_length:]
-            super().fit(input_series)  # TODO: This is not very clean
-
-        pred_in = torch.from_numpy(input_sequence).float().view(1, self.input_length, -1).to(self.device)
-
-        return pred_in
 
     def _produce_predict_output_with_full_output_length(self, pred_in, n):
         test_out = []
