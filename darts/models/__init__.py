@@ -35,3 +35,7 @@ except ModuleNotFoundError:
 
 # Regression
 from .standard_regression_model import StandardRegressionModel
+
+# Ensembling
+from .ensemble_model import EnsembleModel
+from .baselines import NaiveEnsembleModel

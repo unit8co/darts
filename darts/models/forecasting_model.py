@@ -9,7 +9,7 @@ A forecasting model captures the future values of a time series as a function of
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
 """
 
-from typing import Optional, Tuple, Union, Any, Callable, List
+from typing import Optional, Union, Any, Callable, List
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
@@ -21,7 +21,7 @@ from ..logging import get_logger, raise_log, raise_if_not
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
-    _get_timestamp_at_point,
+    get_timestamp_at_point,
     _historical_forecasts_general_checks
 )
 from .. import metrics
@@ -51,17 +51,28 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self) -> None:
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the model on the provided series
 
         Implements behavior that should happen when calling the `fit` method of every forcasting model regardless of
         wether they are univariate or multivariate.
         """
+        self.training_series = training_series
+
+        if target_series is None:
+            target_series = training_series
+        self.target_series = target_series
+
+        raise_if_not(all(training_series.time_index() == target_series.time_index()),
+                     "training and target series must have same time indices.",
+                     logger)
+
         for series in (self.training_series, self.target_series):
             if series is not None:
                 raise_if_not(len(series) >= self.min_train_series_length,
                              "Train series only contains {} elements but {} model requires at least {} entries"
-                             .format(len(series), str(self), self.min_train_series_length))
+                             .format(len(series), str(self), self.min_train_series_length),
+                             logger)
         self._fit_called = True
 
     @abstractmethod
@@ -182,7 +193,7 @@ class ForecastingModel(ABC):
             However, any combination of univariate and multivariate series is allowed here, as long
             as the indices all match up.
         start
-            The first prediction time, at which a prediction is computed for a future time.
+            The first point at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
             In the case of `float`, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
@@ -191,7 +202,7 @@ class ForecastingModel(ABC):
             In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time
             directly.
         forecast_horizon
-            The forecast horizon for the point prediction
+            The forecast horizon for the point predictions
         stride
             The number of time steps between two consecutive predictions.
         retrain
@@ -226,13 +237,13 @@ class ForecastingModel(ABC):
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
         # construct fit function (used to ignore target series for univariate models)
-        if isinstance(self, MultivariateForecastingModel):
-            fit_function = self.fit
-        else:
+        if isinstance(self, UnivariateForecastingModel):
             fit_function = lambda train, target, **kwargs: self.fit(train, **kwargs)  # noqa: E731
+        else:
+            fit_function = self.fit
 
         # prepare the start parameter -> pd.Timestamp
-        start = _get_timestamp_at_point(start, training_series)
+        start = get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
         if not overlap_end:
@@ -476,11 +487,12 @@ class ForecastingModel(ABC):
                      "Please pass exactly one of the arguments 'forecast_horizon', "
                      "'val_target_series' or 'use_fitted_values'.", logger)
 
-        # check target and training series
         if target_series is None:
             target_series = training_series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                     " must have the same time indices.")
+        # check target and training series
+        raise_if_not(all(training_series.time_index() == target_series.time_index()),
+                     "the target and training series must have the same time indices.",
+                     logger)
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
@@ -488,12 +500,14 @@ class ForecastingModel(ABC):
             predict_kwargs['use_full_output_length'] = use_full_output_length
 
         if use_fitted_values:
-            raise_if_not(hasattr(model_class(), "fitted_values"), "The model must have a fitted_values attribute"
-                         " to compare with the train TimeSeries", logger)
+            raise_if_not(hasattr(model_class(), "fitted_values"),
+                         "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                         logger)
 
         elif val_target_series is not None:
-            raise_if_not(training_series.width == val_target_series.width, "Training and validation series require the"
-                         " same number of components.", logger)
+            raise_if_not(training_series.width == val_target_series.width,
+                         "Training and validation series require the same number of components.",
+                         logger)
 
         min_error = float('inf')
         best_param_combination = {}
@@ -597,27 +611,12 @@ class UnivariateForecastingModel(ForecastingModel):
             A **univariate** timeseries on which to fit the model.
         """
         series._assert_univariate()
-        self.training_series = series
-        self.target_series = series
-        super().fit()
+        super().fit(series)
 
 
 class MultivariateForecastingModel(ForecastingModel):
     """ The base class for multivariate forecasting models.
     """
-    def _make_fitable_series(self,
-                             training_series: TimeSeries,
-                             target_series: Optional[TimeSeries] = None) -> Tuple[TimeSeries, TimeSeries]:
-        """Perform checks and returns ready to be used training and target series"""
-        if target_series is None:
-            target_series = training_series
-
-        # general checks on training / target series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "training and target "
-                     "timeseries must have same time indices.")
-
-        return training_series, target_series
-
     @abstractmethod
     def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
         """ Fits/trains the multivariate model on the provided series with selected target components.
@@ -629,8 +628,4 @@ class MultivariateForecastingModel(ForecastingModel):
         target_series
             The target values used as dependent variables when training the model
         """
-        training_series, target_series = self._make_fitable_series(training_series, target_series)
-
-        self.training_series = training_series
-        self.target_series = target_series
-        super().fit()
+        super().fit(training_series, target_series)

@@ -7,6 +7,8 @@ Darts is still in an early development phase and we cannot always guarantee back
 [Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...develop)
 ### For users of the library
 **Added:**
+- Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions
+  - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
 - New `ForecastingModel.backtest()` and `RegressionModel.backtest()` functions which by default compute a single error score from the historical forecasts the model would have produced.
   - A new `reduction` parameter allows to specify whether to compute the mean/median/… of errors or (when `reduction` is set to `None`) to return a list of historical errors.
   - The previous `backtest()` functionality still exists but has been renamed `historical_forecasts()`
@@ -14,13 +16,10 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 **Changed:**
 - &#x1F534; Renamed `backtest()` into `historical_forecasts()`
+- `fill_missing_values()` and `MissingValuesFiller` used to remove the variable names when used with `fill='auto'` – not anymore.
 
 **Fixed:**
 - Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
-
-### For users of the library:
-**Changed:**
-- `fill_missing_values()` and `MissingValuesFiller` used to remove the variable names when used with `fill='auto'` – not anymore.
 
 ## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
 
