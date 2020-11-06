@@ -180,7 +180,7 @@ def _historical_forecasts_general_checks(series, kwargs):
         else:
             raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
 
-    start = _get_timestamp_at_point(n.start, series)
+    start = get_timestamp_at_point(n.start, series)
 
     # check start parameter
     raise_if(start == series.end_time(), '`start` timestamp is the last timestamp of the series', logger)
