@@ -125,5 +125,3 @@ class HorizonBasedTrainDataset(TimeSeriesDataset):
         input_series = input_series_upto_fc_point[-nr_lookback_points:]
 
         return input_series, target_series
-
-        # return torch.from_numpy(input_series).float(), torch.from_numpy(target_series).float()
