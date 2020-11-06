@@ -567,7 +567,7 @@ class TimeSeries:
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
-                              values: np.ndarray,
+                              values: Union[np.ndarray, pd.DataFrame],
                               freq: Optional[str] = None,
                               fill_missing_dates: Optional[bool] = True,
                               columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
