@@ -112,4 +112,4 @@ class NaiveEnsembleModel(EnsembleModel):
         super().__init__(models)
 
     def ensemble(self, predictions: List[TimeSeries]):
-        return sum(map(lambda ts: ts * 1 / len(self.models), predictions))
+        return sum(predictions) / len(self.models)
