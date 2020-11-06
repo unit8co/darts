@@ -5,6 +5,18 @@ Darts is still in an early development phase and we cannot always guarantee back
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...develop)
+### For users of the library
+**Added:**
+- New `ForecastingModel.backtest()` and `RegressionModel.backtest()` functions which by default compute a single error score from the historical forecasts the model would have produced.
+  - A new `reduction` parameter allows to specify whether to compute the mean/median/… of errors or (when `reduction` is set to `None`) to return a list of historical errors.
+  - The previous `backtest()` functionality still exists but has been renamed `historical_forecasts()`
+- Added a new `last_points_only` parameter to `historical_forecasts()`, `backtest()` and `gridsearch()`
+
+**Changed:**
+- &#x1F534; Renamed `backtest()` into `historical_forecasts()`
+
+**Fixed:**
+- Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
 
 ## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
 
