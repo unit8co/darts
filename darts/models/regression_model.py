@@ -122,7 +122,7 @@ class RegressionModel(ABC):
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
-                             overlapp_end: bool = False,
+                             overlap_end: bool = False,
                              last_points_only: bool = True,
                              verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
         """ Computes the historical forecasts the model would have produced with an expanding training window
@@ -152,7 +152,7 @@ class RegressionModel(ABC):
             The forecast horizon for the point predictions
         stride
             The number of time steps between two consecutive predictions.
-        overlapp_end
+        overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
             Whether to retain only the last point of each historical forecast.
@@ -170,7 +170,7 @@ class RegressionModel(ABC):
         start = _get_timestamp_at_point(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if not overlapp_end:
+        if not overlap_end:
             last_valid_pred_time = target_series.time_index()[-1 - forecast_horizon]
         else:
             last_valid_pred_time = target_series.time_index()[-2]
@@ -220,7 +220,7 @@ class RegressionModel(ABC):
                  start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
                  stride: int = 1,
-                 overlapp_end: bool = False,
+                 overlap_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
@@ -251,7 +251,7 @@ class RegressionModel(ABC):
             The forecast horizon for the point predictions
         stride
             The number of time steps between two consecutive predictions.
-        overlapp_end
+        overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
             Whether to keep the whole historical forecasts or only the last point of each forecast
@@ -274,7 +274,7 @@ class RegressionModel(ABC):
                                               start,
                                               forecast_horizon,
                                               stride,
-                                              overlapp_end,
+                                              overlap_end,
                                               last_points_only,
                                               verbose)
 
