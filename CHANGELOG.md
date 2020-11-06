@@ -18,6 +18,10 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Fixed:**
 - Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
 
+### For users of the library:
+**Changed:**
+- `fill_missing_values()` and `MissingValuesFiller` used to remove the variable names when used with `fill='auto'` – not anymore.
+
 ## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...0.4.0)
