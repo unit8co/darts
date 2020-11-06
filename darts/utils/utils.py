@@ -185,13 +185,13 @@ def _historical_forecasts_general_checks(series, kwargs):
     raise_if(start == series.start_time(), '`start` corresponds to the first timestamp of the series, '
              'resulting in empty training set')
 
-    # check that overlapp_series_end and start together form a valid combination
-    overlapp_series_end = n.overlapp_series_end
+    # check that overlapp_end and start together form a valid combination
+    overlapp_end = n.overlapp_end
 
-    if not overlapp_series_end:
+    if not overlapp_end:
         raise_if_not(start + series.freq() * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
-                     '`overlapp_series_end` set to `False`.', logger)
+                     '`overlapp_end` set to `False`.', logger)
 
 
 def _get_timestamp_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> pd.Timestamp:

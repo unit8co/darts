@@ -122,7 +122,7 @@ class RegressionModel(ABC):
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
-                             overlapp_series_end: bool = False,
+                             overlapp_end: bool = False,
                              last_points_only: bool = True,
                              verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
         """ Computes the historical forecasts the model would have produced with an expanding training window
@@ -152,10 +152,12 @@ class RegressionModel(ABC):
             The forecast horizon for the point predictions
         stride
             The number of time steps between two consecutive predictions.
-        overlapp_series_end
+        overlapp_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to keep and return the whole forecasts or only the last point of each forecast
+            Whether to retain only the last point of each historical forecast.
+            If set to True, the method returns a single `TimeSeries` of the point forecasts.
+            Otherwise returns a list of historical `TimeSeries` forecasts.
         verbose
             Whether to print progress
 
@@ -168,7 +170,7 @@ class RegressionModel(ABC):
         start = _get_timestamp_at_point(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if not overlapp_series_end:
+        if not overlapp_end:
             last_valid_pred_time = target_series.time_index()[-1 - forecast_horizon]
         else:
             last_valid_pred_time = target_series.time_index()[-2]
@@ -218,7 +220,7 @@ class RegressionModel(ABC):
                  start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
                  stride: int = 1,
-                 overlapp_series_end: bool = False,
+                 overlapp_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
@@ -249,16 +251,16 @@ class RegressionModel(ABC):
             The forecast horizon for the point predictions
         stride
             The number of time steps between two consecutive predictions.
-        overlapp_series_end
+        overlapp_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to keep the whole forecasts or only the last point of each forecast
+            Whether to keep the whole historical forecasts or only the last point of each forecast
         metric
             A function that takes two TimeSeries instances as inputs and returns a float error value.
         reduction
-            A function used to combine the individual error scores obtained when `last_points_only` is set to False
-            If explicitely set to `None`, the method will return a list of the individual error scores instead
-            Set to np.mean by default
+            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            Set to np.mean by default.
         verbose
             Whether to print progress
 
@@ -272,7 +274,7 @@ class RegressionModel(ABC):
                                               start,
                                               forecast_horizon,
                                               stride,
-                                              overlapp_series_end,
+                                              overlapp_end,
                                               last_points_only,
                                               verbose)
 

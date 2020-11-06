@@ -87,21 +87,21 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3)
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3,
-                                  overlapp_series_end=False)
+                                  overlapp_end=False)
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
         NaiveDrift().backtest(linear_series,
                               None,
                               pd.Timestamp('20000217'),
                               forecast_horizon=3,
-                              overlapp_series_end=True)
+                              overlapp_end=True)
 
         # Using forecast_horizon default value
         NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
-        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), overlapp_series_end=True)
+        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), overlapp_end=True)
 
         # Using an int or float value for start
         NaiveDrift().backtest(linear_series, None, start=30)
-        NaiveDrift().backtest(linear_series, None, start=0.7, overlapp_series_end=True)
+        NaiveDrift().backtest(linear_series, None, start=0.7, overlapp_end=True)
 
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
@@ -117,7 +117,7 @@ class BacktestingTestCase(unittest.TestCase):
             NaiveDrift().backtest(linear_series, None, start='wrong type')
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, overlapp_series_end=False)
+            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, overlapp_end=False)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):

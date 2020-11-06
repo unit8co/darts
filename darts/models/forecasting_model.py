@@ -147,7 +147,7 @@ class ForecastingModel(ABC):
                              forecast_horizon: int = 1,
                              stride: int = 1,
                              retrain: bool = True,
-                             overlapp_series_end: bool = False,
+                             overlapp_end: bool = False,
                              last_points_only: bool = True,
                              verbose: bool = False,
                              use_full_output_length: Optional[bool] = None) -> Union[TimeSeries, List[TimeSeries]]:
@@ -201,10 +201,12 @@ class ForecastingModel(ABC):
             Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
             instance of `TorchForecastingModel`, this will cause an error.
-        overlapp_series_end
+        overlapp_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to keep and return the whole forecasts or only the last point of each forecast
+            Whether to retain only the last point of each historical forecast.
+            If set to True, the method returns a single `TimeSeries` of the point forecasts.
+            Otherwise returns a list of historical `TimeSeries` forecasts.
         verbose
             Whether to print progress
 
@@ -233,7 +235,7 @@ class ForecastingModel(ABC):
         start = _get_timestamp_at_point(start, training_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if not overlapp_series_end:
+        if not overlapp_end:
             last_valid_pred_time = training_series.time_index()[-1 - forecast_horizon]
         else:
             last_valid_pred_time = training_series.time_index()[-2]
@@ -289,7 +291,7 @@ class ForecastingModel(ABC):
                  forecast_horizon: int = 1,
                  stride: int = 1,
                  retrain: bool = True,
-                 overlapp_series_end: bool = False,
+                 overlapp_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
@@ -340,16 +342,16 @@ class ForecastingModel(ABC):
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
-        overlapp_series_end
+        overlapp_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
-            Whether to use the whole forecasts or only the last point of each forecast to compute the error
+            Whether to use the whole historical forecasts or only the last point of each forecast to compute the error
         metric
             A function that takes two TimeSeries instances as inputs and returns a float error value.
         reduction
-            A function used to combine the individual error scores obtained when `last_points_only` is set to False
-            If explicitely set to `None`, the method will return a list of the individual error scores instead
-            Set to np.mean by default
+            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            Set to np.mean by default.
         use_full_output_length
             Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
@@ -368,7 +370,7 @@ class ForecastingModel(ABC):
                                               forecast_horizon,
                                               stride,
                                               retrain,
-                                              overlapp_series_end,
+                                              overlapp_end,
                                               last_points_only,
                                               verbose,
                                               use_full_output_length)
