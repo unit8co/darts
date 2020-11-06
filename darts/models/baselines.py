@@ -5,7 +5,7 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
-from typing import List
+from typing import List, Optional
 import numpy as np
 
 from .forecasting_model import ForecastingModel, UnivariateForecastingModel
@@ -97,7 +97,7 @@ class NaiveDrift(UnivariateForecastingModel):
         first, last = self.training_series.first_value(), self.training_series.last_value()
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n
-        forecast = np.linspace(last, last_value, num=n)
+        forecast = np.linspace(last, last_value, num=n + 1)[1:]
         return self._build_forecast_series(forecast)
 
 
@@ -111,5 +111,14 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         super().__init__(models)
 
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+        super().fit(training_series, target_series)
+
+        for model in self.models:
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(training_series)
+            else:
+                model.fit(training_series, target_series)
+
     def ensemble(self, predictions: List[TimeSeries]):
-        return sum(map(lambda ts: ts * 1 / len(self.models), predictions))
+        return sum(predictions) / len(self.models)
