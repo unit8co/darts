@@ -14,11 +14,17 @@ import numpy as np
 import pandas as pd
 
 from abc import ABC, abstractmethod
-from typing import List, Iterable, Union, Any
+from typing import List, Iterable, Union, Any, Callable
 
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger, raise_log
-from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
+from ..utils import (
+    _build_tqdm_iterator,
+    _with_sanity_checks,
+    _get_timestamp_at_point,
+    _historical_forecasts_general_checks
+)
+from .. import metrics
 
 logger = get_logger(__name__)
 
@@ -84,15 +90,15 @@ class RegressionModel(ABC):
                      'The number and dimensionalities of all given features must correspond to those used for'
                      ' training.', logger)
 
-    def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Sanity checks for the backtest function
+    def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        """Sanity checks for the historical_forecasts function
 
         Parameters
         ----------
         args
-            The args parameter(s) provided to the backtest function.
+            The args parameter(s) provided to the historical_forecasts function.
         kwargs
-            The kwargs paramter(s) provided to the backtest function.
+            The kwargs paramter(s) provided to the historical_forecasts function.
 
         Raises
         ------
@@ -107,35 +113,32 @@ class RegressionModel(ABC):
         raise_if_not(all([s.has_same_time_as(target_series) for s in feature_series]), 'All provided time series must '
                      'have the same time index', logger)
 
-        _backtest_general_checks(target_series, kwargs)
+        _historical_forecasts_general_checks(target_series, kwargs)
 
-    def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        """Method to be overriden in subclass for model specific sanity checks"""
-        pass
-
-    @_with_sanity_checks("_backtest_sanity_checks", "_backtest_model_specific_sanity_checks")
-    def backtest(self,
-                 feature_series: Iterable[TimeSeries],
-                 target_series: TimeSeries,
-                 start: Union[pd.Timestamp, float, int] = 0.7,
-                 forecast_horizon: int = 1,
-                 stride: int = 1,
-                 trim_to_series: bool = True,
-                 verbose=False) -> TimeSeries:
-        """ A function for backtesting `RegressionModel`'s.
-
-        This function computes the time series of historical predictions
-        that would have been obtained, if the current model had been used to predict `target_series`
-        using the `feature_series`, with a certain time horizon.
+    @_with_sanity_checks("_historical_forecasts_sanity_checks")
+    def historical_forecasts(self,
+                             feature_series: Iterable[TimeSeries],
+                             target_series: TimeSeries,
+                             start: Union[pd.Timestamp, float, int] = 0.5,
+                             forecast_horizon: int = 1,
+                             stride: int = 1,
+                             overlap_end: bool = False,
+                             last_points_only: bool = True,
+                             verbose: bool = False) -> Union[List[TimeSeries], TimeSeries]:
+        """ Computes the historical forecasts the model would have produced with an expanding training window
+        and (by default) returns a time series created from the last point of each of these individual forecasts
 
         To this end, it repeatedly builds a training set composed of both features and targets,
         from `feature_series` and `target_series`, respectively.
-        It trains the current model on the training set, emits a (point) prediction for a fixed
-        forecast horizon, and then moves the end of the training set forward by `stride`
-        time steps. The resulting predictions are then returned.
+        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+        and then moves the end of the training set forward by `stride` time steps.
+
+        By default, this method will return a single time series made up of the last point of each
+        historical forecast. This time series will thus have a frequency of training_series.freq() * stride
+        If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
 
         This always re-trains the models on the entire available history,
-        corresponding an expending window strategy.
+        corresponding an expanding window strategy.
 
         Parameters
         ----------
@@ -148,36 +151,46 @@ class RegressionModel(ABC):
         forecast_horizon
             The forecast horizon for the point predictions
         stride
-            The number of time steps (the unit being the frequency of `series`) between two consecutive predictions.
-        trim_to_series
-            Whether the predicted series has the end trimmed to match the end of the main series
+            The number of time steps between two consecutive predictions.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not
+        last_points_only
+            Whether to retain only the last point of each historical forecast.
+            If set to True, the method returns a single `TimeSeries` of the point forecasts.
+            Otherwise returns a list of historical `TimeSeries` forecasts.
         verbose
             Whether to print progress
 
         Returns
         -------
-        TimeSeries
-            A time series containing the forecast values when successively applying
-            the current model with the specified forecast horizon.
+        TimeSeries or List[TimeSeries]
+            By default, a single TimeSeries instance created from the last point of each individual forecast.
+            If `last_points_only` is set to False, a list of the historical forecasts
         """
         start = _get_timestamp_at_point(start, target_series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if trim_to_series:
-            last_pred_time = target_series.time_index()[-forecast_horizon - stride]
+        if not overlap_end:
+            last_valid_pred_time = target_series.time_index()[-1 - forecast_horizon]
         else:
-            last_pred_time = target_series.time_index()[-stride - 1]
+            last_valid_pred_time = target_series.time_index()[-2]
 
-        # build the prediction times in advance (to be able to use tqdm)
         pred_times = [start]
-        while pred_times[-1] <= last_pred_time:
+        while pred_times[-1] < last_valid_pred_time:
+            # compute the next prediction time and add it to pred times
             pred_times.append(pred_times[-1] + target_series.freq() * stride)
 
-        # what we'll return
-        values = []
-        times = []
+        # the last prediction time computed might have overshot last_valid_pred_time
+        if pred_times[-1] > last_valid_pred_time:
+            pred_times.pop(-1)
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
+
+        # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
+        forecasts = []
+
+        last_points_times = []
+        last_points_values = []
 
         for pred_time in iterator:
             # build train/val series
@@ -186,11 +199,96 @@ class RegressionModel(ABC):
             val_features = [s.slice_n_points_after(pred_time, forecast_horizon) for s in feature_series]
 
             self.fit(train_features, train_target)
-            pred = self.predict(val_features)
-            values.append(pred.values()[-1])  # store the N-th point
-            times.append(pred.end_time())  # store the N-th timestamp
+            forecast = self.predict(val_features)
 
-        return TimeSeries.from_times_and_values(pd.DatetimeIndex(times), np.array(values))
+            if last_points_only:
+                last_points_values.append(forecast.values()[-1])
+                last_points_times.append(forecast.end_time())
+            else:
+                forecasts.append(forecast)
+
+        if last_points_only:
+            return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
+                                                    np.array(last_points_values),
+                                                    freq=target_series.freq() * stride)
+
+        return forecasts
+
+    def backtest(self,
+                 feature_series: Iterable[TimeSeries],
+                 target_series: TimeSeries,
+                 start: Union[pd.Timestamp, float, int] = 0.5,
+                 forecast_horizon: int = 1,
+                 stride: int = 1,
+                 overlap_end: bool = False,
+                 last_points_only: bool = False,
+                 metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+                 reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+                 verbose: bool = False) -> Union[float, List[float]]:
+        """Computes an error score between the historical forecasts the model would have produced
+        with an expanding training window over `series` and the actual series.
+
+        To this end, it repeatedly builds a training set composed of both features and targets,
+        from `feature_series` and `target_series`, respectively.
+        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+        and then moves the end of the training set forward by `stride` time steps.
+
+        By default, this method will use each historical forecast (whole) to compute error scores.
+        If `last_points_only` is set to True, it will use only the last point of each historical forecast.
+
+        This always re-trains the models on the entire available history,
+        corresponding an expanding window strategy.
+
+        Parameters
+        ----------
+        feature_series
+            A list of time series representing the features for the regression model (independent variables)
+        target_series
+            The univariate target time series for the regression model (dependent variable)
+        start
+            The first prediction time, at which a prediction is computed for a future time
+        forecast_horizon
+            The forecast horizon for the point predictions
+        stride
+            The number of time steps between two consecutive predictions.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not
+        last_points_only
+            Whether to keep the whole historical forecasts or only the last point of each forecast
+        metric
+            A function that takes two TimeSeries instances as inputs and returns a float error value.
+        reduction
+            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            Set to np.mean by default.
+        verbose
+            Whether to print progress
+
+        Returns
+        -------
+        float or List[float]
+            The error score, or the list of individual error scores if `reduction` is `None`
+        """
+        forecasts = self.historical_forecasts(feature_series,
+                                              target_series,
+                                              start,
+                                              forecast_horizon,
+                                              stride,
+                                              overlap_end,
+                                              last_points_only,
+                                              verbose)
+
+        if last_points_only:
+            return metric(target_series, forecasts)
+
+        errors = []
+        for forecast in forecasts:
+            errors.append(metric(target_series, forecast))
+
+        if reduction is None:
+            return errors
+
+        return reduction(errors)
 
     def residuals(self) -> TimeSeries:
         """ Computes the time series of residuals of this model on the training time series
