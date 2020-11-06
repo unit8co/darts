@@ -7,17 +7,10 @@ from typing import Optional, List
 
 from darts.timeseries import TimeSeries
 from darts.models import EnsembleModel, StandardRegressionModel
-from darts.models.forecasting_model import ForecastingModel
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.forecasting_model import ForecastingModel, UnivariateForecastingModel
+from darts.logging import get_logger, raise_if
 
 logger = get_logger(__name__)
-
-try:
-    from darts.models.torch_forecasting_model import TorchForecastingModel
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning('Torch not available')
-    TORCH_AVAILABLE = False
 
 
 class RegressionEnsembleModel(EnsembleModel):
@@ -51,6 +44,7 @@ class RegressionEnsembleModel(EnsembleModel):
                      " regression_train_n_points parameter.",
                      logger)
 
+            # if it was None, set regression_model.train_n_points to regression_train_n_points
             regression_model.train_n_points = regression_train_n_points
         else:
             regression_model = StandardRegressionModel(regression_train_n_points, regression_model)
@@ -58,25 +52,24 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
 
     def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        # TODO: Factor this out, same logic is used in 3 places already. Need to find an appropiate name
-        if target_series is None:
-            target_series = training_series
-        raise_if_not(all(training_series.time_index() == target_series.time_index()),
-                     "training and target series must have same time indices.",
-                     logger)
+        super().fit(training_series, target_series)
 
         # spare train_n_points points to serve as regression target
-        raise_if(len(training_series) <= self.regression_model.train_n_points,
+        raise_if(len(self.training_series) <= self.regression_model.train_n_points,
                  "regression_train_n_points parameter too big (greater or equal"
                  " the number of points in training_series)",
                  logger)
-        forecast_training = training_series[:-self.regression_model.train_n_points]
-        forecast_target = target_series[:-self.regression_model.train_n_points]
+        forecast_training = self.training_series[:-self.regression_model.train_n_points]
+        forecast_target = self.target_series[:-self.regression_model.train_n_points]
 
-        regression_target = target_series[-self.regression_model.train_n_points:]
+        regression_target = self.target_series[-self.regression_model.train_n_points:]
 
         # fit the forecasting models
-        super().fit(forecast_training, forecast_target)
+        for model in self.models:
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(forecast_training)
+            else:
+                model.fit(forecast_training, forecast_target)
 
         # predict train_n_points points for each model
         predictions = []
@@ -89,12 +82,17 @@ class RegressionEnsembleModel(EnsembleModel):
         # prepare the forecasting models for further predicting by fitting
         # them with the entire data
 
-        if TORCH_AVAILABLE:
-            # Neural-Network based models need to be retrained from scratch.
-            self.models = [model.untrained_model() if isinstance(model, TorchForecastingModel) else model
-                           for model in self.models]
+        # Some models (incl. Neural-Network based models) may need to be 'reset'
+        # to allow being retrained from scratch
+        self.models = [model.untrained_model() if hasattr(model, 'untrained_model') else model
+                       for model in self.models]
 
-        super().fit(training_series, target_series)
+        # fit the forecasting models
+        for model in self.models:
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(self.training_series)
+            else:
+                model.fit(self.training_series, self.target_series)
 
     def ensemble(self, predictions: List[TimeSeries]) -> TimeSeries:
         return self.regression_model.predict(predictions)
