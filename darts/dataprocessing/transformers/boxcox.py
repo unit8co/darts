@@ -8,7 +8,6 @@ from scipy.stats import boxcox_normmax, boxcox
 from scipy.special import inv_boxcox
 
 from darts.timeseries import TimeSeries
-from darts.dataprocessing import Validator
 from darts.dataprocessing.transformers import FittableDataTransformer, InvertibleDataTransformer
 from darts.logging import get_logger, raise_if
 
@@ -18,8 +17,7 @@ logger = get_logger(__name__)
 class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
 
     def __init__(self,
-                 name: str = "BoxCox",
-                 validators: Optional[Sequence[Validator]] = None):
+                 name: str = "BoxCox"):
         """
         Box-Cox data transformer.
         See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information
@@ -28,10 +26,8 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         ----------
         name
             A specific name for the transformer
-        validators
-            Sequence of validators that will be called before transform()
         """
-        super().__init__(name=name, validators=validators)
+        super().__init__(name)
         self._lmbda = None
 
     def fit(self,

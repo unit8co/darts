@@ -141,7 +141,7 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
     return decorator
 
 
-def _backtest_general_checks(series, kwargs):
+def _historical_forecasts_general_checks(series, kwargs):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
@@ -161,10 +161,26 @@ def _backtest_general_checks(series, kwargs):
 
     # check forecast horizon
     forecast_horizon = n.forecast_horizon
-
     raise_if_not(forecast_horizon > 0, 'The provided forecasting horizon must be a positive integer.', logger)
 
-    start = get_timestamp_at_point(n.start, series)
+    # check stride
+    stride = n.stride
+    raise_if_not(stride > 0, 'The provided stride parameter must be a positive integer.', logger)
+
+    # check start parameter
+    if hasattr(n, 'start'):
+        if isinstance(n.start, float):
+            raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
+        elif isinstance(n.start, pd.Timestamp):
+            raise_if(n.start not in series, '`start` timestamp must be an entry in the time series\' time index')
+            raise_if(n.start == series.end_time(), '`start` timestamp is the last timestamp of the series', logger)
+        elif isinstance(n.start, int):
+            raise_if_not(n.start >= 0, logger)
+            raise_if(n.start > len(series), '`start` index should be smaller than length of the series', logger)
+        else:
+            raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
+
+    start = _get_timestamp_at_point(n.start, series)
 
     # check start parameter
     raise_if(start == series.end_time(), '`start` timestamp is the last timestamp of the series', logger)
@@ -172,13 +188,13 @@ def _backtest_general_checks(series, kwargs):
              '`start` corresponds to the first timestamp of the series, resulting in empty training set',
              logger)
 
-    # check that trim_to_series and start together form a valid combination
-    trim_to_series = n.trim_to_series
+    # check that overlap_end and start together form a valid combination
+    overlap_end = n.overlap_end
 
-    if trim_to_series:
+    if not overlap_end:
         raise_if_not(start + series.freq() * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
-                     '`trim_to_series` set to `True`.', logger)
+                     '`overlap_end` set to `False`.', logger)
 
 
 def get_timestamp_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> pd.Timestamp:

@@ -97,7 +97,7 @@ class NaiveDrift(UnivariateForecastingModel):
         first, last = self.training_series.first_value(), self.training_series.last_value()
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n
-        forecast = np.linspace(last, last_value, num=n)
+        forecast = np.linspace(last, last_value, num=n + 1)[1:]
         return self._build_forecast_series(forecast)
 
 

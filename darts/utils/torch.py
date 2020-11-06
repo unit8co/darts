@@ -4,6 +4,7 @@ Utils for Pytorch and its usage
 """
 from typing import Callable, TypeVar, Any
 from inspect import signature
+from functools import wraps
 
 from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
@@ -50,7 +51,9 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     # check that @random_method has been applied to a method.
     raise_if_not(_is_method(decorated), "@random_method can only be used on methods.", logger)
 
+    @wraps(decorated)
     def decorator(self, *args, **kwargs) -> T:
+
         if "random_state" in kwargs.keys() or hasattr(self, "_random_instance"):
             if "random_state" in kwargs.keys():
                 self._random_instance = check_random_state(kwargs["random_state"])
@@ -60,5 +63,4 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
                 decorated(self, *args, **kwargs)
         else:
             decorated(self, *args, **kwargs)
-
     return decorator

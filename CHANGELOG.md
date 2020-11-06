@@ -4,15 +4,30 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...develop)
+### For users of the library
+**Added:**
+- Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions
+  - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
+- New `ForecastingModel.backtest()` and `RegressionModel.backtest()` functions which by default compute a single error score from the historical forecasts the model would have produced.
+  - A new `reduction` parameter allows to specify whether to compute the mean/median/… of errors or (when `reduction` is set to `None`) to return a list of historical errors.
+  - The previous `backtest()` functionality still exists but has been renamed `historical_forecasts()`
+- Added a new `last_points_only` parameter to `historical_forecasts()`, `backtest()` and `gridsearch()`
+
+**Changed:**
+- &#x1F534; Renamed `backtest()` into `historical_forecasts()`
+
+**Fixed:**
+- Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
+
+## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.3.0...0.4.0)
 
 ### For users of the library:
 **Added:**
-- Data (pre) processing abilities using `DataTransformer`, `Pipeline` and `Validator`:
-  - `Validator` are used by data transformers to perform data validation at run time. They are built with a `validation_function()` that is applied on the data, and allow to specify a `reason` that will be displayed if the validation fails.
-  - `DataTransformer`:
-    - provide a unified interface to apply transformations on `TimeSeries`, using their `transform()` method
-    - allow to automatically perform checks by specifiying a sequence of `Validator` entities
+- Data (pre) processing abilities using `DataTransformer`, `Pipeline`:
+  - `DataTransformer` provide a unified interface to apply transformations on `TimeSeries`, using their `transform()` method
   - `Pipeline`:
     - allow chaining of `DataTransformers`
     - provide `fit()`, `transform()`, `fit_transform()` and `inverse_transform()` methods.
@@ -26,10 +41,9 @@ Darts is still in an early development phase and we cannot always guarantee back
   - `Mapper` and `InvertibleMapper` allow to easily perform the equivalent of a `map()` function on a TimeSeries, and can be made part of a `Pipeline`
   - `BoxCox` allows to apply a BoxCox transformation to the data
 - Extended `map()` on `TimeSeries` to accept functions which use both a value and its timestamp to compute a new value e.g.`f(timestamp, datapoint) = new_datapoint`
-- A new function to perform cross-validation on forecasting models: `generalized_rolling_origin_evaluation()`
-- Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions
-  - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
-  - A concrete implementation of `EnsembleModel`: `GROEEnsembleModel`, which uses scores obtained from `generalized_rolling_origin_evaluation()` to assign weights to its constituent models and ensemble their predictions.
+- Two new forecasting models:
+  - `TransformerModel`, an implementation based on the architecture described in [Attention Is All You Need](https://arxiv.org/abs/1706.03762) by Vaswani et al. (2017)
+  - `NBEATSModel`, an implementation based on the N-BEATS architecture described in [N-BEATS: Neural basis expansion analysis for interpretable time series forecasting](https://openreview.net/forum?id=r1ecqn4YwB) by Boris N. Oreshkin et al. (2019)
 
 **Changed:**
 - &#x1F534; Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
@@ -43,6 +57,7 @@ Darts is still in an early development phase and we cannot always guarantee back
   series[['0', '2']].map(fn) # returns a time series with only 2 columns
   ```
 - &#x1F534; Renamed `ScalerWrapper` into `Scaler`
+- &#x1F534; Renamed the `preprocessing` module into `dataprocessing`
 - &#x1F534; Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
   ```python
   #old syntax
@@ -58,6 +73,11 @@ Darts is still in an early development phase and we cannot always guarantee back
   fill_missing_values(series, fill='auto', **interpolate_kwargs)
   fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
   ```
+
+### For developers of the library
+### Changed
+- GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
+- (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
