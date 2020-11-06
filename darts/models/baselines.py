@@ -5,7 +5,7 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
-from typing import List
+from typing import List, Optional
 import numpy as np
 
 from .forecasting_model import ForecastingModel, UnivariateForecastingModel
@@ -110,6 +110,15 @@ class NaiveEnsembleModel(EnsembleModel):
         Returns the average of all predictions of the constituent models
         """
         super().__init__(models)
+
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+        super().fit(training_series, target_series)
+
+        for model in self.models:
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(training_series)
+            else:
+                model.fit(training_series, target_series)
 
     def ensemble(self, predictions: List[TimeSeries]):
         return sum(predictions) / len(self.models)
