@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
+from ..utils.data.timeseries_dataset import TimeSeriesDataset
 from ..logging import get_logger, raise_log, raise_if_not
 from ..utils import _build_tqdm_iterator, _with_sanity_checks, _get_timestamp_at_point, _backtest_general_checks
 from .. import metrics
@@ -81,7 +82,17 @@ class ForecastingModel(ABC):
         self.training_series = training_series
         self._fit_called = True
 
-    def multi_fit(self, time_series_train_dataset):
+    def multi_fit(self, time_series_dataset: TimeSeriesDataset) -> None:
+        """
+
+        Parameters
+        ----------
+        time_series_dataset
+            The dataset of `TimeSeries` over which to fit the model. This dataset can either emmit tuples of
+            (input, target) series, in which case the model will be trained to predict "target" from "input"; or
+            it can emmit simple `TimeSeries`, in which case the model will take all the series' components as
+            inputs and targets.
+        """
         raise NotImplemented('This model does not support multi_fit(). Currently only PyTorch-based models'
                              '(neural nets) support this functionality.')
 
@@ -103,14 +114,18 @@ class ForecastingModel(ABC):
         if not self._fit_called:
             raise_log(Exception('The model must be fit before calling predict()'), logger)
 
-    def multi_predict(self, n: int, optional_input_series_dataset):
+    def multi_predict(self, n: int, input_series_dataset: TimeSeriesDataset) -> TimeSeriesDataset:
         """
-        TODO: Implement
-        :param n:
-        :param optional_input_series_dataset: A TimeSeriesDataset containing TimeSeries whose future we want
-                                              to forecast. If not specified, will simply forecast the future of
-                                              the series in the training dataset.
-        :return: TimeSeriesDataset
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of each series for which to produce predictions.
+        input_series_dataset
+            A dataset of input time series. The model will predict the `n` time stamps following the end
+            of each of these time series. This dataset must emit simple `TimeSeries`. If it emits tuples
+            of (input, target) series instead, then only the inputs will be considered. The dimensions of
+            the time series must matched what has been used for training.
         """
         raise NotImplemented('This model does not support multi_predict(). Currently only PyTorch-based models'
                              '(neural nets) support this functionality.')
@@ -123,23 +138,28 @@ class ForecastingModel(ABC):
         """
         return 3
 
-    def _generate_new_dates(self, n: int) -> pd.DatetimeIndex:
+    def _generate_new_dates(self,
+                            n: int,
+                            input_series: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
         """
-        Generates `n` new dates after the end of the training set
+        Generates `n` new dates after the end of the training set (or after the end of the input series, if specified)
         """
+        input_series = input_series if input_series is not None else self.training_series
         new_dates = [
-            (self.training_series.time_index()[-1] + (i * self.training_series.freq())) for i in range(1, n + 1)
+            (input_series.time_index()[-1] + (i * input_series.freq())) for i in range(1, n + 1)
         ]
-        return pd.DatetimeIndex(new_dates, freq=self.training_series.freq_str())
+        return pd.DatetimeIndex(new_dates, freq=input_series.freq_str())
 
-    def _build_forecast_series(self, points_preds: np.ndarray) -> TimeSeries:
+    def _build_forecast_series(self,
+                               points_preds: np.ndarray,
+                               input_series: Optional[TimeSeries] = None) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
-        correct time index.
+        correct time index (or after the end of the input series, if specified).
         """
-        time_index = self._generate_new_dates(len(points_preds))
-
-        return TimeSeries.from_times_and_values(time_index, points_preds, freq=self.training_series.freq())
+        input_series = input_series if input_series is not None else self.training_series
+        time_index = self._generate_new_dates(len(points_preds), input_series=input_series)
+        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str())
 
     def _backtest_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the backtest function
