@@ -13,7 +13,7 @@ one or several time series. The function `predict()` applies `f()` in order to o
 desired number of time stamps into the future.
 """
 
-from typing import Optional, Tuple, Union, Any, Callable
+from typing import Optional, Tuple, Union, Any, Callable, Dict
 from types import SimpleNamespace
 from itertools import product
 from abc import ABC, abstractmethod
