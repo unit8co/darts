@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 from ...logging import get_logger
 from ...timeseries import TimeSeries
 from abc import ABC, abstractmethod
@@ -7,6 +7,7 @@ logger = get_logger(__name__)
 
 
 class TimeSeriesDataset(ABC, Sequence):
+    # TODO: include data processing
     def __init__(self):
         """
         Abstract class for a `TimeSeries` dataset. These datasets can contain one of these two types:
