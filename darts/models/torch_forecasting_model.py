@@ -328,8 +328,8 @@ class TorchForecastingModel(ForecastingModel):
             verbose: bool = False) -> None:
         """ Fit method for torch modules. This is the entry point to fit the model on one time series only,
             and it wraps around the `multi_fit()` method.
-            If you need to fit over several time series, or to differentiate between the "feature"
-            and "target" dimensions of your series, consider building a `HorizonBasedTrainDataset` and calling
+            If you need to fit over several time series, or to differentiate between the input
+            and target dimensions of your series, consider building a `TimeSeriesDataset` and calling
             `multi_fit()` instead.
 
         Parameters
@@ -349,7 +349,7 @@ class TorchForecastingModel(ForecastingModel):
         raise_if_not(self.training_series.width == self.output_size, "The number of components in the training series "
                      "be equal to the `output_size` defined when instantiating the current model.", logger)
 
-        train_dataset = HorizonBasedTrainDataset(self.output_length, series)
+        train_dataset = HorizonBasedTrainDataset(self.output_length, series)  # TODO: is this a good default?
         val_dataset = None if val_series is None else HorizonBasedTrainDataset(self.output_length, val_series)
         self.multi_fit(train_dataset, val_dataset)
 
@@ -365,15 +365,6 @@ class TorchForecastingModel(ForecastingModel):
         raise_if(val_dataset is not None and len(val_dataset) == 0,
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
-
-        # Check that the items in the dataset are time series tuples (required as we need (input, target) tuples).
-        # item_0_train, item_0_val = train_dataset[0], val_dataset[0]
-        # do the datasets contain tuples?
-        # split_input_target = isinstance(item_0_train, Tuple) and isinstance(item_0_val, Tuple)
-        # 'The datasets need to return tuples of (input, target) series for training the model.')
-        # Check that the returned types are TimeSeries
-        # raise_if_not(isinstance(item_0_train[0], TimeSeries) and isinstance(item_0_val[0], TimeSeries),
-        #              'The types of the input and target inside the tuples emitted by the dataset must be TimeSeries.')
 
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
@@ -411,7 +402,8 @@ class TorchForecastingModel(ForecastingModel):
                 n: int,
                 use_full_output_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
-        """ Predicts values for a certain number of time steps after the end of the training series
+        """ Predicts values for a certain number of time steps after the end of the training series,
+        or after the end of a specified `input_series`.
 
         In the case of univariate training series, `n` can assume any integer value greater than 0.
         If `use_full_output_length` is set to `False`, the model will perform `n` predictions, where in each iteration
@@ -467,7 +459,7 @@ class TorchForecastingModel(ForecastingModel):
 
         self.model.eval()
 
-        # TODO use a torch Dataset and DataLoader for parallel loading and batching - but that requires a bit more work
+        # TODO use a torch Dataset and DataLoader for parallel loading and batching
         # TODO also currently we assume all forecasts fit in memory...
         ts_forecasts = []
         for input_ts in input_series_dataset:
@@ -479,18 +471,60 @@ class TorchForecastingModel(ForecastingModel):
             in_sequence = input_ts.values(copy=False)[-self.input_length:]
             in_sequence = torch.from_numpy(in_sequence).float().to(self.device).view(1, self.input_length, -1)
 
-            # TODO: check self._produce_predict_output_with_full_output_length
-            # TODO: check self._produce_predict_output_with_single_output_steps
-            if use_full_output_length:
-                out_seq = self._produce_predict_output_with_full_output_length(in_sequence, n)
-            else:
-                out_seq = self._produce_predict_output_with_single_output_steps(in_sequence, n)
+            out_sequence = self._produce_prediction(in_sequence, n, use_full_output_length)
 
-            # produce output
-            test_out = np.stack(out_seq)
-            ts_forecasts.append(self._build_forecast_series(test_out.reshape(n, -1),
+            # translate to numpy
+            out_sequence = out_sequence.cpu().detach().numpy()
+            # test_out = np.stack(out_seq)
+            ts_forecasts.append(self._build_forecast_series(out_sequence.reshape(n, -1),
                                                             input_series=input_ts))
         return SimpleTimeSeriesDataset(ts_forecasts)
+
+    def _produce_prediction(self, in_sequence: torch.Tensor, n: int, use_full_out_length: bool) -> torch.Tensor:
+        # produces output tensor for one time series
+        # TODO: make it work for batches
+
+        prediction = []  # (length x width)
+        if not use_full_out_length:
+            for i in range(n):
+                out = self.model(in_sequence)  # (1, length, width)
+                in_sequence = in_sequence.roll(-1, 1)
+                in_sequence[:, -1, :] = out[:, self.first_prediction_index, :]
+                prediction.append(out[0, self.first_prediction_index, :])  # (0-th batch element, one timestamp, all dims)
+        else:
+            num_iterations = int(math.ceil(n / self.output_length))
+            for i in range(num_iterations):
+                out = self.model(in_sequence)  # (1, length, width)
+                in_sequence = in_sequence.roll(-self.output_length, 1)
+                in_sequence[:, -self.output_length:, :] = out[:, -self.output_length:, :]
+                prediction.append(out[0, -self.output_length:, :])  # TODO check
+        prediction = torch.cat(prediction, 1)
+        prediction = prediction[:n, :]
+        return prediction
+
+    # def _produce_predict_output_with_full_output_length(self, pred_in, n):
+    #     test_out = []
+    #     num_iterations = int(math.ceil(n / self.output_length))
+    #     for i in range(num_iterations):
+    #         raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
+    #                      " support predictions with n > output_length", logger)
+    #         out = self.model(pred_in)
+    #         if (num_iterations > 1):
+    #             pred_in = pred_in.roll(-self.output_length, 1)
+    #             pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
+    #         test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
+    #     test_out = np.concatenate(test_out, axis=1)
+    #     test_out = test_out[:, :n, :]
+    #     return test_out
+    #
+    # def _produce_predict_output_with_single_output_steps(self, pred_in, n):
+    #     test_out = []
+    #     for i in range(n):
+    #         out = self.model(pred_in)
+    #         pred_in = pred_in.roll(-1, 1)
+    #         pred_in[:, -1, 0] = out[:, self.first_prediction_index]
+    #         test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
+    #     return test_out
 
     def multi_backtest(self):
         # TODO
@@ -640,30 +674,6 @@ class TorchForecastingModel(ForecastingModel):
         else:
             tb_writer = None
         return tb_writer
-
-    def _produce_predict_output_with_full_output_length(self, pred_in, n):
-        test_out = []
-        num_iterations = int(math.ceil(n / self.output_length))
-        for i in range(num_iterations):
-            raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
-                         " support predictions with n > output_length", logger)
-            out = self.model(pred_in)
-            if (num_iterations > 1):
-                pred_in = pred_in.roll(-self.output_length, 1)
-                pred_in[:, -self.output_length:, 0] = out[:, -self.output_length:].view(1, -1)
-            test_out.append(out.cpu().detach().numpy()[:, -self.output_length:])
-        test_out = np.concatenate(test_out, axis=1)
-        test_out = test_out[:, :n, :]
-        return test_out
-
-    def _produce_predict_output_with_single_output_steps(self, pred_in, n):
-        test_out = []
-        for i in range(n):
-            out = self.model(pred_in)
-            pred_in = pred_in.roll(-1, 1)
-            pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-            test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
-        return test_out
 
     @staticmethod
     def load_from_checkpoint(model_name: str,
