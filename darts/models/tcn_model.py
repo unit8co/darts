@@ -11,7 +11,7 @@ from typing import Optional, Union
 from ..utils.torch import random_method
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel, _TimeSeriesShiftedDataset
+from .torch_forecasting_model import TorchForecastingModel  # , _TimeSeriesShiftedDataset
 
 logger = get_logger(__name__)
 
@@ -267,8 +267,8 @@ class TCNModel(TorchForecastingModel):
 
         super().__init__(**kwargs)
 
-    def _create_dataset(self, training_series, target_series):
-        return _TimeSeriesShiftedDataset(training_series, target_series, self.input_length, self.output_length)
+    # def _create_dataset(self, training_series, target_series):
+    #     return _TimeSeriesShiftedDataset(training_series, target_series, self.input_length, self.output_length)
 
     @property
     def first_prediction_index(self) -> int:
