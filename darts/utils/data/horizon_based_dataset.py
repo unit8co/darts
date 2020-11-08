@@ -24,31 +24,36 @@ class HorizonBasedTrainDataset(TimeSeriesDataset):
 
         All the series in the provided sequence must be long enough; i.e. have length at least
         `(lookback + max_lh) * H`, and `min_lh` must be at least 1 (to have targets of length exactly `1 * H`).
+        The input and target time series are sliced together, and therefore must have the same time axes.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
 
-        The sampling is uniform over the number of time series; i.e. the i-th sample of this dataset has 1/N chance
-        of coming from any of the N time series in the sequence.
+        The sampling is uniform both over the number of time series and the number of samples per series;
+        i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
+        time series in the sequence.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
         in memory), or implement your own `Sequence` of time series (i.e., re-implement `__len__()` and `__getitem__()`)
         and give such an instance as argument to this class.
 
-        :param horizon: The horizon `H` of the underlying model being trained. The emitted targets
-                        will have length `H`.
-        :param input_series: one or a sequence of `TimeSeries` containing the input dimensions. These
-                             are the dimensions that will be accessed by the model to make forecasts.
-        :param target_series: optionally, one or a sequence of `TimeSeries` containing the target dimensions.
-                              These are the dimensions that will be forecast by the model.
-                              If this parameter is not set, the model will predict the dimensions of `input_series`.
-                              If it is set, the provided sequence must have the same length as that of `input_series`.
-                              In addition, all the target series must have the same size as the corresponding
-                              input series.
-        :param lh: A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.
-                   For example, `(1, 3)` will select forecast points uniformly between `1*H` and `3*H` points
-                   before the end of the series. It is required that `min_lh >= 1`.
-        :param lookback: A integer interval for the length of the input in the emitted (input, target) splits,
-                         expressed as a multiple of the horizon `H`. For instance, `lookback=3` will emit "inputs"
-                         of lengths `3H`.
+        Parameters
+        ----------
+        horizon:
+            The horizon `H` of the underlying model being trained. The emitted targets will have length `H`.
+        input_series:
+            One or a sequence of `TimeSeries` containing the input dimensions.
+        target_series:
+            Optionally, one or a sequence of `TimeSeries` containing the target dimensions. If this parameter is not
+            set, the dataset will use `input_series` instead. If it is set, the provided sequence must have
+            the same length as that of `input_series`. In addition, all the target series must have the time axis as
+            the corresponding input series.
+            All the emitted target series start after the end of the emitted input series.
+        lh
+            A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.
+            For example, `(1, 3)` will select forecast points uniformly between `1*H` and `3*H` points
+            before the end of the series. It is required that `min_lh >= 1`.
+        lookback:
+            A integer interval for the length of the input in the emitted (input, target) splits, expressed as a
+            multiple of the horizon `H`. For instance, `lookback=3` will emit "inputs" of lengths `3H`.
         """
         super().__init__()
 
@@ -96,6 +101,7 @@ class HorizonBasedTrainDataset(TimeSeriesDataset):
         ts_input = self.input_series[ts_idx]
         ts_target = self.target_series[ts_idx]
 
+        # TODO: check full time index
         raise_if_not(len(ts_input) == len(ts_target),
                      'The dataset contains some input/target series pair that are not the same size ({}-th)'.format(
                          ts_idx
@@ -106,6 +112,7 @@ class HorizonBasedTrainDataset(TimeSeriesDataset):
 
         # select forecast point and target period, using the previously computed indexes
         if forecast_point_idx == self.H:
+            # we need this case because "-0" is not supported as an indexing bound
             target_series = ts_target[-forecast_point_idx:]
         else:
             target_series = ts_target[-forecast_point_idx:-forecast_point_idx+self.H]
