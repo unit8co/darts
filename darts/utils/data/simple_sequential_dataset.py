@@ -10,13 +10,10 @@ class SimpleSequentialDataset(TimeSeriesDataset):
                  target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  input_length: int = 12,
                  target_length: int = 1,
-                 min_index: int = 0,
-                 max_index: int = -1,
                  max_samples_per_ts: Optional[int] = None):
         """
         A time series dataset containing tuples of (input, target) series, where "input" has length `input_length`,
         and "target" has length `target_length`.
-        The tuples are obtained by sliding a window over the time series; starting at `min_index` and up to `max_index`.
 
         The input and target time series are sliced together, and therefore must have the same time axes.
         In addition, each series must be long enough to contain at least one (input, target) pair; i.e., each
@@ -46,10 +43,6 @@ class SimpleSequentialDataset(TimeSeriesDataset):
             The length of the emitted input series.
         target_length
             The length of the emitted target series.
-        min_index
-            The minimum index, after which the earliest emitted input series will be emitted (inclusive)
-        max_index
-            The maximum index, below which the latest emitted target series will be emitted (inclusive)
         max_samples_per_ts
             This is an upper bound on the number of (input, target) tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and ensure proper sampling.
@@ -71,7 +64,6 @@ class SimpleSequentialDataset(TimeSeriesDataset):
                      'the provided sequence of input series.')
 
         self.input_length, self.target_length = input_length, target_length
-        self.min_index, self.max_index = max_index, max_index
         self.max_samples_per_ts = max_samples_per_ts
 
         if self.max_samples_per_ts is None:

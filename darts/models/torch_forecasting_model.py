@@ -38,57 +38,6 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-# class _TimeSeriesSequentialDataset(Dataset):
-#
-#     def __init__(self,
-#                  series: TimeSeries,
-#                  target_series: TimeSeries,
-#                  data_length: int = 1,
-#                  target_length: int = 1):
-#         """
-#         A PyTorch Dataset from a univariate TimeSeries.
-#         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-#         where `data` is a 1-D sub-sequence of length `data_length` and target is the 1-D sub-sequence of length
-#         `target_length` following it in the time series.
-#
-#         Parameters
-#         ----------
-#         series
-#             The time series to be included in the dataset.
-#         target_series
-#             The time series used as target.
-#         data_length
-#             The length of the training sub-sequences.
-#         target_length
-#             The length of the target sub-sequences, starting at the end of the training sub-sequence.
-#         """
-#
-#         self.training_series_values = series.values()
-#         self.target_series_values = target_series.values()
-#
-#         # self.series = torch.from_numpy(self.series).float()  # not possible to cast in advance
-#         self.len_series = len(series)
-#         self.data_length = len(series) - 1 if data_length is None else data_length
-#         self.target_length = target_length
-#
-#         raise_if_not(self.data_length > 0,
-#                      "The input sequence length must be positive. It is {}".format(self.data_length),
-#                      logger)
-#         raise_if_not(self.target_length > 0,
-#                      "The output sequence length must be positive. It is {}".format(self.target_length),
-#                      logger)
-#
-#     def __len__(self):
-#         return self.len_series - self.data_length - self.target_length + 1
-#
-#     def __getitem__(self, index):
-#         # TODO: Cast to PyTorch tensors on the right device in advance
-#         idx = index % (self.len_series - self.data_length - self.target_length + 1)
-#         data = self.training_series_values[idx:idx + self.data_length]
-#         target = self.target_series_values[idx + self.data_length:idx + self.data_length + self.target_length]
-#         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
-#
-#
 # class _TimeSeriesShiftedDataset(Dataset):
 #
 #     def __init__(self,
@@ -356,7 +305,7 @@ class TorchForecastingModel(ForecastingModel):
 
         train_dataset = self.build_ts_dataset_from_single_series(series)
         val_dataset = None if val_series is None else self.build_ts_dataset_from_single_series(val_series)
-        self.multi_fit(train_dataset, val_dataset)
+        self.multi_fit(train_dataset, val_dataset, verbose)
 
     @random_method
     def multi_fit(self,
@@ -503,33 +452,9 @@ class TorchForecastingModel(ForecastingModel):
                 in_sequence = in_sequence.roll(-self.target_length, 1)
                 in_sequence[:, -self.target_length:, :] = out[:, -self.target_length:, :]
                 prediction.append(out[0, -self.target_length:, :])  # TODO check
-        prediction = torch.cat(prediction, 1)
-        prediction = prediction[:n, :]
+        prediction = torch.cat(prediction)
+        prediction = prediction[:n]  # prediction[:n, :]
         return prediction
-
-    # def _produce_predict_output_with_full_target_length(self, pred_in, n):
-    #     test_out = []
-    #     num_iterations = int(math.ceil(n / self.target_length))
-    #     for i in range(num_iterations):
-    #         raise_if_not(self.training_series.width == 1 or num_iterations == 1, "Only univariate time series"
-    #                      " support predictions with n > target_length", logger)
-    #         out = self.model(pred_in)
-    #         if (num_iterations > 1):
-    #             pred_in = pred_in.roll(-self.target_length, 1)
-    #             pred_in[:, -self.target_length:, 0] = out[:, -self.target_length:].view(1, -1)
-    #         test_out.append(out.cpu().detach().numpy()[:, -self.target_length:])
-    #     test_out = np.concatenate(test_out, axis=1)
-    #     test_out = test_out[:, :n, :]
-    #     return test_out
-    #
-    # def _produce_predict_output_with_single_output_steps(self, pred_in, n):
-    #     test_out = []
-    #     for i in range(n):
-    #         out = self.model(pred_in)
-    #         pred_in = pred_in.roll(-1, 1)
-    #         pred_in[:, -1, 0] = out[:, self.first_prediction_index]
-    #         test_out.append(out.cpu().detach().numpy()[0, self.first_prediction_index])
-    #     return test_out
 
     def multi_backtest(self):
         # TODO
