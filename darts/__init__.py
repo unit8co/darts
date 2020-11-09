@@ -44,7 +44,7 @@ u8plots_mplstyle = {
     'axes.spines.right' : False,
     'axes.spines.bottom' : False,
     'axes.spines.left' : False,
-    'grid.color' : '#d0d0d0',
+    'grid.color' : '#dedede',
     'legend.frameon' : False,
     'lines.linewidth' : 1.3,
     'xtick.bottom' : False,
