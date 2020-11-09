@@ -23,12 +23,17 @@ from .forecasting_model import MultivariateForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.darts', 'runs')
+UNTRAINED_MODELS_FOLDER = os.path.join('.darts', 'untrained_models')
 
 logger = get_logger(__name__)
 
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
+
+
+def _get_untrained_models_folder(work_dir, model_name):
+    return os.path.join(work_dir, UNTRAINED_MODELS_FOLDER, model_name)
 
 
 def _get_runs_folder(work_dir, model_name):
@@ -137,7 +142,7 @@ class _TimeSeriesShiftedDataset(Dataset):
 
 
 class TorchForecastingModel(MultivariateForecastingModel):
-    # TODO: add is_stochastic & reset methods
+    # TODO: add is_stochastic method
     # TODO: transparent support for multivariate time series
     def __init__(self,
                  batch_size: int = 32,
@@ -151,7 +156,7 @@ class TorchForecastingModel(MultivariateForecastingModel):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 model_name: str = "torch_model_run",  # TODO uid
+                 model_name: str = "torch_model_run",  # TODO: uid
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
@@ -205,7 +210,6 @@ class TorchForecastingModel(MultivariateForecastingModel):
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
         """
-
         super().__init__()
 
         raise_if_not(isinstance(self.model, nn.Module), 'Please make sure that self.model is set to a valid '
@@ -263,6 +267,8 @@ class TorchForecastingModel(MultivariateForecastingModel):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
+        self._save_untrained_model(_get_untrained_models_folder(work_dir, model_name))
+
     @random_method
     def fit(self,
             training_series: TimeSeries,
@@ -299,7 +305,11 @@ class TorchForecastingModel(MultivariateForecastingModel):
         raise_if(val_training_series is None and val_target_series is not None, "`val_target_series` can not be "
                  "specified without a `val_training_series`.")
         if val_training_series is not None:
-            val_training_series, val_target_series = self._make_fitable_series(val_training_series, val_target_series)
+            if val_target_series is None:
+                val_target_series = val_training_series
+            raise_if_not(all(val_training_series.time_index() == val_target_series.time_index()),
+                         "the validation target and training series must have the same time indices.",
+                         logger)
             raise_if_not(self.training_series.width == val_training_series.width, "training_series must have the "
                          "same number of component(s) as val_training_series.", logger)
             raise_if_not(self.target_series.width == val_target_series.width, "target_series must have the same number "
@@ -389,6 +399,9 @@ class TorchForecastingModel(MultivariateForecastingModel):
 
         test_out = np.stack(test_out)
         return self._build_forecast_series(test_out.reshape(n, -1))
+
+    def untrained_model(self):
+        return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @property
     def first_prediction_index(self) -> int:
@@ -519,6 +532,20 @@ class TorchForecastingModel(MultivariateForecastingModel):
                 # remove older files
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
+
+    def _save_untrained_model(self, folder):
+        os.makedirs(folder, exist_ok=True)
+        filename = os.path.join(folder, 'model.pth.tar')
+
+        with open(filename, 'wb') as f:
+            torch.save(self, f)
+
+    def _load_untrained_model(self, folder):
+        filename = os.path.join(folder, 'model.pth.tar')
+
+        with open(filename, 'rb') as f:
+            model = torch.load(f)
+        return model
 
     def _prepare_validation_data(self, val_training_series, val_target_series):
         val_dataset = self._create_dataset(val_training_series, val_target_series)
