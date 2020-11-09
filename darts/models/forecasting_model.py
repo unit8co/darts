@@ -177,19 +177,8 @@ class ForecastingModel(ABC):
             when a check on the parameter does not pass.
         """
         # parse args and kwargs
-        training_series = args[0]
-        n = SimpleNamespace(**kwargs)
-
-        # check target and training series
-        if n.target_series is None:
-            target_series = training_series
-        else:
-            target_series = n.target_series
-
-        raise_if_not(all(training_series.time_index() == target_series.time_index()), "the target and training series"
-                     " must have the same time indices.")
-
-        _backtest_general_checks(training_series, kwargs)
+        series = args[0]
+        _backtest_general_checks(series, kwargs)
 
     def _backtest_model_specific_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Method to be overriden in subclass for model specific sanity checks"""
@@ -204,7 +193,7 @@ class ForecastingModel(ABC):
                  retrain: bool = True,
                  trim_to_series: bool = True,
                  verbose: bool = False,
-                 use_full_output_length: Optional[bool] = None) -> TimeSeries:
+                 use_full_target_length: Optional[bool] = None) -> TimeSeries:
         """ Retrain and forecast values pointwise with an expanding training window over `series`.
 
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on
@@ -241,7 +230,7 @@ class ForecastingModel(ABC):
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
-        use_full_output_length
+        use_full_target_length
             Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
             as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
             instance of `TorchForecastingModel`, this will cause an error.
@@ -259,8 +248,8 @@ class ForecastingModel(ABC):
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
-        if use_full_output_length is not None:
-            predict_kwargs['use_full_output_length'] = use_full_output_length
+        if use_full_target_length is not None:
+            predict_kwargs['use_full_target_length'] = use_full_target_length
 
         # prepare the start parameter -> pd.Timestamp
         start = _get_timestamp_at_point(start, series)
@@ -307,7 +296,7 @@ class ForecastingModel(ABC):
                    series: TimeSeries,
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
-                   use_full_output_length: Optional[bool] = None,
+                   use_full_target_length: Optional[bool] = None,
                    val_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -360,7 +349,7 @@ class ForecastingModel(ABC):
             of `series` from which predictions will be made to evaluate the model.
             For a detailed description of how the different data types are interpreted, please see the documentation
             for `ForecastingModel.backtest`.
-        use_full_output_length
+        use_full_target_length
             This should only be set if `model_class` is equal to `TorchForecastingModel`.
             This argument will be passed along to the predict method of `TorchForecastingModel`.
         val_series
@@ -385,8 +374,8 @@ class ForecastingModel(ABC):
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
-        if use_full_output_length is not None:
-            predict_kwargs['use_full_output_length'] = use_full_output_length
+        if use_full_target_length is not None:
+            predict_kwargs['use_full_target_length'] = use_full_target_length
 
         if use_fitted_values:
             raise_if_not(hasattr(model_class(), "fitted_values"), "The model must have a fitted_values attribute"
@@ -415,7 +404,7 @@ class ForecastingModel(ABC):
                 backtest_forecast = model.backtest(series,
                                                    start,
                                                    forecast_horizon,
-                                                   use_full_output_length=use_full_output_length)
+                                                   use_full_target_length=use_full_target_length)
                 error = metric(backtest_forecast, series)
             else:  # split mode
                 model.fit(series)
