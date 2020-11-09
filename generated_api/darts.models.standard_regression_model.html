@@ -152,6 +152,10 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.ensemble_model.html">Ensemble model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
@@ -169,6 +173,10 @@
                     
                         <li class="">
                             <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_ensemble_model.html">Regression ensemble model</a>
                         </li>
                     
                         <li class="">
@@ -251,7 +259,7 @@
 <dt id="darts.models.standard_regression_model.StandardRegressionModel">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.standard_regression_model.</code><code class="sig-name descname">StandardRegressionModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_n_points</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">LinearRegression(fit_intercept=False, n_jobs=- 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.regression_model.html#darts.models.regression_model.RegressionModel" title="darts.models.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.regression_model.RegressionModel</span></code></a></p>
-<p>Simple wrapper for regression models implementing a fit() predict() functions models
+<p>Simple wrapper for regression models implementing a fit() predict() functions
 (e.g., scikit-learn regression).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -266,7 +274,7 @@ Default: <cite>sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=Fa
 </dl>
 <dl class="py method">
 <dt id="darts.models.standard_regression_model.StandardRegressionModel.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits/trains the model using the provided list of features time series and the target time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -280,7 +288,7 @@ Default: <cite>sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=Fa
 
 <dl class="py method">
 <dt id="darts.models.standard_regression_model.StandardRegressionModel.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/standard_regression_model.html#StandardRegressionModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.standard_regression_model.StandardRegressionModel.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts values of the target time series, given a list of features time series</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

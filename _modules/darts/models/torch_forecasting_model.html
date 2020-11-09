@@ -173,12 +173,17 @@
 
 <span class="n">CHECKPOINTS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;checkpoints&#39;</span><span class="p">)</span>
 <span class="n">RUNS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;runs&#39;</span><span class="p">)</span>
+<span class="n">UNTRAINED_MODELS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;untrained_models&#39;</span><span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_get_checkpoint_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">CHECKPOINTS_FOLDER</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_untrained_models_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">UNTRAINED_MODELS_FOLDER</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_get_runs_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
@@ -287,7 +292,7 @@
 
 
 <div class="viewcode-block" id="TorchForecastingModel"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel">[docs]</a><span class="k">class</span> <span class="nc">TorchForecastingModel</span><span class="p">(</span><span class="n">MultivariateForecastingModel</span><span class="p">):</span>
-    <span class="c1"># TODO: add is_stochastic &amp; reset methods</span>
+    <span class="c1"># TODO: add is_stochastic method</span>
     <span class="c1"># TODO: transparent support for multivariate time series</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
@@ -301,7 +306,7 @@
                  <span class="n">lr_scheduler_cls</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">_LRScheduler</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">lr_scheduler_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">loss_fn</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">_Loss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(),</span>
-                 <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;torch_model_run&quot;</span><span class="p">,</span>  <span class="c1"># TODO uid</span>
+                 <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;torch_model_run&quot;</span><span class="p">,</span>  <span class="c1"># TODO: uid</span>
                  <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
                  <span class="n">log_tensorboard</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">nr_epochs_val_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
@@ -355,7 +360,6 @@
 <span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
 <span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">),</span> <span class="s1">&#39;Please make sure that self.model is set to a valid &#39;</span>
@@ -413,6 +417,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># We won&#39;t use a LR scheduler</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_untrained_model</span><span class="p">(</span><span class="n">_get_untrained_models_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">))</span>
+
 <div class="viewcode-block" id="TorchForecastingModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel.fit">[docs]</a>    <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
             <span class="n">training_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
@@ -449,7 +455,11 @@
         <span class="n">raise_if</span><span class="p">(</span><span class="n">val_training_series</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val_target_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;`val_target_series` can not be &quot;</span>
                  <span class="s2">&quot;specified without a `val_training_series`.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">val_training_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">val_training_series</span><span class="p">,</span> <span class="n">val_target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_fitable_series</span><span class="p">(</span><span class="n">val_training_series</span><span class="p">,</span> <span class="n">val_target_series</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">val_target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">val_target_series</span> <span class="o">=</span> <span class="n">val_training_series</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">val_training_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">==</span> <span class="n">val_target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()),</span>
+                         <span class="s2">&quot;the validation target and training series must have the same time indices.&quot;</span><span class="p">,</span>
+                         <span class="n">logger</span><span class="p">)</span>
             <span class="n">raise_if_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="n">val_training_series</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="s2">&quot;training_series must have the &quot;</span>
                          <span class="s2">&quot;same number of component(s) as val_training_series.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
             <span class="n">raise_if_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="n">val_target_series</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="s2">&quot;target_series must have the same number &quot;</span>
@@ -539,6 +549,9 @@
 
         <span class="n">test_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">test_out</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">test_out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TorchForecastingModel.untrained_model"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel.untrained_model">[docs]</a>    <span class="k">def</span> <span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_untrained_model</span><span class="p">(</span><span class="n">_get_untrained_models_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">))</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">first_prediction_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -669,6 +682,20 @@
                 <span class="c1"># remove older files</span>
                 <span class="k">for</span> <span class="n">chkpt</span> <span class="ow">in</span> <span class="n">checklist</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
                     <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chkpt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_save_untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s1">&#39;model.pth.tar&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s1">&#39;model.pth.tar&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
 
     <span class="k">def</span> <span class="nf">_prepare_validation_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val_training_series</span><span class="p">,</span> <span class="n">val_target_series</span><span class="p">):</span>
         <span class="n">val_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_dataset</span><span class="p">(</span><span class="n">val_training_series</span><span class="p">,</span> <span class="n">val_target_series</span><span class="p">)</span>

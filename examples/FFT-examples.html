@@ -434,7 +434,7 @@ div.rendered_html tbody tr:hover {
 <h1>Fast Fourier Transform Forecasting Model (FFT)<a class="headerlink" href="#Fast-Fourier-Transform-Forecasting-Model-(FFT)" title="Permalink to this headline">¶</a></h1>
 <p>The following is a brief demonstration of the FFT forecasting model. This model is especially suited for data that is very seasonal. The datasets chosen for this demonstration were selected accordingly.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -444,8 +444,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -475,11 +475,20 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+</pre></div></div>
+</div>
 <div class="section" id="Read-and-format">
 <h2>Read and format<a class="headerlink" href="#Read-and-format" title="Permalink to this headline">¶</a></h2>
 <p>Here we simply read the CSV file containing daily temperatures, and transform the values into the desired format.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -492,7 +501,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Constructing-TimeSeries-instances-for-training-and-validation">
 <h2>Constructing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances for training and validation<a class="headerlink" href="#Constructing-TimeSeries-instances-for-training-and-validation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -507,8 +516,45 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_6_0.png" src="../_images/examples_FFT-examples_6_0.png" />
-</div>
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyError</span>                                  Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-15-d884f4ab8cad&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>ts <span class="ansi-blue-fg">=</span> fill_missing_values<span class="ansi-blue-fg">(</span>TimeSeries<span class="ansi-blue-fg">.</span>from_dataframe<span class="ansi-blue-fg">(</span>df<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;Date&#39;</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">&#39;temps&#39;</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;auto&#39;</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> train<span class="ansi-blue-fg">,</span> val <span class="ansi-blue-fg">=</span> ts<span class="ansi-blue-fg">.</span>split_after<span class="ansi-blue-fg">(</span>pd<span class="ansi-blue-fg">.</span>Timestamp<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#39;19850701&#39;</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> train<span class="ansi-blue-fg">.</span>plot<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      4</span> val<span class="ansi-blue-fg">.</span>plot<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">from_dataframe</span><span class="ansi-blue-fg">(df, time_col, value_cols, freq, fill_missing_dates)</span>
+<span class="ansi-green-intense-fg ansi-bold">    557</span>                 value_cols <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span>value_cols<span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    558</span>
+<span class="ansi-green-fg">--&gt; 559</span><span class="ansi-red-fg">             </span>series_df <span class="ansi-blue-fg">=</span> df<span class="ansi-blue-fg">[</span>value_cols<span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    560</span>
+<span class="ansi-green-intense-fg ansi-bold">    561</span>         <span class="ansi-green-fg">if</span> time_col <span class="ansi-green-fg">is</span> <span class="ansi-green-fg">None</span><span class="ansi-blue-fg">:</span>
+
+<span class="ansi-green-fg">/opt/anaconda3/envs/darts-dev/lib/python3.8/site-packages/pandas/core/frame.py</span> in <span class="ansi-cyan-fg">__getitem__</span><span class="ansi-blue-fg">(self, key)</span>
+<span class="ansi-green-intense-fg ansi-bold">   2903</span>             <span class="ansi-green-fg">if</span> is_iterator<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">   2904</span>                 key <span class="ansi-blue-fg">=</span> list<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 2905</span><span class="ansi-red-fg">             </span>indexer <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>loc<span class="ansi-blue-fg">.</span>_get_listlike_indexer<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">=</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">,</span> raise_missing<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">True</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">   2906</span>
+<span class="ansi-green-intense-fg ansi-bold">   2907</span>         <span class="ansi-red-fg"># take() does not accept boolean indexers</span>
+
+<span class="ansi-green-fg">/opt/anaconda3/envs/darts-dev/lib/python3.8/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_get_listlike_indexer</span><span class="ansi-blue-fg">(self, key, axis, raise_missing)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1252</span>             keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> new_indexer <span class="ansi-blue-fg">=</span> ax<span class="ansi-blue-fg">.</span>_reindex_non_unique<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1253</span>
+<span class="ansi-green-fg">-&gt; 1254</span><span class="ansi-red-fg">         </span>self<span class="ansi-blue-fg">.</span>_validate_read_indexer<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">,</span> raise_missing<span class="ansi-blue-fg">=</span>raise_missing<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1255</span>         <span class="ansi-green-fg">return</span> keyarr<span class="ansi-blue-fg">,</span> indexer
+<span class="ansi-green-intense-fg ansi-bold">   1256</span>
+
+<span class="ansi-green-fg">/opt/anaconda3/envs/darts-dev/lib/python3.8/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_validate_read_indexer</span><span class="ansi-blue-fg">(self, key, indexer, axis, raise_missing)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1296</span>             <span class="ansi-green-fg">if</span> missing <span class="ansi-blue-fg">==</span> len<span class="ansi-blue-fg">(</span>indexer<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">   1297</span>                 axis_name <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>obj<span class="ansi-blue-fg">.</span>_get_axis_name<span class="ansi-blue-fg">(</span>axis<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 1298</span><span class="ansi-red-fg">                 </span><span class="ansi-green-fg">raise</span> KeyError<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">f&#34;None of [{key}] are in the [{axis_name}]&#34;</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1299</span>
+<span class="ansi-green-intense-fg ansi-bold">   1300</span>             <span class="ansi-red-fg"># We (temporarily) allow for some missing keys with .loc, except in</span>
+
+<span class="ansi-red-fg">KeyError</span>: &#34;None of [Index([&#39;temps&#39;], dtype=&#39;object&#39;)] are in the [columns]&#34;
+</pre></div></div>
 </div>
 </div>
 <div class="section" id="Basic-FFT-model">
@@ -549,8 +595,7 @@ MAPE: 416130884490747.6
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_10_1.png" src="../_images/examples_FFT-examples_10_1.png" />
-</div>
+<img alt="../_images/examples_FFT-examples_10_1.svg" src="../_images/examples_FFT-examples_10_1.svg" /></div>
 </div>
 </div>
 <div class="section" id="Improvement-1:-Crop-the-training-set">
@@ -593,8 +638,7 @@ MAPE: 300841486646235.06
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_14_1.png" src="../_images/examples_FFT-examples_14_1.png" />
-</div>
+<img alt="../_images/examples_FFT-examples_14_1.svg" src="../_images/examples_FFT-examples_14_1.svg" /></div>
 </div>
 </div>
 <div class="section" id="Improvement-2:-Filtering-out-low-amplitude-waves">
@@ -602,7 +646,7 @@ MAPE: 300841486646235.06
 <p>The decomposition of the DFT into the frequency domain allows us to selectively filter out waves with low amplitudes. This allows us to keep strong seasonal trends while discarding some noise. This is achieved in the FFT model by passing the optional argument <code class="docutils literal notranslate"><span class="pre">nr_freqs_to_keep</span></code>. This argument represents the total number of frequencies that will be kept. For instance, if a value of 20 is passed, only the 20 frequencies with the highest amplitudes will be utilized. The default value is set to
 10.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -614,7 +658,7 @@ MAPE: 300841486646235.06
 </div>
 <p>We get a signal that is less noisy. Depending on the data set, this might be a better forecast. Looking at the error metric, we can see that this model performs significantly better than the previous models.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -637,15 +681,14 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_18_1.png" src="../_images/examples_FFT-examples_18_1.png" />
-</div>
+<img alt="../_images/examples_FFT-examples_18_1.svg" src="../_images/examples_FFT-examples_18_1.svg" /></div>
 </div>
 </div>
 <div class="section" id="Improvement-3:-Detrending">
 <h2>Improvement 3: Detrending<a class="headerlink" href="#Improvement-3:-Detrending" title="Permalink to this headline">¶</a></h2>
 <p>Let’s try out a different data set that has a global upward trend</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -661,11 +704,10 @@ MAPE: 23.280281955513267
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_FFT-examples_20_0.png" src="../_images/examples_FFT-examples_20_0.png" />
-</div>
+<img alt="../_images/examples_FFT-examples_20_0.svg" src="../_images/examples_FFT-examples_20_0.svg" /></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>

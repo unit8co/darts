@@ -262,8 +262,7 @@
         <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s1">&#39;limit_direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
     <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s1">&#39;inplace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">series_temp</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">series_temp</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">(),</span> <span class="n">series_temp</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
 </pre></div>
 
               </div>

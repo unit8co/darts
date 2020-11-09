@@ -447,8 +447,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_4_0.png" src="../_images/examples_multivariate-examples_4_0.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_4_0.svg" src="../_images/examples_multivariate-examples_4_0.svg" /></div>
 </div>
 <p>Any individual ‘component’ of a multivariate TimeSeries instance can be retrieved using the TimeSeries.univariate_component method which takes a 0-indexed integer as an argument.</p>
 <div class="nbinput docutils container">
@@ -464,8 +463,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_6_0.png" src="../_images/examples_multivariate-examples_6_0.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_6_0.svg" src="../_images/examples_multivariate-examples_6_0.svg" /></div>
 </div>
 <p>In the following we will use real-world univariate data and see how we can expand upon it by creating multivariate TimeSeries objects.</p>
 <div class="nbinput docutils container">
@@ -484,8 +482,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_8_0.png" src="../_images/examples_multivariate-examples_8_0.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_8_0.svg" src="../_images/examples_multivariate-examples_8_0.svg" /></div>
 </div>
 <p>Any univariate or multivariate TimeSeries instance can easily be augmented by additional components that are based on the datetime index. Any integer-valued attribute of pd.DatetimeIndex can be added, such as the number of the month, as shown below. Before plotting, the data is normalized so that all features are on the same scale.</p>
 <div class="nbinput docutils container">
@@ -502,8 +499,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_10_0.png" src="../_images/examples_multivariate-examples_10_0.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_10_0.svg" src="../_images/examples_multivariate-examples_10_0.svg" /></div>
 </div>
 <p>Similarly, we can add a binary time series which indicates whether the current point on the time index represents a holiday in a specific country. Since the above time series is monthly, we shall use the artificial time series from before as an example.</p>
 <div class="nbinput docutils container">
@@ -520,8 +516,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_12_0.png" src="../_images/examples_multivariate-examples_12_0.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_12_0.svg" src="../_images/examples_multivariate-examples_12_0.svg" /></div>
 </div>
 <p>Now, how can we make use of such augmentations of TimeSeries instances? To see where it can help, let’s look at the performance of a TCN forecasting model on the above air passengers data set. First let’s fit the TCN model on the univariate series for 200 epochs and predict 13 steps into the future.</p>
 <div class="nbinput docutils container">
@@ -569,29 +564,29 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:15:59,266] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:47:02,159] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:47:02,159] INFO | darts.models.tcn_model | Number of layers chosen: 2
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b3f299ab1a114ffd92d2eaaee2a15818", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "6b85165462224c9286fae8e891859cd0"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0228, validation loss: 0.0610
+
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_14_3.png" src="../_images/examples_multivariate-examples_14_3.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_14_3.svg" src="../_images/examples_multivariate-examples_14_3.svg" /></div>
 </div>
 <p>Limited to 20 epochs, we do not get a very good performance. Let’s try the same thing but with an enhanced series that contains information about the month. Here, we also pass the second positional argument to the ‘add_datetime_attribute’ method which refers to whether the datetime attribute should be encoded in a one-hot fashion or not. Note that for predictions of multivariate TimeSeries instances, the maximum number of steps that can be predicted into the future is equal to
 TorchForecastingModel.output_length.</p>
@@ -641,29 +636,29 @@ TorchForecastingModel.output_length.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:16:05,973] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:47:13,405] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:47:13,405] INFO | darts.models.tcn_model | Number of layers chosen: 2
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "499f0aba4c6a42489a37848e6794738f", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "d75a6e40ae50456186a45006fe8bca01"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0159, validation loss: 0.0428
+
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_multivariate-examples_16_3.png" src="../_images/examples_multivariate-examples_16_3.png" />
-</div>
+<img alt="../_images/examples_multivariate-examples_16_3.svg" src="../_images/examples_multivariate-examples_16_3.svg" /></div>
 </div>
 <p>We can see that with this limited number of training epochs, we get a better performance out of the model that uses the multivariate series as input.</p>
 </div>

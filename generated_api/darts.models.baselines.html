@@ -41,7 +41,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Exponential Smoothing" href="darts.models.exponential_smoothing.html" />
+    <link rel="next" title="Ensemble model" href="darts.models.ensemble_model.html" />
     <link rel="prev" title="Auto-ARIMA" href="darts.models.auto_arima.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -152,6 +152,10 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.ensemble_model.html">Ensemble model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
@@ -169,6 +173,10 @@
                     
                         <li class="">
                             <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_ensemble_model.html">Regression ensemble model</a>
                         </li>
                     
                         <li class="">
@@ -289,6 +297,40 @@ and extends it in the future. For a training series of length <span class="math 
 </dd></dl>
 
 <dl class="py class">
+<dt id="darts.models.baselines.NaiveEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.baselines.</code><code class="sig-name descname">NaiveEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/baselines.html#NaiveEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.baselines.NaiveEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.ensemble_model.html#darts.models.ensemble_model.EnsembleModel" title="darts.models.ensemble_model.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.ensemble_model.EnsembleModel</span></code></a></p>
+<p>Naive combination model</p>
+<p>Naive implementation of <cite>EnsembleModel</cite>
+Returns the average of all predictions of the constituent models</p>
+<dl class="py method">
+<dt id="darts.models.baselines.NaiveEnsembleModel.ensemble">
+<code class="sig-name descname">ensemble</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">predictions</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/baselines.html#NaiveEnsembleModel.ensemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.baselines.NaiveEnsembleModel.ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines how to ensemble the individual models’ predictions to produce a single prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>predictions</strong> – Individual predictions to ensemble</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The predicted <cite>TimeSeries</cite> obtained by ensembling the individual predictions</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.baselines.NaiveEnsembleModel.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/baselines.html#NaiveEnsembleModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.baselines.NaiveEnsembleModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the model on the provided series.
+Note that <cite>EnsembleModel.fit()</cite> does NOT call <cite>fit()</cite> on each of its constituent forecasting models.
+It is left to classes inheriting from EnsembleModel to do so appropriately when overriding <cite>fit()</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="darts.models.baselines.NaiveMean">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.baselines.</code><code class="sig-name descname">NaiveMean</code><a class="reference internal" href="../_modules/darts/models/baselines.html#NaiveMean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.baselines.NaiveMean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.UnivariateForecastingModel" title="darts.models.forecasting_model.UnivariateForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting_model.UnivariateForecastingModel</span></code></a></p>
@@ -386,7 +428,7 @@ This function/property should be overridden if a value higher than 3 is required
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.models.auto_arima.html" title="previous page">Auto-ARIMA</a>
-    <a class='right-next' id="next-link" href="darts.models.exponential_smoothing.html" title="next page">Exponential Smoothing</a>
+    <a class='right-next' id="next-link" href="darts.models.ensemble_model.html" title="next page">Ensemble model</a>
 
               </div>
               

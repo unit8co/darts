@@ -12,11 +12,13 @@
         darts.models.arima
         darts.models.auto_arima
         darts.models.baselines
+        darts.models.ensemble_model
         darts.models.exponential_smoothing
         darts.models.fft
         darts.models.forecasting_model
         darts.models.nbeats
         darts.models.prophet
+        darts.models.regression_ensemble_model
         darts.models.regression_model
         darts.models.rnn_model
         darts.models.standard_regression_model

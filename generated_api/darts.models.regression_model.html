@@ -42,7 +42,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Recurrent Neural Networks" href="darts.models.rnn_model.html" />
-    <link rel="prev" title="Facebook Prophet" href="darts.models.prophet.html" />
+    <link rel="prev" title="Regression ensemble model" href="darts.models.regression_ensemble_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -152,6 +152,10 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.ensemble_model.html">Ensemble model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
@@ -169,6 +173,10 @@
                     
                         <li class="">
                             <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_ensemble_model.html">Regression ensemble model</a>
                         </li>
                     
                         <li class="active">
@@ -260,18 +268,17 @@ of <span class="math notranslate nohighlight">\(N\)</span> “features” time s
 <p>This is the base class for all regression models.</p>
 <dl class="py method">
 <dt id="darts.models.regression_model.RegressionModel.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.7</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">trim_to_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function for backtesting <cite>RegressionModel</cite>’s.</p>
-<p>This function computes the time series of historical predictions
-that would have been obtained, if the current model had been used to predict <cite>target_series</cite>
-using the <cite>feature_series</cite>, with a certain time horizon.</p>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">feature_series: Iterable[darts.timeseries.TimeSeries], target_series: darts.timeseries.TimeSeries, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[numpy.ndarray, float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an error score between the historical forecasts the model would have produced
+with an expanding training window over <cite>series</cite> and the actual series.</p>
 <p>To this end, it repeatedly builds a training set composed of both features and targets,
 from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
-It trains the current model on the training set, emits a (point) prediction for a fixed
-forecast horizon, and then moves the end of the training set forward by <cite>stride</cite>
-time steps. The resulting predictions are then returned.</p>
+It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+and then moves the end of the training set forward by <cite>stride</cite> time steps.</p>
+<p>By default, this method will use each historical forecast (whole) to compute error scores.
+If <cite>last_points_only</cite> is set to True, it will use only the last point of each historical forecast.</p>
 <p>This always re-trains the models on the entire available history,
-corresponding an expending window strategy.</p>
+corresponding an expanding window strategy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -279,17 +286,21 @@ corresponding an expending window strategy.</p>
 <li><p><strong>target_series</strong> – The univariate target time series for the regression model (dependent variable)</p></li>
 <li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
 <li><p><strong>forecast_horizon</strong> – The forecast horizon for the point predictions</p></li>
-<li><p><strong>stride</strong> – The number of time steps (the unit being the frequency of <cite>series</cite>) between two consecutive predictions.</p></li>
-<li><p><strong>trim_to_series</strong> – Whether the predicted series has the end trimmed to match the end of the main series</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to keep the whole historical forecasts or only the last point of each forecast</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>reduction</strong> – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
+If explicitely set to <cite>None</cite>, the method will return a list of the individual error scores instead.
+Set to np.mean by default.</p></li>
 <li><p><strong>verbose</strong> – Whether to print progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A time series containing the forecast values when successively applying
-the current model with the specified forecast horizon.</p>
+<dd class="field-even"><p>The error score, or the list of individual error scores if <cite>reduction</cite> is <cite>None</cite></p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+<dd class="field-odd"><p>float or List[float]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -304,6 +315,45 @@ the current model with the specified forecast horizon.</p>
 <li><p><strong>train_features</strong> – A list of features time series, all of the same length as the target series</p></li>
 <li><p><strong>train_target</strong> – A target time series, of the same length as the features series</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.historical_forecasts">
+<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.historical_forecasts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the historical forecasts the model would have produced with an expanding training window
+and (by default) returns a time series created from the last point of each of these individual forecasts</p>
+<p>To this end, it repeatedly builds a training set composed of both features and targets,
+from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
+It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+and then moves the end of the training set forward by <cite>stride</cite> time steps.</p>
+<p>By default, this method will return a single time series made up of the last point of each
+historical forecast. This time series will thus have a frequency of training_series.freq() * stride
+If <cite>last_points_only</cite> is set to False, it will instead return a list of the historical forecasts.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expanding window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_series</strong> – A list of time series representing the features for the regression model (independent variables)</p></li>
+<li><p><strong>target_series</strong> – The univariate target time series for the regression model (dependent variable)</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to retain only the last point of each historical forecast.
+If set to True, the method returns a single <cite>TimeSeries</cite> of the point forecasts.
+Otherwise returns a list of historical <cite>TimeSeries</cite> forecasts.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>By default, a single TimeSeries instance created from the last point of each individual forecast.
+If <cite>last_points_only</cite> is set to False, a list of the historical forecasts</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a> or List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -354,7 +404,7 @@ and <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> is the time 
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.models.prophet.html" title="previous page">Facebook Prophet</a>
+    <a class='left-prev' id="prev-link" href="darts.models.regression_ensemble_model.html" title="previous page">Regression ensemble model</a>
     <a class='right-next' id="next-link" href="darts.models.rnn_model.html" title="next page">Recurrent Neural Networks</a>
 
               </div>

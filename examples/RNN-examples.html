@@ -455,7 +455,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -484,23 +484,6 @@ div.rendered_html tbody tr:hover {
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ImportError</span>                               Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-3-d382a9eb6ad3&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-intense-fg ansi-bold">     15</span> <span class="ansi-green-fg">from</span> darts<span class="ansi-blue-fg">.</span>models <span class="ansi-green-fg">import</span> RNNModel<span class="ansi-blue-fg">,</span> ExponentialSmoothing
-<span class="ansi-green-intense-fg ansi-bold">     16</span> <span class="ansi-green-fg">from</span> darts<span class="ansi-blue-fg">.</span>metrics <span class="ansi-green-fg">import</span> mape
-<span class="ansi-green-fg">---&gt; 17</span><span class="ansi-red-fg"> </span><span class="ansi-green-fg">from</span> darts<span class="ansi-blue-fg">.</span>utils<span class="ansi-blue-fg">.</span>statistics <span class="ansi-green-fg">import</span> check_seasonality<span class="ansi-blue-fg">,</span> plot_acfy
-<span class="ansi-green-intense-fg ansi-bold">     18</span>
-<span class="ansi-green-intense-fg ansi-bold">     19</span> <span class="ansi-green-fg">import</span> warnings
-
-<span class="ansi-red-fg">ImportError</span>: cannot import name &#39;plot_acfy&#39; from &#39;darts.utils.statistics&#39; (/Users/leotaftiu8/Desktop/Darts/darts/darts/utils/statistics.py)
-</pre></div></div>
 </div>
 <div class="section" id="Some-hyper-parameters:">
 <h2>Some hyper-parameters:<a class="headerlink" href="#Some-hyper-parameters:" title="Permalink to this headline">¶</a></h2>
@@ -578,14 +561,14 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "740ce6c3e7dd46bdaf9f217847fead52", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "89db9679837f4fef9f67a112a30c5fbb"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0070, validation loss: 0.0171
+
 </pre></div></div>
 </div>
 </div>
@@ -614,8 +597,7 @@ Training loss: 0.0070, validation loss: 0.0171
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_12_0.png" src="../_images/examples_RNN-examples_12_0.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_12_0.svg" src="../_images/examples_RNN-examples_12_0.svg" /></div>
 </div>
 <p>Use the best model obtained over training, according to validation loss:</p>
 <div class="nbinput docutils container">
@@ -640,21 +622,22 @@ loading model_best_260.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_14_1.png" src="../_images/examples_RNN-examples_14_1.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_14_1.svg" src="../_images/examples_RNN-examples_14_1.svg" /></div>
 </div>
 </div>
 <div class="section" id="Backtesting">
 <h2>Backtesting<a class="headerlink" href="#Backtesting" title="Permalink to this headline">¶</a></h2>
-<p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">RNN</span></code> model, with a forecast horizon of 6 months:</p>
+<p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">RNN</span></code> model, to see how it performs at a forecast horizon of 6 months:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Perform the actual backtest</span>
-<span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
-                                    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">,</span>
+                                                <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
+                                                <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                                                <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -662,7 +645,7 @@ loading model_best_260.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "15b81222fe274016a8bc56b26544162c", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b7031f127239421ba35def51fbaf0ce9"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -681,7 +664,7 @@ loading model_best_260.pth.tar
 <span class="n">series_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
 <span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;backtest&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Backtest, starting Jan 1959, with a 6-months horizon&#39;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Backtest, starting Jan 1959, 6-months horizon&#39;</span><span class="p">);</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">),</span>
                                   <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">))))</span>
 </pre></div>
@@ -692,15 +675,14 @@ loading model_best_260.pth.tar
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 6.21%
+MAPE: 6.15%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_17_1.png" src="../_images/examples_RNN-examples_17_1.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_17_1.svg" src="../_images/examples_RNN-examples_17_1.svg" /></div>
 </div>
 </div>
 <div class="section" id="Trials-with-a-longer-output-length">
@@ -739,14 +721,14 @@ MAPE: 6.21%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "302d20b8ebe54b47b3781cce6831c30d", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "6801cac6bed54802b5f9d7cc5e082c7b"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0100, validation loss: 0.0814
+
 </pre></div></div>
 </div>
 <p>Result of training</p>
@@ -756,8 +738,11 @@ Training loss: 0.0100, validation loss: 0.0814
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model_gru</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
-                                        <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model_gru</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">,</span>
+                                                    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
+                                                    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                                                    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">series_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
@@ -767,7 +752,7 @@ Training loss: 0.0100, validation loss: 0.0814
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "578b36f08c994b0abdcb39690249422c", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "8656dfce8ec84d54b14593e8890765c8"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -781,8 +766,7 @@ Training loss: 0.0100, validation loss: 0.0814
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_23_2.png" src="../_images/examples_RNN-examples_23_2.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_23_2.svg" src="../_images/examples_RNN-examples_23_2.svg" /></div>
 </div>
 <div class="section" id="Monthly-sunspots">
 <h3>Monthly sunspots<a class="headerlink" href="#Monthly-sunspots" title="Permalink to this headline">¶</a></h3>
@@ -813,8 +797,7 @@ Training loss: 0.0100, validation loss: 0.0814
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_25_1.png" src="../_images/examples_RNN-examples_25_1.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_25_1.svg" src="../_images/examples_RNN-examples_25_1.svg" /></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -829,8 +812,7 @@ Training loss: 0.0100, validation loss: 0.0814
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_26_0.png" src="../_images/examples_RNN-examples_26_0.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_26_0.svg" src="../_images/examples_RNN-examples_26_0.svg" /></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
@@ -887,7 +869,7 @@ Training loss: 0.0100, validation loss: 0.0814
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7552c7082a204ca091d39a874c8575b7", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "415bc35c3ed8413695b9cd078e04089d"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -904,11 +886,21 @@ Training loss: 0.0201, validation loss: 0.0352
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Compute the backtest predictions with the two models</span>
-<span class="n">pred_series</span> <span class="o">=</span> <span class="n">my_model_sun</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series_sp_transformed</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
-                                    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                    <span class="n">use_full_output_length</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">pred_series_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series_sp_transformed</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
-                                                  <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">retrain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pred_series</span> <span class="o">=</span> <span class="n">my_model_sun</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series_sp_transformed</span><span class="p">,</span>
+                                                <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
+                                                <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
+                                                <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                                <span class="n">use_full_output_length</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pred_series_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series_sp_transformed</span><span class="p">,</span>
+                                                              <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
+                                                              <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
+                                                              <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                                              <span class="n">retrain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                              <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                              <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -916,7 +908,7 @@ Training loss: 0.0201, validation loss: 0.0352
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "72ca7d1c8a1548bf885c508cf2961522", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "421007f08fe74588b59bf4e06f9f58ee"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -930,7 +922,7 @@ Training loss: 0.0201, validation loss: 0.0352
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9d56135cff24454ba7b88d888b09115e", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "676489e0052c425387b6d1c181b39478"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -967,8 +959,7 @@ ETS MAPE: 593.7634916506821
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_RNN-examples_32_1.png" src="../_images/examples_RNN-examples_32_1.png" />
-</div>
+<img alt="../_images/examples_RNN-examples_32_1.svg" src="../_images/examples_RNN-examples_32_1.svg" /></div>
 </div>
 </div>
 </div>

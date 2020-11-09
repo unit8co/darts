@@ -520,8 +520,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_4_0.png" src="../_images/examples_darts-intro_4_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_4_0.svg" src="../_images/examples_darts-intro_4_0.svg" /></div>
 </div>
 </div>
 <div class="section" id="Creating-a-training-and-validation-series">
@@ -544,8 +543,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_6_0.png" src="../_images/examples_darts-intro_6_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_6_0.svg" src="../_images/examples_darts-intro_6_0.svg" /></div>
 </div>
 </div>
 <div class="section" id="Playing-with-toy-models">
@@ -571,8 +569,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_8_0.png" src="../_images/examples_darts-intro_8_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_8_0.svg" src="../_images/examples_darts-intro_8_0.svg" /></div>
 </div>
 <p>It’s very easy to fit models and produce predictions on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. All the models have a <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and a <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. This is similar to <a class="reference external" href="https://scikit-learn.org/">https://scikit-learn.org/</a>, except that it is specific to time series. The <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function takes in argument the training time series on which to fit the model, and the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function takes in argument the number of time steps (after the end of the training series) over which to forecast.</p>
 <div class="section" id="Inspect-Seasonality">
@@ -591,8 +588,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_10_0.png" src="../_images/examples_darts-intro_10_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_10_0.svg" src="../_images/examples_darts-intro_10_0.svg" /></div>
 </div>
 <p>The ACF presents a spike at x = 12, which suggests a yearly seasonality trend (highlighted in red). The blue zone determines the significance of the statistics for a confidence level of alpha = 5%. In cases where we are unsure, we can also run a statistical check of seasonality for each candidate period <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
 <div class="nbinput docutils container">
@@ -638,8 +634,7 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_14_0.png" src="../_images/examples_darts-intro_14_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_14_0.svg" src="../_images/examples_darts-intro_14_0.svg" /></div>
 </div>
 <p>This is better, but we are still missing the trend. Fortunately, there is also another naive baseline model capturing the trend, which is called <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code>. This model will simply produce linear predictions, with a slope that is determined by the first and last values of the training set:</p>
 <div class="nbinput docutils container">
@@ -664,8 +659,7 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_16_0.png" src="../_images/examples_darts-intro_16_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_16_0.svg" src="../_images/examples_darts-intro_16_0.svg" /></div>
 </div>
 <p>What happened in the last cell? We simply fit a naive drift model, and add its forecast to the seasonal forecast we had previously. We also substract the last value of the training set to the result, so that the resulting combined forecast starts off with the right offset.</p>
 <p>This looks already like a fairly descent forecast, and we did not use any non-naive model yet! In fact - any model should be able to beat this. But hey, what’s the error we are getting here? Let’s see what we’ll have to beat:</p>
@@ -684,7 +678,7 @@ There is seasonality of order 12.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Mean absolute percentage error for the combined naive drift + seasonal: 5.77%.
+Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 </pre></div></div>
 </div>
 </div>
@@ -786,8 +780,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_26_0.png" src="../_images/examples_darts-intro_26_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_26_0.svg" src="../_images/examples_darts-intro_26_0.svg" /></div>
 </div>
 <p>We can observe that the model with <code class="docutils literal notranslate"><span class="pre">best_theta</span></code> is so far the best we have, in terms of MAPE.</p>
 </div>
@@ -796,6 +789,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <p>So at this point we have a model that performs well on our validation set, and that’s good. But how can we know the performance we <em>would have obtained</em> if we <em>had been using this model</em> historically.</p>
 <p>Backtesting simulates predictions that would have been obtained historically with a given model. It can take a while to produce, since the model is re-fit every time the simulated prediction time advances.</p>
 <p>Such simulated forecasts are always defined with respect to a <em>forecast horizon</em>, which is the number of time steps that separate the prediction time from the forecast time. In the example below, we simulate forecasts done for 3 months in the future (compared to prediction time).</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> method, you can either look at the performance of the model evaluated over the whole forecasts it produces (each point in each forecast is used to compute an error score) or only the last point of each historical forecast. In the latter case, you can get a time series representation of those points by calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> with the default setting (<code class="docutils literal notranslate"><span class="pre">last_points_only=True</span></code>)</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
@@ -803,8 +797,17 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">best_theta_model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
 
-<span class="n">historical_fcast_theta</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span>
-                                                   <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">average_error</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">median_error</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Average error (MAPE) over all historical forecasts: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">average_error</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Median error (MAPE) over all historical forecasts: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">median_error</span><span class="p">))</span>
+
+<span class="n">raw_errors</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">raw_errors</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">raw_errors</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Individual error scores (histogram)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">historical_fcast_theta</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -812,7 +815,57 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c8178579206c438dbd43a701e1a8a56a", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "1463a044af2d416595281c7bfaa92f1d"}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "da0750f72b2c4dd8a5d5e3c0fb8432a0"}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+Average error (MAPE) over all historical forecasts: 6.194975084052747
+Median error (MAPE) over all historical forecasts: 4.2892317587628455
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "f2c63003f7bb414fb116f761ac6521c7"}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_darts-intro_29_6.svg" src="../_images/examples_darts-intro_29_6.svg" /></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "116a71b79758458bb4e6cb19c10c3b12"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -822,7 +875,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 
 </pre></div></div>
 </div>
-<p>Let’s see what this backtest forecast looks like. You can see it produces more accurate predictions than the one-off prediction done above, because here the model is re-fit every month.</p>
+<p>Let’s see what this backtest forecast looks like. You can see it produces more accurate predictions at a 3 months horizon than the one-off prediction done above, because here the model is re-fit every month.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
@@ -839,8 +892,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_31_0.png" src="../_images/examples_darts-intro_31_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_31_0.svg" src="../_images/examples_darts-intro_31_0.svg" /></div>
 </div>
 <p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values.</p>
 <div class="nbinput docutils container">
@@ -856,8 +908,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_33_0.png" src="../_images/examples_darts-intro_33_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_33_0.svg" src="../_images/examples_darts-intro_33_0.svg" /></div>
 </div>
 <p>We can see that the distribution has a mean that is slightly larger than 0. This means that our <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model is biased. We can also make out a large ACF value at lag equal to 12, which indicates that the residuals contain information that was not used by the model.</p>
 <p>Could we maybe do better with a simple <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> model?</p>
@@ -867,12 +918,13 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
-<span class="n">historical_fcast_es</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span>
-                                        <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">historical_fcast_es</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19550101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
 <span class="n">historical_fcast_es</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;backtest 3-months ahead forecast (Exp. Smoothing)&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;MAPE = </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">historical_fcast_es</span><span class="p">,</span> <span class="n">series</span><span class="p">)))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -880,7 +932,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2f017fb60a4c4bab91dd228f32b255b1", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b8ac13be305e4e958356c31f6e0618ea"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -890,23 +942,13 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 
 </pre></div></div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x13faa7e80&gt;
-</pre></div></div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_35_3.png" src="../_images/examples_darts-intro_35_3.png" />
+<img alt="../_images/examples_darts-intro_35_2.svg" src="../_images/examples_darts-intro_35_2.svg" /></div>
 </div>
-</div>
-<p>This much better! We get a mean absolute percentage error of 4.07% when backtesting with a 3-months forecast horizon in this case.</p>
+<p>This much better! We get a mean absolute percentage error of 4.08% when backtesting with a 3-months forecast horizon in this case.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
@@ -920,8 +962,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_37_0.png" src="../_images/examples_darts-intro_37_0.png" />
-</div>
+<img alt="../_images/examples_darts-intro_37_0.svg" src="../_images/examples_darts-intro_37_0.svg" /></div>
 </div>
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
 </div>
@@ -930,7 +971,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final – and hopefully better forecast.</p>
 <p>For instance, in our example of a “less naive” model above, we manually combined a naive seasonal model with a naive drift model. Here, we will try to find such combinations in an automated way, using <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s. A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a
 final forecast.</p>
-<p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical predictions, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> method:</p>
+<p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
@@ -938,7 +979,7 @@ final forecast.</p>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">NaiveDrift</span><span class="p">()]</span>
 
-<span class="n">model_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                      <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -947,7 +988,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7af81fbfd1334e91b6b4141ed158ec11", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "a66cc1dfb2e34330a4fc005453f6d750"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -961,7 +1002,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5f49723652f84ab5801695a03fbd832d", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "e6adf2676a3e4876a6a7f6a5d10fd838"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -975,7 +1016,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "aee8d84170c14b18b2fb90deab086349", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "8ecaa5e4f7c648d38490ac6e5a5e1d87"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1003,8 +1044,7 @@ final forecast.</p>
 
 <span class="sd">&quot;&quot;&quot; Here we backtest our regression model</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">,</span> <span class="n">series_target</span><span class="p">,</span>
-                                    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">,</span> <span class="n">series_target</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1012,7 +1052,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0f2f2b50d40f402ba0d604edaafb6589", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "14ed478d84134a67a9855540a85b58a8"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1056,23 +1096,22 @@ final forecast.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE Error for Naive seasonal model, with K=6: 21.25%
-MAPE Error for Naive seasonal model, with K=12: 8.16%
-MAPE Error for Naive drift model: 21.75%
-MAPE Error ensemble: 5.30%
+MAPE Error for Naive seasonal model, with K=6: 21.17%
+MAPE Error for Naive seasonal model, with K=12: 8.25%
+MAPE Error for Naive drift model: 21.44%
+MAPE Error ensemble: 5.10%
 
 Coefficients of the features time series:
-Learned coefficient for Naive seasonal model, with K=6: 6.98
-Learned coefficient for Naive seasonal model, with K=12: 1.01
-Learned coefficient for Naive drift model: -6.64
+Learned coefficient for Naive seasonal model, with K=6: 5.33
+Learned coefficient for Naive seasonal model, with K=12: 1.06
+Learned coefficient for Naive drift model: -5.08
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_darts-intro_43_1.png" src="../_images/examples_darts-intro_43_1.png" />
-</div>
+<img alt="../_images/examples_darts-intro_43_1.svg" src="../_images/examples_darts-intro_43_1.svg" /></div>
 </div>
 <p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 5.30%.</p>
 <p>A couple of interesting things to observe: * Note how the seasonal model for <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn coefficients that compensate for this effect. Removing either of the two models results in worse performance. * Note how the regression (ensemble) forecast starts off 12 months after the individual models forecasts – that

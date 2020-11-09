@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.ensemble_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

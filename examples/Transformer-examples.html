@@ -437,7 +437,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -466,14 +466,6 @@ div.rendered_html tbody tr:hover {
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
-</pre></div></div>
 </div>
 <div class="section" id="Air-Passengers-Example">
 <h2>Air Passengers Example<a class="headerlink" href="#Air-Passengers-Example" title="Permalink to this headline">¶</a></h2>
@@ -564,7 +556,7 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -576,20 +568,20 @@ Importing plotly failed. Interactive plots will not work.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0a7a135958144457bac4ed587cce27f8", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "37342ac7a07949c68ce125f7cb622966"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0109, validation loss: 0.0274
+
 </pre></div></div>
 </div>
 <p>Let’s look at the predictions on the validation set.</p>
 <p>First, by using the “current” model - i.e., the model at the end of the training procedure:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -610,12 +602,11 @@ Training loss: 0.0109, validation loss: 0.0274
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_13_0.png" src="../_images/examples_Transformer-examples_13_0.png" />
-</div>
+<img alt="../_images/examples_Transformer-examples_13_0.svg" src="../_images/examples_Transformer-examples_13_0.svg" /></div>
 </div>
 <p>Then, by using the best model obtained over training, according to validation loss:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -629,29 +620,27 @@ Training loss: 0.0109, validation loss: 0.0274
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-loading model_best_600.pth.tar
+loading model_best_360.pth.tar
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_15_1.png" src="../_images/examples_Transformer-examples_15_1.png" />
+<img alt="../_images/examples_Transformer-examples_15_1.svg" src="../_images/examples_Transformer-examples_15_1.svg" /></div>
 </div>
-</div>
-<p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">Transformer</span></code> model, with a forecast horizon of 6 months:</p>
+<p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">Transformer</span></code> model to evaluates its performance at a forecast horizon of 6 months:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Perform the actual backtest</span>
-<span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_scaled</span><span class="p">,</span>
-                                    <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
-                                    <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-                                    <span class="n">use_full_output_length</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                                    <span class="n">retrain</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                                    <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_scaled</span><span class="p">,</span>
+                                                <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">),</span>
+                                                <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+                                                <span class="n">use_full_output_length</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">retrain</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -659,7 +648,7 @@ loading model_best_600.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "efb1ae23f7a449e9bd0ae4d90ea44a71", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "662c549f7f664f6b9a47f47b7cdd9e80"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -670,7 +659,7 @@ loading model_best_600.pth.tar
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -689,21 +678,20 @@ loading model_best_600.pth.tar
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 12.24%
+MAPE: 6.31%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_18_1.png" src="../_images/examples_Transformer-examples_18_1.png" />
-</div>
+<img alt="../_images/examples_Transformer-examples_18_1.svg" src="../_images/examples_Transformer-examples_18_1.svg" /></div>
 </div>
 <div class="section" id="Monthly-Sun-spots-Example">
 <h3>Monthly Sun spots Example<a class="headerlink" href="#Monthly-Sun-spots-Example" title="Permalink to this headline">¶</a></h3>
 <p>Now, let’s test the transformer architecture on a more complex dataset, the ‘monthly sunspots’.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -726,11 +714,10 @@ MAPE: 12.24%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_21_0.png" src="../_images/examples_Transformer-examples_21_0.png" />
-</div>
+<img alt="../_images/examples_Transformer-examples_21_0.svg" src="../_images/examples_Transformer-examples_21_0.svg" /></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -739,7 +726,7 @@ MAPE: 12.24%
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -749,7 +736,7 @@ MAPE: 12.24%
 </div>
 <p>First, let’s perform one-step ahead forecasting.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -790,7 +777,7 @@ MAPE: 12.24%
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -802,38 +789,38 @@ MAPE: 12.24%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b3f166c747104a0a9cbce7bb71ba599b", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b857c8e60cbe47ae8dbaf1360d6d5f84"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0266, validation loss: 0.0198
+
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># this function is used to backtest the model with a forecasting horizon of three years (36 months)</span>
+<span></span><span class="c1"># this function is used to backtest the model at a forecasting horizon of three years (36 months)</span>
 <span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="n">testing_model</span><span class="p">):</span>
     <span class="c1"># Compute the backtest predictions with the two models</span>
-    <span class="n">pred_series</span> <span class="o">=</span> <span class="n">testing_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_sp_scaled</span><span class="p">,</span>
-                                         <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
-                                         <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">36</span><span class="p">,</span>
-                                         <span class="n">stride</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-                                         <span class="n">retrain</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                                         <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                                         <span class="n">use_full_output_length</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">pred_series</span> <span class="o">=</span> <span class="n">testing_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_sp_scaled</span><span class="p">,</span>
+                                                     <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
+                                                     <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">36</span><span class="p">,</span>
+                                                     <span class="n">stride</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                                                     <span class="n">retrain</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                                     <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                                                     <span class="n">use_full_output_length</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 
-    <span class="n">pred_series_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_sp_scaled</span><span class="p">,</span>
-                                                      <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
-                                                      <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">36</span><span class="p">,</span>
-                                                      <span class="n">stride</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-                                                      <span class="n">retrain</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                                                      <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">pred_series_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series_sp_scaled</span><span class="p">,</span>
+                                                                  <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
+                                                                  <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">36</span><span class="p">,</span>
+                                                                  <span class="n">stride</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                                                                  <span class="n">retrain</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                                                                  <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
     <span class="n">val_sp_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;actual&#39;</span><span class="p">)</span>
     <span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;our Transformer&#39;</span><span class="p">)</span>
     <span class="n">pred_series_ets</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;ETS&#39;</span><span class="p">)</span>
@@ -858,7 +845,7 @@ loading model_best_15.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "87ccba5d955e4029b5dff289e82ba204", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "7c297b04116243c092c683eb48c6f0b7"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -872,7 +859,7 @@ loading model_best_15.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f4ac951bd0f7493b85d532f8d4ebe7f4", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "85bbcf96798845a5bb02cb5761ab22e1"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -880,20 +867,19 @@ loading model_best_15.pth.tar
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 
-Transformer MAPE: 784.4277371860912
-ETS MAPE: 593.7817328101518
+Transformer MAPE: 797.8750218172952
+ETS MAPE: 593.7634916506821
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_26_5.png" src="../_images/examples_Transformer-examples_26_5.png" />
-</div>
+<img alt="../_images/examples_Transformer-examples_26_5.svg" src="../_images/examples_Transformer-examples_26_5.svg" /></div>
 </div>
 <p>What about multi-step forecasting on the next three years?</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -910,7 +896,7 @@ ETS MAPE: 593.7817328101518
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -941,7 +927,7 @@ ETS MAPE: 593.7817328101518
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -953,18 +939,18 @@ ETS MAPE: 593.7817328101518
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "db76c5a3c79a482196489971f7bb42f2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "211cf7a106bf4670b275d8315068ec54"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0226, validation loss: 0.0411
+
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -978,14 +964,14 @@ Training loss: 0.0226, validation loss: 0.0411
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-loading model_best_140.pth.tar
+loading model_best_185.pth.tar
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "829665a827e6477abb04264d22007fbe", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "0bf7dbec05b4470486e84b155173004f"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -999,7 +985,7 @@ loading model_best_140.pth.tar
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "dbb7a3e35e8c4fcaaebe535f3c45a5c3", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "29f8c15308874b36a485b77e9a6b4b69"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1007,16 +993,15 @@ loading model_best_140.pth.tar
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 
-Transformer MAPE: 81.02573214593866
-ETS MAPE: 593.7817328101518
+Transformer MAPE: 66.44409793467437
+ETS MAPE: 593.7634916506821
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_Transformer-examples_31_5.png" src="../_images/examples_Transformer-examples_31_5.png" />
-</div>
+<img alt="../_images/examples_Transformer-examples_31_5.svg" src="../_images/examples_Transformer-examples_31_5.svg" /></div>
 </div>
 </div>
 </div>

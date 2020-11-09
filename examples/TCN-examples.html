@@ -528,7 +528,8 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:40:01,456] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:53:09,141] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2020-11-09 10:53:09,141] INFO | darts.models.tcn_model | Number of layers chosen: 2
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -550,14 +551,14 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "48d425646638442bbd1136dadde1dfef", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "34de7d56a52e44a8b855e303bb48471e"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0023, validation loss: 0.0157
+
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -565,7 +566,7 @@ Training loss: 0.0023, validation loss: 0.0157
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_air</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_air</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">ts_transformed</span><span class="p">,</span>
     <span class="n">target_series</span><span class="o">=</span><span class="n">ts_transformed</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span>
     <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580801&#39;</span><span class="p">),</span>
@@ -581,8 +582,7 @@ Training loss: 0.0023, validation loss: 0.0157
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_TCN-examples_11_0.png" src="../_images/examples_TCN-examples_11_0.png" />
-</div>
+<img alt="../_images/examples_TCN-examples_11_0.svg" src="../_images/examples_TCN-examples_11_0.svg" /></div>
 </div>
 </div>
 <div class="section" id="Monthly-sunspots">
@@ -628,7 +628,8 @@ Training loss: 0.0023, validation loss: 0.0157
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:40:23,532] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2020-11-09 10:53:45,584] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2020-11-09 10:53:45,584] INFO | darts.models.tcn_model | Number of layers chosen: 6
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -650,7 +651,7 @@ Training loss: 0.0023, validation loss: 0.0157
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "391b9798f5204c3fa85f2574275dad5b", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "c26137b284df4d53aebe5c885626775a"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -665,7 +666,7 @@ Training loss: 0.0282, validation loss: 0.0499
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_sun</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_sun</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">training_series</span><span class="o">=</span><span class="n">series_sp_transformed</span><span class="p">,</span>
     <span class="n">target_series</span><span class="o">=</span><span class="n">series_sp_transformed</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span>
     <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19401001&#39;</span><span class="p">),</span>
@@ -683,22 +684,15 @@ Training loss: 0.0282, validation loss: 0.0499
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9c0bc0338fb44a608f6c2461c34f6a18", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "7214c921a1524b94bec2fb944577816f"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:40:40,376] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-[2020-09-28 09:40:40,443] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
+[2020-11-09 10:54:13,063] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
+[2020-11-09 10:54:13,149] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
 
 </pre></div></div>
 </div>
@@ -706,8 +700,7 @@ Training loss: 0.0282, validation loss: 0.0499
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_TCN-examples_16_3.png" src="../_images/examples_TCN-examples_16_3.png" />
-</div>
+<img alt="../_images/examples_TCN-examples_16_2.svg" src="../_images/examples_TCN-examples_16_2.svg" /></div>
 </div>
 </div>
 <div class="section" id="Daily-energy-production">
@@ -730,8 +723,7 @@ Training loss: 0.0282, validation loss: 0.0499
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_TCN-examples_18_0.png" src="../_images/examples_TCN-examples_18_0.png" />
-</div>
+<img alt="../_images/examples_TCN-examples_18_0.svg" src="../_images/examples_TCN-examples_18_0.svg" /></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -770,7 +762,8 @@ Training loss: 0.0282, validation loss: 0.0499
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:40:41,451] INFO | darts.models.tcn_model | Number of layers chosen: 5
+[2020-11-09 10:54:15,665] INFO | darts.models.tcn_model | Number of layers chosen: 5
+[2020-11-09 10:54:15,665] INFO | darts.models.tcn_model | Number of layers chosen: 5
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -792,7 +785,7 @@ Training loss: 0.0282, validation loss: 0.0499
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "aedc701826fa48d586f4864ab58c4be6", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "ac003f13a2d8492b939651adc5a00a65"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -807,7 +800,7 @@ Training loss: 0.0234, validation loss: 0.0327
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_en</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_en</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series_en_transformed</span><span class="p">,</span>
     <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">),</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
@@ -824,21 +817,14 @@ Training loss: 0.0234, validation loss: 0.0327
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a661ffa17c2e48ab968e064a47a113b9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "1dcd97aeb6f04823a88fd350317279e3"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-09-28 09:40:54,224] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
+[2020-11-09 10:54:34,711] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
 
 </pre></div></div>
 </div>
@@ -846,8 +832,7 @@ Training loss: 0.0234, validation loss: 0.0327
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_TCN-examples_22_3.png" src="../_images/examples_TCN-examples_22_3.png" />
-</div>
+<img alt="../_images/examples_TCN-examples_22_2.svg" src="../_images/examples_TCN-examples_22_2.svg" /></div>
 </div>
 </div>
 </div>

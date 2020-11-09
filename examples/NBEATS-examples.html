@@ -422,7 +422,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -438,7 +438,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -454,7 +454,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -475,11 +475,10 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_NBEATS-examples_3_0.png" src="../_images/examples_NBEATS-examples_3_0.png" />
-</div>
+<img alt="../_images/examples_NBEATS-examples_3_0.svg" src="../_images/examples_NBEATS-examples_3_0.svg" /></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -490,7 +489,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="General-model">
 <h1>General model<a class="headerlink" href="#General-model" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -510,7 +509,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -526,47 +525,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d34d53b0566541ac8a47f536671e9096", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: 0.0281, validation loss: 0.0326
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_nbeats</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
-    <span class="n">series</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">),</span>
-    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">use_full_output_length</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-<span class="n">display_forecast</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">series</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span> <span class="s1">&#39;7 day&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5bcd6981cddd403ca373f430397570f2", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-[2020-10-21 14:20:30,883] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "6bf0206a57634333868c23352f3b3fea"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -580,14 +539,102 @@ Training loss: 0.0281, validation loss: 0.0326
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_NBEATS-examples_8_3.png" src="../_images/examples_NBEATS-examples_8_3.png" />
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">FileNotFoundError</span>                         Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-7-a5bbdca0abd1&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> model_nbeats.fit(
+</span><span class="ansi-green-intense-fg ansi-bold">      2</span>     training_series<span class="ansi-blue-fg">=</span>train<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span>     val_training_series<span class="ansi-blue-fg">=</span>val<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">      4</span>     verbose<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">True</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span> )
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/utils/torch.py</span> in <span class="ansi-cyan-fg">decorator</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     63</span>         <span class="ansi-green-fg">with</span> fork_rng<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">     64</span>             manual_seed<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_random_instance<span class="ansi-blue-fg">.</span>randint<span class="ansi-blue-fg">(</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">,</span> high<span class="ansi-blue-fg">=</span>MAX_TORCH_SEED_VALUE<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">---&gt; 65</span><span class="ansi-red-fg">             </span>decorated<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>kwargs<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     66</span>     <span class="ansi-green-fg">return</span> decorator
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/models/nbeats.py</span> in <span class="ansi-cyan-fg">fit</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    408</span>             training_series <span class="ansi-blue-fg">=</span> args<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    409</span>         training_series<span class="ansi-blue-fg">.</span>_assert_univariate<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">--&gt; 410</span><span class="ansi-red-fg">         </span>super<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">.</span>fit<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>kwargs<span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/utils/torch.py</span> in <span class="ansi-cyan-fg">decorator</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     63</span>         <span class="ansi-green-fg">with</span> fork_rng<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">     64</span>             manual_seed<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_random_instance<span class="ansi-blue-fg">.</span>randint<span class="ansi-blue-fg">(</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">,</span> high<span class="ansi-blue-fg">=</span>MAX_TORCH_SEED_VALUE<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">---&gt; 65</span><span class="ansi-red-fg">             </span>decorated<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>kwargs<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     66</span>     <span class="ansi-green-fg">return</span> decorator
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/models/torch_forecasting_model.py</span> in <span class="ansi-cyan-fg">fit</span><span class="ansi-blue-fg">(self, training_series, target_series, val_training_series, val_target_series, verbose)</span>
+<span class="ansi-green-intense-fg ansi-bold">    335</span>
+<span class="ansi-green-intense-fg ansi-bold">    336</span>         <span class="ansi-red-fg"># Train model</span>
+<span class="ansi-green-fg">--&gt; 337</span><span class="ansi-red-fg">         </span>self<span class="ansi-blue-fg">.</span>_train<span class="ansi-blue-fg">(</span>train_loader<span class="ansi-blue-fg">,</span> val_loader<span class="ansi-blue-fg">,</span> tb_writer<span class="ansi-blue-fg">,</span> verbose<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    338</span>
+<span class="ansi-green-intense-fg ansi-bold">    339</span>         <span class="ansi-red-fg"># Close tensorboard writer</span>
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/models/torch_forecasting_model.py</span> in <span class="ansi-cyan-fg">_train</span><span class="ansi-blue-fg">(self, train_loader, val_loader, tb_writer, verbose)</span>
+<span class="ansi-green-intense-fg ansi-bold">    460</span>                 tb_writer<span class="ansi-blue-fg">.</span>add_scalar<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#34;training/learning_rate&#34;</span><span class="ansi-blue-fg">,</span> self<span class="ansi-blue-fg">.</span>_get_learning_rate<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> epoch<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    461</span>
+<span class="ansi-green-fg">--&gt; 462</span><span class="ansi-red-fg">             </span>self<span class="ansi-blue-fg">.</span>_save_model<span class="ansi-blue-fg">(</span><span class="ansi-green-fg">False</span><span class="ansi-blue-fg">,</span> _get_checkpoint_folder<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>work_dir<span class="ansi-blue-fg">,</span> self<span class="ansi-blue-fg">.</span>model_name<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> epoch<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    463</span>
+<span class="ansi-green-intense-fg ansi-bold">    464</span>             <span class="ansi-green-fg">if</span> epoch <span class="ansi-blue-fg">%</span> self<span class="ansi-blue-fg">.</span>nr_epochs_val_period <span class="ansi-blue-fg">==</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">:</span>
+
+<span class="ansi-green-fg">~/Desktop/Darts/darts/darts/models/torch_forecasting_model.py</span> in <span class="ansi-cyan-fg">_save_model</span><span class="ansi-blue-fg">(self, is_best, folder, epoch)</span>
+<span class="ansi-green-intense-fg ansi-bold">    523</span>             <span class="ansi-red-fg"># remove older files</span>
+<span class="ansi-green-intense-fg ansi-bold">    524</span>             <span class="ansi-green-fg">for</span> chkpt <span class="ansi-green-fg">in</span> checklist<span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">-</span><span class="ansi-cyan-fg">4</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 525</span><span class="ansi-red-fg">                 </span>os<span class="ansi-blue-fg">.</span>remove<span class="ansi-blue-fg">(</span>chkpt<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    526</span>         <span class="ansi-green-fg">if</span> is_best<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">    527</span>             best_name <span class="ansi-blue-fg">=</span> os<span class="ansi-blue-fg">.</span>path<span class="ansi-blue-fg">.</span>join<span class="ansi-blue-fg">(</span>folder<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;model_best_{0}.pth.tar&#39;</span><span class="ansi-blue-fg">.</span>format<span class="ansi-blue-fg">(</span>epoch<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-red-fg">FileNotFoundError</span>: [Errno 2] No such file or directory: &#39;/Users/leotaftiu8/Desktop/Darts/darts/examples/.darts/checkpoints/torch_model_run/checkpoint_85.pth.tar&#39;
+</pre></div></div>
 </div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_nbeats</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">),</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_full_output_length</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">display_forecast</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">series</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span> <span class="s1">&#39;7 day&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "034f544c47324cd5bf7c23c5d4ee1355"}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2020-11-04 15:59:09,089] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
+
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_NBEATS-examples_8_2.svg" src="../_images/examples_NBEATS-examples_8_2.svg" /></div>
 </div>
 </div>
 <div class="section" id="Interpretable-model">
 <h1>Interpretable model<a class="headerlink" href="#Interpretable-model" title="Permalink to this headline">¶</a></h1>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -605,16 +652,8 @@ Training loss: 0.0281, validation loss: 0.0326
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-../aten/src/ATen/native/BinaryOps.cpp:81: UserWarning: Integer division of tensors using div or / is deprecated, and in a future release div will perform true division as in Python 3. Use true_divide or floor_divide (// in Python) instead.
-</pre></div></div>
-</div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -630,28 +669,29 @@ Training loss: 0.0281, validation loss: 0.0326
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5f6aec7edc304458a29951354911e1da", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "a59efb366df24a2a8bda799b36298c57"}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0495, validation loss: 0.0468
+Training loss: 0.0485, validation loss: 0.0466
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_nbeats</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<span></span><span class="n">pred_series</span> <span class="o">=</span> <span class="n">model_nbeats</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series</span><span class="p">,</span>
     <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">),</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
     <span class="n">stride</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">use_full_output_length</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 <span class="n">display_forecast</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">series</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">],</span> <span class="s1">&#39;7 day&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;20170901&#39;</span><span class="p">))</span>
@@ -662,21 +702,14 @@ Training loss: 0.0495, validation loss: 0.0468
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "86e3d8ac2ed945cfaa42a42057ff1cf7", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "48ca03f7c4ba4f0d89108d8b22988217"}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2020-10-21 14:21:37,671] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
+[2020-11-04 15:59:38,082] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
 
 </pre></div></div>
 </div>
@@ -684,8 +717,7 @@ Training loss: 0.0495, validation loss: 0.0468
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_NBEATS-examples_12_3.png" src="../_images/examples_NBEATS-examples_12_3.png" />
-</div>
+<img alt="../_images/examples_NBEATS-examples_12_2.svg" src="../_images/examples_NBEATS-examples_12_2.svg" /></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:

@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Regression ensemble model &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Regression Model Base Class" href="darts.models.regression_model.html" />
+    <link rel="prev" title="Facebook Prophet" href="darts.models.prophet.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../index.html">
+    
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.models.html">Models</a>
+                    <ul>
+                    
+                        <li class="">
+                            <a href="darts.models.arima.html">ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.baselines.html">Baseline Models</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.ensemble_model.html">Ensemble model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.fft.html">Fast Fourier Transform</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.forecasting_model.html">Forecasting Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.nbeats.html">N-BEATS</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="">Regression ensemble model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_model.html">Regression Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.rnn_model.html">Recurrent Neural Networks</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.tcn_model.html">Temporal Convolutional Network</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.theta.html">Theta Method</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.torch_forecasting_model.html">Torch Forecasting Model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.transformer_model.html">Transformer</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.models.regression_ensemble_model"></span><div class="section" id="regression-ensemble-model">
+<h1>Regression ensemble model<a class="headerlink" href="#regression-ensemble-model" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.regression_ensemble_model.</code><code class="sig-name descname">RegressionEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">regression_train_n_points</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">regression_model</span><span class="o">=</span><span class="default_value">LinearRegression(fit_intercept=False, n_jobs=- 1)</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/regression_ensemble_model.html#RegressionEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.ensemble_model.html#darts.models.ensemble_model.EnsembleModel" title="darts.models.ensemble_model.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.ensemble_model.EnsembleModel</span></code></a></p>
+<p>Class for ensemble models using a regression model for ensembling individual models’ predictions
+The provided regression model must implement fit() and predict() methods
+(e.g. scikit-learn regression models)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>forecasting_models</strong> – List of forecasting models whose predictions to ensemble</p></li>
+<li><p><strong>regression_train_n_points</strong> – The number of points to use to train the regression model</p></li>
+<li><p><strong>regression_model</strong> – Any regression model with predict() and fit() methods (e.g. from scikit-learn)
+Default: <cite>sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)</cite></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel.ensemble">
+<code class="sig-name descname">ensemble</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">predictions</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/regression_ensemble_model.html#RegressionEnsembleModel.ensemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines how to ensemble the individual models’ predictions to produce a single prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>predictions</strong> – Individual predictions to ensemble</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The predicted <cite>TimeSeries</cite> obtained by ensembling the individual predictions</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">training_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/regression_ensemble_model.html#RegressionEnsembleModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the model on the provided series.
+Note that <cite>EnsembleModel.fit()</cite> does NOT call <cite>fit()</cite> on each of its constituent forecasting models.
+It is left to classes inheriting from EnsembleModel to do so appropriately when overriding <cite>fit()</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="darts.models.prophet.html" title="previous page">Facebook Prophet</a>
+    <a class='right-next' id="next-link" href="darts.models.regression_model.html" title="next page">Regression Model Base Class</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2020, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
