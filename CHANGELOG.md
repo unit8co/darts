@@ -23,6 +23,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Changed:**
 - &#x1F534; Renamed `backtest()` into `historical_forecasts()`
 - `fill_missing_values()` and `MissingValuesFiller` used to remove the variable names when used with `fill='auto'` – not anymore.
+- Modified the default plotting style to increase contrast and make plots lighter.
 
 **Fixed:**
 - Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
