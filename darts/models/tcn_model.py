@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from numpy.random import RandomState
 from typing import Optional, Union
 from ..utils.torch import random_method
+from ..utils.data.shifted_dataset import ShiftedDataset
 
 from ..logging import raise_if_not, get_logger
 from .torch_forecasting_model import TorchForecastingModel  # , _TimeSeriesShiftedDataset
@@ -267,8 +268,8 @@ class TCNModel(TorchForecastingModel):
 
         super().__init__(**kwargs)
 
-    # def _create_dataset(self, training_series, target_series):
-    #     return _TimeSeriesShiftedDataset(training_series, target_series, self.input_length, self.output_length)
+    def build_ts_dataset_from_single_series(self, series):
+        return ShiftedDataset(series, seq_length=self.input_length, shift=self.target_length)
 
     @property
     def first_prediction_index(self) -> int:

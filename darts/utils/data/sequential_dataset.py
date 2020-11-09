@@ -4,7 +4,7 @@ from .timeseries_dataset import TimeSeriesDataset
 from ..utils import raise_if_not
 
 
-class SimpleSequentialDataset(TimeSeriesDataset):
+class SequentialDataset(TimeSeriesDataset):
     def __init__(self,
                  input_series: Union[TimeSeries, Sequence[TimeSeries]],
                  target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -22,7 +22,7 @@ class SimpleSequentialDataset(TimeSeriesDataset):
 
         The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
         a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
-        lengths, they will contain different numbers of slices. This implies that some particular slices may
+        lengths, they will contain different numbers of slices. Some particular slices may
         be sampled more often than others if they belong to shorter time series.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
@@ -36,8 +36,8 @@ class SimpleSequentialDataset(TimeSeriesDataset):
         target_series:
             Optionally, one or a sequence of `TimeSeries` containing the target dimensions. If this parameter is not
             set, the dataset will use `input_series` instead. If it is set, the provided sequence must have
-            the same length as that of `input_series`. In addition, all the target series must have the time axis as
-            the corresponding input series.
+            the same length as that of `input_series`. In addition, all the target series must have the same time axis
+            as the corresponding input series.
             All the emitted target series start after the end of the emitted input series.
         input_length
             The length of the emitted input series.
@@ -88,8 +88,8 @@ class SimpleSequentialDataset(TimeSeriesDataset):
                      'The dataset contains some time series that are too short to contain '
                      '`input_length + `target_length` ({}-th series)'.format(ts_idx))
 
-        # determine the index of the forecasting point (the last point of the input series, before the target)
-        # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
+        # Determine the index of the forecasting point (the last point of the input series, before the target).
+        # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
         lh_idx = (idx - (ts_idx * len(self.input_series))) % n_samples_in_ts
 
         # The time series index of our forecasting point (indexed from the end of the series):

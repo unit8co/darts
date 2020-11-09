@@ -19,7 +19,7 @@ from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesDataset
-from ..utils.data.simple_sequential_dataset import SimpleSequentialDataset
+from ..utils.data.sequential_dataset import SequentialDataset
 from ..utils.data.simple_dataset import SimpleTimeSeriesDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import ForecastingModel
@@ -273,7 +273,7 @@ class TorchForecastingModel(ForecastingModel):
     def build_ts_dataset_from_single_series(self, series):
         """ Inherit this method in your model if there is a better default dataset
         """
-        return SimpleSequentialDataset(series, input_length=self.input_length, target_length=self.target_length)
+        return SequentialDataset(series, input_length=self.input_length, target_length=self.target_length)
 
     @random_method
     def fit(self,
