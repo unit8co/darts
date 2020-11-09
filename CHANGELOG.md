@@ -4,7 +4,11 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.5.0...develop)
+
+## [0.5.0](https://github.com/unit8co/darts/tree/0.5.0) (2020-11-09)
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...0.5.0)
 ### For users of the library:
 **Added:**
 - Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions:
