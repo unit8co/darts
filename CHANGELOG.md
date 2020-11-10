@@ -4,7 +4,33 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.5.0...develop)
+
+## [0.5.0](https://github.com/unit8co/darts/tree/0.5.0) (2020-11-09)
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.4.0...0.5.0)
+### For users of the library:
+**Added:**
+- Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions:
+  - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
+  - `RegressionEnsembleModel`, a concrete implementation of `EnsembleModel `which allows to specify any regression model (providing `fit()` and `predict()` methods) to use to ensemble the constituent models' predictions.
+- A new method to `TorchForecastingModel`: `untrained_model()` returns the model as it was initally created, allowing to retrain the exact same model from scratch. Works both when specifying a `random_state` or not.
+- New `ForecastingModel.backtest()` and `RegressionModel.backtest()` functions which by default compute a single error score from the historical forecasts the model would have produced.
+  - A new `reduction` parameter allows to specify whether to compute the mean/median/… of errors or (when `reduction` is set to `None`) to return a list of historical errors.
+  - The previous `backtest()` functionality still exists but has been renamed `historical_forecasts()`
+- Added a new `last_points_only` parameter to `historical_forecasts()`, `backtest()` and `gridsearch()`
+
+**Changed:**
+- &#x1F534; Renamed `backtest()` into `historical_forecasts()`
+- `fill_missing_values()` and `MissingValuesFiller` used to remove the variable names when used with `fill='auto'` – not anymore.
+- Modified the default plotting style to increase contrast and make plots lighter.
+
+**Fixed:**
+- Small mistake in the `NaiveDrift` model implementation which caused the first predicted value to repeat the last training value.
+
+### For developers of the library:
+**Changed:**
+- `@random_method` decorator now always assigns a `_random_instance` field to decorated methods (seeded with a random seed). This doesn't change the observed behavior, but allows to deterministically "reset" `TorchForecastingModel` by saving `_random_instance` along with the other parameters of the model upon creation.
 
 ## [0.4.0](https://github.com/unit8co/darts/tree/0.4.0) (2020-10-28)
 
@@ -61,7 +87,7 @@ Darts is still in an early development phase and we cannot always guarantee back
   ```
 
 ### For developers of the library
-### Changed
+**Changed:**
 - GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
 - (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
 

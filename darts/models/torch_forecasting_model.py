@@ -26,6 +26,7 @@ from .forecasting_model import ForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.darts', 'runs')
+UNTRAINED_MODELS_FOLDER = os.path.join('.darts', 'untrained_models')
 
 logger = get_logger(__name__)
 
@@ -34,58 +35,12 @@ def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
 
 
+def _get_untrained_models_folder(work_dir, model_name):
+    return os.path.join(work_dir, UNTRAINED_MODELS_FOLDER, model_name)
+
+
 def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
-
-
-# class _TimeSeriesShiftedDataset(Dataset):
-#
-#     def __init__(self,
-#                  series: TimeSeries,
-#                  target_series: TimeSeries,
-#                  length: int = 3,
-#                  shift: int = 1):
-#         """
-#         A PyTorch Dataset from a univariate TimeSeries.
-#         The Dataset iterates a moving window over the time series. The resulting slices contain `(data, target)`,
-#         where `data` and `target` are both 1-D sub-sequences of length `ength`. The sequence contained in
-#         target is shifted forward by `shift` positions, meaning that `target` contains the last
-#         `length` - `shift` entries of `data` and then the `shift` following ones.
-#
-#         Parameters
-#         ----------
-#         series
-#             The time series to be included in the dataset.
-#         target_series
-#             The time series used as target.
-#         length
-#             The length of the training and target sub-sequences.
-#         shift
-#             The number of positions that the target sequence is shifted forward compared to the training sequence.
-#         """
-#
-#         self.training_series_values = series.values()
-#         self.target_series_values = target_series.values()
-#         self.len_series = len(series)
-#         self.length = len(series) - 1 if length is None else length
-#         self.shift = shift
-#
-#         raise_if_not(self.length > 0,
-#                      "The input sequence length must be positive. It is {}".format(self.length),
-#                      logger)
-#
-#         raise_if_not(self.shift > 0,
-#                      "The shift value must be positive. It is {}".format(self.length),
-#                      logger)
-#
-#     def __len__(self):
-#         return self.len_series - self.length - self.shift + 1
-#
-#     def __getitem__(self, index):
-#         idx = index % self.__len__()
-#         data = self.training_series_values[idx:idx + self.length]
-#         target = self.target_series_values[idx + self.shift:idx + self.length + self.shift]
-#         return torch.from_numpy(data).float(), torch.from_numpy(target).float()
 
 
 class TimeSeriesTorchDataset(Dataset):
@@ -145,7 +100,6 @@ class TimeSeriesTorchDataset(Dataset):
 
 class TorchForecastingModel(ForecastingModel):
     # TODO: add is_stochastic & reset methods
-    # TODO: transparent support for multivariate time series
     def __init__(self,
                  batch_size: int = 32,
                  target_length: int = 1,
@@ -158,7 +112,7 @@ class TorchForecastingModel(ForecastingModel):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 model_name: str = "torch_model_run",  # TODO uid
+                 model_name: str = "torch_model_run",  # TODO: uid
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
@@ -212,7 +166,6 @@ class TorchForecastingModel(ForecastingModel):
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
         """
-
         super().__init__()
 
         raise_if_not(isinstance(self.model, nn.Module), 'Please make sure that self.model is set to a valid '
@@ -269,6 +222,8 @@ class TorchForecastingModel(ForecastingModel):
             self.lr_scheduler = _create_from_cls_and_kwargs(lr_scheduler_cls, lr_scheduler_kwargs)
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
+
+        self._save_untrained_model(_get_untrained_models_folder(work_dir, model_name))
 
     def build_ts_dataset_from_single_series(self, series):
         """ Inherit this method in your model if there is a better default dataset
@@ -356,7 +311,8 @@ class TorchForecastingModel(ForecastingModel):
                 n: int,
                 use_full_target_length: bool = False,
                 input_series: Optional[TimeSeries] = None) -> TimeSeries:
-        """ Predicts values for a certain number of time steps after the end of the training series,
+        """
+        Predicts values for a certain number of time steps after the end of the training series,
         or after the end of a specified `input_series`.
 
         In the case of univariate training series, `n` can assume any integer value greater than 0.
@@ -398,8 +354,6 @@ class TorchForecastingModel(ForecastingModel):
                      "Please set 'use_full_target_length' to 'True' and 'n' smaller or equal to 'target_length'"
                      " when using a multivariate TimeSeries instance as input.", logger)
 
-        # create input sequence for prediction
-        # pred_in = self._create_predict_input(input_series)
         if input_series is None:
             dataset = SimpleTimeSeriesDataset(self.training_series)
         else:
@@ -463,6 +417,9 @@ class TorchForecastingModel(ForecastingModel):
     def multi_gridsearch(self):
         # TODO
         raise NotImplementedError()
+
+    def untrained_model(self):
+        return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @property
     def first_prediction_index(self) -> int:
@@ -590,6 +547,29 @@ class TorchForecastingModel(ForecastingModel):
                 # remove older files
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
+
+    def _save_untrained_model(self, folder):
+        os.makedirs(folder, exist_ok=True)
+        filename = os.path.join(folder, 'model.pth.tar')
+
+        with open(filename, 'wb') as f:
+            torch.save(self, f)
+
+    def _load_untrained_model(self, folder):
+        filename = os.path.join(folder, 'model.pth.tar')
+
+        with open(filename, 'rb') as f:
+            model = torch.load(f)
+        return model
+
+    def _prepare_validation_data(self, val_training_series, val_target_series):
+        val_dataset = self._create_dataset(val_training_series, val_target_series)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
+                                num_workers=0, pin_memory=True, drop_last=False)
+        raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
+                     'The provided validation time series is too short for this model output length.',
+                     logger)
+        return val_loader
 
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)

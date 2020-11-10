@@ -5,9 +5,11 @@ Baseline Models
 A collection of simple benchmark models.
 """
 
+from typing import List, Optional
 import numpy as np
 
 from .forecasting_model import ForecastingModel
+from .ensemble_model import EnsembleModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
 
@@ -95,5 +97,28 @@ class NaiveDrift(ForecastingModel):
         first, last = self.training_series.first_value(), self.training_series.last_value()
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n
-        forecast = np.linspace(last, last_value, num=n)
+        forecast = np.linspace(last, last_value, num=n + 1)[1:]
         return self._build_forecast_series(forecast)
+
+
+class NaiveEnsembleModel(EnsembleModel):
+
+    def __init__(self, models: List[ForecastingModel]):
+        """ Naive combination model
+
+        Naive implementation of `EnsembleModel`
+        Returns the average of all predictions of the constituent models
+        """
+        super().__init__(models)
+
+    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+        super().fit(training_series, target_series)
+
+        for model in self.models:
+            if isinstance(model, UnivariateForecastingModel):
+                model.fit(self.training_series)
+            else:
+                model.fit(self.training_series, self.target_series)
+
+    def ensemble(self, predictions: List[TimeSeries]):
+        return sum(predictions) / len(self.models)
