@@ -24,7 +24,7 @@ if TORCH_AVAILABLE:
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
         series_multivariate = series.stack(series * 2)
-        module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
+        module = _RNNModule('RNN', input_size=1, target_length=1, hidden_dim=25,
                             num_layers=1, num_layers_out_fc=[], dropout=0)
 
         @classmethod
@@ -77,8 +77,8 @@ if TORCH_AVAILABLE:
             shutil.rmtree('.darts')
 
         @staticmethod
-        def helper_test_use_full_output_length(test_case, pytorch_model, series):
-            model = pytorch_model(n_epochs=2, output_length=3)
+        def helper_test_use_full_target_length(test_case, pytorch_model, series):
+            model = pytorch_model(n_epochs=2, target_length=3)
             model.fit(series)
             pred = model.predict(7, True)
             test_case.assertEqual(len(pred), 7)
@@ -89,8 +89,8 @@ if TORCH_AVAILABLE:
             test_case.assertEqual(len(pred), 4)
             test_case.assertEqual(pred.width, 1)
 
-        def test_use_full_output_length(self):
-            RNNModelTestCase.helper_test_use_full_output_length(self, RNNModel, self.series)
+        def test_use_full_target_length(self):
+            RNNModelTestCase.helper_test_use_full_target_length(self, RNNModel, self.series)
 
         @staticmethod
         def helper_test_multivariate(test_case, pytorch_model, series_multivariate):
@@ -98,16 +98,16 @@ if TORCH_AVAILABLE:
             # trying to fit multivariate series with input_size=1
             with test_case.assertRaises(ValueError):
                 model.fit(series_multivariate, series_multivariate["0"])
-            model = pytorch_model(n_epochs=2, input_size=2, output_length=3)
+            model = pytorch_model(n_epochs=2, input_size=2, target_length=3)
             # output size is 1 while should be 2 here
             with test_case.assertRaises(ValueError):
                 model.fit(series_multivariate)
             # fit function called with valid parameters
             model.fit(series_multivariate, series_multivariate["0"])
-            # use_full_output_length not set to True
+            # use_full_target_length not set to True
             with test_case.assertRaises(ValueError):
                 pred = model.predict(n=1)
-            # n > output_length
+            # n > target_length
             with test_case.assertRaises(ValueError):
                 pred = model.predict(4, True)
             # predict called with valid parameters
@@ -119,7 +119,7 @@ if TORCH_AVAILABLE:
             # target_series.width != output_size
             with test_case.assertRaises(ValueError):
                 model.fit(series_multivariate, series_multivariate[["0", "1"]])
-            model = pytorch_model(n_epochs=2, input_size=2, output_length=2, output_size=2)
+            model = pytorch_model(n_epochs=2, input_size=2, target_length=2, output_size=2)
             # fit and predict called with valid parameters
             model.fit(series_multivariate, series_multivariate[["0", "1"]])
             pred = model.predict(2, True)

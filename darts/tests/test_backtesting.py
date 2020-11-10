@@ -124,19 +124,19 @@ class BacktestingTestCase(unittest.TestCase):
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
                 tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3)
             with self.assertRaises(ValueError):
                 tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False,
-                                   use_full_output_length=False)
+                                   use_full_target_length=False)
             pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['0']], pd.Timestamp('20000125'), 1,
-                                      verbose=False, use_full_output_length=True)
+                                      verbose=False, use_full_target_length=True)
             self.assertEqual(pred.width, 1)
             pred = tcn_model.backtest(linear_series_multi, linear_series_multi[['1']], pd.Timestamp('20000125'), 3,
-                                      verbose=False, use_full_output_length=True)
+                                      verbose=False, use_full_target_length=True)
             self.assertEqual(pred.width, 1)
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3, output_size=2)
             pred = tcn_model.backtest(linear_series_multi, linear_series_multi, pd.Timestamp('20000125'), 3,
-                                      verbose=False, use_full_output_length=True)
+                                      verbose=False, use_full_target_length=True)
             self.assertEqual(pred.width, 2)
 
     def test_backtest_regression(self):
@@ -207,12 +207,12 @@ class BacktestingTestCase(unittest.TestCase):
             'n_epochs': [1],
             'batch_size': [1],
             'input_size': [2],
-            'output_length': [3],
+            'target_length': [3],
             'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape,
-                            use_full_output_length=True)
+                            use_full_target_length=True)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)

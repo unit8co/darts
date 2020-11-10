@@ -65,7 +65,7 @@ class _TransformerModule(nn.Module):
     def __init__(self,
                  input_size: int,
                  input_length: int,
-                 output_length: int,
+                 target_length: int,
                  output_size: int,
                  d_model: int,
                  nhead: int,
@@ -87,7 +87,7 @@ class _TransformerModule(nn.Module):
             The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
         input_length
             Number of time steps to be input to the forecasting module.
-        output_length
+        target_length
             Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
@@ -117,7 +117,7 @@ class _TransformerModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, output_length, output_size)`
+        y of shape `(batch_size, target_length, output_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
@@ -125,7 +125,7 @@ class _TransformerModule(nn.Module):
 
         self.input_size = input_size
         self.output_size = output_size
-        self.output_length = output_length
+        self.target_length = target_length
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(d_model, dropout, input_length)
@@ -141,7 +141,7 @@ class _TransformerModule(nn.Module):
                                           custom_encoder=custom_encoder,
                                           custom_decoder=custom_decoder)
 
-        self.decoder = nn.Linear(d_model, output_length * output_size)
+        self.decoder = nn.Linear(d_model, target_length * output_size)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
@@ -171,10 +171,10 @@ class _TransformerModule(nn.Module):
         out = self.decoder(x)
 
         # Here we change the data format
-        # from (1, batch_size, output_length * output_size)
-        # to (batch_size, output_length, output_size)
+        # from (1, batch_size, target_length * output_size)
+        # to (batch_size, target_length, output_size)
         predictions = out[0, :, :]
-        predictions = predictions.view(-1, self.output_length, self.output_size)
+        predictions = predictions.view(-1, self.target_length, self.output_size)
 
         return predictions
 
@@ -185,7 +185,7 @@ class TransformerModel(TorchForecastingModel):
                  model: Optional[nn.Module] = None,
                  input_size: int = 1,
                  input_length: int = 1,
-                 output_length: int = 1,
+                 target_length: int = 1,
                  output_size: int = 1,
                  d_model: int = 512,
                  nhead: int = 8,
@@ -234,7 +234,7 @@ class TransformerModel(TorchForecastingModel):
             Number of time steps to be input to the forecasting module (default=1).
         output_size
             The dimensionality of the output time series (default=1).
-        output_length
+        target_length
             Number of time steps to be output by the forecasting module (default=1).
         d_model
             the number of expected features in the transformer encoder/decoder inputs (default=512).
@@ -259,7 +259,7 @@ class TransformerModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['output_length'] = output_length
+        kwargs['target_length'] = target_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = output_size
 
@@ -267,7 +267,7 @@ class TransformerModel(TorchForecastingModel):
         if model is None:
             self.model = _TransformerModule(input_size=input_size,
                                             input_length=input_length,
-                                            output_length=output_length,
+                                            target_length=target_length,
                                             output_size=output_size,
                                             d_model=d_model,
                                             nhead=nhead,
