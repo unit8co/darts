@@ -112,13 +112,10 @@ class NaiveEnsembleModel(EnsembleModel):
         super().__init__(models)
 
     def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        super().fit(training_series, target_series)
+        super().fit(training_series)
 
         for model in self.models:
-            if isinstance(model, UnivariateForecastingModel):
-                model.fit(self.training_series)
-            else:
-                model.fit(self.training_series, self.target_series)
+            model.fit(self.training_series)
 
     def ensemble(self, predictions: List[TimeSeries]):
         return sum(predictions) / len(self.models)

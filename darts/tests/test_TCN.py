@@ -115,6 +115,6 @@ if TORCH_AVAILABLE:
             series = tg.linear_timeseries(length=100)
             RNNModelTestCase.helper_test_use_full_target_length(self, TCNModel, series)
 
-        def test_multivariate(self):
-            series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100))
-            RNNModelTestCase.helper_test_multivariate(self, TCNModel, series_multivariate)
+        # def test_multivariate(self):
+        #     series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100))
+        #     RNNModelTestCase.helper_test_multivariate(self, TCNModel, series_multivariate)
