@@ -105,7 +105,7 @@ class TorchForecastingModel(ForecastingModel):
                  target_length: int = 1,
                  input_length: int = 10,
                  input_size: int = 1,
-                 output_size: int = 1,
+                 target_size: int = 1,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Dict = None,
@@ -132,7 +132,7 @@ class TorchForecastingModel(ForecastingModel):
             Number of past time steps that are fed to the forecasting module.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        output_size
+        target_size
             The dimensionality of the output time series.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
@@ -180,7 +180,7 @@ class TorchForecastingModel(ForecastingModel):
         self.input_length = input_length
         self.input_size = input_size
         self.target_length = target_length
-        self.output_size = output_size
+        self.target_size = target_size
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -232,7 +232,7 @@ class TorchForecastingModel(ForecastingModel):
 
     @random_method
     def fit(self,
-            series: TimeSeries,
+            training_series: TimeSeries,
             val_series: Optional[TimeSeries] = None,
             verbose: bool = False) -> None:
         """ Fit method for torch modules. This is the entry point to fit the model on one time series only,
@@ -243,7 +243,7 @@ class TorchForecastingModel(ForecastingModel):
 
         Parameters
         ----------
-        series
+        training_series
             A series to train the model on.
         val_series
             Optionally, a validation training time series, which will be used to compute the validation
@@ -251,14 +251,14 @@ class TorchForecastingModel(ForecastingModel):
         verbose
             Optionally, whether to print progress.
         """
-        super().fit(series)
+        super().fit(training_series)
 
         raise_if_not(self.training_series.width == self.input_size, "The number of components of the training series "
                      "must be equal to the `input_size` defined when instantiating the current model.", logger)
-        raise_if_not(self.training_series.width == self.output_size, "The number of components in the training series "
-                     "be equal to the `output_size` defined when instantiating the current model.", logger)
+        raise_if_not(self.training_series.width == self.target_size, "The number of components in the training series "
+                     "be equal to the `target_size` defined when instantiating the current model.", logger)
 
-        train_dataset = self.build_ts_dataset_from_single_series(series)
+        train_dataset = self.build_ts_dataset_from_single_series(training_series)
         val_dataset = None if val_series is None else self.build_ts_dataset_from_single_series(val_series)
         self.multi_fit(train_dataset, val_dataset, verbose)
 
@@ -363,7 +363,7 @@ class TorchForecastingModel(ForecastingModel):
     def multi_predict(self,
                       n: int,
                       input_series_dataset: TimeSeriesDataset,
-                      use_full_target_length: bool = False) -> TimeSeriesDataset:
+                      use_full_target_length: bool = True) -> TimeSeriesDataset:
 
         self.model.eval()
 

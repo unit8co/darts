@@ -58,8 +58,6 @@ class TimeSeries:
 
         if (len(df) < 3):
             self._freq: str = freq
-            logger.info('A TimeSeries with length below 3 is being created. Please note that this can lead to'
-                        ' unexpected behavior.')
         else:
             if not df.index.inferred_freq:
                 if fill_missing_dates:

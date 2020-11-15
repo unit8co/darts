@@ -28,7 +28,7 @@ class _ResidualBlock(nn.Module):
                  nr_blocks_below: int,
                  num_layers: int,
                  input_size: int,
-                 output_size: int):
+                 target_size: int):
         """ PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
@@ -49,7 +49,7 @@ class _ResidualBlock(nn.Module):
             The number of convolutional layers.
         input_size
             The dimensionality of the input time series of the whole network.
-        output_size
+        target_size
             The dimensionality of the output time series of the whole network.
 
         Inputs
@@ -63,7 +63,7 @@ class _ResidualBlock(nn.Module):
         -------
         y of shape `(batch_size, out_dimension, input_length)`
             Tensor containing the output sequence of the residual block.
-            out_dimension is equal to `output_size` if this is the last residual block,
+            out_dimension is equal to `target_size` if this is the last residual block,
             in all other cases it is equal to `num_filters`.
         """
         super(_ResidualBlock, self).__init__()
@@ -75,7 +75,7 @@ class _ResidualBlock(nn.Module):
         self.nr_blocks_below = nr_blocks_below
 
         input_dim = input_size if nr_blocks_below == 0 else num_filters
-        output_dim = output_size if nr_blocks_below == num_layers - 1 else num_filters
+        output_dim = target_size if nr_blocks_below == num_layers - 1 else num_filters
         self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** nr_blocks_below))
         if weight_norm:
@@ -115,7 +115,7 @@ class _TCNModule(nn.Module):
                  num_layers: Optional[int],
                  dilation_base: int,
                  weight_norm: bool,
-                 output_size: int,
+                 target_size: int,
                  target_length: int,
                  dropout: float):
 
@@ -126,7 +126,7 @@ class _TCNModule(nn.Module):
         ----------
         input_size
             The dimensionality of the input time series.
-        output_size
+        target_size
             The dimensionality of the output time series.
         input_length
             The length of the input time series.
@@ -166,7 +166,7 @@ class _TCNModule(nn.Module):
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.target_length = target_length
-        self.output_size = output_size
+        self.target_size = target_size
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
 
@@ -184,7 +184,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, self.input_size, output_size)
+                                       self.dropout, weight_norm, i, num_layers, self.input_size, target_size)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -197,7 +197,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_length, self.output_size)
+        x = x.view(batch_size, self.input_length, self.target_size)
 
         return x
 
@@ -209,7 +209,7 @@ class TCNModel(TorchForecastingModel):
                  input_length: int = 12,
                  input_size: int = 1,
                  target_length: int = 1,
-                 output_size: int = 1,
+                 target_size: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -232,7 +232,7 @@ class TCNModel(TorchForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         target_length
             Number of time steps the torch module will predict into the future at once.
-        output_size
+        target_size
             The dimensionality of the output time series.
         kernel_size
             The size of every kernel in a convolutional layer.
@@ -259,9 +259,9 @@ class TCNModel(TorchForecastingModel):
         kwargs['input_length'] = input_length
         kwargs['target_length'] = target_length
         kwargs['input_size'] = input_size
-        kwargs['output_size'] = output_size
+        kwargs['target_size'] = target_size
 
-        self.model = _TCNModule(input_size=input_size, input_length=input_length, output_size=output_size,
+        self.model = _TCNModule(input_size=input_size, input_length=input_length, target_size=target_size,
                                 kernel_size=kernel_size, num_filters=num_filters,
                                 num_layers=num_layers, dilation_base=dilation_base,
                                 target_length=target_length, dropout=dropout, weight_norm=weight_norm)

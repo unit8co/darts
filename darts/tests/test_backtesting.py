@@ -164,7 +164,7 @@ class BacktestingTestCase(unittest.TestCase):
                                                   last_points_only=True)
             self.assertEqual(pred.width, 1)
 
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3, output_size=2)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3, target_size=2)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   linear_series_multi,
                                                   pd.Timestamp('20000125'),
@@ -254,7 +254,7 @@ class BacktestingTestCase(unittest.TestCase):
             'batch_size': [1],
             'input_size': [2],
             'target_length': [3],
-            'output_size': [2],
+            'target_size': [2],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,

@@ -27,7 +27,7 @@ if TORCH_AVAILABLE:
         module = _TransformerModule(input_size=1,
                                     input_length=1,
                                     target_length=1,
-                                    output_size=1,
+                                    target_size=1,
                                     d_model=512,
                                     nhead=8,
                                     num_encoder_layers=6,
@@ -128,10 +128,10 @@ if TORCH_AVAILABLE:
             test_case.assertEqual(len(pred), 3)
             pred = model.predict(2, True)
             test_case.assertEqual(len(pred), 2)
-            # target_series.width != output_size
+            # target_series.width != target_size
             with test_case.assertRaises(ValueError):
                 model.fit(series_multivariate, series_multivariate[["0", "1"]])
-            model = pytorch_model(n_epochs=2, input_size=2, target_length=2, output_size=2)
+            model = pytorch_model(n_epochs=2, input_size=2, target_length=2, target_size=2)
             # fit and predict called with valid parameters
             model.fit(series_multivariate, series_multivariate[["0", "1"]])
             pred = model.predict(2, True)
