@@ -438,6 +438,24 @@ class TimeSeries:
         time_index = self.time_index().intersection(other.time_index())
         return self.__getitem__(time_index)
 
+    def strip(self) -> 'TimeSeries':
+        """
+        Returns a TimeSeries slice of this time series, where NaN-only entries at the beginning and the end of the
+        series are removed. No entries after (and including) the first non-NaN entry and before (and including) the
+        last non-NaN entry are removed.
+
+        Returns
+        -------
+        TimeSeries
+            a new series based on the original where NaN-only entries at start and end have been removed
+        """
+
+        new_start_idx = self._df.first_valid_index()
+        new_end_idx = self._df.last_valid_index()
+        new_series = self._df.loc[new_start_idx:new_end_idx]
+
+        return TimeSeries(new_series, self.freq_str())
+
     # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
         """
