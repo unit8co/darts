@@ -484,3 +484,23 @@ class TimeSeriesTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             series.map(ufunc_add)
+
+    def test_gaps(self):
+        times = pd.date_range('20130101', '20130110')
+        pd_series1 = pd.Series([1, 1] + 3 * [np.nan] + [1, 1, 1] + [np.nan] * 2, index=times)
+        pd_series2 = pd.Series([1, 1] + 3 * [np.nan] + [1, 1] + [np.nan] * 3, index=times)
+        pd_series3 = pd.Series([np.nan] * 10, index=times)
+        series1 = TimeSeries.from_series(pd_series1)
+        series2 = TimeSeries.from_series(pd_series2)
+        series3 = TimeSeries.from_series(pd_series3)
+
+        gaps1 = series1.gaps()
+        self.assertTrue((gaps1['gap_start'] == pd.DatetimeIndex([pd.Timestamp('20130103'),
+                                                                 pd.Timestamp('20130109')])).all())
+        self.assertTrue((gaps1['gap_end'] == pd.DatetimeIndex([pd.Timestamp('20130105'),
+                                                               pd.Timestamp('20130110')])).all())
+        self.assertEqual(gaps1['gap_size'].values.tolist(), [3, 2])
+        gaps2 = series2.gaps()
+        self.assertEqual(gaps2['gap_size'].values.tolist(), [3, 3])
+        gaps3 = series3.gaps()
+        self.assertEqual(gaps3['gap_size'].values.tolist(), [10])

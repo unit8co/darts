@@ -10,7 +10,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, List, Union
+from typing import Tuple, Optional, Callable, Any, List, Union, Dict
 from inspect import signature
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
@@ -227,6 +227,33 @@ class TimeSeries:
             The duration of this time series.
         """
         return self._df.index[-1] - self._df.index[0]
+
+    def gaps(self) -> pd.DataFrame:
+        """
+        Returns
+        -------
+        pd.DataFrame
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            in this time series. The DataFrame contains three columns that include the start and end time stamps
+            of the gap and the integer length of the gap (in `self.freq()` units).
+        """
+
+        is_nan_series = self._df.isna().all(axis=1).astype(int)
+        diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
+        gap_starts = diff[diff == 1].index + self.freq()
+        gap_ends = diff[diff == -1].index
+
+        if is_nan_series.iloc[0] == 1:
+            gap_starts = gap_starts.insert(0, self.start_time())
+        if is_nan_series.iloc[-1] == 1:
+            gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
+
+        gap_df = pd.DataFrame()
+        gap_df['gap_start'] = gap_starts
+        gap_df['gap_end'] = gap_ends
+        gap_df['gap_size'] = ((gap_ends - gap_starts) / self.freq()).astype(int) + 1
+
+        return gap_df
 
     def copy(self, deep: bool = True) -> 'TimeSeries':
         """
