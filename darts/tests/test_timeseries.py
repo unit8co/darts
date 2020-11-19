@@ -504,3 +504,11 @@ class TimeSeriesTestCase(unittest.TestCase):
         self.assertEqual(gaps2['gap_size'].values.tolist(), [3, 3])
         gaps3 = series3.gaps()
         self.assertEqual(gaps3['gap_size'].values.tolist(), [10])
+
+    def test_longest_contiguous_slice(self):
+        times = pd.date_range('20130101', '20130111')
+        pd_series1 = pd.Series([1, 1] + 3 * [np.nan] + [1, 1, 1] + [np.nan] * 2 + [1], index=times)
+        series1 = TimeSeries.from_series(pd_series1)
+
+        self.assertEqual(len(series1.longest_contiguous_slice()), 3)
+        self.assertEqual(len(series1.longest_contiguous_slice(2)), 6)

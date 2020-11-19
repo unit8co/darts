@@ -10,7 +10,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
-from typing import Tuple, Optional, Callable, Any, List, Union, Dict
+from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
@@ -482,6 +482,40 @@ class TimeSeries:
         new_series = self._df.loc[new_start_idx:new_end_idx]
 
         return TimeSeries(new_series, self.freq_str())
+
+    def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
+        """
+        Returns the largest TimeSeries slice of this time series that contains no gaps (contigouse all-NaN rows)
+        larger than `max_gap_size`.
+
+        Returns
+        -------
+        TimeSeries
+            a new series constituting the largest slice of the original with no or bounded gaps
+        """
+        if self._df.isna().sum().sum() == 0:
+            return self.copy()
+        stripped_series = self.strip()
+        gaps = stripped_series.gaps()
+        relevant_gaps = gaps[gaps['gap_size'] > max_gap_size]
+
+        curr_slice_start = stripped_series.start_time()
+        max_size = pd.Timedelta(days=0)
+        max_slice_start = None
+        max_slice_end = None
+        for index, row in relevant_gaps.iterrows():
+            size = row['gap_start'] - curr_slice_start - self.freq()
+            if size > max_size:
+                max_size = size
+                max_slice_start = curr_slice_start
+                max_slice_end = row['gap_start'] - self.freq()
+            curr_slice_start = row['gap_end'] + self.freq()
+
+        if stripped_series.end_time() - curr_slice_start > max_size:
+            max_slice_start = curr_slice_start
+            max_slice_end = self.end_time()
+
+        return stripped_series[max_slice_start:max_slice_end]
 
     # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
