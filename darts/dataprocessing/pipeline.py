@@ -124,6 +124,9 @@ class Pipeline:
         for transformer in reversed(self._transformers):
             data = transformer.inverse_transform(data)
         return data
+    
+    def invertible(self) -> bool:
+        return self._invertible
 
     def __getitem__(self, key: Union[int, slice]) -> 'Pipeline':
         """
