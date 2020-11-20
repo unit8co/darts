@@ -126,6 +126,15 @@ class Pipeline:
         return data
     
     def invertible(self) -> bool:
+        """
+        Returns whether the pipeline is invertible or not.
+        A pipeline is invertible if all transformers in the pipeline are themselves invertible.
+
+        Returns
+        -------
+        bool
+            True if the pipeline is invertible, False otherwise
+        """
         return self._invertible
 
     def __getitem__(self, key: Union[int, slice]) -> 'Pipeline':
