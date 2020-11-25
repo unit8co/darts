@@ -8,6 +8,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 ### For users of the library:
 **Added:**
 - `Pipeline.invertible()` a getter which returns whether the pipeline is invertible or not.
+- `TimeSeries.to_json()` and `TimeSeries.from_json()` methods to convert `TimeSeries` to/from a `JSON` string.
 
 ## [0.5.0](https://github.com/unit8co/darts/tree/0.5.0) (2020-11-09)
 
