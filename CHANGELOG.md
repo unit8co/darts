@@ -5,6 +5,9 @@ Darts is still in an early development phase and we cannot always guarantee back
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.5.0...develop)
+### For users of the library:
+**Added:**
+- `Pipeline.invertible()` a getter which returns whether the pipeline is invertible or not.
 
 ## [0.5.0](https://github.com/unit8co/darts/tree/0.5.0) (2020-11-09)
 
