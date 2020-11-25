@@ -7,7 +7,6 @@ Timeseries
 
 import pandas as pd
 import numpy as np
-import json
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from pandas.tseries.frequencies import to_offset
@@ -978,9 +977,9 @@ class TimeSeries:
             A JSON String representing the time series
         """
         return self._df.to_json(orient='split', date_format='iso')
-    
+
     @staticmethod
-    def from_json(json_str:str) -> 'TimeSeries':
+    def from_json(json_str: str) -> 'TimeSeries':
         """
         Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
         into a `TimeSeries` object
@@ -995,7 +994,7 @@ class TimeSeries:
         TimeSeries
             The time series object converted from the JSON String
         """
-        
+
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_times_and_values(df.index, df)
 
