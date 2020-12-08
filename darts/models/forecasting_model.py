@@ -42,13 +42,14 @@ class ForecastingModel(ABC):
     ----------
     training_series
         Reference to the `TimeSeries` used for training the model through the `fit()` function.
+        This is only used if the model has been fit on one time series.
     """
     @abstractmethod
     def __init__(self):
         # Stores training date information:
-        self.training_series: TimeSeries = None
+        self.training_series: Optional[TimeSeries] = None
 
-        # state; whether the model has been fit or not
+        # state; whether the model has been fit (on one time series) or not
         self._fit_called = False
 
     @abstractmethod
@@ -63,10 +64,7 @@ class ForecastingModel(ABC):
         raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
                      .format(len(series), str(self), self.min_train_series_length))
-
-        if isinstance(series, TimeSeries):
-            self.training_series = series
-
+        self.training_series = series
         self._fit_called = True
 
     @abstractmethod
@@ -84,7 +82,7 @@ class ForecastingModel(ABC):
             A time series containing the `n` next points after then end of the training series.
         """
         if not self._fit_called:
-            raise_log(Exception('The model must be fit before calling predict()'), logger)
+            raise_log(Exception('The model must be fit before calling `predict()`.'), logger)
 
     @property
     def min_train_series_length(self) -> int:
@@ -553,6 +551,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     to forecast, as well as covariates if needed.
     """
 
+    _expect_covariates = False
+
     @abstractmethod
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -577,7 +577,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             some models as an input. Some of these covariates may represent forecasts known in advance. This knowledge
             is a property of the `TimeSeries`.
         """
-        self._fit_called = True
+        if isinstance(series, TimeSeries) and covariates is None:
+            super().fit(series)  # handle the single series case
+        if covariates is not None:
+            self._expect_covariates = True
+
 
     @abstractmethod
     def predict(self,
@@ -618,5 +622,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is a sequence of several time series, this function returns a sequence where each element
             contains the corresponding `n` points forecasts.
         """
-        if not self._fit_called:
-            raise_log(Exception('The model must be fit before calling predict()'), logger)
+        if series is None and covariates is None:
+            if not self._fit_called:
+                raise_log(Exception('For global models, before calling `predict()`, either `fit()` has to '
+                                    'be called for a single series, or one has to provide the `series` argument'
+                                    'to `predict()`.'))
+        if self._expect_covariates and covariates is None:
+            raise_log(ValueError('The model has been trained with covariates. Some matching covariates'
+                                 'have to be provided to `predict()`.'))
