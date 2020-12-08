@@ -89,7 +89,7 @@ class _Block(nn.Module):
         x_hat of shape `(batch_size, input_length)`
             Tensor containing the 'backcast' of the block, which represents an approximation of `x`
             given the constraints of the functional space determined by `g`.
-        y_hat of shape `(batch_size, target_length)`
+        y_hat of shape `(batch_size, output_length)`
             Tensor containing the forward forecast of the block.
 
         """
@@ -183,7 +183,7 @@ class _Stack(nn.Module):
         stack_residual of shape `(batch_size, input_length)`
             Tensor containing the 'backcast' of the block, which represents an approximation of `x`
             given the constraints of the functional space determined by `g`.
-        stack_forecast of shape `(batch_size, target_length)`
+        stack_forecast of shape `(batch_size, output_length)`
             Tensor containing the forward forecast of the stack.
 
         """
@@ -273,7 +273,7 @@ class _NBEATSModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, target_length)`
+        y of shape `(batch_size, output_length)`
             Tensor containing the output of the NBEATS module.
 
         """
@@ -396,7 +396,7 @@ class NBEATSModel(TorchForecastingModel):
         )
 
         kwargs['input_length'] = input_length
-        kwargs['target_length'] = target_length
+        kwargs['output_length'] = target_length
 
         super().__init__(**kwargs)
 

@@ -97,7 +97,7 @@ if TORCH_AVAILABLE:
         #     # trying to fit multivariate series with input_size=1
         #     with test_case.assertRaises(ValueError):
         #         model.fit(series_multivariate, series_multivariate["0"])
-        #     model = pytorch_model(n_epochs=2, input_size=2, target_length=3)
+        #     model = pytorch_model(n_epochs=2, input_size=2, output_length=3)
         #     # output size is 1 while should be 2 here
         #     with test_case.assertRaises(ValueError):
         #         model.fit(series_multivariate)
@@ -106,7 +106,7 @@ if TORCH_AVAILABLE:
         #     # use_full_target_length not set to True
         #     with test_case.assertRaises(ValueError):
         #         pred = model.predict(n=1)
-        #     # n > target_length
+        #     # n > output_length
         #     with test_case.assertRaises(ValueError):
         #         pred = model.predict(4, True)
         #     # predict called with valid parameters
@@ -115,10 +115,10 @@ if TORCH_AVAILABLE:
         #     test_case.assertEqual(len(pred), 3)
         #     pred = model.predict(2, True)
         #     test_case.assertEqual(len(pred), 2)
-        #     # target_series.width != target_size
+        #     # target_series.width != output_size
         #     with test_case.assertRaises(ValueError):
         #         model.fit(series_multivariate, series_multivariate[["0", "1"]])
-        #     model = pytorch_model(n_epochs=2, input_size=2, target_length=2, target_size=2)
+        #     model = pytorch_model(n_epochs=2, input_size=2, output_length=2, output_size=2)
         #     # fit and predict called with valid parameters
         #     model.fit(series_multivariate, series_multivariate[["0", "1"]])
         #     pred = model.predict(2, True)

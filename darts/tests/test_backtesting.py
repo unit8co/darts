@@ -231,8 +231,8 @@ class BacktestingTestCase(unittest.TestCase):
             'n_epochs': [1],
             'batch_size': [1],
             'input_size': [2],
-            'target_length': [3],
-            'target_size': [2],
+            'output_length': [3],
+            'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,

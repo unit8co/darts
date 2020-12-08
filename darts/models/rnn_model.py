@@ -30,7 +30,7 @@ class _RNNModule(nn.Module):
 
         PyTorch module implementing a simple RNN with the specified `name` layer.
         This module combines a PyTorch RNN module, together with a fully connected network, which maps the
-        last hidden layers to output of the desired size `target_length` and makes it compatible with
+        last hidden layers to output of the desired size `output_length` and makes it compatible with
         `RNNModel`s.
 
         Parameters
@@ -60,7 +60,7 @@ class _RNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, out_len, target_size)`
+        y of shape `(batch_size, out_len, output_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
@@ -100,7 +100,7 @@ class _RNNModule(nn.Module):
         predictions = self.fc(predictions)
         predictions = predictions.view(batch_size, self.out_len, self.target_size)
 
-        # predictions is of size (batch_size, target_length, 1)
+        # predictions is of size (batch_size, output_length, 1)
         return predictions
 
 
@@ -153,9 +153,9 @@ class RNNModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['target_length'] = target_length
+        kwargs['output_length'] = target_length
         kwargs['input_size'] = input_size
-        kwargs['target_size'] = target_size
+        kwargs['output_size'] = target_size
 
         # set self.model
         if model in ['RNN', 'LSTM', 'GRU']:

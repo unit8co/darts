@@ -117,7 +117,7 @@ class _TransformerModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, target_length, target_size)`
+        y of shape `(batch_size, output_length, output_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
@@ -171,8 +171,8 @@ class _TransformerModule(nn.Module):
         out = self.decoder(x)
 
         # Here we change the data format
-        # from (1, batch_size, target_length * target_size)
-        # to (batch_size, target_length, target_size)
+        # from (1, batch_size, output_length * output_size)
+        # to (batch_size, output_length, output_size)
         predictions = out[0, :, :]
         predictions = predictions.view(-1, self.target_length, self.target_size)
 
@@ -259,9 +259,9 @@ class TransformerModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['target_length'] = target_length
+        kwargs['output_length'] = target_length
         kwargs['input_size'] = input_size
-        kwargs['target_size'] = target_size
+        kwargs['output_size'] = target_size
 
         # set self.model
         if model is None:

@@ -63,7 +63,7 @@ class _ResidualBlock(nn.Module):
         -------
         y of shape `(batch_size, out_dimension, input_length)`
             Tensor containing the output sequence of the residual block.
-            out_dimension is equal to `target_size` if this is the last residual block,
+            out_dimension is equal to `output_size` if this is the last residual block,
             in all other cases it is equal to `num_filters`.
         """
         super(_ResidualBlock, self).__init__()
@@ -153,8 +153,8 @@ class _TCNModule(nn.Module):
         Outputs
         -------
         y of shape `(batch_size, input_length, 1)`
-            Tensor containing the predictions of the next 'target_length' points in the last
-            'target_length' entries of the tensor. The entries before contain the data points
+            Tensor containing the predictions of the next 'output_length' points in the last
+            'output_length' entries of the tensor. The entries before contain the data points
             leading up to the first prediction, all in chronological order.
         """
 
@@ -257,9 +257,9 @@ class TCNModel(TorchForecastingModel):
                      "The output length must be strictly smaller than the input length", logger)
 
         kwargs['input_length'] = input_length
-        kwargs['target_length'] = target_length
+        kwargs['output_length'] = target_length
         kwargs['input_size'] = input_size
-        kwargs['target_size'] = target_size
+        kwargs['output_size'] = target_size
 
         self.model = _TCNModule(input_size=input_size, input_length=input_length, target_size=target_size,
                                 kernel_size=kernel_size, num_filters=num_filters,
