@@ -9,7 +9,7 @@ import re
 import math
 from glob import glob
 import shutil
-from typing import Optional, Dict, Tuple, Union
+from typing import Optional, Dict, Tuple, Union, Sequence
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -18,11 +18,11 @@ from torch.utils.tensorboard import SummaryWriter
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesDataset
+from ..utils.data.timeseries_dataset import TimeSeriesDataset, TimeSeriesTrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
 from ..utils.data.simple_dataset import SimpleTimeSeriesDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
-from .forecasting_model import ForecastingModel
+from .forecasting_model import GlobalForecastingModel
 
 CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
 RUNS_FOLDER = os.path.join('.darts', 'runs')
@@ -44,37 +44,29 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self,
-                 ts_dataset: TimeSeriesDataset,
-                 device,
-                 always_produce_tuples: bool = False,
-                 never_produce_tuples: bool = False):
+    def __init__(self, ts_dataset: Union[TimeSeriesDataset, TimeSeriesTrainingDataset], device):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
-        from `TimeSeries` to torch tensors. Inherits from torch `Dataset`.
+        from `TimeSeries` to torch tensors and stack target series with covariates when needed.
+        Inherits from torch `Dataset`.
 
         Parameters
         ----------
         ts_dataset
-            the `TimeSeriesDataset` underlying this torch Dataset.
-        always_produce_tuples
-            Whether to always emmit tuples. If True and the underlying `ts_dataset` does not contain tuples,
-            this will duplicate the emitted time series into a two-tuple.
-            Cannot be set if `never_produce_tuples` is set.
-        never_produce_tuples
-            Whether to always emmit simple `TimeSeries`. If True and the underlying `ts_dataset` does contain tuples,
-            this will only return the first element of the tuple.
-            Cannot be set if `always_produce_tuples` is set.
+            the `TimeSeriesDataset` or `TimeSeriesTrainingDataset` underlying this torch Dataset.
         """
-        raise_if(always_produce_tuples and never_produce_tuples,
-                 'Only one of `always_produce_tuples` and `never_produce_tuples` can be set.')
         self.ts_dataset = ts_dataset
         self.device = device
-        self.always_produce_tuples = always_produce_tuples
-        self.never_produce_tuples = never_produce_tuples
 
     def _ts_to_tensor(self, ts: TimeSeries):
         return torch.from_numpy(ts.values(copy=False)).float().to(self.device)
+
+    @staticmethod
+    def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
+        if tsr2 is None:
+            return tsr1
+        else:
+            return torch.cat([tsr1, tsr2], dim=1)
 
     def __len__(self):
         return len(self.ts_dataset)
@@ -84,31 +76,34 @@ class TimeSeriesTorchDataset(Dataset):
         Cast the content of the dataset to torch tensors
         """
         item = self.ts_dataset[idx]
-        if isinstance(item, Tuple):
-            if self.never_produce_tuples:
-                return self._ts_to_tensor(item[0])
-            else:
-                return (self._ts_to_tensor(item[0]),
-                        self._ts_to_tensor(item[1]))
+
+        if len(item) == 2:
+            # the dataset contains (input_target, input_covariate) only
+            input_tgt = self._ts_to_tensor(item[0])
+            input_cov = self._ts_to_tensor(item[1]) if item[1] is not None else None
+            return self._cat_with_optional(input_tgt, input_cov)
+
+        elif len(item) == 4:
+            # the dataset contains (input_target, input_covariate, output_target, output_covariate)
+            input_tgt, output_tgt = self._ts_to_tensor(item[0]), self._ts_to_tensor(item[2])
+            input_cov, output_cov = (self._ts_to_tensor(item[1]), self._ts_to_tensor(item[3])) if item[1] is not None else None
+            return self._cat_with_optional(input_tgt, input_cov), self._cat_with_optional(output_tgt, output_cov)
+
         else:
-            if self.always_produce_tuples:
-                tsr = self._ts_to_tensor(item)
-                return tsr, tsr
-            else:
-                return self._ts_to_tensor(item)
+            raise ValueError('The dataset has to emmit tuples of size 2 or 4')
 
 
-class TorchForecastingModel(ForecastingModel):
+class TorchForecastingModel(GlobalForecastingModel):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
                  batch_size: int = 32,
-                 target_length: int = 1,
                  input_length: int = 10,
-                 input_size: int = 1,
-                 target_size: int = 1,
+                 output_length: int = 1,
+                 input_size: int = 1,  # TODO remove
+                 output_size: int = 1,  # TODO remove
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
-                 optimizer_kwargs: Dict = None,
+                 optimizer_kwargs: Optional[Dict] = None,
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
@@ -126,13 +121,13 @@ class TorchForecastingModel(ForecastingModel):
 
         Parameters
         ----------
-        target_length
-            Number of time steps to be output by the forecasting module.
         input_length
             Number of past time steps that are fed to the forecasting module.
+        output_length
+            Number of time steps to be output by the forecasting module.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        target_size
+        output_size
             The dimensionality of the output time series.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
@@ -141,8 +136,8 @@ class TorchForecastingModel(ForecastingModel):
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`)
-            for specifying a learning rate. Otherwise the default values of the selected `optimizer_cls`
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
             will be used.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
@@ -178,9 +173,9 @@ class TorchForecastingModel(ForecastingModel):
             self.device = torch.device(torch_device_str)
 
         self.input_length = input_length
+        self.target_length = output_length
         self.input_size = input_size
-        self.target_length = target_length
-        self.target_size = target_size
+        self.target_size = output_size
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -201,7 +196,7 @@ class TorchForecastingModel(ForecastingModel):
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
             try:
-                instance = cls(**kws)
+                return cls(**kws)
             except (TypeError, ValueError) as e:
                 raise_log(ValueError('Error when building the optimizer or learning rate scheduler;'
                                      'please check the provided class and arguments'
@@ -209,11 +204,8 @@ class TorchForecastingModel(ForecastingModel):
                                      '\narguments (kwargs): {}'
                                      '\nerror:\n{}'.format(cls, kws, e)),
                           logger)
-            return instance
 
         # Create the optimizer and (optionally) the learning rate scheduler
-        if optimizer_kwargs is None:
-            optimizer_kwargs = {'lr': 1e-3}  # we do not set this as a default argument to avoid mutable values
         optimizer_kwargs['params'] = self.model.parameters()
         self.optimizer = _create_from_cls_and_kwargs(optimizer_cls, optimizer_kwargs)
 
@@ -225,48 +217,67 @@ class TorchForecastingModel(ForecastingModel):
 
         self._save_untrained_model(_get_untrained_models_folder(work_dir, model_name))
 
-    def build_ts_dataset_from_single_series(self, series):
-        """ Inherit this method in your model if there is a better default dataset
-        """
-        return SequentialDataset(series, input_length=self.input_length, target_length=self.target_length)
+    def build_train_dataset(self,
+                            target: Sequence[TimeSeries],
+                            covariates: Optional[Sequence[TimeSeries]]) -> TimeSeriesTrainingDataset:
+        return SequentialDataset(target, covariates)
 
     @random_method
     def fit(self,
-            training_series: TimeSeries,
-            val_series: Optional[TimeSeries] = None,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             verbose: bool = False) -> None:
-        """ Fit method for torch modules. This is the entry point to fit the model on one time series only,
-            and it wraps around the `multi_fit()` method.
-            If you need to fit over several time series, or to differentiate between the input
-            and target dimensions of your series, consider building a `TimeSeriesDataset` and calling
-            `multi_fit()` instead.
+        """
+        The fit method for torch models.
+        It wraps around `fit_from_dataset()`.
+
+        *** Currently future covariates are not yet supported ***
 
         Parameters
         ----------
-        training_series
-            A series to train the model on.
+        series
+            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+        covariates
+            Optionally, a series or sequence of series specifying covariates
         val_series
-            Optionally, a validation training time series, which will be used to compute the validation
+            Optionally, one or a sequence of validation target series, which will be used to compute the validation
             loss throughout training and keep track of the best performing models.
+        val_covariates
+            Optinally, the covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
         """
-        super().fit(training_series)
+        super().fit(series, covariates)
 
+        # TODO - handle this better:
         raise_if_not(self.training_series.width == self.input_size, "The number of components of the training series "
                      "must be equal to the `input_size` defined when instantiating the current model.", logger)
         raise_if_not(self.training_series.width == self.target_size, "The number of components in the training series "
-                     "be equal to the `target_size` defined when instantiating the current model.", logger)
+                     "be equal to the `output_size` defined when instantiating the current model.", logger)
 
-        train_dataset = self.build_ts_dataset_from_single_series(training_series)
-        val_dataset = None if val_series is None else self.build_ts_dataset_from_single_series(val_series)
-        self.multi_fit(train_dataset, val_dataset, verbose)
+        series = [series] if isinstance(series, TimeSeries) else series
+        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        val_series = [val_series] if isinstance(val_series, TimeSeries) else val_series
+        val_covariates = [val_covariates] if isinstance(val_covariates, TimeSeries) else val_covariates
+
+        # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
+        raise_if_not(covariates is None or len(series) == len(covariates),
+                     'The number of target series must match the number of covariates')
+        raise_if_not(val_covariates is None or len(val_series) == len(val_covariates),
+                     'The number of validation series must match the number of validation covariates')
+
+        train_dataset = self.build_train_dataset(series, covariates)
+        val_dataset = self.build_train_dataset(val_series, val_covariates)
+
+        self.fit_from_dataset(train_dataset, val_dataset, verbose)
 
     @random_method
-    def multi_fit(self,
-                  train_dataset: TimeSeriesDataset,
-                  val_dataset: Optional[TimeSeriesDataset] = None,
-                  verbose: bool = False) -> None:
+    def fit_from_dataset(self,
+                         train_dataset: TimeSeriesTrainingDataset,
+                         val_dataset: Optional[TimeSeriesTrainingDataset] = None,
+                         verbose: bool = False) -> None:
 
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
@@ -278,8 +289,8 @@ class TorchForecastingModel(ForecastingModel):
         if self.from_scratch:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
 
-        torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device, always_produce_tuples=True)
-        torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device, always_produce_tuples=True)
+        torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
+        torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
 
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
@@ -309,8 +320,9 @@ class TorchForecastingModel(ForecastingModel):
 
     def predict(self,
                 n: int,
-                use_full_target_length: bool = False,
-                input_series: Optional[TimeSeries] = None) -> TimeSeries:
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                use_full_target_length: bool = False) -> TimeSeries:
         """
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of a specified `input_series`.
@@ -320,13 +332,13 @@ class TorchForecastingModel(ForecastingModel):
         the first predicted value is kept as output while at the same time being fed into the input for
         the next prediction (the first value of the previous input is discarded). This way, the input sequence
         'rolls over' by 1 step for every prediction in 'n'.
-        If `use_full_target_length` is set to `True`, the model will predict not one, but `self.target_length` values
-        in every iteration. This means that `ceil(n / self.target_length)` iterations will be required. After
-        every iteration the input sequence 'rolls over' by `self.target_length` steps, meaning that the last
-        `self.target_length` entries in the input sequence will correspond to the prediction of the previous
+        If `use_full_target_length` is set to `True`, the model will predict not one, but `self.output_length` values
+        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
+        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
+        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
         iteration.
 
-        In the case of multivariate training series, `n` cannot exceed `self.target_length` and `use_full_target_length`
+        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_target_length`
         has to be set to `True`. In this case, only one forward pass of predictions will be performed.
 
         Parameters
@@ -351,7 +363,7 @@ class TorchForecastingModel(ForecastingModel):
                      "'input_series' must have same width as series used to fit model.", logger)
 
         raise_if_not(use_full_target_length or self.training_series.width == 1,
-                     "Please set 'use_full_target_length' to 'True' and 'n' smaller or equal to 'target_length'"
+                     "Please set 'use_full_target_length' to 'True' and 'n' smaller or equal to 'output_length'"
                      " when using a multivariate TimeSeries instance as input.", logger)
 
         if input_series is None:
@@ -409,14 +421,6 @@ class TorchForecastingModel(ForecastingModel):
         prediction = torch.cat(prediction)
         prediction = prediction[:n]  # prediction[:n, :]
         return prediction
-
-    def multi_backtest(self):
-        # TODO
-        raise NotImplementedError()
-
-    def multi_gridsearch(self):
-        # TODO
-        raise NotImplementedError()
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
