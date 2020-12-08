@@ -14,15 +14,13 @@ desired number of time stamps into the future.
 """
 
 
-from typing import Optional, Tuple, Union, Any, Callable, Dict, List
-from types import SimpleNamespace
+from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..utils.data.timeseries_dataset import TimeSeriesDataset
 from ..logging import get_logger, raise_log, raise_if_not
 from ..utils import (
     _build_tqdm_iterator,
@@ -36,20 +34,9 @@ logger = get_logger(__name__)
 
 
 class ForecastingModel(ABC):
-    """ The base class for all forecasting models.
-
-    All implementations of forecasting have to implement the `fit()` and `predict()` methods defined below.
-    The `fit()` method is meant to train the model on one training time series.
-
-    In addition, models can optionally implement the `multi_fit()` method. This method is meant to train the model
-    on several time series, or to handle cases where the "features" and "target" dimensions are not the same.
-    `fit()` will typically be the entry point for quickly fitting reasonably simple models to one series,
-     while `multi_fit()` will typically be the path taken by the more sophisticated machine learning models.
-
-    Depending whether a model has been trained using `fit()` or `multi_fit()` defines two possible behaviors:
-    * `fit()`: store the training series, to predict its future "automatically" when `predict()` is called.
-    * `multi_fit()` does not store the dataset. The caller of `predict()` has to provide the input series for
-    which the forecast has to be made.
+    """ The base class for forecasting models. It defines the *minimal* behavior that all
+        forecasting models have to support. Therefore the signatures are for "local" models
+        handling only one series and not covariates. Sub-classes can handle more complex cases.
 
     Attributes
     ----------
@@ -65,46 +52,26 @@ class ForecastingModel(ABC):
         self._fit_called = False
 
     @abstractmethod
-    def fit(self, training_series: TimeSeries) -> None:
+    def fit(self, series: TimeSeries) -> None:
         """ Fits/trains the model on the provided series
 
-        Defines behavior that should happen when calling the `fit()` method of every forecasting model.
-
-        This is the entry point for training the model on one series.
-
-        Some models support training on several time series, or differentiating between "input" and "target"
-        dimensions. At the moment such functionalities can be used for PyTorch-based models,
-        using some `TimeSeriesDataset`, and calling the `multi_fit()` method.
-
         Parameters
         ----------
-        training_series
-            The time series on which to train the model, and the future of which can then be forecast using `predict()`.
+        series
+            A target time series. The model will be trained to forecast this time series.
         """
-        raise_if_not(len(training_series) >= self.min_train_series_length,
+        raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
-                     .format(len(training_series), str(self), self.min_train_series_length))
+                     .format(len(series), str(self), self.min_train_series_length))
 
-        self.training_series = training_series
+        if isinstance(series, TimeSeries):
+            self.training_series = series
+
         self._fit_called = True
-
-    def multi_fit(self, time_series_dataset: TimeSeriesDataset) -> None:
-        """
-
-        Parameters
-        ----------
-        time_series_dataset
-            The dataset of `TimeSeries` over which to fit the model. This dataset can either emmit tuples of
-            (input, target) series, in which case the model will be trained to predict "target" from "input"; or
-            it can emmit simple `TimeSeries`, in which case the model will take all the series' components as
-            inputs and targets.
-        """
-        raise NotImplemented('This model does not support multi_fit(). Currently only PyTorch-based models'
-                             '(neural nets) support this functionality.')
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
-        """ Forecasts values for a certain number of time steps after the end of the training series.
+        """ Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
@@ -114,27 +81,10 @@ class ForecastingModel(ABC):
         Returns
         -------
         TimeSeries
-            A time series containing the `n` next points, starting after the end of the series to forecast.
+            A time series containing the `n` next points after then end of the training series.
         """
-
         if not self._fit_called:
             raise_log(Exception('The model must be fit before calling predict()'), logger)
-
-    def multi_predict(self, n: int, input_series_dataset: TimeSeriesDataset) -> TimeSeriesDataset:
-        """
-
-        Parameters
-        ----------
-        n
-            Forecast horizon - the number of time steps after the end of each series for which to produce predictions.
-        input_series_dataset
-            A dataset of input time series. The model will predict the `n` time stamps following the end
-            of each of these time series. This dataset must emit simple `TimeSeries`. If it emits tuples
-            of (input, target) series instead, then only the inputs will be considered. The dimensions of
-            the time series must matched what has been used for training.
-        """
-        raise NotImplemented('This model does not support multi_predict(). Currently only PyTorch-based models'
-                             '(neural nets) support this functionality.')
 
     @property
     def min_train_series_length(self) -> int:
@@ -148,7 +98,7 @@ class ForecastingModel(ABC):
                             n: int,
                             input_series: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
         """
-        Generates `n` new dates after the end of the training set (or after the end of the input series, if specified)
+        Generates `n` new dates after the end of the specified series
         """
         input_series = input_series if input_series is not None else self.training_series
         new_dates = [
@@ -213,6 +163,8 @@ class ForecastingModel(ABC):
         like `RNNModel` and `TCNModel`), the model will only be trained on the initial training window
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
+
+        This method does not currently support covariates.
 
         Parameters
         ----------
@@ -340,6 +292,8 @@ class ForecastingModel(ABC):
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
 
+        This method does not currently support covariates.
+
         Parameters
         ----------
         series
@@ -440,6 +394,8 @@ class ForecastingModel(ABC):
         Not all models have fitted values, and this method raises an error if `model.fitted_values` does not exist.
         The fitted values are the result of the fit of the model on `series`. Comparing with the
         fitted values can be a quick way to assess the model, but one cannot see if the model overfits or underfits.
+
+        This method does not currently support covariates.
 
         Parameters
         ----------
@@ -549,6 +505,8 @@ class ForecastingModel(ABC):
         training series length required by the model and the gap introduced by `forecast_horizon`.
         Note that the common usage of the term residuals implies a value for `forecast_horizon` of 1.
 
+        This method does not currently support covariates.
+
         Parameters
         ----------
         series
@@ -581,3 +539,84 @@ class ForecastingModel(ABC):
         residuals = series_trimmed - p
 
         return residuals
+
+
+class GlobalForecastingModel(ForecastingModel, ABC):
+    """ The base class for "global" forecasting models, handling several time series and optional covariates.
+
+    All implementations have to implement the `fit()` and `predict()` methods defined below.
+    The `fit()` method is meant to train the model on one or several training time series, along with optional
+    covariates. Note that not all global models support covariates.
+
+    If `fit()` has been called with only one training series as argument, then calling `predict()` will
+    forecast the future of this series. Otherwise, the user has to provide to `predict()` the series they want
+    to forecast, as well as covariates if needed.
+    """
+
+    @abstractmethod
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+            ) -> None:
+        """ Fits/trains the model on the provided series
+
+        Defines behavior that should happen when calling the `fit()` method of every forecasting model.
+
+        Some models support training only on one time series, while others can handle a sequence.
+        Similarly, some models can handle covariates.
+
+        Some covariates are know in the future, and others aren't. This is a property of the `TimeSeries`, which
+        may or may not be exploited by the models.
+
+        Parameters
+        ----------
+        series
+            One or several target time series. The model will be trained to forecast these time series.
+        covariates
+            One or several covariate time series. These time series will not be forecast, but can be used by
+            some models as an input. Some of these covariates may represent forecasts known in advance. This knowledge
+            is a property of the `TimeSeries`.
+        """
+        self._fit_called = True
+
+    @abstractmethod
+    def predict(self,
+                n: int,
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """ Forecasts values for a certain number of time steps after the end of the series.
+
+        If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function
+        is optional, and it will simply produce the next `horizon` time steps forecast.
+
+        If `fit()` has been called with `series` specified as a `Sequence[TimeSeries]`, the `series` argument must
+        be specified.
+
+        When the `series` argument is specified, this function will compute the next `n` time steps forecasts
+        for the simple series (or for each series in the sequence) given by `series`.
+
+        If covariates were specified during the training, they must also be specified here.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            The series whose future we want to predict
+        covariates
+            One or several covariate time series which can be fed as inputs to the model. They must match the
+            covariates that have been used with the `fit()` function for training.
+
+        Returns
+        -------
+        Union[TimeSeries, Sequence[TimeSeries]]
+            If `series` is not specified, this function returns a single time series containing the `n`
+            next points after then end of the training series.
+            If `series` is specified and is a simple `TimeSeries`, this function returns the `n` next points
+            after the end of `series`.
+            If `series` is a sequence of several time series, this function returns a sequence where each element
+            contains the corresponding `n` points forecasts.
+        """
+        if not self._fit_called:
+            raise_log(Exception('The model must be fit before calling predict()'), logger)
