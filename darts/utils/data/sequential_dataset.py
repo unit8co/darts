@@ -73,7 +73,7 @@ class SequentialDataset(TimeSeriesTrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[TimeSeries, TimeSeries, Optional[TimeSeries]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
@@ -92,20 +92,17 @@ class SequentialDataset(TimeSeriesTrainingDataset):
         # The time series index of our forecasting point (indexed from the end of the series):
         forecast_point_idx = self.output_length + lh_idx
 
-        def _split_series(s):
-            input = s[-(forecast_point_idx + self.input_length):-forecast_point_idx]
-            if forecast_point_idx == self.output_length:
-                # we need this case because "-0" is not supported as an indexing bound
-                output = s[-forecast_point_idx:]
-            else:
-                output = s[-forecast_point_idx:-forecast_point_idx + self.output_length]
-            return input, output
-
         # select input and outputs, using the previously computed indexes
-        input_target, output_target = _split_series(ts_target)
+        input_target = ts_target[-(forecast_point_idx + self.input_length):-forecast_point_idx]
+        if forecast_point_idx == self.output_length:
+            # we need this case because "-0" is not supported as an indexing bound
+            output_target = ts_target[-forecast_point_idx:]
+        else:
+            output_target = ts_target[-forecast_point_idx:-forecast_point_idx + self.output_length]
 
-        # read the covariate time series and concatenate, if needed
-        input_covariate, output_covariate = None, None
+        # optionally also produce the input covariate
+        # TODO: consider also emmitting future covariates if known sufficiently in advance
+        input_covariate = None
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx]
 
@@ -114,6 +111,6 @@ class SequentialDataset(TimeSeriesTrainingDataset):
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))
 
-            input_covariate, output_covariate = _split_series(ts_covariate)
+            input_covariate = ts_covariate[-(forecast_point_idx + self.input_length):-forecast_point_idx]
 
-        return input_target, input_covariate, output_target, output_covariate
+        return input_target, output_target, input_covariate

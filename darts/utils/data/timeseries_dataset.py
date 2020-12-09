@@ -7,10 +7,10 @@ logger = get_logger(__name__)
 
 
 class TimeSeriesDataset(ABC, Sequence):
-    # TODO: include data processing
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` dataset. It emits 2-tuples of `(target, covariate)` `TimeSeries`.
+        Abstract class for a `TimeSeries` dataset. It emits 2-tuples of
+        `(input_target, input_covariate)` `TimeSeries`.
         The emitted covariates are optional and can be `None`.
 
         It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
@@ -18,6 +18,9 @@ class TimeSeriesDataset(ABC, Sequence):
 
         `TimeSeriesDataset` are inheriting from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.
+
+        TODO: handle data processing
+        TODO: handle optional "future" covariates
         """
         pass
 
@@ -31,11 +34,10 @@ class TimeSeriesDataset(ABC, Sequence):
 
 
 class TimeSeriesTrainingDataset(ABC, Sequence):
-    # TODO: include data processing
     def __init__(self):
         """
         Abstract class for a `TimeSeries` training dataset. It emits 4-tuples of
-        `(input_target, input_covariate, output_target, output_covariate)` `TimeSeries`.
+        `(input_target, output_target, input_covariate)` `TimeSeries`.
         The covariates are optional and can be `None`.
 
         This is meant to be used for training (or validation), where `input*` series represent model
@@ -43,6 +45,9 @@ class TimeSeriesTrainingDataset(ABC, Sequence):
 
         `TimeSeriesTrainingDataset` are inheriting from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.
+
+        TODO: handle data processing
+        TODO: handle optional "future" covariates
         """
         pass
 
@@ -51,5 +56,5 @@ class TimeSeriesTrainingDataset(ABC, Sequence):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[TimeSeries, TimeSeries, Optional[TimeSeries]]:
         pass
