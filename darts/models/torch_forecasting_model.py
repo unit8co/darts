@@ -85,8 +85,8 @@ class TimeSeriesTorchDataset(Dataset):
 
         elif len(item) == 3:
             # the dataset contains (input_target, output_target, input_covariate)
-            input_tgt, output_tgt = self._ts_to_tensor(item[0]), self._ts_to_tensor(item[2])
-            input_cov, output_cov = (self._ts_to_tensor(item[1]), self._ts_to_tensor(item[3])) if item[1] is not None else None
+            input_tgt, output_tgt = self._ts_to_tensor(item[0]), self._ts_to_tensor(item[1])
+            input_cov = self._ts_to_tensor(item[2]) if item[2] is not None else None
             return self._cat_with_optional(input_tgt, input_cov), output_tgt
 
         else:
@@ -251,11 +251,7 @@ class TorchForecastingModel(GlobalForecastingModel):
         """
         super().fit(series, covariates)
 
-        # TODO - handle this better:
-        raise_if_not(self.training_series.width == self.input_size, "The number of components of the training series "
-                     "must be equal to the `input_size` defined when instantiating the current model.", logger)
-        raise_if_not(self.training_series.width == self.target_size, "The number of components in the training series "
-                     "be equal to the `output_size` defined when instantiating the current model.", logger)
+        # TODO: handle widths checks - or actually be smart and dynamically create modules of correct width here
 
         series = [series] if isinstance(series, TimeSeries) else series
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
@@ -263,13 +259,9 @@ class TorchForecastingModel(GlobalForecastingModel):
         val_covariates = [val_covariates] if isinstance(val_covariates, TimeSeries) else val_covariates
 
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
-        raise_if_not(covariates is None or len(series) == len(covariates),
-                     'The number of target series must match the number of covariates')
-        raise_if_not(val_covariates is None or len(val_series) == len(val_covariates),
-                     'The number of validation series must match the number of validation covariates')
 
         train_dataset = self.build_train_dataset(series, covariates)
-        val_dataset = self.build_train_dataset(val_series, val_covariates)
+        val_dataset = self.build_train_dataset(val_series, val_covariates) if val_series is not None else None
 
         self.fit_from_dataset(train_dataset, val_dataset, verbose)
 

@@ -5,8 +5,8 @@ from .timeseries_dataset import TimeSeriesDataset
 
 logger = get_logger(__name__)
 
-
-class HorizonBasedTrainDataset(TimeSeriesDataset):
+# TODO - see sequential dataset
+class DeprecatedHorizonBasedTrainDataset(TimeSeriesDataset):
     def __init__(self,
                  horizon: int,
                  input_series: Union[TimeSeries, Sequence[TimeSeries]],

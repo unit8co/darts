@@ -56,7 +56,7 @@ class SequentialDataset(TimeSeriesTrainingDataset):
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
-        raise_if_not(len(self.target_series) == len(self.covariates),
+        raise_if_not(covariates is None or len(self.target_series) == len(self.covariates),
                      'The provided sequence of target series must have the same length as '
                      'the provided sequence of covariate series.')
 

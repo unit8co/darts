@@ -4,7 +4,8 @@ from .timeseries_dataset import TimeSeriesDataset
 from ..utils import raise_if_not
 
 
-class ShiftedDataset(TimeSeriesDataset):
+# TODO - see sequential dataset
+class DeprecatedShiftedDataset(TimeSeriesDataset):
     def __init__(self,
                  input_series: Union[TimeSeries, Sequence[TimeSeries]],
                  target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -86,7 +87,7 @@ class ShiftedDataset(TimeSeriesDataset):
 
         raise_if_not(n_samples_in_ts >= 1,
                      'The dataset contains some time series that are too short to contain '
-                     '`input_length + `target_length` ({}-th series)'.format(ts_idx))
+                     '`input_length + `output_length` ({}-th series)'.format(ts_idx))
 
         # Determine the index of the end of the target, starting from the end.
         # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
