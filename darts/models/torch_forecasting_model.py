@@ -18,9 +18,9 @@ from torch.utils.tensorboard import SummaryWriter
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesDataset, TimeSeriesTrainingDataset
+from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TimeSeriesTrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
-from ..utils.data.simple_dataset import SimpleTimeSeriesDataset
+from ..utils.data.simple_inference_dataset import SimpleTimeSeriesInferenceDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
@@ -44,7 +44,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: Union[TimeSeriesDataset, TimeSeriesTrainingDataset], device):
+    def __init__(self, ts_dataset: Union[TimeSeriesInferenceDataset, TimeSeriesTrainingDataset], device):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
         from `TimeSeries` to torch tensors and stack target series with covariates when needed.
@@ -83,11 +83,11 @@ class TimeSeriesTorchDataset(Dataset):
             input_cov = self._ts_to_tensor(item[1]) if item[1] is not None else None
             return self._cat_with_optional(input_tgt, input_cov)
 
-        elif len(item) == 4:
-            # the dataset contains (input_target, input_covariate, output_target, output_covariate)
+        elif len(item) == 3:
+            # the dataset contains (input_target, output_target, input_covariate)
             input_tgt, output_tgt = self._ts_to_tensor(item[0]), self._ts_to_tensor(item[2])
             input_cov, output_cov = (self._ts_to_tensor(item[1]), self._ts_to_tensor(item[3])) if item[1] is not None else None
-            return self._cat_with_optional(input_tgt, input_cov), self._cat_with_optional(output_tgt, output_cov)
+            return self._cat_with_optional(input_tgt, input_cov), output_tgt
 
         else:
             raise ValueError('The dataset has to emmit tuples of size 2 or 4')
@@ -173,7 +173,7 @@ class TorchForecastingModel(GlobalForecastingModel):
             self.device = torch.device(torch_device_str)
 
         self.input_length = input_length
-        self.target_length = output_length
+        self.output_length = output_length
         self.input_size = input_size
         self.target_size = output_size
         self.log_tensorboard = log_tensorboard
@@ -245,7 +245,7 @@ class TorchForecastingModel(GlobalForecastingModel):
             Optionally, one or a sequence of validation target series, which will be used to compute the validation
             loss throughout training and keep track of the best performing models.
         val_covariates
-            Optinally, the covariates corresponding to the validation series (must match `covariates`)
+            Optionally, the covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
         """
@@ -321,105 +321,106 @@ class TorchForecastingModel(GlobalForecastingModel):
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                use_full_target_length: bool = False) -> TimeSeries:
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
-        or after the end of a specified `input_series`.
+        or after the end of the specified `series`.
 
-        In the case of univariate training series, `n` can assume any integer value greater than 0.
-        If `use_full_target_length` is set to `False`, the model will perform `n` predictions, where in each iteration
-        the first predicted value is kept as output while at the same time being fed into the input for
-        the next prediction (the first value of the previous input is discarded). This way, the input sequence
-        'rolls over' by 1 step for every prediction in 'n'.
-        If `use_full_target_length` is set to `True`, the model will predict not one, but `self.output_length` values
-        in every iteration. This means that `ceil(n / self.output_length)` iterations will be required. After
-        every iteration the input sequence 'rolls over' by `self.output_length` steps, meaning that the last
-        `self.output_length` entries in the input sequence will correspond to the prediction of the previous
-        iteration.
-
-        In the case of multivariate training series, `n` cannot exceed `self.output_length` and `use_full_target_length`
-        has to be set to `True`. In this case, only one forward pass of predictions will be performed.
+        If `n` is larger than the model `output_length`, the predictions will be computed in an
+        auto-regressive way, by iteratively feeding the last `output_length` forecast points as
+        inputs to the model until a forecast of length `n` is obtained.
+        *** Note that this is at the moment only supported when covariates are not used,
+            as this functionality requires future covariates, which are not supported yet. ***
 
         Parameters
         ----------
         n
             The number of time steps after the end of the training time series for which to produce predictions
-        use_full_target_length
-            Boolean value indicating whether or not the full output sequence of the model prediction should be
-            used to produce the output of this function.
-        input_series
-            Optionally, the input TimeSeries instance fed to the trained TorchForecastingModel to produce the
-            prediction. If it is not passed, the training TimeSeries instance will be used as input.
+        series
+            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            future is to be predicted. If specified, the method returns the forecasts of these
+            series. Otherwise, the method returns the forecast of the (single) training series.
+        covariates
+            Optionally, the covariates series needed as inputs for the model. They must match the covariates used
+            for training.
 
         Returns
         -------
-        TimeSeries
-            A time series containing the `n` next points, starting after the end of the training time series
+        Union[TimeSeries, Sequence[TimeSeries]]
+            One or several time series containing the forecasts of `series`, or the forecast of the training series
+            if `series` is not specified and the model has been trained on a single series.
         """
-        super().predict(n)
+        super().predict(n, series, covariates)
 
-        raise_if_not(input_series is None or input_series.width == self.training_series.width,
-                     "'input_series' must have same width as series used to fit model.", logger)
+        raise_if(covariates is not None and n > self.output_length,
+                 'The horizon `n` must be smaller or equal to the model output length when covariates are used.'
+                 'n: {}, output_length: {}'.format(n, self.output_length))
 
-        raise_if_not(use_full_target_length or self.training_series.width == 1,
-                     "Please set 'use_full_target_length' to 'True' and 'n' smaller or equal to 'output_length'"
-                     " when using a multivariate TimeSeries instance as input.", logger)
+        if series is None and covariates is None:
+            series = self.training_series
 
-        if input_series is None:
-            dataset = SimpleTimeSeriesDataset(self.training_series)
-        else:
-            dataset = SimpleTimeSeriesDataset(input_series)
-        return self.multi_predict(n, dataset)[0]
+        called_with_single_series = False
+        if isinstance(series, TimeSeries):
+            called_with_single_series = True
+            series = [series]
 
-    def multi_predict(self,
-                      n: int,
-                      input_series_dataset: TimeSeriesDataset,
-                      use_full_target_length: bool = True) -> TimeSeriesDataset:
+        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+
+        dataset = SimpleTimeSeriesInferenceDataset(series, covariates)
+        predictions = self.predict_from_dataset(n, dataset)
+        return predictions[0] if called_with_single_series else predictions
+
+    def predict_from_dataset(self,
+                             n: int,
+                             input_series_dataset: TimeSeriesInferenceDataset
+                             ) -> Sequence[TimeSeries]:
 
         self.model.eval()
 
         # TODO use a torch Dataset and DataLoader for parallel loading and batching
-        # TODO also currently we assume all forecasts fit in memory...
+        # TODO also currently we assume all forecasts fit in memory
         ts_forecasts = []
-        for input_ts in input_series_dataset:
-            if isinstance(input_ts, Tuple):
-                input_ts = input_ts[0]
-
-            raise_if_not(len(input_ts) >= self.input_length,
+        for target_series, covariate_series in input_series_dataset:
+            raise_if_not(len(target_series) >= self.input_length,
                          'All input series must have length >= `input_length` ({}).'.format(self.input_length))
-            in_sequence = input_ts.values(copy=False)[-self.input_length:]
-            in_sequence = torch.from_numpy(in_sequence).float().to(self.device).view(1, self.input_length, -1)
 
-            out_sequence = self._produce_prediction(in_sequence, n, use_full_target_length)
+            # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
+            # TODO: e.g. by taking their latest common timestamp.
+
+            in_tsr = target_series.values(copy=False)[-self.input_length:]
+            in_tsr = torch.from_numpy(in_tsr).float().to(self.device)
+            if covariate_series is not None:
+                in_cov_tsr = covariate_series.values(copy=False)[-self.input_length:]
+                in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
+                in_tsr = torch.cat([in_tsr, in_cov_tsr], dim=1)
+            in_tsr = in_tsr.view(1, self.input_length, -1)
+
+            out_sequence = self._produce_prediction(in_tsr, n)
 
             # translate to numpy
             out_sequence = out_sequence.cpu().detach().numpy()
-            # test_out = np.stack(out_seq)
             ts_forecasts.append(self._build_forecast_series(out_sequence.reshape(n, -1),
-                                                            input_series=input_ts))
-        return SimpleTimeSeriesDataset(ts_forecasts)
+                                                            input_series=target_series))
+        return ts_forecasts
 
-    def _produce_prediction(self, in_sequence: torch.Tensor, n: int, use_full_out_length: bool) -> torch.Tensor:
+    def _produce_prediction(self, in_sequence: torch.Tensor, n: int) -> torch.Tensor:
         # produces output tensor for one time series
         # TODO: make it work for batches
+        # TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)
 
-        prediction = []  # (length x width)
-        if not use_full_out_length:
-            for i in range(n):
-                out = self.model(in_sequence)  # (1, length, width)
-                in_sequence = in_sequence.roll(-1, 1)
-                in_sequence[:, -1, :] = out[:, self.first_prediction_index, :]
-                prediction.append(out[0, self.first_prediction_index, :])  # (0-th batch element, one timestamp, all dims)
-        else:
-            num_iterations = int(math.ceil(n / self.target_length))
-            for i in range(num_iterations):
-                out = self.model(in_sequence)  # (1, length, width)
-                in_sequence = in_sequence.roll(-self.target_length, 1)
-                in_sequence[:, -self.target_length:, :] = out[:, -self.target_length:, :]
-                prediction.append(out[0, -self.target_length:, :])  # TODO check
+        prediction = []  # (length, width)
+        out = self.model(in_sequence)  # (1, output_length, width)
+        prediction.append(out[0, :, :])
+        while sum(map(lambda t: len(t), prediction)) < n:
+            roll_size = min(self.output_length, self.input_length)
+            in_sequence = torch.roll(in_sequence, -roll_size, 1)
+            in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
+            out = self.model(in_sequence)
+            prediction.append(out[0, :, :])
+
         prediction = torch.cat(prediction)
-        prediction = prediction[:n]  # prediction[:n, :]
+        prediction = prediction[:n, :]  # prediction[:n]
         return prediction
 
     def untrained_model(self):
@@ -457,7 +458,7 @@ class TorchForecastingModel(GlobalForecastingModel):
                 data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
                 output = self.model(data)
                 loss = self.criterion(output, target)
-                if self.target_length == 1:
+                if self.output_length == 1:
                     loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
                 else:
                     loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
@@ -506,7 +507,7 @@ class TorchForecastingModel(GlobalForecastingModel):
                 data, target = data.to(self.device), target.to(self.device)  # TODO: needed?
                 output = self.model(data)
                 loss = self.criterion(output, target)
-                if self.target_length == 1:
+                if self.output_length == 1:
                     loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
                 else:
                     loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])

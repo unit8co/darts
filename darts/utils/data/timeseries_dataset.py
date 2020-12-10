@@ -6,10 +6,10 @@ from abc import ABC, abstractmethod
 logger = get_logger(__name__)
 
 
-class TimeSeriesDataset(ABC, Sequence):
+class TimeSeriesInferenceDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` dataset. It emits 2-tuples of
+        Abstract class for a `TimeSeries` inference dataset. It emits 2-tuples of
         `(input_target, input_covariate)` `TimeSeries`.
         The emitted covariates are optional and can be `None`.
 
@@ -36,7 +36,7 @@ class TimeSeriesDataset(ABC, Sequence):
 class TimeSeriesTrainingDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` training dataset. It emits 4-tuples of
+        Abstract class for a `TimeSeries` training dataset. It emits 3-tuples of
         `(input_target, output_target, input_covariate)` `TimeSeries`.
         The covariates are optional and can be `None`.
 

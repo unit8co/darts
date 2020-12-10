@@ -269,8 +269,8 @@ class TCNModel(TorchForecastingModel):
         super().__init__(**kwargs)
 
     def build_ts_dataset_from_single_series(self, series):
-        return ShiftedDataset(series, seq_length=self.input_length, shift=self.target_length)
+        return ShiftedDataset(series, seq_length=self.input_length, shift=self.output_length)
 
     @property
     def first_prediction_index(self) -> int:
-        return -self.target_length
+        return -self.output_length

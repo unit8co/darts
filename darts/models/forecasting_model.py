@@ -49,7 +49,7 @@ class ForecastingModel(ABC):
         # Stores training date information:
         self.training_series: Optional[TimeSeries] = None
 
-        # state; whether the model has been fit (on one time series) or not
+        # state; whether the model has been fit (on a single time series)
         self._fit_called = False
 
     @abstractmethod
@@ -82,7 +82,9 @@ class ForecastingModel(ABC):
             A time series containing the `n` next points after then end of the training series.
         """
         if not self._fit_called:
-            raise_log(Exception('The model must be fit before calling `predict()`.'), logger)
+            raise_log(Exception('The model must be fit before calling `predict()`.'
+                                'For global models, if `predict()` is called without specifying a series,'
+                                'the model must have been fit on a single training series.'), logger)
 
     @property
     def min_train_series_length(self) -> int:
@@ -623,10 +625,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             contains the corresponding `n` points forecasts.
         """
         if series is None and covariates is None:
-            if not self._fit_called:
-                raise_log(Exception('For global models, before calling `predict()`, either `fit()` has to '
-                                    'be called for a single series, or one has to provide the `series` argument'
-                                    'to `predict()`.'))
+            super().predict(n)
         if self._expect_covariates and covariates is None:
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates'
                                  'have to be provided to `predict()`.'))
