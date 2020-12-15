@@ -450,16 +450,16 @@ class TorchForecastingModel(GlobalForecastingModel):
                 data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
                 output = self.model(data)
                 loss = self.criterion(output, target)
-                if self.output_length == 1:
-                    loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
-                else:
-                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
-                loss = loss + loss_of_diff
+                # if self.output_length == 1:
+                #     loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
+                # else:
+                #     loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
+                # loss = loss + loss_of_diff
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
-                total_loss_diff += loss_of_diff.item()
+                # total_loss_diff += loss_of_diff.item()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 

@@ -109,7 +109,7 @@ class RNNModel(TorchForecastingModel):
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
                  input_size: int = 1,
-                 target_length: int = 1,
+                 output_length: int = 1,
                  target_size: int = 1,
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
@@ -138,7 +138,7 @@ class RNNModel(TorchForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         target_size
             The dimensionality of the output time series.
-        target_length
+        output_length
             Number of time steps to be output by the forecasting module.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
@@ -153,7 +153,7 @@ class RNNModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['output_length'] = target_length
+        kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = target_size
 
@@ -161,7 +161,7 @@ class RNNModel(TorchForecastingModel):
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
             self.model = _RNNModule(name=model, input_size=input_size, target_size=target_size, hidden_dim=hidden_size,
-                                    num_layers=n_rnn_layers, target_length=target_length,
+                                    num_layers=n_rnn_layers, target_length=output_length,
                                     num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
             self.model = model

@@ -145,8 +145,7 @@ class ForecastingModel(ABC):
                              retrain: bool = True,
                              overlap_end: bool = False,
                              last_points_only: bool = True,
-                             verbose: bool = False,
-                             use_full_target_length: Optional[bool] = None) -> Union[TimeSeries, List[TimeSeries]]:
+                             verbose: bool = False) -> Union[TimeSeries, List[TimeSeries]]:
 
         """
         Computes the historical forecasts the model would have produced with an expanding training window
@@ -186,10 +185,6 @@ class ForecastingModel(ABC):
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel` and `TCNModel` support setting `retrain` to `False`.
-        use_full_target_length
-            Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
-            as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
-            instance of `TorchForecastingModel`, this will cause an error.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -207,8 +202,6 @@ class ForecastingModel(ABC):
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
-        if use_full_target_length is not None:
-            predict_kwargs['use_full_target_length'] = use_full_target_length
 
         # prepare the start parameter -> pd.Timestamp
         start = get_timestamp_at_point(start, series)
@@ -230,17 +223,13 @@ class ForecastingModel(ABC):
 
         iterator = _build_tqdm_iterator(pred_times, verbose)
 
-        # iterate and forecast
-
         # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
         forecasts = []
 
         last_points_times = []
         last_points_values = []
 
-        if not retrain and not self._fit_called:
-            self.fit(series.drop_after(start), verbose=verbose)
-
+        # iterate and forecast
         for pred_time in iterator:
             train = series.drop_after(pred_time)  # build the training series
 
@@ -250,7 +239,7 @@ class ForecastingModel(ABC):
             else:
                 # TODO: remove this case (which can fail for non-torch models)
                 # TODO: and implement dedicated backtest() method for torch/ML models
-                forecast = self.predict(forecast_horizon, input_series=train, **predict_kwargs)
+                forecast = self.predict(forecast_horizon, series=train, **predict_kwargs)
 
             if last_points_only:
                 last_points_values.append(forecast.values()[-1])
