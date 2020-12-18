@@ -21,7 +21,7 @@ class _RNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  num_layers: int,
-                 target_length: int = 1,
+                 output_length: int = 1,
                  target_size: int = 1,
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
@@ -43,7 +43,7 @@ class _RNNModule(nn.Module):
             The number of features in the hidden state `h` of the RNN module.
         num_layers
             The number of recurrent layers.
-        target_length
+        output_length
             The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
@@ -71,7 +71,7 @@ class _RNNModule(nn.Module):
         self.n_layers = num_layers
         self.target_size = target_size
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.out_len = target_length
+        self.out_len = output_length
         self.name = name
 
         # Defining the RNN module
@@ -81,7 +81,7 @@ class _RNNModule(nn.Module):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [target_length * target_size]:
+        for feature in num_layers_out_fc + [output_length * target_size]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -107,10 +107,11 @@ class _RNNModule(nn.Module):
 class RNNModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 model: Union[str, nn.Module] = 'RNN',
-                 input_size: int = 1,
+                 input_length: int = 12,
                  output_length: int = 1,
-                 target_size: int = 1,
+                 input_size: int = 1,
+                 output_size: int = 1,
+                 model: Union[str, nn.Module] = 'RNN',
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
                  hidden_fc_sizes: Optional[List] = None,
@@ -153,15 +154,16 @@ class RNNModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
+        kwargs['input_length'] = input_length
         kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
-        kwargs['output_size'] = target_size
+        kwargs['output_size'] = output_size
 
         # set self.model
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
-            self.model = _RNNModule(name=model, input_size=input_size, target_size=target_size, hidden_dim=hidden_size,
-                                    num_layers=n_rnn_layers, target_length=output_length,
+            self.model = _RNNModule(name=model, input_size=input_size, target_size=output_size, hidden_dim=hidden_size,
+                                    num_layers=n_rnn_layers, output_length=output_length,
                                     num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
             self.model = model

@@ -96,11 +96,11 @@ class TimeSeriesTorchDataset(Dataset):
 class TorchForecastingModel(GlobalForecastingModel):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
-                 batch_size: int = 32,
                  input_length: int = 10,
                  output_length: int = 1,
                  input_size: int = 1,  # TODO remove
                  output_size: int = 1,  # TODO remove
+                 batch_size: int = 32,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Optional[Dict] = None,
@@ -206,6 +206,8 @@ class TorchForecastingModel(GlobalForecastingModel):
                           logger)
 
         # Create the optimizer and (optionally) the learning rate scheduler
+        if optimizer_kwargs is None:
+            optimizer_kwargs = dict()
         optimizer_kwargs['params'] = self.model.parameters()
         self.optimizer = _create_from_cls_and_kwargs(optimizer_cls, optimizer_kwargs)
 
@@ -220,7 +222,10 @@ class TorchForecastingModel(GlobalForecastingModel):
     def build_train_dataset(self,
                             target: Sequence[TimeSeries],
                             covariates: Optional[Sequence[TimeSeries]]) -> TimeSeriesTrainingDataset:
-        return SequentialDataset(target, covariates)
+        return SequentialDataset(target_series=target,
+                                 covariates=covariates,
+                                 input_length=self.input_length,
+                                 output_length=self.output_length)
 
     @random_method
     def fit(self,
@@ -346,7 +351,7 @@ class TorchForecastingModel(GlobalForecastingModel):
         super().predict(n, series, covariates)
 
         raise_if(covariates is not None and n > self.output_length,
-                 'The horizon `n` must be smaller or equal to the model output length when covariates are used.'
+                 'The horizon `n` must be smaller or equal to the model output length when covariates are used. '
                  'n: {}, output_length: {}'.format(n, self.output_length))
 
         if series is None and covariates is None:
