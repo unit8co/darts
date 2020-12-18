@@ -238,15 +238,20 @@ def holidays_timeseries(time_index,
     return TimeSeries.from_times_and_values(time_index, values)
 
 
-def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, one_hot: bool = False) -> TimeSeries:
+def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries],
+                                  attribute: str,
+                                  one_hot: bool = False) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded) pd.DatatimeIndex attribute information derived from the index.
 
     Parameters
     ----------
+    time_index
+        Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
+        a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+        An attribute of `pd.DatetimeIndex` - e.g. "month", "weekday", "day", "hour", "minute", "second"
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -256,6 +261,9 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
     TimeSeries
         New datetime attribute TimeSeries instance.
     """
+
+    if isinstance(time_index, TimeSeries):
+        time_index = time_index.time_index()
 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                  'of pd.DatetimeIndex', logger)
@@ -268,10 +276,10 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
         'quarter': 4
     }
 
-    raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported.", logger)
-
     values = getattr(time_index, attribute)
     if one_hot:
+        raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported"
+                                                   "with one-hot encoding.", logger)
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
         for i in range(1, num_values_dict[attribute] + 1):
