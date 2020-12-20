@@ -36,7 +36,7 @@ class SequentialDataset(TimeSeriesTrainingDataset):
         covariates:
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
-            In addition, all the target series must have the same time axis as the corresponding covariate series.
+            In addition, all the target series must have the same time axis as the corresponding target series.
         input_length
             The length of the emitted input series.
         output_length
