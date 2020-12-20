@@ -225,15 +225,15 @@ class _Stack(nn.Module):
 class _NBEATSModule(nn.Module):
 
     def __init__(self,
+                 input_length: int,
+                 output_length: int,
                  generic_architecture: bool,
                  num_stacks: int,
                  num_blocks: int,
                  num_layers: int,
-                 layer_widths: int,
+                 layer_widths: List[int],
                  expansion_coefficient_dim: int,
-                 trend_polynomial_degree: int,
-                 input_length: int,
-                 target_length: int
+                 trend_polynomial_degree: int
                  ):
         """ PyTorch module implementing the N-BEATS architecture.
 
@@ -263,7 +263,7 @@ class _NBEATSModule(nn.Module):
             `generic_architecture` is set to `False`.
         input_length
             The length of the input sequence fed to the model.
-        target_length
+        output_length
             The length of the forecast of the model.
 
         Inputs
@@ -280,19 +280,19 @@ class _NBEATSModule(nn.Module):
         super(_NBEATSModule, self).__init__()
 
         self.input_length = input_length
-        self.target_length = target_length
+        self.target_length = output_length
 
         if generic_architecture:
             self.stacks_list = [
                 _Stack(num_blocks, num_layers, layer_widths[i], expansion_coefficient_dim,
-                       input_length, target_length, GType.GENERIC) for i in range(num_stacks)
+                       input_length, output_length, GType.GENERIC) for i in range(num_stacks)
             ]
         else:
             num_stacks = 2
             trend_stack = _Stack(num_blocks, num_layers, layer_widths[0], trend_polynomial_degree + 1,
-                                 input_length, target_length, GType.TREND)
+                                 input_length, output_length, GType.TREND)
             seasonality_stack = _Stack(num_blocks, num_layers, layer_widths[1], -1,
-                                       input_length, target_length, GType.SEASONALITY)
+                                       input_length, output_length, GType.SEASONALITY)
             self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
@@ -323,6 +323,8 @@ class NBEATSModel(TorchForecastingModel):
 
     @random_method
     def __init__(self,
+                 input_length: int = 12,
+                 output_length: int = 1,
                  generic_architecture: bool = True,
                  num_stacks: int = 30,
                  num_blocks: int = 1,
@@ -330,14 +332,14 @@ class NBEATSModel(TorchForecastingModel):
                  layer_widths: Union[int, List[int]] = 256,
                  expansion_coefficient_dim: int = 5,
                  trend_polynomial_degree: int = 2,
-                 input_length: int = 12,
-                 target_length: int = 1,
-                 random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
-        This is an implementation of the N-BEATS architecture as outlined in this paper:
+        This is an implementation of the N-BEATS architecture, as outlined in this paper:
         https://openreview.net/forum?id=r1ecqn4YwB
+
+        This model supports only univariate time series (and thus doesn't support using covariates). It can
+        nevertheless be trained on several time series.
 
         Parameters
         ----------
@@ -365,7 +367,7 @@ class NBEATSModel(TorchForecastingModel):
             `generic_architecture` is set to `False`.
         input_length
             The length of the input sequence fed to the model.
-        target_length
+        output_length
             The length of the forecast of the model.
         random_state
             Control the randomness of the weights initialization. Check this
@@ -384,27 +386,22 @@ class NBEATSModel(TorchForecastingModel):
             layer_widths = [layer_widths] * num_stacks
 
         self.model = _NBEATSModule(
+            input_length,
+            output_length,
             generic_architecture,
             num_stacks,
             num_blocks,
             num_layers,
             layer_widths,
             expansion_coefficient_dim,
-            trend_polynomial_degree,
-            input_length,
-            target_length
+            trend_polynomial_degree
         )
 
         kwargs['input_length'] = input_length
-        kwargs['output_length'] = target_length
+        kwargs['output_length'] = output_length
+
+        # At the moment N-Beats supports only univariate time series
+        kwargs['input_size'] = 1
+        kwargs['output_size'] = 1
 
         super().__init__(**kwargs)
-
-    @random_method
-    def fit(self, *args, **kwargs):
-        if 'series' in kwargs:
-            training_series = kwargs['series']
-        else:
-            training_series = args[0]
-        training_series._assert_univariate()
-        super().fit(*args, **kwargs)
