@@ -26,8 +26,8 @@ if TORCH_AVAILABLE:
         series_multivariate = series.stack(series * 2)
         module = _TransformerModule(input_size=1,
                                     input_length=1,
-                                    target_length=1,
-                                    target_size=1,
+                                    output_length=1,
+                                    output_size=1,
                                     d_model=512,
                                     nhead=8,
                                     num_encoder_layers=6,
