@@ -110,6 +110,15 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
     def test_append_values(self):
         TimeSeriesTestCase.helper_test_append_values(self, self.series1)
 
+    def test_strip(self):
+        dataframe1 = pd.DataFrame({
+            "0": 2 * [np.nan] + list(range(7)) + [np.nan],
+            "1": [np.nan] + list(range(7)) + 2 * [np.nan]
+        }, index=self.times1)
+        series1 = TimeSeries(dataframe1)
+
+        self.assertTrue((series1.strip().time_index() == self.times1[1:-1]).all())
+
     """
     Testing new multivariate methods.
     """

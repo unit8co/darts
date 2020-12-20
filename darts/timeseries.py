@@ -258,6 +258,33 @@ class TimeSeries:
         """
         return self._df.index[-1] - self._df.index[0]
 
+    def gaps(self) -> pd.DataFrame:
+        """
+        Returns
+        -------
+        pd.DataFrame
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            in this time series. The DataFrame contains three columns that include the start and end time stamps
+            of the gap and the integer length of the gap (in `self.freq()` units).
+        """
+
+        is_nan_series = self._df.isna().all(axis=1).astype(int)
+        diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
+        gap_starts = diff[diff == 1].index + self.freq()
+        gap_ends = diff[diff == -1].index
+
+        if is_nan_series.iloc[0] == 1:
+            gap_starts = gap_starts.insert(0, self.start_time())
+        if is_nan_series.iloc[-1] == 1:
+            gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
+
+        gap_df = pd.DataFrame()
+        gap_df['gap_start'] = gap_starts
+        gap_df['gap_end'] = gap_ends
+        gap_df['gap_size'] = ((gap_ends - gap_starts) / self.freq()).astype(int) + 1
+
+        return gap_df
+
     def copy(self, deep: bool = True) -> 'TimeSeries':
         """
         Make a copy of this time series object
@@ -473,6 +500,58 @@ class TimeSeries:
         """
         time_index = self.time_index().intersection(other.time_index())
         return self.__getitem__(time_index)
+
+    def strip(self) -> 'TimeSeries':
+        """
+        Returns a TimeSeries slice of this time series, where NaN-only entries at the beginning and the end of the
+        series are removed. No entries after (and including) the first non-NaN entry and before (and including) the
+        last non-NaN entry are removed.
+
+        Returns
+        -------
+        TimeSeries
+            a new series based on the original where NaN-only entries at start and end have been removed
+        """
+
+        new_start_idx = self._df.first_valid_index()
+        new_end_idx = self._df.last_valid_index()
+        new_series = self._df.loc[new_start_idx:new_end_idx]
+
+        return TimeSeries(new_series, self.freq_str())
+
+    def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
+        """
+        Returns the largest TimeSeries slice of this time series that contains no gaps (contigouse all-NaN rows)
+        larger than `max_gap_size`.
+
+        Returns
+        -------
+        TimeSeries
+            a new series constituting the largest slice of the original with no or bounded gaps
+        """
+        if self._df.isna().sum().sum() == 0:
+            return self.copy()
+        stripped_series = self.strip()
+        gaps = stripped_series.gaps()
+        relevant_gaps = gaps[gaps['gap_size'] > max_gap_size]
+
+        curr_slice_start = stripped_series.start_time()
+        max_size = pd.Timedelta(days=0)
+        max_slice_start = None
+        max_slice_end = None
+        for index, row in relevant_gaps.iterrows():
+            size = row['gap_start'] - curr_slice_start - self.freq()
+            if size > max_size:
+                max_size = size
+                max_slice_start = curr_slice_start
+                max_slice_end = row['gap_start'] - self.freq()
+            curr_slice_start = row['gap_end'] + self.freq()
+
+        if stripped_series.end_time() - curr_slice_start > max_size:
+            max_slice_start = curr_slice_start
+            max_slice_end = self.end_time()
+
+        return stripped_series[max_slice_start:max_slice_end]
 
     # TODO: other rescale? such as giving a ratio, or a specific position? Can be the same function
     def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
