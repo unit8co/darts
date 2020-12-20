@@ -41,7 +41,7 @@ class TimeSeriesTrainingDataset(ABC, Sequence):
         The covariates are optional and can be `None`.
 
         This is meant to be used for training (or validation), where `input*` series represent model
-        inputs and `output*` represent model outputs.
+        inputs and `output_target` represent model outputs.
 
         `TimeSeriesTrainingDataset` are inheriting from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.

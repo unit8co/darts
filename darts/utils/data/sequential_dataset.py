@@ -12,10 +12,8 @@ class SequentialDataset(TimeSeriesTrainingDataset):
                  output_length: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (input, output) series, where "input" has length `input_length`,
-        and "target" has length `output_length`. Input is composed of the target and the covariates stacked together,
-        while output is composed of the target, which is stacked with the covariates only if the covariates are
-        known sufficiently in advance (i.e. `output_length` in advance).
+        A time series dataset containing tuples of (input, output, input_covariates) series, where "input" and
+        "input_covariates" have length `input_length`, and "output" has length `output_length`.
 
         The target and covariates series are sliced together, and therefore must have the same time axes.
         In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
@@ -28,8 +26,8 @@ class SequentialDataset(TimeSeriesTrainingDataset):
         be sampled more often than others if they belong to shorter time series.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
-        in memory), or implement your own `Sequence` of time series (i.e., re-implement `__len__()` and `__getitem__()`)
-        and give such an instance as argument to this class.
+        in memory), or implement your own `Sequence` of time series
+        (i.e., re-implement `__len__()` and `__getitem__()`).
 
         Parameters
         ----------
@@ -44,10 +42,10 @@ class SequentialDataset(TimeSeriesTrainingDataset):
         output_length
             The length of the emitted output series.
         max_samples_per_ts
-            This is an upper bound on the number of (input, output) tuples that can be produced per time series.
-            It can be used in order to have an upper bound on the total size of the dataset and ensure proper sampling.
-            If `None`, it will read all of the individual time series in advance to know their sizes,
-            which might be expensive on big datasets.
+            This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
+            per time series. It can be used in order to have an upper bound on the total size of the dataset and
+            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
+            creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
         """
@@ -101,7 +99,6 @@ class SequentialDataset(TimeSeriesTrainingDataset):
             output_target = ts_target[-forecast_point_idx:-forecast_point_idx + self.output_length]
 
         # optionally also produce the input covariate
-        # TODO: consider also emmitting future covariates if known sufficiently in advance
         input_covariate = None
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx]
