@@ -451,23 +451,16 @@ class TorchForecastingModel(GlobalForecastingModel):
         for epoch in iterator:
             epoch = epoch
             total_loss = 0
-            total_loss_diff = 0
 
             for batch_idx, (data, target) in enumerate(train_loader):
                 self.model.train()
                 data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
                 output = self.model(data)
                 loss = self.criterion(output, target)
-                # if self.output_length == 1:
-                #     loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
-                # else:
-                #     loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
-                # loss = loss + loss_of_diff
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
-                # total_loss_diff += loss_of_diff.item()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
@@ -475,14 +468,13 @@ class TorchForecastingModel(GlobalForecastingModel):
                 for name, param in self.model.named_parameters():
                     tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
                 tb_writer.add_scalar("training/loss", total_loss / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/loss_diff", total_loss_diff / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/loss_total", (total_loss + total_loss_diff) / (batch_idx + 1), epoch)
+                tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
             self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
-                training_loss = (total_loss + total_loss_diff) / (batch_idx + 1)  # TODO: do not use batch_idx
+                training_loss = total_loss / (batch_idx + 1)  # TODO: do not use batch_idx
                 if val_loader is not None:
                     validation_loss = self._evaluate_validation_loss(val_loader)
                     if tb_writer is not None:
@@ -500,21 +492,15 @@ class TorchForecastingModel(GlobalForecastingModel):
 
     def _evaluate_validation_loss(self, val_loader: DataLoader):
         total_loss = 0
-        total_loss_of_diff = 0
         self.model.eval()
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(val_loader):
                 data, target = data.to(self.device), target.to(self.device)  # TODO: needed?
                 output = self.model(data)
                 loss = self.criterion(output, target)
-                if self.output_length == 1:
-                    loss_of_diff = self.criterion(output[1:] - output[:-1], target[1:] - target[:-1])
-                else:
-                    loss_of_diff = self.criterion(output[:, 1:] - output[:, :-1], target[:, 1:] - target[:, :-1])
                 total_loss += loss.item()
-                total_loss_of_diff += loss_of_diff.item()
 
-        validation_loss = (total_loss + total_loss_of_diff) / (batch_idx + 1)
+        validation_loss = total_loss / (batch_idx + 1)
         return validation_loss
 
     def _save_model(self,
