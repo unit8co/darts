@@ -135,7 +135,7 @@ class BacktestingTestCase(unittest.TestCase):
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
                 tcn_model.backtest(linear_series_multi, pd.Timestamp('20000125'), 3, verbose=False)
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
             with self.assertRaises(ValueError):
                 tcn_model.backtest(linear_series_multi,
                                    pd.Timestamp('20000125'),
@@ -143,7 +143,7 @@ class BacktestingTestCase(unittest.TestCase):
                                    verbose=False,
                                    use_full_target_length=False)
 
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, target_length=3, target_size=2)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   pd.Timestamp('20000125'),
                                                   3,

@@ -401,6 +401,9 @@ class NBEATSModel(TorchForecastingModel):
         kwargs['output_length'] = output_length
 
         # At the moment N-Beats supports only univariate time series
+        if (('input_size' in kwargs and kwargs['input_size'] != 1) or
+           ('output_size' in kwargs and kwargs['output_size'] != 1)):
+            logger.warn('The N-Beats model supports only univariate time series; setting input and output sizes to 1.')
         kwargs['input_size'] = 1
         kwargs['output_size'] = 1
 

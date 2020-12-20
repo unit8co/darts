@@ -413,7 +413,10 @@ class TorchForecastingModel(GlobalForecastingModel):
             roll_size = min(self.output_length, self.input_length)
             in_sequence = torch.roll(in_sequence, -roll_size, 1)
             in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
-            out = self.model(in_sequence)
+
+            # take only last part of the output sequence where needed
+            out = self.model(in_sequence)[self.first_prediction_index:]
+
             prediction.append(out[0, :, :])
 
         prediction = torch.cat(prediction)

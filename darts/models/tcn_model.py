@@ -7,8 +7,10 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
-from typing import Optional, Union
+from typing import Optional, Union, Sequence
+from ..timeseries import TimeSeries
 from ..utils.torch import random_method
+from ..utils.data import ShiftedDataset
 
 from ..logging import raise_if_not, get_logger
 from .torch_forecasting_model import TorchForecastingModel  # , _TimeSeriesShiftedDataset
@@ -22,7 +24,7 @@ class _ResidualBlock(nn.Module):
                  num_filters: int,
                  kernel_size: int,
                  dilation_base: int,
-                 dropout: float,
+                 dropout_fn,
                  weight_norm: bool,
                  nr_blocks_below: int,
                  num_layers: int,
@@ -38,8 +40,8 @@ class _ResidualBlock(nn.Module):
             The size of every kernel in a convolutional layer.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
-        dropout
-            The dropout rate for every convolutional layer.
+        dropout_fn
+            The dropout function to be applied to every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
         nr_blocks_below
@@ -69,7 +71,7 @@ class _ResidualBlock(nn.Module):
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
-        self.dropout = dropout
+        self.dropout_fn = dropout_fn
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 
@@ -89,13 +91,13 @@ class _ResidualBlock(nn.Module):
         # first step
         left_padding = (self.dilation_base ** self.nr_blocks_below) * (self.kernel_size - 1)
         x = F.pad(x, (left_padding, 0))
-        x = self.dropout(F.relu(self.conv1(x)))
+        x = self.dropout_fn(F.relu(self.conv1(x)))
 
         # second step
         x = F.pad(x, (left_padding, 0))
         if self.nr_blocks_below < self.num_layers - 1:
             x = F.relu(x)
-        x = self.dropout((self.conv2(x)))
+        x = self.dropout_fn((self.conv2(x)))
 
         # add residual
         if self.nr_blocks_below in {0, self.num_layers - 1}:
@@ -206,9 +208,9 @@ class TCNModel(TorchForecastingModel):
     @random_method
     def __init__(self,
                  input_length: int = 12,
+                 output_length: int = 1,
                  input_size: int = 1,
-                 target_length: int = 1,
-                 target_size: int = 1,
+                 output_size: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -227,11 +229,11 @@ class TCNModel(TorchForecastingModel):
         ----------
         input_length
             Number of past time steps that are fed to the forecasting module.
+        output_length
+            Number of time steps the torch module will predict into the future at once.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        target_length
-            Number of time steps the torch module will predict into the future at once.
-        target_size
+        output_size
             The dimensionality of the output time series.
         kernel_size
             The size of every kernel in a convolutional layer.
@@ -252,23 +254,27 @@ class TCNModel(TorchForecastingModel):
 
         raise_if_not(kernel_size < input_length,
                      "The kernel size must be strictly smaller than the input length.", logger)
-        raise_if_not(target_length < input_length,
+        raise_if_not(output_length < input_length,
                      "The output length must be strictly smaller than the input length", logger)
 
         kwargs['input_length'] = input_length
-        kwargs['output_length'] = target_length
+        kwargs['output_length'] = output_length
         kwargs['input_size'] = input_size
-        kwargs['output_size'] = target_size
+        kwargs['output_size'] = output_size
 
-        self.model = _TCNModule(input_size=input_size, input_length=input_length, target_size=target_size,
+        self.model = _TCNModule(input_size=input_size, input_length=input_length, target_size=output_size,
                                 kernel_size=kernel_size, num_filters=num_filters,
                                 num_layers=num_layers, dilation_base=dilation_base,
-                                target_length=target_length, dropout=dropout, weight_norm=weight_norm)
+                                target_length=output_length, dropout=dropout, weight_norm=weight_norm)
 
         super().__init__(**kwargs)
 
-    # def build_ts_dataset_from_single_series(self, series):
-    #     return ShiftedDataset(series, seq_length=self.input_length, shift=self.output_length)
+    def build_train_dataset(self,
+                            target: Sequence[TimeSeries],
+                            covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
+        return ShiftedDataset(target_series=target,
+                              covariates=covariates,
+                              length=self.input_length)
 
     @property
     def first_prediction_index(self) -> int:
