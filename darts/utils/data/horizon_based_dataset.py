@@ -11,7 +11,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  output_length: int = 12,
-                 lh: Tuple[int] = (1, 3),
+                 lh: Tuple[int, int] = (1, 3),
                  lookback: int = 3) -> None:
         """
         A time series dataset containing tuples of (input, output, input_covariates) series, in a way inspired
@@ -91,7 +91,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
-        lh_idx = idx - (ts_idx * len(self.target_series))
+        lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
 
         # The time series index of our forecasting point (indexed from the end of the series):
         forecast_point_idx = self.min_lh * self.output_length + lh_idx

@@ -4,10 +4,10 @@ from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 
 
-class SimpleTimeSeriesInferenceDataset(TimeSeriesInferenceDataset):
+class SimpleInferenceDataset(TimeSeriesInferenceDataset):
     def __init__(self,
                  series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]]):
+                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None):
         super().__init__()
         self.series = [series] if isinstance(series, TimeSeries) else series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates

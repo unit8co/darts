@@ -85,7 +85,7 @@ class SequentialDataset(TimeSeriesTrainingDataset):
 
         # Determine the index of the forecasting point.
         # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        lh_idx = (idx - (ts_idx * len(self.target_series))) % n_samples_in_ts
+        lh_idx = (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
 
         # The time series index of our forecasting point (indexed from the end of the series):
         forecast_point_idx = self.output_length + lh_idx

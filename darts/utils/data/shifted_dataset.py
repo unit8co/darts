@@ -88,7 +88,7 @@ class ShiftedDataset(TimeSeriesTrainingDataset):
 
         # Determine the index of the end of the output, starting from the end.
         # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        end_of_output_idx = (idx - (ts_idx * len(self.target_series))) % n_samples_in_ts
+        end_of_output_idx = (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
 
         # select forecast point and target period, using the previously computed indexes
         if end_of_output_idx == 0:
