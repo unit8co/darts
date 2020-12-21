@@ -1,45 +1,110 @@
 import unittest
-import pandas as pd
 
-from ..utils import retain_period_common_to_all, _with_sanity_checks
-from ..timeseries import TimeSeries
+from ..utils.data import SimpleInferenceDataset, SequentialDataset, ShiftedDataset, HorizonBasedTrainDataset
+from ..utils.timeseries_generation import gaussian_timeseries
 
 
 class UtilsTestCase(unittest.TestCase):
 
-    def test_retain_period_common_to_all(self):
-        seriesA = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), range(10))
-        seriesB = TimeSeries.from_times_and_values(pd.date_range('20000103', '20000108'), range(6))
-        seriesC = TimeSeries.from_times_and_values(pd.date_range('20000104', '20000112'), range(9))
-        seriesC = seriesC.stack(seriesC)
+    target1, target2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
+    cov1, cov2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
 
-        common_series_list = retain_period_common_to_all([seriesA, seriesB, seriesC])
+    def test_simple_inference_dataset(self):
+        # one target series
+        ds = SimpleInferenceDataset(series=self.target1)
+        self.assertEqual(ds[0], (self.target1, None))
 
-        # test start and end dates
-        for common_series in common_series_list:
-            self.assertEqual(common_series.start_time(), pd.Timestamp('20000104'))
-            self.assertEqual(common_series.end_time(), pd.Timestamp('20000108'))
+        # two target series
+        ds = SimpleInferenceDataset(series=[self.target1, self.target2])
+        self.assertEqual(ds[1], (self.target2, None))
 
-        # test widths
-        self.assertEqual(common_series_list[0].width, 1)
-        self.assertEqual(common_series_list[1].width, 1)
-        self.assertEqual(common_series_list[2].width, 2)
-
-    def test_sanity_check_example(self):
-        class Model:
-            def _sanity_check(self, *args, **kwargs):
-                if kwargs['b'] != kwargs['c']:
-                    raise(ValueError("b and c must be equal"))
-
-            @_with_sanity_checks("_sanity_check")
-            def fit(self, a, b=0, c=0):
-                pass
-
-        m = Model()
-
-        # b != c should raise error
+        # fail if covariates do not have same size
         with self.assertRaises(ValueError):
-            m.fit(5, b=3, c=2)
+            ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1])
 
-        # b == c should not raise error
-        m.fit(5, b=2, c=2)
+        # with covariates
+        ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1, self.cov2])
+        self.assertEqual(ds[1], (self.target2, self.cov2))
+
+    def test_sequential_dataset(self):
+        # one target series
+        ds = SequentialDataset(target_series=self.target1, input_length=10, output_length=10)
+        self.assertEqual(len(ds), 81)
+        self.assertEqual(ds[5], (self.target1[75:85], self.target1[85:95], None))
+
+        # two target series
+        ds = SequentialDataset(target_series=[self.target1, self.target2], input_length=10, output_length=10)
+        self.assertEqual(len(ds), 262)
+        self.assertEqual(ds[5], (self.target1[75:85], self.target1[85:95], None))
+        self.assertEqual(ds[136], (self.target2[125:135], self.target2[135:145], None))
+
+        # two target series with custom max_nr_samples
+        ds = SequentialDataset(target_series=[self.target1, self.target2],
+                               input_length=10, output_length=10, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self.assertEqual(ds[5], (self.target1[75:85], self.target1[85:95], None))
+        self.assertEqual(ds[55], (self.target2[125:135], self.target2[135:145], None))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = SequentialDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates
+        ds = SequentialDataset(target_series=[self.target1, self.target2],
+                               covariates=[self.cov1, self.cov2],
+                               input_length=10, output_length=10)
+        self.assertEqual(ds[5], (self.target1[75:85], self.target1[85:95], self.cov1[75:85]))
+        self.assertEqual(ds[136], (self.target2[125:135], self.target2[135:145], self.cov2[125:135]))
+
+    def test_shifted_dataset(self):
+        # one target series
+        ds = ShiftedDataset(target_series=self.target1, length=10, shift=5)
+        self.assertEqual(len(ds), 86)
+        self.assertEqual(ds[5], (self.target1[80:90], self.target1[85:95], None))
+
+        # two target series
+        ds = ShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5)
+        self.assertEqual(len(ds), 272)
+        self.assertEqual(ds[5], (self.target1[80:90], self.target1[85:95], None))
+        self.assertEqual(ds[141], (self.target2[130:140], self.target2[135:145], None))
+
+        # two target series with custom max_nr_samples
+        ds = ShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self.assertEqual(ds[5], (self.target1[80:90], self.target1[85:95], None))
+        self.assertEqual(ds[55], (self.target2[130:140], self.target2[135:145], None))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = ShiftedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates
+        ds = ShiftedDataset(target_series=[self.target1, self.target2],
+                            covariates=[self.cov1, self.cov2],
+                            length=10, shift=5)
+        self.assertEqual(ds[5], (self.target1[80:90], self.target1[85:95], self.cov1[80:90]))
+        self.assertEqual(ds[141], (self.target2[130:140], self.target2[135:145], self.cov2[130:140]))
+
+    def test_horizon_based_dataset(self):
+        # one target series
+        ds = HorizonBasedTrainDataset(target_series=self.target1, output_length=10, lh=(1, 3), lookback=2)
+        self.assertEqual(len(ds), 20)
+        self.assertEqual(ds[5], (self.target1[65:85], self.target1[85:95], None))
+
+        # two target series
+        ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
+                                      output_length=10, lh=(1, 3), lookback=2)
+        self.assertEqual(len(ds), 40)
+        self.assertEqual(ds[5], (self.target1[65:85], self.target1[85:95], None))
+        self.assertEqual(ds[25], (self.target2[115:135], self.target2[135:145], None))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates
+        ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
+                                      covariates=[self.cov1, self.cov2],
+                                      output_length=10, lh=(1, 3), lookback=2)
+        self.assertEqual(ds[5], (self.target1[65:85], self.target1[85:95], self.cov1[65:85]))
+        self.assertEqual(ds[25], (self.target2[115:135], self.target2[135:145], self.cov2[115:135]))
