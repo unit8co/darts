@@ -47,15 +47,6 @@ if TORCH_AVAILABLE:
         def tearDownClass(cls):
             shutil.rmtree('.darts')
 
-        def test_creation(self):
-            with self.assertRaises(ValueError):
-                # cannot input anything beside 'None' or a PyTorch 'nn.Module'
-                TransformerModel(model='Invalid Input')
-            # can give a custom module
-            model1 = TransformerModel(self.module)
-            model2 = TransformerModel()
-            self.assertEqual(model1.model.__repr__(), model2.model.__repr__())
-
         def test_fit(self):
             # Test basic fit()
             model = TransformerModel(n_epochs=2)
@@ -90,14 +81,14 @@ if TORCH_AVAILABLE:
 
         @staticmethod
         def helper_test_use_full_target_length(test_case, pytorch_model, series):
-            model = pytorch_model(n_epochs=2, target_length=3)
+            model = pytorch_model(n_epochs=2, output_length=3)
             model.fit(series)
-            pred = model.predict(7, True)
+            pred = model.predict(7)
             test_case.assertEqual(len(pred), 7)
-            pred = model.predict(2, True)
+            pred = model.predict(2)
             test_case.assertEqual(len(pred), 2)
             test_case.assertEqual(pred.width, 1)
-            pred = model.predict(4, True)
+            pred = model.predict(4)
             test_case.assertEqual(len(pred), 4)
             test_case.assertEqual(pred.width, 1)
 

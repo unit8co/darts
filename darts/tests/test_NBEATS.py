@@ -35,7 +35,7 @@ if TORCH_AVAILABLE:
             small_ts = tg.constant_timeseries(length=100, value=10)
 
             # Test basic fit and predict
-            model = NBEATSModel(n_epochs=20, num_stacks=1, num_blocks=1, layer_widths=20, random_state=0)
+            model = NBEATSModel(n_epochs=20, num_stacks=1, num_blocks=1, layer_widths=20)
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
 

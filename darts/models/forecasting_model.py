@@ -263,7 +263,6 @@ class ForecastingModel(ABC):
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
-                 use_full_target_length: Optional[bool] = None,
                  verbose: bool = False) -> Union[float, List[float]]:
 
         """
@@ -313,10 +312,6 @@ class ForecastingModel(ABC):
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
             If explicitely set to `None`, the method will return a list of the individual error scores instead.
             Set to np.mean by default.
-        use_full_target_length
-            Optionally, if the model is an instance of `TorchForecastingModel`, this argument will be passed along
-            as argument to the `predict` method of the model. Otherwise, if this value is set and the model is not an
-            instance of `TorchForecastingModel`, this will cause an error.
         verbose
             Whether to print progress
         Returns
@@ -331,8 +326,7 @@ class ForecastingModel(ABC):
                                               retrain,
                                               overlap_end,
                                               last_points_only,
-                                              verbose,
-                                              use_full_target_length)
+                                              verbose)
 
         if last_points_only:
             return metric(series, forecasts)
@@ -342,7 +336,7 @@ class ForecastingModel(ABC):
         if reduction is None:
             return errors
 
-        return reduction(errors)
+        return reduction(np.array(errors))
 
     @classmethod
     def gridsearch(model_class,
@@ -351,7 +345,6 @@ class ForecastingModel(ABC):
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
                    last_points_only: bool = False,
-                   use_full_target_length: Optional[bool] = None,
                    val_series: Optional[TimeSeries] = None,
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -404,9 +397,6 @@ class ForecastingModel(ABC):
             for `ForecastingModel.backtest`.
         last_points_only
             Whether to use the whole forecasts or only the last point of each forecast to compute the error
-        use_full_target_length
-            This should only be set if `model_class` is equal to `TorchForecastingModel`.
-            This argument will be passed along to the predict method of `TorchForecastingModel`.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
@@ -433,8 +423,6 @@ class ForecastingModel(ABC):
 
         # construct predict kwargs dictionary
         predict_kwargs = {}
-        if use_full_target_length is not None:
-            predict_kwargs['use_full_target_length'] = use_full_target_length
 
         if use_fitted_values:
             raise_if_not(hasattr(model_class(), "fitted_values"),
@@ -467,8 +455,7 @@ class ForecastingModel(ABC):
                                        forecast_horizon,
                                        metric=metric,
                                        reduction=reduction,
-                                       last_points_only=last_points_only,
-                                       use_full_target_length=use_full_target_length)
+                                       last_points_only=last_points_only)
             else:  # split mode
                 model.fit(series)
                 error = metric(model.predict(len(val_series), **predict_kwargs), val_series)

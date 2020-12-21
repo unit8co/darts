@@ -23,7 +23,7 @@ if TORCH_AVAILABLE:
         times = pd.date_range('20130101', '20130410')
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
-        module = _RNNModule('RNN', input_size=1, target_length=1, hidden_dim=25,
+        module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
                             num_layers=1, num_layers_out_fc=[], dropout=0)
 
         @classmethod
@@ -39,8 +39,8 @@ if TORCH_AVAILABLE:
                 # cannot choose any string
                 RNNModel(model='UnknownRNN?')
             # can give a custom module
-            model1 = RNNModel(self.module)
-            model2 = RNNModel("RNN")
+            model1 = RNNModel(model=self.module)
+            model2 = RNNModel(model="RNN")
             self.assertEqual(model1.model.__repr__(), model2.model.__repr__())
 
         def test_fit(self):
@@ -49,7 +49,7 @@ if TORCH_AVAILABLE:
             model.fit(self.series)
 
             # Test fit-save-load cycle
-            model2 = RNNModel('LSTM', n_epochs=4, model_name='unittest-model-lstm')
+            model2 = RNNModel(model='LSTM', n_epochs=4, model_name='unittest-model-lstm')
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-lstm', best=False)
             pred1 = model2.predict(n=6)
@@ -59,7 +59,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.)
 
             # Another random model should not
-            model3 = RNNModel('RNN')
+            model3 = RNNModel(model='RNN')
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
             self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
@@ -77,14 +77,14 @@ if TORCH_AVAILABLE:
 
         @staticmethod
         def helper_test_use_full_target_length(test_case, pytorch_model, series):
-            model = pytorch_model(n_epochs=2, target_length=3)
+            model = pytorch_model(n_epochs=2, output_length=3)
             model.fit(series)
-            pred = model.predict(7, True)
+            pred = model.predict(7)
             test_case.assertEqual(len(pred), 7)
-            pred = model.predict(2, True)
+            pred = model.predict(2)
             test_case.assertEqual(len(pred), 2)
             test_case.assertEqual(pred.width, 1)
-            pred = model.predict(4, True)
+            pred = model.predict(4)
             test_case.assertEqual(len(pred), 4)
             test_case.assertEqual(pred.width, 1)
 

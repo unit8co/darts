@@ -140,15 +140,13 @@ class BacktestingTestCase(unittest.TestCase):
                 tcn_model.backtest(linear_series_multi,
                                    pd.Timestamp('20000125'),
                                    3,
-                                   verbose=False,
-                                   use_full_target_length=False)
+                                   verbose=False)
 
             tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   pd.Timestamp('20000125'),
                                                   3,
                                                   verbose=False,
-                                                  use_full_target_length=True,
                                                   last_points_only=True)
             self.assertEqual(pred.width, 2)
 
@@ -238,8 +236,7 @@ class BacktestingTestCase(unittest.TestCase):
         TCNModel.gridsearch(tcn_params,
                             dummy_series,
                             forecast_horizon=3,
-                            metric=mape,
-                            use_full_target_length=True)
+                            metric=mape)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)
