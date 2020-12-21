@@ -20,7 +20,7 @@ from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TimeSeriesTrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
-from ..utils.data.simple_inference_dataset import SimpleTimeSeriesInferenceDataset
+from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
@@ -364,7 +364,7 @@ class TorchForecastingModel(GlobalForecastingModel):
 
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
-        dataset = SimpleTimeSeriesInferenceDataset(series, covariates)
+        dataset = SimpleInferenceDataset(series, covariates)
         predictions = self.predict_from_dataset(n, dataset)
         return predictions[0] if called_with_single_series else predictions
 

@@ -616,5 +616,5 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if series is None and covariates is None:
             super().predict(n)
         if self._expect_covariates and covariates is None:
-            raise_log(ValueError('The model has been trained with covariates. Some matching covariates'
+            raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
