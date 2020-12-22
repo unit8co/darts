@@ -256,17 +256,32 @@ class TorchForecastingModel(GlobalForecastingModel):
         """
         super().fit(series, covariates)
 
-        # TODO: handle widths checks - or actually be smart and dynamically create modules of correct width here
-
         series = [series] if isinstance(series, TimeSeries) else series
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
         val_series = [val_series] if isinstance(val_series, TimeSeries) else val_series
         val_covariates = [val_covariates] if isinstance(val_covariates, TimeSeries) else val_covariates
-
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
+
+        # Check widths; on first series only
+        # TODO: actually be smart and dynamically create modules of correct width here
+        raise_if_not((series[0].width + 0 if covariates is None else covariates[0].width) == self.input_size,
+                     'The series and the covariates must have a total number of dimensions equal to the input model '
+                     'size. Series width: {}, covariates width: {}, input_size: {}'.format(
+                     series[0].width, 0 if covariates is None else covariates[0].width, self.input_size
+                     ))
+        if val_series is not None:
+            raise_if_not((val_series[0].width +
+                          0 if val_covariates is None else val_covariates[0].width) == self.input_size,
+                         'The validation series and covariates must have a total number of dimensions equal to the '
+                         'input model size. Validation series width: {}, validation covariates width: {}, '
+                         'input_size: {}'.format(val_series[0].width,
+                                                 0 if val_covariates is None else val_covariates[0].width,
+                                                 self.input_size))
 
         train_dataset = self.build_train_dataset(series, covariates)
         val_dataset = self.build_train_dataset(val_series, val_covariates) if val_series is not None else None
+
+        logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
         self.fit_from_dataset(train_dataset, val_dataset, verbose)
 
