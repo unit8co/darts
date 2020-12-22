@@ -8,11 +8,11 @@ DURATION_THRESHOLD = 2.
 
 
 class DartsBaseTestClass(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.tic = time.time()
-        if 'LoggingTestCase' not in str(cls):
-            logging.disable(logging.CRITICAL)
+        logging.disable(logging.CRITICAL)
 
     def tearDown(self):
         duration = time.time() - self.tic

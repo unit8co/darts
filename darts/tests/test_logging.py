@@ -1,4 +1,6 @@
 import pandas as pd
+import logging
+import unittest
 import numpy as np
 import re
 from testfixtures import LogCapture
@@ -8,7 +10,12 @@ from ..timeseries import TimeSeries
 from ..logging import raise_log, raise_if_not, time_log, get_logger
 
 
-class LoggingTestCase(DartsBaseTestClass):
+class LoggingTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.NOTSET)
+
     def test_raise_log(self):
         exception_was_raised = False
         with LogCapture() as lc:
