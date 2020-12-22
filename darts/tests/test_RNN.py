@@ -1,4 +1,3 @@
-import shutil
 import pandas as pd
 
 from .base_test_class import DartsBaseTestClass
@@ -39,7 +38,7 @@ if TORCH_AVAILABLE:
             model.fit(self.series)
 
             # Test fit-save-load cycle
-            model2 = RNNModel(model='LSTM', n_epochs=4, model_name='unittest-model-lstm')
+            model2 = RNNModel(model='LSTM', n_epochs=3, model_name='unittest-model-lstm')
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-lstm', best=False)
             pred1 = model2.predict(n=6)
@@ -49,7 +48,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.)
 
             # Another random model should not
-            model3 = RNNModel(model='RNN')
+            model3 = RNNModel(model='RNN', n_epochs=2)
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
             self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
@@ -63,20 +62,17 @@ if TORCH_AVAILABLE:
             pred4 = model3.predict(n=6)
             self.assertEqual(len(pred4), 6)
 
-            shutil.rmtree('.darts')
-
-        @staticmethod
-        def helper_test_pred_length(test_case, pytorch_model, series):
+        def helper_test_pred_length(self, pytorch_model, series):
             model = pytorch_model(n_epochs=1, output_length=3)
             model.fit(series)
             pred = model.predict(7)
-            test_case.assertEqual(len(pred), 7)
+            self.assertEqual(len(pred), 7)
             pred = model.predict(2)
-            test_case.assertEqual(len(pred), 2)
-            test_case.assertEqual(pred.width, 1)
+            self.assertEqual(len(pred), 2)
+            self.assertEqual(pred.width, 1)
             pred = model.predict(4)
-            test_case.assertEqual(len(pred), 4)
-            test_case.assertEqual(pred.width, 1)
+            self.assertEqual(len(pred), 4)
+            self.assertEqual(pred.width, 1)
 
-        def test_use_full_target_length(self):
-            RNNModelTestCase.helper_test_pred_length(self, RNNModel, self.series)
+        def test_pred_length(self):
+            self.helper_test_pred_length(RNNModel, self.series)

@@ -7,7 +7,6 @@ logger = get_logger(__name__)
 try:
     import torch
     from ..models.tcn_model import TCNModel
-    from .test_RNN import RNNModelTestCase
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')
@@ -101,6 +100,18 @@ if TORCH_AVAILABLE:
                             input_tensor[0, i, 0] = 0
                         self.assertTrue(uncovered_input_found)
 
+        def helper_test_pred_length(self, pytorch_model, series):
+            model = pytorch_model(n_epochs=1, output_length=3)
+            model.fit(series)
+            pred = model.predict(7)
+            self.assertEqual(len(pred), 7)
+            pred = model.predict(2)
+            self.assertEqual(len(pred), 2)
+            self.assertEqual(pred.width, 1)
+            pred = model.predict(4)
+            self.assertEqual(len(pred), 4)
+            self.assertEqual(pred.width, 1)
+
         def test_pred_length(self):
             series = tg.linear_timeseries(length=100)
-            RNNModelTestCase.helper_test_pred_length(self, TCNModel, series)
+            self.helper_test_pred_length(TCNModel, series)

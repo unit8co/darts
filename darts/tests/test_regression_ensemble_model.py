@@ -67,8 +67,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     if TORCH_AVAILABLE:
         def test_torch_models_retrain(self):
-            model1 = RNNModel(random_state=0)
-            model2 = RNNModel(random_state=0)
+            model1 = RNNModel(random_state=0, n_epochs=2)
+            model2 = RNNModel(random_state=0, n_epochs=2)
 
             ensemble = RegressionEnsembleModel([model1], 5)
             ensemble.fit(self.combined)
@@ -80,7 +80,3 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             forecast2 = model2.predict(10)
 
             self.assertEqual(forecast1, forecast2)
-
-
-if __name__ == '__main__':
-    unittest.main()
