@@ -82,9 +82,9 @@ class ForecastingModel(ABC):
             A time series containing the `n` next points after then end of the training series.
         """
         if not self._fit_called:
-            raise_log(Exception('The model must be fit before calling `predict()`.'
-                                'For global models, if `predict()` is called without specifying a series,'
-                                'the model must have been fit on a single training series.'), logger)
+            raise_log(ValueError('The model must be fit before calling `predict()`.'
+                                 'For global models, if `predict()` is called without specifying a series,'
+                                 'the model must have been fit on a single training series.'), logger)
 
     @property
     def min_train_series_length(self) -> int:

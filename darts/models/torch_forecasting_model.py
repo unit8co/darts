@@ -264,14 +264,14 @@ class TorchForecastingModel(GlobalForecastingModel):
 
         # Check widths; on first series only
         # TODO: actually be smart and dynamically create modules of correct width here
-        raise_if_not((series[0].width + 0 if covariates is None else covariates[0].width) == self.input_size,
+        raise_if_not((series[0].width + (0 if covariates is None else covariates[0].width)) == self.input_size,
                      'The series and the covariates must have a total number of dimensions equal to the input model '
                      'size. Series width: {}, covariates width: {}, input_size: {}'.format(
                      series[0].width, 0 if covariates is None else covariates[0].width, self.input_size
                      ))
         if val_series is not None:
             raise_if_not((val_series[0].width +
-                          0 if val_covariates is None else val_covariates[0].width) == self.input_size,
+                          (0 if val_covariates is None else val_covariates[0].width)) == self.input_size,
                          'The validation series and covariates must have a total number of dimensions equal to the '
                          'input model size. Validation series width: {}, validation covariates width: {}, '
                          'input_size: {}'.format(val_series[0].width,
