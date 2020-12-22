@@ -76,8 +76,8 @@ if TORCH_AVAILABLE:
             shutil.rmtree('.darts')
 
         @staticmethod
-        def helper_test_use_full_target_length(test_case, pytorch_model, series):
-            model = pytorch_model(n_epochs=2, output_length=3)
+        def helper_test_pred_length(test_case, pytorch_model, series):
+            model = pytorch_model(n_epochs=1, output_length=3)
             model.fit(series)
             pred = model.predict(7)
             test_case.assertEqual(len(pred), 7)
@@ -89,7 +89,7 @@ if TORCH_AVAILABLE:
             test_case.assertEqual(pred.width, 1)
 
         def test_use_full_target_length(self):
-            RNNModelTestCase.helper_test_use_full_target_length(self, RNNModel, self.series)
+            RNNModelTestCase.helper_test_pred_length(self, RNNModel, self.series)
 
         # @staticmethod
         # def helper_test_multivariate(test_case, pytorch_model, series_multivariate):

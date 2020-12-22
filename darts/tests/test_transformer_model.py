@@ -6,11 +6,13 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger
+from ..utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
     from ..models.transformer_model import _TransformerModule, TransformerModel
+    from .test_RNN import RNNModelTestCase
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. Transformer tests will be skipped.')
@@ -48,12 +50,8 @@ if TORCH_AVAILABLE:
             shutil.rmtree('.darts')
 
         def test_fit(self):
-            # Test basic fit()
-            model = TransformerModel(n_epochs=2)
-            model.fit(self.series)
-
             # Test fit-save-load cycle
-            model2 = TransformerModel(n_epochs=4, model_name='unittest-model-transformer')
+            model2 = TransformerModel(n_epochs=2, model_name='unittest-model-transformer')
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-transformer', best=False)
             pred1 = model2.predict(n=6)
@@ -63,7 +61,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.)
 
             # Another random model should not
-            model3 = TransformerModel(n_epochs=2)
+            model3 = TransformerModel(n_epochs=1)
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
             self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
@@ -79,21 +77,9 @@ if TORCH_AVAILABLE:
 
             shutil.rmtree('.darts')
 
-        @staticmethod
-        def helper_test_use_full_target_length(test_case, pytorch_model, series):
-            model = pytorch_model(n_epochs=2, output_length=3)
-            model.fit(series)
-            pred = model.predict(7)
-            test_case.assertEqual(len(pred), 7)
-            pred = model.predict(2)
-            test_case.assertEqual(len(pred), 2)
-            test_case.assertEqual(pred.width, 1)
-            pred = model.predict(4)
-            test_case.assertEqual(len(pred), 4)
-            test_case.assertEqual(pred.width, 1)
-
-        def test_use_full_target_length(self):
-            TransformerModelTestCase.helper_test_use_full_target_length(self, TransformerModel, self.series)
+        def test_pred_length(self):
+            series = tg.linear_timeseries(length=100)
+            RNNModelTestCase.helper_test_pred_length(self, TransformerModel, series)
 
         # @staticmethod
         # def helper_test_multivariate(test_case, pytorch_model, series_multivariate):
