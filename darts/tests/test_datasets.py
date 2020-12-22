@@ -1,11 +1,9 @@
-import unittest
-
+from .base_test_class import DartsBaseTestClass
 from ..utils.data import SimpleInferenceDataset, SequentialDataset, ShiftedDataset, HorizonBasedTrainDataset
 from ..utils.timeseries_generation import gaussian_timeseries
 
 
-class UtilsTestCase(unittest.TestCase):
-
+class UtilsTestCase(DartsBaseTestClass):
     target1, target2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
     cov1, cov2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
 

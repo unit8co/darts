@@ -1,6 +1,4 @@
-import shutil
-import unittest
-import logging
+from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..logging import get_logger
 
@@ -17,15 +15,7 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    class TCNModelTestCase(unittest.TestCase):
-
-        @classmethod
-        def setUpClass(cls):
-            logging.disable(logging.CRITICAL)
-
-        @classmethod
-        def tearDownClass(cls):
-            shutil.rmtree('.darts')
+    class TCNModelTestCase(DartsBaseTestClass):
 
         def test_creation(self):
             with self.assertRaises(ValueError):
@@ -114,7 +104,3 @@ if TORCH_AVAILABLE:
         def test_pred_length(self):
             series = tg.linear_timeseries(length=100)
             RNNModelTestCase.helper_test_pred_length(self, TCNModel, series)
-
-        # def test_multivariate(self):
-        #     series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100))
-        #     RNNModelTestCase.helper_test_multivariate(self, TCNModel, series_multivariate)

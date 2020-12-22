@@ -1,9 +1,6 @@
-import shutil
-import unittest
-
-import logging
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 from ..utils import timeseries_generation as tg
@@ -20,7 +17,7 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    class TransformerModelTestCase(unittest.TestCase):
+    class TransformerModelTestCase(DartsBaseTestClass):
         __test__ = True
         times = pd.date_range('20130101', '20130410')
         pd_series = pd.Series(range(100), index=times)
@@ -40,14 +37,6 @@ if TORCH_AVAILABLE:
                                     custom_encoder=None,
                                     custom_decoder=None,
                                     )
-
-        @classmethod
-        def setUpClass(cls):
-            logging.disable(logging.CRITICAL)
-
-        @classmethod
-        def tearDownClass(cls):
-            shutil.rmtree('.darts')
 
         def test_fit(self):
             # Test fit-save-load cycle
@@ -74,8 +63,6 @@ if TORCH_AVAILABLE:
             model3.fit(self.series[:60], val_series=self.series[60:])
             pred4 = model3.predict(n=6)
             self.assertEqual(len(pred4), 6)
-
-            shutil.rmtree('.darts')
 
         def test_pred_length(self):
             series = tg.linear_timeseries(length=100)

@@ -1,10 +1,9 @@
-import logging
 import shutil
-import unittest
 
 import numpy as np
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
@@ -51,7 +50,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class LocalForecastingModelsTestCase(unittest.TestCase):
+class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5
@@ -64,15 +63,6 @@ class LocalForecastingModelsTestCase(unittest.TestCase):
     df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
     ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
-    @classmethod
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def tearDownClass(cls):
-        shutil.rmtree('.darts')
 
     def test_models_runnability(self):
         for model, _ in models:

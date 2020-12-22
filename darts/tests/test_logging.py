@@ -1,19 +1,18 @@
-import unittest
 import pandas as pd
 import numpy as np
 import re
-import logging
 from testfixtures import LogCapture
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..logging import raise_log, raise_if_not, time_log, get_logger
 
 
-class LoggingTestCase(unittest.TestCase):
+class LoggingTestCase(DartsBaseTestClass):
 
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.NOTSET)
+    # @classmethod
+    # def setUpClass(cls):
+    #     logging.disable(logging.NOTSET)
 
     def test_raise_log(self):
         exception_was_raised = False

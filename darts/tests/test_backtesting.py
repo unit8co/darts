@@ -2,7 +2,6 @@ import unittest
 import numpy as np
 import pandas as pd
 import random
-import logging
 
 from darts.metrics import mape, r2_score
 from darts.utils.timeseries_generation import (
@@ -21,6 +20,7 @@ from darts.models import (
     NaiveDrift,
 )
 
+from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 logger = get_logger(__name__)
 
@@ -69,12 +69,7 @@ def compare_best_against_random(model_class, params, series):
     return expanding_window_ok and split_ok
 
 
-class BacktestingTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_multi = linear_series.stack(linear_series)

@@ -1,10 +1,10 @@
 import logging
 import shutil
-import unittest
 
 import pandas as pd
 import numpy as np
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
@@ -25,14 +25,14 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 100.),
-        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 100,),
+        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 150.),
+        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 150.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
-                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 100.),
+                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 150.),
         (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 150.)
     ]
 
-    class GlobalForecastingModelsTestCase(unittest.TestCase):
+    class GlobalForecastingModelsTestCase(DartsBaseTestClass):
         # forecasting horizon used in runnability tests
         forecasting_horizon = 12
 
@@ -56,14 +56,6 @@ if TORCH_AVAILABLE:
         scaler_dt = Scaler()
         time_covariates = scaler_dt.fit_transform(year_series.stack(month_series))
         time_covariates_train, time_covariates_val = time_covariates[:-36], time_covariates[-36:]
-
-        @classmethod
-        def setUpClass(cls):
-            logging.disable(logging.CRITICAL)
-
-        @classmethod
-        def tearDownClass(cls):
-            shutil.rmtree('.darts')
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:

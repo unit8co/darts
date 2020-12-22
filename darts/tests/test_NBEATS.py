@@ -1,6 +1,7 @@
 import shutil
-import unittest
 import logging
+
+from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..logging import get_logger
 
@@ -15,15 +16,7 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    class NBEATSModelTestCase(unittest.TestCase):
-
-        @classmethod
-        def setUpClass(cls):
-            logging.disable(logging.CRITICAL)
-
-        @classmethod
-        def tearDownClass(cls):
-            shutil.rmtree('.darts')
+    class NBEATSModelTestCase(DartsBaseTestClass):
 
         def test_creation(self):
             with self.assertRaises(ValueError):

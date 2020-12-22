@@ -1,8 +1,8 @@
 import unittest
-import logging
 import numpy as np
 import random
 
+from .base_test_class import DartsBaseTestClass
 from .. import SeasonalityMode, TrendMode, ModelMode
 from ..models import Theta, FourTheta
 from ..metrics import mape
@@ -13,12 +13,7 @@ from ..utils.timeseries_generation import (
 )
 
 
-class FourThetaTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class FourThetaTestCase(DartsBaseTestClass):
     def test_input(self):
         with self.assertRaises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)
