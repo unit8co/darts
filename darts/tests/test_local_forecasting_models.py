@@ -51,7 +51,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class ForecastingModelsTestCase(unittest.TestCase):
+class LocalForecastingModelsTestCase(unittest.TestCase):
 
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5

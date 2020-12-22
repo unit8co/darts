@@ -2,110 +2,120 @@ import logging
 import shutil
 import unittest
 
-import numpy as np
 import pandas as pd
+import numpy as np
 
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT
-from .. import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
+from ..dataprocessing.transformers import Scaler
 
 logger = get_logger(__name__)
 
-# (forecasting models, maximum error) tuples
-models = [
-    (ExponentialSmoothing(), 4.8),
-    (ARIMA(0, 1, 1), 17.1),
-    (ARIMA(1, 1, 1), 14.2),
-    (Theta(), 11.3),
-    (Theta(1), 20.2),
-    (Theta(-1), 9.8),
-    (FourTheta(1), 20.2),
-    (FourTheta(-1), 9.8),
-    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
-    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
-    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
-    (FFT(trend='poly'), 11.4),
-    (NaiveSeasonal(), 32.4),
-]
-
 try:
-    from ..models import Prophet
-    models.append((Prophet(), 13.5))
-except ImportError:
-    logger.warning('Prophet not installed - will be skipping Prophet tests')
-
-try:
-    from ..models import AutoARIMA
-    models.append((AutoARIMA(), 13.7))
-except ImportError:
-    logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
-
-try:
-    from ..models import TCNModel
+    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not installed - will be skipping Torch models tests')
     TORCH_AVAILABLE = False
 
 
-class ForecastingModelsTestCase(unittest.TestCase):
+if TORCH_AVAILABLE:
+    IN_LEN = 24
+    OUT_LEN = 12
+    models_cls_kwargs_errs = [
+        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 100.),
+        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 100,),
+        (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
+                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 100.),
+        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 150.)
+    ]
 
-    # forecasting horizon used in runnability tests
-    forecasting_horizon = 5
+    class GlobalForecastingModelsTestCase(unittest.TestCase):
+        # forecasting horizon used in runnability tests
+        forecasting_horizon = 12
 
-    # dummy timeseries for runnability tests
-    np.random.seed(1)
-    ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
+        np.random.seed(42)
 
-    # real timeseries for functionality tests
-    df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
-    ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
-    ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
+        # real timeseries for functionality tests
+        df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
+        ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
+        scaler = Scaler()
+        ts_passengers = scaler.fit_transform(ts_passengers)
+        ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
 
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
+        # an additional noisy series
+        ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(length=len(ts_pass_train),
+                                                                        freq=ts_pass_train.freq_str(),
+                                                                        start_ts=ts_pass_train.start_time())
 
-    @classmethod
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def tearDownClass(cls):
-        shutil.rmtree('.darts')
+        # an additional time series serving as covariates
+        year_series = tg.datetime_attribute_timeseries(ts_passengers, attribute='year')
+        month_series = tg.datetime_attribute_timeseries(ts_passengers, attribute='month')
+        scaler_dt = Scaler()
+        time_covariates = scaler_dt.fit_transform(year_series.stack(month_series))
+        time_covariates_train, time_covariates_val = time_covariates[:-36], time_covariates[-36:]
 
-    def test_models_runnability(self):
-        for model, _ in models:
-            model.fit(self.ts_gaussian)
-            prediction = model.predict(self.forecasting_horizon)
-            self.assertTrue(len(prediction) == self.forecasting_horizon)
+        @classmethod
+        def setUpClass(cls):
+            logging.disable(logging.CRITICAL)
 
-    def test_models_performance(self):
-        # for every model, check whether its errors do not exceed the given bounds
-        for model, max_mape in models:
-            model.fit(self.ts_pass_train)
-            prediction = model.predict(len(self.ts_pass_val))
-            current_mape = mape(prediction, self.ts_pass_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
-                            "with a MAPE of {}".format(str(model), max_mape, current_mape))
+        @classmethod
+        def tearDownClass(cls):
+            shutil.rmtree('.darts')
 
-    def test_multivariate_input(self):
-        es_model = ExponentialSmoothing()
-        ts_passengers_enhanced = self.ts_passengers.add_datetime_attribute('month')
-        with self.assertRaises(ValueError):
-            es_model.fit(ts_passengers_enhanced)
-        es_model.fit(ts_passengers_enhanced["#Passengers"])
-        with self.assertRaises(KeyError):
-            es_model.fit(ts_passengers_enhanced["2"])
+        def test_single_ts(self):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model.fit(self.ts_pass_train)
+                pred = model.predict(n=36)
+                mape_err = mape(self.ts_pass_val, pred)
+                self.assertTrue(mape_err < err, 'Model {} produces errors too high (one time '
+                                                'series). Error = {}'.format(model_cls, mape_err))
 
-        # if TORCH_AVAILABLE:
-        #     tcn_model = TCNModel(n_epochs=1, input_size=2)
-        #     with self.assertRaises(ValueError):
-        #         tcn_model.fit(ts_passengers_enhanced)
-        #     tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["Month"])
-        #     with self.assertRaises(KeyError):
-        #         tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["2"])
-        #     tcn_model = TCNModel(n_epochs=1, input_size=2, output_size=2)
-        #     with self.assertRaises(KeyError):
-        #         tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "2"]])
-        #     tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "Month"]])
+        def test_multi_ts(self):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model.fit([self.ts_pass_train, self.ts_pass_train_1])
+                with self.assertRaises(ValueError):
+                    # when model is fit from >1 series, one must provide a series in argument
+                    model.predict(n=1)
+                pred = model.predict(n=36, series=self.ts_pass_train)
+                mape_err = mape(self.ts_pass_val, pred)
+                self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
+                                                                    'series). Error = {}'.format(model_cls, mape_err))
+
+                # check prediction for several time series
+                pred_list = model.predict(n=36, series=[self.ts_pass_train, self.ts_pass_train_1])
+                self.assertTrue(len(pred_list) == 2, 'Model {} did not return a list of prediction'.format(model_cls))
+                for pred in pred_list:
+                    mape_err = mape(self.ts_pass_val, pred)
+                    self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time series 2). '
+                                                    'Error = {}'.format(model_cls, mape_err))
+
+        def test_covariates(self):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                if model_cls == NBEATSModel:
+                    # N-BEATS does not support multivariate
+                    continue
+
+                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=3, output_size=1, **kwargs)
+                model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
+                          covariates=[self.time_covariates_train, self.time_covariates_train])
+                with self.assertRaises(ValueError):
+                    # when model is fit from >1 series, one must provide a series in argument
+                    model.predict(n=1)
+
+                with self.assertRaises(ValueError):
+                    # when model is fit using covariates, covariates are required at prediction time
+                    model.predict(n=1, series=self.ts_pass_train)
+
+                with self.assertRaises(ValueError):
+                    # when model is fit using covariates, n cannot be greater than output_length
+                    model.predict(n=13, series=self.ts_pass_train)
+
+                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)
+                mape_err = mape(self.ts_pass_val, pred)
+                self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
+                                                'series with covariates). Error = {}'.format(model_cls, mape_err))

@@ -38,12 +38,12 @@ if TORCH_AVAILABLE:
             small_ts = tg.constant_timeseries(length=100, value=10)
 
             # Test basic fit and predict
-            model = TCNModel(n_epochs=2, num_layers=1)
+            model = TCNModel(n_epochs=10, num_layers=1)
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
-            model2 = TCNModel(n_epochs=2, num_layers=1)
+            model2 = TCNModel(n_epochs=10, num_layers=1)
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
             self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
