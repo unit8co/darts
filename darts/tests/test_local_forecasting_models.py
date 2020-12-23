@@ -87,15 +87,3 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         es_model.fit(ts_passengers_enhanced["#Passengers"])
         with self.assertRaises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
-
-        # if TORCH_AVAILABLE:
-        #     tcn_model = TCNModel(n_epochs=1, input_size=2)
-        #     with self.assertRaises(ValueError):
-        #         tcn_model.fit(ts_passengers_enhanced)
-        #     tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["Month"])
-        #     with self.assertRaises(KeyError):
-        #         tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["2"])
-        #     tcn_model = TCNModel(n_epochs=1, input_size=2, output_size=2)
-        #     with self.assertRaises(KeyError):
-        #         tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "2"]])
-        #     tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "Month"]])
