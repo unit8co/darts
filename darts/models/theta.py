@@ -215,20 +215,20 @@ class FourTheta(ForecastingModel):
         raise_if_not(season_mode in SeasonalityMode,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
-    def fit(self, ts):
-        super().fit(ts)
+    def fit(self, series):
+        super().fit(series)
         # Check univariate time series
-        ts._assert_univariate()
+        series._assert_univariate()
 
-        self.length = len(ts)
+        self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = ts.mean().mean()
+            self.mean = series.mean().mean()
             raise_if_not(not np.isclose(self.mean, 0),
                          "The mean value of the provided series is too close to zero to perform normalization", logger)
-            new_ts = ts / self.mean
+            new_ts = series / self.mean
         else:
-            new_ts = ts
+            new_ts = series
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
@@ -237,8 +237,8 @@ class FourTheta(ForecastingModel):
         else:
             self.season_period = self.seasonality_period
         if self.season_period is None:
-            max_lag = len(ts) // 2
-            self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
+            max_lag = len(series) // 2
+            self.is_seasonal, self.season_period = check_seasonality(series, self.season_period, max_lag=max_lag)
             logger.info('FourTheta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.

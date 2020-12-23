@@ -17,6 +17,7 @@ desired number of time stamps into the future.
 from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, abstractmethod
+from inspect import signature
 import numpy as np
 import pandas as pd
 
@@ -139,6 +140,7 @@ class ForecastingModel(ABC):
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(self,
                              series: TimeSeries,
+                             covariates: Optional[TimeSeries] = None,
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
@@ -163,12 +165,13 @@ class ForecastingModel(ABC):
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
 
-        This method does not currently support covariates.
-
         Parameters
         ----------
         series
             The training time series to use to compute and evaluate the historical forecasts
+        covariates
+            An optional covariate series. This applies only if the model supports covariates, and
+            if it has been trained with a covariate.
         start
             The first point at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
@@ -200,8 +203,9 @@ class ForecastingModel(ABC):
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
 
-        # construct predict kwargs dictionary
-        predict_kwargs = {}
+        if covariates is not None:
+            raise_if_not(series.has_same_time_as(covariates),
+                         'The provided series and covariates must have the same time index.')
 
         # prepare the start parameter -> pd.Timestamp
         start = get_timestamp_at_point(start, series)
@@ -229,17 +233,29 @@ class ForecastingModel(ABC):
         last_points_times = []
         last_points_values = []
 
+        # TODO: We should find a better object oriented way of handling covariates in GlobalForecastingModel
+        fit_signature = signature(self.fit)
+        predict_signature = signature(self.predict)
+
         # iterate and forecast
         for pred_time in iterator:
             train = series.drop_after(pred_time)  # build the training series
+            if covariates is not None:
+                train_cov = covariates.drop_after(pred_time)
 
             if retrain:
-                self.fit(train)
-                forecast = self.predict(forecast_horizon, **predict_kwargs)
+                if covariates is not None and 'covariates' in fit_signature.parameters:
+                    self.fit(series=train, covariates=train_cov)
+                else:
+                    self.fit(series=train)
+
+            if covariates is not None and 'covariates' in predict_signature.parameters:
+                forecast = self.predict(n=forecast_horizon, series=train, covariates=train_cov)
             else:
-                # TODO: remove this case (which can fail for non-torch models)
-                # TODO: and implement dedicated backtest() method for torch/ML models
-                forecast = self.predict(forecast_horizon, series=train, **predict_kwargs)
+                if 'series' in predict_signature.parameters:
+                    forecast = self.predict(n=forecast_horizon, series=train)
+                else:
+                    forecast = self.predict(n=forecast_horizon)
 
             if last_points_only:
                 last_points_values.append(forecast.values()[-1])
@@ -255,6 +271,7 @@ class ForecastingModel(ABC):
 
     def backtest(self,
                  series: TimeSeries,
+                 covariates: Optional[TimeSeries] = None,
                  start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
                  stride: int = 1,
@@ -280,12 +297,13 @@ class ForecastingModel(ABC):
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
 
-        This method does not currently support covariates.
-
         Parameters
         ----------
         series
             The training time series to use to compute and evaluate the historical forecasts
+        covariates
+            An optional covariate series. This applies only if the model supports covariates, and
+            if it has been trained with a covariate.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
@@ -320,6 +338,7 @@ class ForecastingModel(ABC):
             The error score, or the list of individual error scores if `reduction` is `None`
         """
         forecasts = self.historical_forecasts(series,
+                                              covariates,
                                               start,
                                               forecast_horizon,
                                               stride,
@@ -342,6 +361,7 @@ class ForecastingModel(ABC):
     def gridsearch(model_class,
                    parameters: dict,
                    series: TimeSeries,
+                   covariates: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
                    start: Union[pd.Timestamp, float, int] = 0.5,
                    last_points_only: bool = False,
@@ -388,6 +408,8 @@ class ForecastingModel(ABC):
             respective hyperparameter.
         series
             The TimeSeries instance used as input and target for training.
+        covariates
+            An optional covariate series. This applies only if the model supports covariates.
         forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
         start
@@ -421,9 +443,6 @@ class ForecastingModel(ABC):
                      "Please pass exactly one of the arguments 'forecast_horizon', "
                      "'val_target_series' or 'use_fitted_values'.", logger)
 
-        # construct predict kwargs dictionary
-        predict_kwargs = {}
-
         if use_fitted_values:
             raise_if_not(hasattr(model_class(), "fitted_values"),
                          "The model must have a fitted_values attribute to compare with the train TimeSeries",
@@ -434,11 +453,19 @@ class ForecastingModel(ABC):
                          "Training and validation series require the same number of components.",
                          logger)
 
+        if covariates is not None:
+            raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
+                                                              'same time axes.')
+
         min_error = float('inf')
         best_param_combination = {}
 
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
+
+        # TODO: We should find a better object oriented way of handling covariates in GlobalForecastingModel
+        fit_signature = signature(model_class.fit)
+        predict_signature = signature(model_class.predict)
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(params_cross_product, verbose)
@@ -446,19 +473,31 @@ class ForecastingModel(ABC):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
-                model.fit(series)
+                if covariates is not None and 'covariates' in fit_signature.parameters:
+                    model.fit(series, covariates=covariates)
+                else:
+                    model.fit(series)
                 fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(series,
+                                       covariates,
                                        start,
                                        forecast_horizon,
                                        metric=metric,
                                        reduction=reduction,
                                        last_points_only=last_points_only)
             else:  # split mode
-                model.fit(series)
-                error = metric(model.predict(len(val_series), **predict_kwargs), val_series)
+                if covariates is not None and 'covariates' in fit_signature.parameters:
+                    model.fit(series, covariates=covariates)
+                else:
+                    model.fit(series)
+
+                if covariates is not None and 'covariates' in predict_signature.parameters:
+                    pred = model.predict(n=len(val_series), covariates=covariates)
+                else:
+                    pred = model.predict(n=len(val_series))
+                error = metric(pred, val_series)
             if error < min_error:
                 min_error = error
                 best_param_combination = param_combination_dict
@@ -502,11 +541,11 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.historical_forecasts(series,
-                                      first_index,
-                                      forecast_horizon,
-                                      1,
-                                      True,
+        p = self.historical_forecasts(series=series,
+                                      start=first_index,
+                                      forecast_horizon=forecast_horizon,
+                                      stride=1,
+                                      retrain=True,
                                       last_points_only=True,
                                       verbose=verbose)
 
