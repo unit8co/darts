@@ -340,9 +340,9 @@ class TorchForecastingModel(GlobalForecastingModel):
 
         If `n` is larger than the model `output_length`, the predictions will be computed in an
         auto-regressive way, by iteratively feeding the last `output_length` forecast points as
-        inputs to the model until a forecast of length `n` is obtained.
-        *** Note that this is at the moment only supported when covariates are not used,
-            as this functionality requires future covariates, which are not supported yet. ***
+        inputs to the model until a forecast of length `n` is obtained. This is at the moment only
+        supported when covariates are not used, as this functionality requires future covariates,
+        which are not supported yet.
 
         Parameters
         ----------
