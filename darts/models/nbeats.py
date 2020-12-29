@@ -206,7 +206,7 @@ class _Stack(nn.Module):
         self.blocks = nn.ModuleList(self.blocks_list)
 
     def forward(self, x):
-        stack_forecast = torch.zeros(x.shape[0], self.target_length)
+        stack_forecast = torch.zeros(x.shape[0], self.target_length, device=x.device)
         for block in self.blocks_list:
             # pass input through block
             x_hat, y_hat = block(x)
@@ -302,7 +302,7 @@ class _NBEATSModule(nn.Module):
         # squeeze last dimension (because model is univariate)
         x = x.squeeze(dim=2)
 
-        y = torch.zeros(x.shape[0], self.target_length)
+        y = torch.zeros(x.shape[0], self.target_length, device=x.device)
         for stack in self.stacks_list:
             # compute stack output
             stack_residual, stack_forecast = stack(x)
