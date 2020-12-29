@@ -58,7 +58,7 @@ class TimeSeriesTorchDataset(Dataset):
         self.device = device
 
     def _ts_to_tensor(self, ts: TimeSeries):
-        return torch.from_numpy(ts.values(copy=False)).float().to(self.device)
+        return torch.from_numpy(ts.values(copy=False)).float()
 
     @staticmethod
     def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
@@ -468,7 +468,7 @@ class TorchForecastingModel(GlobalForecastingModel):
 
             for batch_idx, (data, target) in enumerate(train_loader):
                 self.model.train()
-                data, target = data.to(self.device), target.to(self.device)  # TODO: needed if done in dataset?
+                data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 loss = self.criterion(output, target)
                 self.optimizer.zero_grad()
@@ -509,7 +509,7 @@ class TorchForecastingModel(GlobalForecastingModel):
         self.model.eval()
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(val_loader):
-                data, target = data.to(self.device), target.to(self.device)  # TODO: needed?
+                data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 loss = self.criterion(output, target)
                 total_loss += loss.item()
@@ -566,15 +566,6 @@ class TorchForecastingModel(GlobalForecastingModel):
         with open(filename, 'rb') as f:
             model = torch.load(f)
         return model
-
-    def _prepare_validation_data(self, val_training_series, val_target_series):
-        val_dataset = self._create_dataset(val_training_series, val_target_series)
-        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,
-                                num_workers=0, pin_memory=True, drop_last=False)
-        raise_if_not(len(val_dataset) > 0 and len(val_loader) > 0,
-                     'The provided validation time series is too short for this model output length.',
-                     logger)
-        return val_loader
 
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
