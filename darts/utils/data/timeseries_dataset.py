@@ -1,7 +1,9 @@
+from abc import ABC, abstractmethod
+import numpy as np
+
 from typing import Sequence, Tuple, Union, Optional
 from ...logging import get_logger
 from ...timeseries import TimeSeries
-from abc import ABC, abstractmethod
 
 logger = get_logger(__name__)
 
@@ -16,8 +18,11 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
         It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
         (using covariates if specified).
 
-        `TimeSeriesDataset` are inheriting from `Sequence`; meaning that the implementations have to
+        `TimeSeriesInferenceDataset` inherits from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.
+
+        It contains `TimeSeries` (and not e.g. `np.ndarray`), because inference requires the time axes,
+        and typically the performance penalty should be lower than for training datasets because there's no slicing.
 
         TODO: handle data processing
         TODO: handle optional "future" covariates
@@ -33,18 +38,21 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
         pass
 
 
-class TimeSeriesTrainingDataset(ABC, Sequence):
+class TrainingDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` training dataset. It emits 3-tuples of
-        `(input_target, output_target, input_covariate)` `TimeSeries`.
+        Abstract class for a training dataset. It emits 3-tuples of
+        `(input_target, output_target, input_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
 
         This is meant to be used for training (or validation), where `input*` series represent model
         inputs and `output_target` represent model outputs.
 
-        `TimeSeriesTrainingDataset` are inheriting from `Sequence`; meaning that the implementations have to
+        `TrainingDataset` inherits from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.
+
+        It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
+        and so we can get big performance gains when slicing by returning only numpy views of the data.
 
         TODO: handle data processing
         TODO: handle optional "future" covariates
@@ -56,5 +64,5 @@ class TimeSeriesTrainingDataset(ABC, Sequence):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         pass

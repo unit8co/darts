@@ -1,10 +1,12 @@
 from typing import Union, Sequence, Optional, Tuple
+import numpy as np
+
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TimeSeriesTrainingDataset
+from .timeseries_dataset import TrainingDataset
 from ..utils import raise_if_not
 
 
-class ShiftedDataset(TimeSeriesTrainingDataset):
+class ShiftedDataset(TrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -12,7 +14,7 @@ class ShiftedDataset(TimeSeriesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (input, output, input_covariates) series, which all have length
+        A time series dataset containing tuples of (input, output, input_covariates) arrays, which all have length
         `length`.
         The "output" is the "input" target shifted by `shift` time steps forward. So if an emitted "input"
         (and "input_covariates") goes from position `i` to `i+length`, the emitted output will go from position
@@ -74,10 +76,10 @@ class ShiftedDataset(TimeSeriesTrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> Tuple[TimeSeries, TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
-        ts_target = self.target_series[ts_idx]
+        ts_target = self.target_series[ts_idx].values(copy=False)
 
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(ts_target) - self.length - self.shift + 1
@@ -103,7 +105,7 @@ class ShiftedDataset(TimeSeriesTrainingDataset):
         # optionally also produce the input covariate
         input_covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx]
+            ts_covariate = self.covariates[ts_idx].values(copy=False)
 
             # TODO: check full time index
             raise_if_not(len(ts_covariate) == len(ts_target),

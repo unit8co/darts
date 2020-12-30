@@ -1,4 +1,5 @@
 from typing import Union, Sequence, Optional, Tuple
+
 from .timeseries_dataset import TimeSeriesInferenceDataset
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not

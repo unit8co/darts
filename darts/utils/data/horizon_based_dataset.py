@@ -1,12 +1,14 @@
 from typing import Union, Optional, Sequence, Tuple
+import numpy as np
+
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TimeSeriesTrainingDataset
+from .timeseries_dataset import TrainingDataset
 
 logger = get_logger(__name__)
 
 
-class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
+class HorizonBasedTrainDataset(TrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -14,7 +16,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
                  lh: Tuple[int, int] = (1, 3),
                  lookback: int = 3) -> None:
         """
-        A time series dataset containing tuples of (input, output, input_covariates) series, in a way inspired
+        A time series dataset containing tuples of (input, output, input_covariates) arrays, in a way inspired
         by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
         The "input" and "input_covariates" have length `lookback * output_length`, and the "output" has length
@@ -85,7 +87,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
 
@@ -100,7 +102,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
         assert lh_idx < (self.max_lh - self.min_lh) * self.output_length, 'bug in the Lh indexing'
 
         # select the time series
-        ts_target = self.target_series[ts_idx]
+        ts_target = self.target_series[ts_idx].values(copy=False)
 
         raise_if_not(len(ts_target) >= (self.lookback + self.max_lh) * self.output_length,
                      'The dataset contains some input/target series that are shorter than '
@@ -119,7 +121,7 @@ class HorizonBasedTrainDataset(TimeSeriesTrainingDataset):
         # optionally also produce the input covariate
         input_covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx]
+            ts_covariate = self.covariates[ts_idx].values(copy=False)
 
             # TODO: check full time index
             raise_if_not(len(ts_covariate) == len(ts_target),

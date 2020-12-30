@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TimeSeriesTrainingDataset
+from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
 from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
@@ -43,7 +43,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: Union[TimeSeriesInferenceDataset, TimeSeriesTrainingDataset], device):
+    def __init__(self, ts_dataset: Union[TimeSeriesInferenceDataset, TrainingDataset], device):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
         from `TimeSeries` to torch tensors and stack target series with covariates when needed.
@@ -52,13 +52,10 @@ class TimeSeriesTorchDataset(Dataset):
         Parameters
         ----------
         ts_dataset
-            the `TimeSeriesDataset` or `TimeSeriesTrainingDataset` underlying this torch Dataset.
+            the `TimeSeriesDataset` or `TrainingDataset` underlying this torch Dataset.
         """
         self.ts_dataset = ts_dataset
         self.device = device
-
-    def _ts_to_tensor(self, ts: TimeSeries):
-        return torch.from_numpy(ts.values(copy=False)).float()
 
     @staticmethod
     def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
@@ -78,14 +75,14 @@ class TimeSeriesTorchDataset(Dataset):
 
         if len(item) == 2:
             # the dataset contains (input_target, input_covariate) only
-            input_tgt = self._ts_to_tensor(item[0])
-            input_cov = self._ts_to_tensor(item[1]) if item[1] is not None else None
+            input_tgt = torch.from_numpy(item[0]).float()
+            input_cov = torch.from_numpy(item[1]).float() if item[1] is not None else None
             return self._cat_with_optional(input_tgt, input_cov)
 
         elif len(item) == 3:
             # the dataset contains (input_target, output_target, input_covariate)
-            input_tgt, output_tgt = self._ts_to_tensor(item[0]), self._ts_to_tensor(item[1])
-            input_cov = self._ts_to_tensor(item[2]) if item[2] is not None else None
+            input_tgt, output_tgt = torch.from_numpy(item[0]).float(), torch.from_numpy(item[1]).float()
+            input_cov = torch.from_numpy(item[2]).float() if item[2] is not None else None
             return self._cat_with_optional(input_tgt, input_cov), output_tgt
 
         else:
@@ -220,7 +217,7 @@ class TorchForecastingModel(GlobalForecastingModel):
 
     def build_train_dataset(self,
                             target: Sequence[TimeSeries],
-                            covariates: Optional[Sequence[TimeSeries]]) -> TimeSeriesTrainingDataset:
+                            covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
         return SequentialDataset(target_series=target,
                                  covariates=covariates,
                                  input_length=self.input_length,
@@ -286,8 +283,8 @@ class TorchForecastingModel(GlobalForecastingModel):
 
     @random_method
     def fit_from_dataset(self,
-                         train_dataset: TimeSeriesTrainingDataset,
-                         val_dataset: Optional[TimeSeriesTrainingDataset] = None,
+                         train_dataset: TrainingDataset,
+                         val_dataset: Optional[TrainingDataset] = None,
                          verbose: bool = False) -> None:
 
         raise_if(len(train_dataset) == 0,
