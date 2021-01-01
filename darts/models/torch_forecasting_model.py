@@ -496,8 +496,8 @@ class TorchForecastingModel(GlobalForecastingModel):
                         self._save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
                     if verbose:
-                        print("Training loss: {:.4f}, validation loss: {:.4f}".
-                              format(training_loss, validation_loss), end="\r")
+                        print("Training loss: {:.4f}, validation loss: {:.4f}, best val loss: {:.4f}".
+                              format(training_loss, validation_loss, best_loss), end="\r")
                 elif verbose:
                     print("Training loss: {:.4f}".format(training_loss), end="\r")
 
