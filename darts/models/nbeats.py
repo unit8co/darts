@@ -349,6 +349,7 @@ class NBEATSModel(TorchForecastingModel):
             and one seasonality stack with appropriate waveform generator functions).
         num_stacks
             The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
+            The interpretable architecture always uses two stacks - one for trend and one for seasonality.
         num_blocks
             The number of blocks making up every stack.
         num_layers
