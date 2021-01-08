@@ -282,4 +282,7 @@ def datetime_attribute_timeseries(time_index: pd.DatetimeIndex, attribute: str, 
         values_df = pd.DataFrame(values)
     values_df.index = time_index
 
+    if one_hot:
+        values_df.columns = [attribute + '_' + str(column_name) for column_name in values_df.columns]
+
     return TimeSeries(values_df)
