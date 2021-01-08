@@ -175,7 +175,13 @@ we also provide the following alternate lighter install options:
 * Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
 * Install core + Facebook Prophet: `pip install 'u8darts[fbprophet]'`
 * Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
-   
+
+Note: In case you run into errors with `clang` (the C compiler) set the variables `CC` and `CXX` as follows:
+```bash
+export CC=/usr/bin/clang
+export CXX=/usr/bin/clang++
+```
+
 ### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
