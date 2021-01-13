@@ -63,8 +63,8 @@ class _PositionalEncoding(nn.Module):
 
 class _TransformerModule(nn.Module):
     def __init__(self,
-                 input_length: int,
-                 output_length: int,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  input_size: int,
                  output_size: int,
                  d_model: int,
@@ -85,9 +85,9 @@ class _TransformerModule(nn.Module):
         ----------
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
-        input_length
+        input_chunk_length
             Number of time steps to be input to the forecasting module.
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
@@ -112,12 +112,12 @@ class _TransformerModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size)`
             Tensor containing the features of the input sequence.
 
         Outputs
         -------
-        y of shape `(batch_size, output_length, output_size)`
+        y of shape `(batch_size, output_chunk_length, output_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
@@ -125,10 +125,10 @@ class _TransformerModule(nn.Module):
 
         self.input_size = input_size
         self.target_size = output_size
-        self.target_length = output_length
+        self.target_length = output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_length)
+        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_chunk_length)
 
         # Defining the Transformer module
         self.transformer = nn.Transformer(d_model=d_model,
@@ -141,12 +141,12 @@ class _TransformerModule(nn.Module):
                                           custom_encoder=custom_encoder,
                                           custom_decoder=custom_decoder)
 
-        self.decoder = nn.Linear(d_model, output_length * output_size)
+        self.decoder = nn.Linear(d_model, output_chunk_length * output_size)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
-        # (batch_size, input_length, input_size) format. PyTorch's nn.Transformer
-        # module needs it the (input_length, batch_size, input_size) format.
+        # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
+        # module needs it the (input_chunk_length, batch_size, input_size) format.
         # Therefore, the first two dimensions need to be swapped.
         src = data.permute(1, 0, 2)
         tgt = src[-1:, :, :]
@@ -171,8 +171,8 @@ class _TransformerModule(nn.Module):
         out = self.decoder(x)
 
         # Here we change the data format
-        # from (1, batch_size, output_length * output_size)
-        # to (batch_size, output_length, output_size)
+        # from (1, batch_size, output_chunk_length * output_size)
+        # to (batch_size, output_chunk_length, output_size)
         predictions = out[0, :, :]
         predictions = predictions.view(-1, self.target_length, self.target_size)
 
@@ -182,8 +182,8 @@ class _TransformerModule(nn.Module):
 class TransformerModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_length: int = 1,
-                 output_length: int = 1,
+                 input_chunk_length: int = 1,
+                 output_chunk_length: int = 1,
                  input_size: int = 1,
                  output_size: int = 1,
                  d_model: int = 512,
@@ -229,11 +229,11 @@ class TransformerModel(TorchForecastingModel):
             `darts.models.transformer_model._TransformerModule` (default=None).
         input_size
             The dimensionality of the TimeSeries that will be fed to the fit and predict functions (default=1).
-        input_length
+        input_chunk_length
             Number of time steps to be input to the forecasting module (default=1).
         output_size
             The dimensionality of the output time series (default=1).
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module (default=1).
         d_model
             the number of expected features in the transformer encoder/decoder inputs (default=512).
@@ -258,14 +258,14 @@ class TransformerModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['input_length'] = input_length
-        kwargs['output_length'] = output_length
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = output_size
 
         # set self.model
-        self.model = _TransformerModule(input_length=input_length,
-                                        output_length=output_length,
+        self.model = _TransformerModule(input_chunk_length=input_chunk_length,
+                                        output_chunk_length=output_chunk_length,
                                         input_size=input_size,
                                         output_size=output_size,
                                         d_model=d_model,

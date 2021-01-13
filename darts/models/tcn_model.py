@@ -55,14 +55,14 @@ class _ResidualBlock(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, in_dimension, input_length)`
+        x of shape `(batch_size, in_dimension, input_chunk_length)`
             Tensor containing the features of the input sequence.
             in_dimension is equal to `input_size` if this is the first residual block,
             in all other cases it is equal to `num_filters`.
 
         Outputs
         -------
-        y of shape `(batch_size, out_dimension, input_length)`
+        y of shape `(batch_size, out_dimension, input_chunk_length)`
             Tensor containing the output sequence of the residual block.
             out_dimension is equal to `output_size` if this is the last residual block,
             in all other cases it is equal to `num_filters`.
@@ -110,7 +110,7 @@ class _ResidualBlock(nn.Module):
 class _TCNModule(nn.Module):
     def __init__(self,
                  input_size: int,
-                 input_length: int,
+                 input_chunk_length: int,
                  kernel_size: int,
                  num_filters: int,
                  num_layers: Optional[int],
@@ -129,7 +129,7 @@ class _TCNModule(nn.Module):
             The dimensionality of the input time series.
         target_size
             The dimensionality of the output time series.
-        input_length
+        input_chunk_length
             The length of the input time series.
         target_length
             Number of time steps the torch module will predict into the future at once.
@@ -148,14 +148,14 @@ class _TCNModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size)`
             Tensor containing the features of the input sequence.
 
         Outputs
         -------
-        y of shape `(batch_size, input_length, 1)`
-            Tensor containing the predictions of the next 'output_length' points in the last
-            'output_length' entries of the tensor. The entries before contain the data points
+        y of shape `(batch_size, input_chunk_length, 1)`
+            Tensor containing the predictions of the next 'output_chunk_length' points in the last
+            'output_chunk_length' entries of the tensor. The entries before contain the data points
             leading up to the first prediction, all in chronological order.
         """
 
@@ -163,7 +163,7 @@ class _TCNModule(nn.Module):
 
         # Defining parameters
         self.input_size = input_size
-        self.input_length = input_length
+        self.input_chunk_length = input_chunk_length
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.target_length = target_length
@@ -173,11 +173,11 @@ class _TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
-            num_layers = math.ceil(math.log((input_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2 + 1,
+            num_layers = math.ceil(math.log((input_chunk_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2 + 1,
                                             dilation_base))
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:
-            num_layers = math.ceil((input_length - 1) / (kernel_size - 1) / 2)
+            num_layers = math.ceil((input_chunk_length - 1) / (kernel_size - 1) / 2)
             logger.info("Number of layers chosen: " + str(num_layers))
         self.num_layers = num_layers
 
@@ -190,7 +190,7 @@ class _TCNModule(nn.Module):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     def forward(self, x):
-        # data is of size (batch_size, input_length, input_size)
+        # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
 
@@ -198,7 +198,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_length, self.target_size)
+        x = x.view(batch_size, self.input_chunk_length, self.target_size)
 
         return x
 
@@ -207,8 +207,8 @@ class TCNModel(TorchForecastingModel):
 
     @random_method
     def __init__(self,
-                 input_length: int = 12,
-                 output_length: int = 1,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1,
                  input_size: int = 1,
                  output_size: int = 1,
                  kernel_size: int = 3,
@@ -227,9 +227,9 @@ class TCNModel(TorchForecastingModel):
 
         Parameters
         ----------
-        input_length
+        input_chunk_length
             Number of past time steps that are fed to the forecasting module.
-        output_length
+        output_chunk_length
             Number of time steps the torch module will predict into the future at once.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
@@ -252,20 +252,20 @@ class TCNModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        raise_if_not(kernel_size < input_length,
+        raise_if_not(kernel_size < input_chunk_length,
                      "The kernel size must be strictly smaller than the input length.", logger)
-        raise_if_not(output_length < input_length,
+        raise_if_not(output_chunk_length < input_chunk_length,
                      "The output length must be strictly smaller than the input length", logger)
 
-        kwargs['input_length'] = input_length
-        kwargs['output_length'] = output_length
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = output_size
 
-        self.model = _TCNModule(input_size=input_size, input_length=input_length, target_size=output_size,
+        self.model = _TCNModule(input_size=input_size, input_chunk_length=input_chunk_length, target_size=output_size,
                                 kernel_size=kernel_size, num_filters=num_filters,
                                 num_layers=num_layers, dilation_base=dilation_base,
-                                target_length=output_length, dropout=dropout, weight_norm=weight_norm)
+                                target_length=output_chunk_length, dropout=dropout, weight_norm=weight_norm)
 
         super().__init__(**kwargs)
 
@@ -274,9 +274,9 @@ class TCNModel(TorchForecastingModel):
                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
         return ShiftedDataset(target_series=target,
                               covariates=covariates,
-                              length=self.input_length,
+                              length=self.input_chunk_length,
                               shift=1)
 
     @property
     def first_prediction_index(self) -> int:
-        return -self.output_length
+        return -self.output_chunk_length

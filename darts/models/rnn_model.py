@@ -21,7 +21,7 @@ class _RNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  num_layers: int,
-                 output_length: int = 1,
+                 output_chunk_length: int = 1,
                  target_size: int = 1,
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
@@ -30,7 +30,7 @@ class _RNNModule(nn.Module):
 
         PyTorch module implementing a simple RNN with the specified `name` layer.
         This module combines a PyTorch RNN module, together with a fully connected network, which maps the
-        last hidden layers to output of the desired size `output_length` and makes it compatible with
+        last hidden layers to output of the desired size `output_chunk_length` and makes it compatible with
         `RNNModel`s.
 
         Parameters
@@ -43,7 +43,7 @@ class _RNNModule(nn.Module):
             The number of features in the hidden state `h` of the RNN module.
         num_layers
             The number of recurrent layers.
-        output_length
+        output_chunk_length
             The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
@@ -55,7 +55,7 @@ class _RNNModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size)`
             Tensor containing the features of the input sequence.
 
         Outputs
@@ -71,7 +71,7 @@ class _RNNModule(nn.Module):
         self.n_layers = num_layers
         self.target_size = target_size
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.out_len = output_length
+        self.out_len = output_chunk_length
         self.name = name
 
         # Defining the RNN module
@@ -81,13 +81,13 @@ class _RNNModule(nn.Module):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [output_length * target_size]:
+        for feature in num_layers_out_fc + [output_chunk_length * target_size]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
 
     def forward(self, x):
-        # data is of size (batch_size, input_length, input_size)
+        # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
 
         out, hidden = self.rnn(x)
@@ -100,15 +100,15 @@ class _RNNModule(nn.Module):
         predictions = self.fc(predictions)
         predictions = predictions.view(batch_size, self.out_len, self.target_size)
 
-        # predictions is of size (batch_size, output_length, 1)
+        # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
 
 class RNNModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_length: int = 12,
-                 output_length: int = 1,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1,
                  input_size: int = 1,
                  output_size: int = 1,
                  model: Union[str, nn.Module] = 'RNN',
@@ -139,7 +139,7 @@ class RNNModel(TorchForecastingModel):
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
         target_size
             The dimensionality of the output time series.
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
@@ -154,8 +154,8 @@ class RNNModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['input_length'] = input_length
-        kwargs['output_length'] = output_length
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
         kwargs['input_size'] = input_size
         kwargs['output_size'] = output_size
 
@@ -163,7 +163,7 @@ class RNNModel(TorchForecastingModel):
         if model in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
             self.model = _RNNModule(name=model, input_size=input_size, target_size=output_size, hidden_dim=hidden_size,
-                                    num_layers=n_rnn_layers, output_length=output_length,
+                                    num_layers=n_rnn_layers, output_chunk_length=output_chunk_length,
                                     num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
         else:
             self.model = model

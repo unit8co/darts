@@ -86,7 +86,7 @@ class ShiftedDataset(TrainingDataset):
 
         raise_if_not(n_samples_in_ts >= 1,
                      'The dataset contains some time series that are too short to contain '
-                     '`input_length + `output_length` ({}-th series)'.format(ts_idx))
+                     '`input_chunk_length + `output_chunk_length` ({}-th series)'.format(ts_idx))
 
         # Determine the index of the end of the output, starting from the end.
         # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
@@ -99,7 +99,7 @@ class ShiftedDataset(TrainingDataset):
         else:
             output_series = ts_target[-(self.length + end_of_output_idx):-end_of_output_idx]
 
-        # select input period; look at the `input_length` points before the forecast point
+        # select input period; look at the `input_chunk_length` points before the forecast point
         input_series = ts_target[-(self.length + end_of_output_idx + self.shift):-(end_of_output_idx + self.shift)]
 
         # optionally also produce the input covariate

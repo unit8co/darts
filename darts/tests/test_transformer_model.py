@@ -23,8 +23,8 @@ if TORCH_AVAILABLE:
         series: TimeSeries = TimeSeries.from_series(pd_series)
         series_multivariate = series.stack(series * 2)
         module = _TransformerModule(input_size=1,
-                                    input_length=1,
-                                    output_length=1,
+                                    input_chunk_length=1,
+                                    output_chunk_length=1,
                                     output_size=1,
                                     d_model=512,
                                     nhead=8,
@@ -64,7 +64,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred4), 6)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(n_epochs=1, output_length=3)
+            model = pytorch_model(n_epochs=1, output_chunk_length=3)
             model.fit(series)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)

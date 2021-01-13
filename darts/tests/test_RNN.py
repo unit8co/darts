@@ -20,7 +20,7 @@ if TORCH_AVAILABLE:
         times = pd.date_range('20130101', '20130410')
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
-        module = _RNNModule('RNN', input_size=1, output_length=1, hidden_dim=25,
+        module = _RNNModule('RNN', input_size=1, output_chunk_length=1, hidden_dim=25,
                             num_layers=1, num_layers_out_fc=[], dropout=0)
 
         def test_creation(self):
@@ -63,7 +63,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred4), 6)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(n_epochs=1, output_length=3)
+            model = pytorch_model(n_epochs=1, output_chunk_length=3)
             model.fit(series)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)

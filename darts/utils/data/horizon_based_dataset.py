@@ -12,26 +12,26 @@ class HorizonBasedTrainDataset(TrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 output_length: int = 12,
+                 output_chunk_length: int = 12,
                  lh: Tuple[int, int] = (1, 3),
                  lookback: int = 3) -> None:
         """
         A time series dataset containing tuples of (input, output, input_covariates) arrays, in a way inspired
         by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
-        The "input" and "input_covariates" have length `lookback * output_length`, and the "output" has length
-        `output_length`.
+        The "input" and "input_covariates" have length `lookback * output_chunk_length`, and the "output" has length
+        `output_chunk_length`.
 
-        Given the horizon `output_length` of a model, this dataset will compute some (input, target) splits as follows
+        Given the horizon `output_chunk_length` of a model, this dataset will compute some (input, target) splits as follows
         (the logic for "input_covariates" is the same as for "input"):
         First a "forecast point" is selected in the the range of the last
-        `(min_lh * output_length, max_lh * output_length)` points before the end of the time series.
-        The target then consists in the following `output_length` points, and the data will be the preceding
-        `lookback * output_length` points.
+        `(min_lh * output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
+        The target then consists in the following `output_chunk_length` points, and the data will be the preceding
+        `lookback * output_chunk_length` points.
 
         All the series in the provided sequence must be long enough; i.e. have length at least
-        `(lookback + max_lh) * output_length`, and `min_lh` must be at least 1
-        (to have targets of length exactly `1 * output_length`).
+        `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be at least 1
+        (to have targets of length exactly `1 * output_chunk_length`).
         The target and covariates time series are sliced together, and therefore must have the same time axes.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
 
@@ -51,7 +51,7 @@ class HorizonBasedTrainDataset(TrainingDataset):
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
             In addition, all the target series must have the same time axis as the corresponding target series.
-        output_length
+        output_chunk_length
             The length of the "output" series emitted by the model
         lh
             A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.
@@ -59,14 +59,14 @@ class HorizonBasedTrainDataset(TrainingDataset):
             before the end of the series. It is required that `min_lh >= 1`.
         lookback:
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
-            multiple of `output_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_length`.
+            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
         """
         super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
-        self.output_length = output_length
+        self.output_chunk_length = output_chunk_length
         self.min_lh, self.max_lh = lh
         self.lookback = lookback
 
@@ -78,7 +78,7 @@ class HorizonBasedTrainDataset(TrainingDataset):
                      'The provided sequence of target series must have the same length as '
                      'the provided sequence of covariate series.')
 
-        self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_length
+        self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
 
     def __len__(self):
@@ -96,27 +96,27 @@ class HorizonBasedTrainDataset(TrainingDataset):
         lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
 
         # The time series index of our forecasting point (indexed from the end of the series):
-        forecast_point_idx = self.min_lh * self.output_length + lh_idx
+        forecast_point_idx = self.min_lh * self.output_chunk_length + lh_idx
 
         # Sanity check... TODO: remove
-        assert lh_idx < (self.max_lh - self.min_lh) * self.output_length, 'bug in the Lh indexing'
+        assert lh_idx < (self.max_lh - self.min_lh) * self.output_chunk_length, 'bug in the Lh indexing'
 
         # select the time series
         ts_target = self.target_series[ts_idx].values(copy=False)
 
-        raise_if_not(len(ts_target) >= (self.lookback + self.max_lh) * self.output_length,
+        raise_if_not(len(ts_target) >= (self.lookback + self.max_lh) * self.output_chunk_length,
                      'The dataset contains some input/target series that are shorter than '
                      '`(lookback + max_lh) * H` ({}-th)'.format(ts_idx))
 
         # select forecast point and target period, using the previously computed indexes
-        if forecast_point_idx == self.output_length:
+        if forecast_point_idx == self.output_chunk_length:
             # we need this case because "-0" is not supported as an indexing bound
             output_series = ts_target[-forecast_point_idx:]
         else:
-            output_series = ts_target[-forecast_point_idx:-forecast_point_idx+self.output_length]
+            output_series = ts_target[-forecast_point_idx:-forecast_point_idx+self.output_chunk_length]
 
         # select input period; look at the `lookback * output_series` points before the forecast point
-        input_series = ts_target[-(forecast_point_idx + self.lookback * self.output_length):-forecast_point_idx]
+        input_series = ts_target[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
 
         # optionally also produce the input covariate
         input_covariate = None
@@ -128,6 +128,6 @@ class HorizonBasedTrainDataset(TrainingDataset):
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))
 
-            input_covariate = ts_covariate[-(forecast_point_idx + self.lookback * self.output_length):-forecast_point_idx]
+            input_covariate = ts_covariate[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
 
         return input_series, output_series, input_covariate

@@ -92,8 +92,8 @@ class TimeSeriesTorchDataset(Dataset):
 class TorchForecastingModel(GlobalForecastingModel):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
-                 input_length: int = 10,
-                 output_length: int = 1,
+                 input_chunk_length: int = 10,
+                 output_chunk_length: int = 1,
                  input_size: int = 1,  # TODO remove
                  output_size: int = 1,  # TODO remove
                  batch_size: int = 32,
@@ -117,9 +117,9 @@ class TorchForecastingModel(GlobalForecastingModel):
 
         Parameters
         ----------
-        input_length
+        input_chunk_length
             Number of past time steps that are fed to the forecasting module.
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module.
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the fit function.
@@ -168,8 +168,8 @@ class TorchForecastingModel(GlobalForecastingModel):
         else:
             self.device = torch.device(torch_device_str)
 
-        self.input_length = input_length
-        self.output_length = output_length
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
         self.input_size = input_size
         self.target_size = output_size
         self.log_tensorboard = log_tensorboard
@@ -220,8 +220,8 @@ class TorchForecastingModel(GlobalForecastingModel):
                             covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
         return SequentialDataset(target_series=target,
                                  covariates=covariates,
-                                 input_length=self.input_length,
-                                 output_length=self.output_length)
+                                 input_chunk_length=self.input_chunk_length,
+                                 output_chunk_length=self.output_chunk_length)
 
     @random_method
     def fit(self,
@@ -335,8 +335,8 @@ class TorchForecastingModel(GlobalForecastingModel):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
-        If `n` is larger than the model `output_length`, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last `output_length` forecast points as
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
+        auto-regressive way, by iteratively feeding the last `output_chunk_length` forecast points as
         inputs to the model until a forecast of length `n` is obtained. This is at the moment only
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
@@ -361,9 +361,9 @@ class TorchForecastingModel(GlobalForecastingModel):
         """
         super().predict(n, series, covariates)
 
-        raise_if(covariates is not None and n > self.output_length,
+        raise_if(covariates is not None and n > self.output_chunk_length,
                  'The horizon `n` must be smaller or equal to the model output length when covariates are used. '
-                 'n: {}, output_length: {}'.format(n, self.output_length))
+                 'n: {}, output_chunk_length: {}'.format(n, self.output_chunk_length))
 
         if series is None and covariates is None:
             series = self.training_series
@@ -390,19 +390,19 @@ class TorchForecastingModel(GlobalForecastingModel):
         # TODO also currently we assume all forecasts fit in memory
         ts_forecasts = []
         for target_series, covariate_series in input_series_dataset:
-            raise_if_not(len(target_series) >= self.input_length,
-                         'All input series must have length >= `input_length` ({}).'.format(self.input_length))
+            raise_if_not(len(target_series) >= self.input_chunk_length,
+                         'All input series must have length >= `input_chunk_length` ({}).'.format(self.input_chunk_length))
 
             # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
             # TODO: e.g. by taking their latest common timestamp.
 
-            in_tsr = target_series.values(copy=False)[-self.input_length:]
+            in_tsr = target_series.values(copy=False)[-self.input_chunk_length:]
             in_tsr = torch.from_numpy(in_tsr).float().to(self.device)
             if covariate_series is not None:
-                in_cov_tsr = covariate_series.values(copy=False)[-self.input_length:]
+                in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
                 in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
                 in_tsr = torch.cat([in_tsr, in_cov_tsr], dim=1)
-            in_tsr = in_tsr.view(1, self.input_length, -1)
+            in_tsr = in_tsr.view(1, self.input_chunk_length, -1)
 
             out_sequence = self._produce_prediction(in_tsr, n)
 
@@ -418,10 +418,10 @@ class TorchForecastingModel(GlobalForecastingModel):
         # TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)
 
         prediction = []  # (length, width)
-        out = self.model(in_sequence)  # (1, output_length, width)
+        out = self.model(in_sequence)  # (1, output_chunk_length, width)
         prediction.append(out[0, :, :])
         while sum(map(lambda t: len(t), prediction)) < n:
-            roll_size = min(self.output_length, self.input_length)
+            roll_size = min(self.output_chunk_length, self.input_chunk_length)
             in_sequence = torch.roll(in_sequence, -roll_size, 1)
             in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
 
@@ -570,7 +570,7 @@ class TorchForecastingModel(GlobalForecastingModel):
             if self.from_scratch:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.input_length, self.input_size).to(self.device)
+                dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_size).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)

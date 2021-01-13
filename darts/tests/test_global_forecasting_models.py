@@ -59,7 +59,7 @@ if TORCH_AVAILABLE:
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
                 mape_err = mape(self.ts_pass_val, pred)
@@ -68,7 +68,7 @@ if TORCH_AVAILABLE:
 
         def test_multi_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
@@ -92,7 +92,7 @@ if TORCH_AVAILABLE:
                     # N-BEATS does not support multivariate
                     continue
 
-                model = model_cls(input_length=IN_LEN, output_length=OUT_LEN, input_size=3, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=3, output_size=1, **kwargs)
                 model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
                           covariates=[self.time_covariates_train, self.time_covariates_train])
                 with self.assertRaises(ValueError):
@@ -104,7 +104,7 @@ if TORCH_AVAILABLE:
                     model.predict(n=1, series=self.ts_pass_train)
 
                 with self.assertRaises(ValueError):
-                    # when model is fit using covariates, n cannot be greater than output_length
+                    # when model is fit using covariates, n cannot be greater than output_chunk_length
                     model.predict(n=13, series=self.ts_pass_train)
 
                 pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)

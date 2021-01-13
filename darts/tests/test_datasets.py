@@ -36,19 +36,19 @@ class DatasetTestCase(DartsBaseTestClass):
 
     def test_sequential_dataset(self):
         # one target series
-        ds = SequentialDataset(target_series=self.target1, input_length=10, output_length=10)
+        ds = SequentialDataset(target_series=self.target1, input_chunk_length=10, output_chunk_length=10)
         self.assertEqual(len(ds), 81)
         self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
 
         # two target series
-        ds = SequentialDataset(target_series=[self.target1, self.target2], input_length=10, output_length=10)
+        ds = SequentialDataset(target_series=[self.target1, self.target2], input_chunk_length=10, output_chunk_length=10)
         self.assertEqual(len(ds), 262)
         self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
         self._assert_eq(ds[136], (self.target2[125:135], self.target2[135:145], None))
 
         # two target series with custom max_nr_samples
         ds = SequentialDataset(target_series=[self.target1, self.target2],
-                               input_length=10, output_length=10, max_samples_per_ts=50)
+                               input_chunk_length=10, output_chunk_length=10, max_samples_per_ts=50)
         self.assertEqual(len(ds), 100)
         self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
         self._assert_eq(ds[55], (self.target2[125:135], self.target2[135:145], None))
@@ -60,7 +60,7 @@ class DatasetTestCase(DartsBaseTestClass):
         # two targets and two covariates
         ds = SequentialDataset(target_series=[self.target1, self.target2],
                                covariates=[self.cov1, self.cov2],
-                               input_length=10, output_length=10)
+                               input_chunk_length=10, output_chunk_length=10)
         self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], self.cov1[75:85]))
         self._assert_eq(ds[136], (self.target2[125:135], self.target2[135:145], self.cov2[125:135]))
 
@@ -95,13 +95,13 @@ class DatasetTestCase(DartsBaseTestClass):
 
     def test_horizon_based_dataset(self):
         # one target series
-        ds = HorizonBasedTrainDataset(target_series=self.target1, output_length=10, lh=(1, 3), lookback=2)
+        ds = HorizonBasedTrainDataset(target_series=self.target1, output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 20)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
 
         # two target series
         ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
-                                      output_length=10, lh=(1, 3), lookback=2)
+                                      output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 40)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
         self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], None))
@@ -113,6 +113,6 @@ class DatasetTestCase(DartsBaseTestClass):
         # two targets and two covariates
         ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
                                       covariates=[self.cov1, self.cov2],
-                                      output_length=10, lh=(1, 3), lookback=2)
+                                      output_chunk_length=10, lh=(1, 3), lookback=2)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], self.cov1[65:85]))
         self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], self.cov2[115:135]))
