@@ -207,8 +207,8 @@ class _TCNModule(nn.Module):
 class TCNModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,

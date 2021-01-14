@@ -322,8 +322,8 @@ class _NBEATSModule(nn.Module):
 class NBEATSModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  generic_architecture: bool = True,
                  num_stacks: int = 30,
                  num_blocks: int = 1,

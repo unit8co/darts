@@ -182,8 +182,8 @@ class _TransformerModule(nn.Module):
 class TransformerModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_chunk_length: int = 1,
-                 output_chunk_length: int = 1,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  d_model: int = 512,
                  nhead: int = 8,
                  num_encoder_layers: int = 6,

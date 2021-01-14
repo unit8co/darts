@@ -67,8 +67,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     if TORCH_AVAILABLE:
         def test_torch_models_retrain(self):
-            model1 = RNNModel(random_state=0, n_epochs=2)
-            model2 = RNNModel(random_state=0, n_epochs=2)
+            model1 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+            model2 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
 
             ensemble = RegressionEnsembleModel([model1], 5)
             ensemble.fit(self.combined)

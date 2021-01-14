@@ -19,20 +19,20 @@ if TORCH_AVAILABLE:
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # cannot choose a kernel size larger than the input length
-                TCNModel(kernel_size=100, input_chunk_length=20)
-            TCNModel()
+                TCNModel(input_chunk_length=20, output_chunk_length=1, kernel_size=100)
+            TCNModel(input_chunk_length=12, output_chunk_length=1)
 
         def test_fit(self):
             large_ts = tg.constant_timeseries(length=100, value=1000)
             small_ts = tg.constant_timeseries(length=100, value=10)
 
             # Test basic fit and predict
-            model = TCNModel(n_epochs=10, num_layers=1)
+            model = TCNModel(input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1)
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
-            model2 = TCNModel(n_epochs=10, num_layers=1)
+            model2 = TCNModel(input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1)
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
             self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
@@ -54,9 +54,10 @@ if TORCH_AVAILABLE:
                     for input_chunk_length in input_chunk_lengths:
 
                         # create model with all weights set to one
-                        model = TCNModel(kernel_size=kernel_size,
+                        model = TCNModel(input_chunk_length=input_chunk_length,
+                                         output_chunk_length=1,
+                                         kernel_size=kernel_size,
                                          dilation_base=dilation_base,
-                                         input_chunk_length=input_chunk_length,
                                          weight_norm=False,
                                          n_epochs=1)
 
@@ -79,9 +80,10 @@ if TORCH_AVAILABLE:
                             input_tensor[0, i, 0] = 0
 
                         # create model with all weights set to one and one layer less than is automatically detected
-                        model_2 = TCNModel(kernel_size=kernel_size,
+                        model_2 = TCNModel(input_chunk_length=input_chunk_length,
+                                           output_chunk_length=1,
+                                           kernel_size=kernel_size,
                                            dilation_base=dilation_base,
-                                           input_chunk_length=input_chunk_length,
                                            weight_norm=False,
                                            num_layers=model.model.num_layers - 1,
                                            n_epochs=1)
@@ -111,7 +113,7 @@ if TORCH_AVAILABLE:
                         self.assertTrue(uncovered_input_found)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(n_epochs=1, output_chunk_length=3)
+            model = pytorch_model(input_chunk_length=12, output_chunk_length=3, n_epochs=1)
             model.fit(series)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)

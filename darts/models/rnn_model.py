@@ -108,8 +108,8 @@ class _RNNModule(nn.Module):
 class RNNModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  model: Union[str, nn.Module] = 'RNN',
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,

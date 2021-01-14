@@ -120,7 +120,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
-            tcn_model = TCNModel(batch_size=1, n_epochs=1)
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(linear_series,
                                                   start=pd.Timestamp('20000125'),
                                                   forecast_horizon=3,
@@ -133,7 +133,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                 tcn_model.backtest(linear_series_multi, start=pd.Timestamp('20000125'),
                                    forecast_horizon=3, verbose=False)
 
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, output_chunk_length=3)
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   start=pd.Timestamp('20000125'),
                                                   forecast_horizon=3,
@@ -217,9 +217,10 @@ class BacktestingTestCase(DartsBaseTestClass):
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
+            'input_chunk_length': [12],
+            'output_chunk_length': [3],
             'n_epochs': [1],
             'batch_size': [1],
-            'output_chunk_length': [3],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,

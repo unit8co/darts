@@ -93,10 +93,10 @@ class TimeSeriesTorchDataset(Dataset):
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
-                 input_chunk_length: int = 10,
-                 output_chunk_length: int = 1,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  batch_size: int = 32,
-                 n_epochs: int = 800,
+                 n_epochs: int = 100,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Optional[Dict] = None,
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
