@@ -87,7 +87,7 @@ class TimeSeriesTorchDataset(Dataset):
             return self._cat_with_optional(input_tgt, input_cov), output_tgt
 
         else:
-            raise ValueError('The dataset has to emmit tuples of size 2 or 4')
+            raise ValueError('The dataset has to contain tuples of size 2 or 4')
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
@@ -270,10 +270,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         super().fit(series, covariates)
 
-        series = [series] if isinstance(series, TimeSeries) else series
-        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
-        val_series = [val_series] if isinstance(val_series, TimeSeries) else val_series
-        val_covariates = [val_covariates] if isinstance(val_covariates, TimeSeries) else val_covariates
+        wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
+        series = wrap_fn(series)
+        covariates = wrap_fn(covariates)
+        val_series = wrap_fn(val_series)
+        val_covariates = wrap_fn(val_covariates)
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
 
         # Check that dimensions of train and val set match; on first series only
