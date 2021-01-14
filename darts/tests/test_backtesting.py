@@ -132,14 +132,8 @@ class BacktestingTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 tcn_model.backtest(linear_series_multi, start=pd.Timestamp('20000125'),
                                    forecast_horizon=3, verbose=False)
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_chunk_length=3)
-            with self.assertRaises(ValueError):
-                tcn_model.backtest(linear_series_multi,
-                                   start=pd.Timestamp('20000125'),
-                                   forecast_horizon=3,
-                                   verbose=False)
 
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_chunk_length=3, output_size=2)
+            tcn_model = TCNModel(batch_size=1, n_epochs=1, output_chunk_length=3)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   start=pd.Timestamp('20000125'),
                                                   forecast_horizon=3,
@@ -225,9 +219,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         tcn_params = {
             'n_epochs': [1],
             'batch_size': [1],
-            'input_size': [2],
             'output_chunk_length': [3],
-            'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,

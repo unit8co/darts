@@ -184,8 +184,6 @@ class TransformerModel(TorchForecastingModel):
     def __init__(self,
                  input_chunk_length: int = 1,
                  output_chunk_length: int = 1,
-                 input_size: int = 1,
-                 output_size: int = 1,
                  d_model: int = 512,
                  nhead: int = 8,
                  num_encoder_layers: int = 6,
@@ -227,12 +225,8 @@ class TransformerModel(TorchForecastingModel):
         model
             a custom PyTorch module with the same specifications as
             `darts.models.transformer_model._TransformerModule` (default=None).
-        input_size
-            The dimensionality of the TimeSeries that will be fed to the fit and predict functions (default=1).
         input_chunk_length
             Number of time steps to be input to the forecasting module (default=1).
-        output_size
-            The dimensionality of the output time series (default=1).
         output_chunk_length
             Number of time steps to be output by the forecasting module (default=1).
         d_model
@@ -260,21 +254,32 @@ class TransformerModel(TorchForecastingModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        kwargs['input_size'] = input_size
-        kwargs['output_size'] = output_size
-
-        # set self.model
-        self.model = _TransformerModule(input_chunk_length=input_chunk_length,
-                                        output_chunk_length=output_chunk_length,
-                                        input_size=input_size,
-                                        output_size=output_size,
-                                        d_model=d_model,
-                                        nhead=nhead,
-                                        num_encoder_layers=num_encoder_layers,
-                                        num_decoder_layers=num_decoder_layers,
-                                        dim_feedforward=dim_feedforward,
-                                        dropout=dropout,
-                                        activation=activation,
-                                        custom_encoder=custom_encoder,
-                                        custom_decoder=custom_decoder)
         super().__init__(**kwargs)
+
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.d_model = d_model
+        self.nhead = nhead
+        self.num_encoder_layers = num_encoder_layers
+        self.num_decoder_layers = num_decoder_layers
+        self.dim_feedforward = dim_feedforward
+        self.dropout = dropout
+        self.activation = activation
+        self.custom_encoder = custom_encoder
+        self.custom_decoder = custom_decoder
+
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        return _TransformerModule(input_chunk_length=self.input_chunk_length,
+                                  output_chunk_length=self.output_chunk_length,
+                                  input_size=input_dim,
+                                  output_size=output_dim,
+                                  d_model=self.d_model,
+                                  nhead=self.nhead,
+                                  num_encoder_layers=self.num_encoder_layers,
+                                  num_decoder_layers=self.num_decoder_layers,
+                                  dim_feedforward=self.dim_feedforward,
+                                  dropout=self.dropout,
+                                  activation=self.activation,
+                                  custom_encoder=self.custom_encoder,
+                                  custom_decoder=self.custom_decoder)
+

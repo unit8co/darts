@@ -57,7 +57,12 @@ if TORCH_AVAILABLE:
                         model = TCNModel(kernel_size=kernel_size,
                                          dilation_base=dilation_base,
                                          input_chunk_length=input_chunk_length,
-                                         weight_norm=False)
+                                         weight_norm=False,
+                                         n_epochs=1)
+
+                        # we have to fit the model on a dummy series in order to create the internal nn.Module
+                        model.fit(tg.gaussian_timeseries(length=100))
+
                         for res_block in model.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
                             res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
@@ -78,7 +83,12 @@ if TORCH_AVAILABLE:
                                            dilation_base=dilation_base,
                                            input_chunk_length=input_chunk_length,
                                            weight_norm=False,
-                                           num_layers=model.model.num_layers - 1)
+                                           num_layers=model.model.num_layers - 1,
+                                           n_epochs=1)
+
+                        # we have to fit the model on a dummy series in order to create the internal nn.Module
+                        model_2.fit(tg.gaussian_timeseries(length=100))
+
                         for res_block in model_2.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
                             res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))

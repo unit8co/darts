@@ -337,8 +337,8 @@ class NBEATSModel(TorchForecastingModel):
         This is an implementation of the N-BEATS architecture, as outlined in this paper:
         https://openreview.net/forum?id=r1ecqn4YwB
 
-        This model supports only univariate time series (and thus doesn't support using covariates). It can
-        nevertheless be trained on several time series.
+        This model currently supports only univariate time series (and thus doesn't support using covariates).
+        It can nevertheless be trained on several time series.
 
         Parameters
         ----------
@@ -375,36 +375,42 @@ class NBEATSModel(TorchForecastingModel):
 
         """
 
-        if not generic_architecture:
-            num_stacks = 2
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
+        super().__init__(**kwargs)
 
         raise_if_not(isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
                      "Please pass an integer or a list of integers with length `num_stacks`"
                      "as value for the `layer_widths` argument.", logger)
 
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.generic_architecture = generic_architecture
+        self.num_stacks = num_stacks
+        self.num_blocks = num_blocks
+        self.num_layers = num_layers
+        self.layer_widths = layer_widths
+        self.expansion_coefficient_dim = expansion_coefficient_dim
+        self.trend_polynomial_degree = trend_polynomial_degree
+
+        if not generic_architecture:
+            self.num_stacks = 2
+
         if isinstance(layer_widths, int):
-            layer_widths = [layer_widths] * num_stacks
+            self.layer_widths = [layer_widths] * num_stacks
 
-        self.model = _NBEATSModule(
-            input_chunk_length,
-            output_chunk_length,
-            generic_architecture,
-            num_stacks,
-            num_blocks,
-            num_layers,
-            layer_widths,
-            expansion_coefficient_dim,
-            trend_polynomial_degree
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        raise_if_not(input_dim == 1 and output_dim == 1,
+                     'The N-Beats model currently supports only univariate time series.'
+                     'Currently: input_dim = {} and  output_dim = {}'.format(input_dim, output_dim))
+        return _NBEATSModule(
+            self.input_chunk_length,
+            self.output_chunk_length,
+            self.generic_architecture,
+            self.num_stacks,
+            self.num_blocks,
+            self.num_layers,
+            self.layer_widths,
+            self.expansion_coefficient_dim,
+            self.trend_polynomial_degree
         )
-
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = output_chunk_length
-
-        # At the moment N-Beats supports only univariate time series
-        if (('input_size' in kwargs and kwargs['input_size'] != 1) or
-           ('output_size' in kwargs and kwargs['output_size'] != 1)):
-            logger.warn('The N-Beats model supports only univariate time series; setting input and output sizes to 1.')
-        kwargs['input_size'] = 1
-        kwargs['output_size'] = 1
-
-        super().__init__(**kwargs)

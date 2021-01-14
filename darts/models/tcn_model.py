@@ -4,6 +4,7 @@ Temporal Convolutional Network
 """
 
 import math
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
@@ -204,13 +205,10 @@ class _TCNModule(nn.Module):
 
 
 class TCNModel(TorchForecastingModel):
-
     @random_method
     def __init__(self,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 input_size: int = 1,
-                 output_size: int = 1,
                  kernel_size: int = 3,
                  num_filters: int = 3,
                  num_layers: Optional[int] = None,
@@ -231,10 +229,6 @@ class TCNModel(TorchForecastingModel):
             Number of past time steps that are fed to the forecasting module.
         output_chunk_length
             Number of time steps the torch module will predict into the future at once.
-        input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        output_size
-            The dimensionality of the output time series.
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -259,19 +253,33 @@ class TCNModel(TorchForecastingModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        kwargs['input_size'] = input_size
-        kwargs['output_size'] = output_size
-
-        self.model = _TCNModule(input_size=input_size, input_chunk_length=input_chunk_length, target_size=output_size,
-                                kernel_size=kernel_size, num_filters=num_filters,
-                                num_layers=num_layers, dilation_base=dilation_base,
-                                target_length=output_chunk_length, dropout=dropout, weight_norm=weight_norm)
 
         super().__init__(**kwargs)
 
-    def build_train_dataset(self,
-                            target: Sequence[TimeSeries],
-                            covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.kernel_size = kernel_size
+        self.num_filters = num_filters
+        self.num_layers = num_layers
+        self.dilation_base = dilation_base
+        self.dropout = dropout
+        self.weight_norm = weight_norm
+
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        return _TCNModule(input_size=input_dim,
+                          input_chunk_length=self.input_chunk_length,
+                          target_size=output_dim,
+                          kernel_size=self.kernel_size,
+                          num_filters=self.num_filters,
+                          num_layers=self.num_layers,
+                          dilation_base=self.dilation_base,
+                          target_length=self.output_chunk_length,
+                          dropout=self.dropout,
+                          weight_norm=self.weight_norm)
+
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
         return ShiftedDataset(target_series=target,
                               covariates=covariates,
                               length=self.input_chunk_length,

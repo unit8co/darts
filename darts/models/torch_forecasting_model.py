@@ -9,6 +9,7 @@ import re
 from glob import glob
 import shutil
 from typing import Optional, Dict, Tuple, Union, Sequence
+from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -89,13 +90,11 @@ class TimeSeriesTorchDataset(Dataset):
             raise ValueError('The dataset has to emmit tuples of size 2 or 4')
 
 
-class TorchForecastingModel(GlobalForecastingModel):
+class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
                  input_chunk_length: int = 10,
                  output_chunk_length: int = 1,
-                 input_size: int = 1,  # TODO remove
-                 output_size: int = 1,  # TODO remove
                  batch_size: int = 32,
                  n_epochs: int = 800,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
@@ -118,13 +117,9 @@ class TorchForecastingModel(GlobalForecastingModel):
         Parameters
         ----------
         input_chunk_length
-            Number of past time steps that are fed to the forecasting module.
+            Number of past time steps that are fed to the internal forecasting module.
         output_chunk_length
-            Number of time steps to be output by the forecasting module.
-        input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        output_size
-            The dimensionality of the output time series.
+            Number of time steps to be output by the internal forecasting module.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -159,35 +154,49 @@ class TorchForecastingModel(GlobalForecastingModel):
         """
         super().__init__()
 
-        raise_if_not(isinstance(self.model, nn.Module), 'Please make sure that self.model is set to a valid '
-                     'nn.Module subclass when subclassing TorchForecastingModel',
-                     logger)
-
         if torch_device_str is None:
             self.device = self._get_best_torch_device()
         else:
             self.device = torch.device(torch_device_str)
 
+        # We will fill these dynamically, upon first call of fit_from_dataset():
+        self.model = None
+        self.input_dim = None
+        self.output_dim = None
+
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-        self.input_size = input_size
-        self.target_size = output_size
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
-        self.model = self.model.to(self.device)
         self.model_name = model_name
         self.work_dir = work_dir
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.from_scratch = True  # do we train the model from scratch
+        self.from_scratch = True  # do we train the model from scratch  # TODO clean this
 
         # Define the loss function
         self.criterion = loss_fn
 
         # The tensorboard writer
         self.tb_writer = None
+
+        # Persist optimiser and LR scheduler parameters
+        self.optimizer_cls = optimizer_cls
+        self.optimizer_kwargs = dict() if optimizer_kwargs is None else optimizer_kwargs
+        self.lr_scheduler_cls = lr_scheduler_cls
+        self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+
+    def _init_model(self) -> None:
+        """
+        Init self.model - the torch module of this class, based on examples of input/output tensors (to get the
+        sizes right).
+        """
+
+        # the tensors have shape (chunk_length, nr_dimensions)
+        model = self._create_model(self.input_dim, self.output_dim)
+        self.model = model.to(self.device)
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -202,22 +211,31 @@ class TorchForecastingModel(GlobalForecastingModel):
                           logger)
 
         # Create the optimizer and (optionally) the learning rate scheduler
-        if optimizer_kwargs is None:
-            optimizer_kwargs = dict()
-        optimizer_kwargs['params'] = self.model.parameters()
-        self.optimizer = _create_from_cls_and_kwargs(optimizer_cls, optimizer_kwargs)
+        # we have to create copies because we cannot save model.parameters into object state (not serializable)
+        optimizer_kws = {k: v for k, v in self.optimizer_kwargs.items()}
+        optimizer_kws['params'] = self.model.parameters()
+        self.optimizer = _create_from_cls_and_kwargs(self.optimizer_cls, optimizer_kws)
 
-        if lr_scheduler_cls is not None:
-            lr_scheduler_kwargs['optimizer'] = self.optimizer
-            self.lr_scheduler = _create_from_cls_and_kwargs(lr_scheduler_cls, lr_scheduler_kwargs)
+        if self.lr_scheduler_cls is not None:
+            lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
+            lr_sched_kws['optimizer'] = self.optimizer
+            self.lr_scheduler = _create_from_cls_and_kwargs(self.lr_scheduler_cls, lr_sched_kws)
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-        self._save_untrained_model(_get_untrained_models_folder(work_dir, model_name))
+        self._save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
-    def build_train_dataset(self,
-                            target: Sequence[TimeSeries],
-                            covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
+    @abstractmethod
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        """
+        This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
+        based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
+        """
+        pass
+
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
         return SequentialDataset(target_series=target,
                                  covariates=covariates,
                                  input_chunk_length=self.input_chunk_length,
@@ -258,24 +276,16 @@ class TorchForecastingModel(GlobalForecastingModel):
         val_covariates = [val_covariates] if isinstance(val_covariates, TimeSeries) else val_covariates
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
 
-        # Check widths; on first series only
-        # TODO: actually be smart and dynamically create modules of correct width here
-        raise_if_not((series[0].width + (0 if covariates is None else covariates[0].width)) == self.input_size,
-                     'The series and the covariates must have a total number of dimensions equal to the input model '
-                     'size. Series width: {}, covariates width: {}, input_size: {}'.format(
-                     series[0].width, 0 if covariates is None else covariates[0].width, self.input_size
-                     ))
+        # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
-            raise_if_not((val_series[0].width +
-                          (0 if val_covariates is None else val_covariates[0].width)) == self.input_size,
-                         'The validation series and covariates must have a total number of dimensions equal to the '
-                         'input model size. Validation series width: {}, validation covariates width: {}, '
-                         'input_size: {}'.format(val_series[0].width,
-                                                 0 if val_covariates is None else val_covariates[0].width,
-                                                 self.input_size))
+            train_set_dim = (series[0].width + (0 if covariates is None else covariates[0].width))
+            val_set_dim = (val_series[0].width + (0 if val_covariates is None else val_covariates[0].width))
+            raise_if_not(train_set_dim == val_set_dim, 'The dimensions of the series in the training set '
+                                                       'and the validation set do not match. {} != {}'.format(
+                                                        train_set_dim, val_set_dim))
 
-        train_dataset = self.build_train_dataset(series, covariates)
-        val_dataset = self.build_train_dataset(val_series, val_covariates) if val_series is not None else None
+        train_dataset = self._build_train_dataset(series, covariates)
+        val_dataset = self._build_train_dataset(val_series, val_covariates) if val_series is not None else None
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
@@ -286,7 +296,6 @@ class TorchForecastingModel(GlobalForecastingModel):
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
                          verbose: bool = False) -> None:
-
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
@@ -299,6 +308,20 @@ class TorchForecastingModel(GlobalForecastingModel):
 
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
+
+        input_dim, output_dim = torch_train_dataset[0][0].shape[1], torch_train_dataset[0][1].shape[1]
+        if self.model is None:
+            # Build model, based on the dimensions of the first series in the train set.
+            self.input_dim, self.output_dim = input_dim, output_dim
+            self._init_model()
+        else:
+            # Check existing model has input/output dim matching what's provided in the training set.
+            raise_if_not(input_dim == self.input_dim and output_dim == self.output_dim,
+                         'The dimensionality of the series in the training set do not match the dimensionality'
+                         'of the series the model has previously been trained on. '
+                         'Model input/output dimensions = {}/{}, provided input/ouptput dimensions = {}/{}'.format(
+                             self.input_dim, self.output_dim, input_dim, output_dim
+                         ))
 
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
@@ -383,8 +406,15 @@ class TorchForecastingModel(GlobalForecastingModel):
                              n: int,
                              input_series_dataset: TimeSeriesInferenceDataset
                              ) -> Sequence[TimeSeries]:
-
         self.model.eval()
+
+        # check that the input sizes match
+        sample = input_series_dataset[0]
+        in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
+        raise_if_not(in_dim == self.input_dim,
+                     'The dimensionality of the series provided for prediction does not match the dimensionality'
+                     'of the series this model has been trained on. Provided input dim = {}, '
+                     'model input dim = {}'.format(in_dim, self.input_dim))
 
         # TODO use a torch Dataset and DataLoader for parallel loading and batching
         # TODO also currently we assume all forecasts fit in memory

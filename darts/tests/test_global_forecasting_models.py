@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 
 try:
     from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel
+    import torch
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not installed - will be skipping Torch models tests')
@@ -25,11 +26,11 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 150.),
-        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 150.),
+        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 180.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
-                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 150.),
-        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 150.)
+                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 180.)
     ]
 
     class GlobalForecastingModelsTestCase(DartsBaseTestClass):
@@ -37,6 +38,7 @@ if TORCH_AVAILABLE:
         forecasting_horizon = 12
 
         np.random.seed(42)
+        torch.manual_seed(42)
 
         # real timeseries for functionality tests
         df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
@@ -59,7 +61,7 @@ if TORCH_AVAILABLE:
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
                 mape_err = mape(self.ts_pass_val, pred)
@@ -68,7 +70,7 @@ if TORCH_AVAILABLE:
 
         def test_multi_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=1, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
@@ -92,7 +94,7 @@ if TORCH_AVAILABLE:
                     # N-BEATS does not support multivariate
                     continue
 
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, input_size=3, output_size=1, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
                           covariates=[self.time_covariates_train, self.time_covariates_train])
                 with self.assertRaises(ValueError):

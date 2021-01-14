@@ -4,6 +4,7 @@ Recurrent Neural Networks
 """
 
 import torch.nn as nn
+import torch
 from numpy.random import RandomState
 from typing import List, Optional, Union
 
@@ -109,8 +110,6 @@ class RNNModel(TorchForecastingModel):
     def __init__(self,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 input_size: int = 1,
-                 output_size: int = 1,
                  model: Union[str, nn.Module] = 'RNN',
                  hidden_size: int = 25,
                  n_rnn_layers: int = 1,
@@ -135,12 +134,10 @@ class RNNModel(TorchForecastingModel):
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             `darts.models.rnn_model.RNNModule`.
-        input_size
-            The dimensionality of the TimeSeries instances that will be fed to the fit function.
-        target_size
-            The dimensionality of the output time series.
+        input_chunk_length
+            The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
-            Number of time steps to be output by the forecasting module.
+            Number of time steps to be output by the internal forecasting module.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -156,19 +153,33 @@ class RNNModel(TorchForecastingModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        kwargs['input_size'] = input_size
-        kwargs['output_size'] = output_size
-
-        # set self.model
-        if model in ['RNN', 'LSTM', 'GRU']:
-            hidden_fc_sizes = [] if hidden_fc_sizes is None else hidden_fc_sizes
-            self.model = _RNNModule(name=model, input_size=input_size, target_size=output_size, hidden_dim=hidden_size,
-                                    num_layers=n_rnn_layers, output_chunk_length=output_chunk_length,
-                                    num_layers_out_fc=hidden_fc_sizes, dropout=dropout)
-        else:
-            self.model = model
-        raise_if_not(isinstance(self.model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                     '"GRU", or give your own PyTorch nn.Module'.format(model.__class__.__name__),
-                     logger)
-
         super().__init__(**kwargs)
+
+        # check we got right model type specified:
+        if model not in ['RNN', 'LSTM', 'GRU']:
+            raise_if_not(isinstance(model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                                                       '"GRU", or give your own PyTorch nn.Module'.format(
+                                                        model.__class__.__name__), logger)
+
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.rnn_type_or_module = model
+        self.hidden_fc_sizes = hidden_fc_sizes
+        self.hidden_size = hidden_size
+        self.n_rnn_layers = n_rnn_layers
+        self.dropout = dropout
+
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
+            hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
+            model = _RNNModule(name=self.rnn_type_or_module,
+                               input_size=input_dim,
+                               target_size=output_dim,
+                               hidden_dim=self.hidden_size,
+                               num_layers=self.n_rnn_layers,
+                               output_chunk_length=self.output_chunk_length,
+                               num_layers_out_fc=hidden_fc_sizes,
+                               dropout=self.dropout)
+        else:
+            model = self.rnn_type_or_module
+        return model
