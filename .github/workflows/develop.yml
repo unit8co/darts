@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [FFT-examples.ipynb, RNN-examples.ipynb, darts-intro.ipynb, data-processing.ipynb]
+        example-name: [FFT-examples.ipynb, RNN-examples.ipynb, darts-intro.ipynb, data-processing.ipynb, multi-time-series-and-covariates.ipynb]
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
