@@ -516,7 +516,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
-                training_loss = total_loss / (batch_idx + 1)  # TODO: do not use batch_idx
+                training_loss = total_loss / len(train_loader)
                 if val_loader is not None:
                     validation_loss = self._evaluate_validation_loss(val_loader)
                     if tb_writer is not None:
