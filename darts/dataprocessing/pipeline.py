@@ -124,7 +124,7 @@ class Pipeline:
         for transformer in reversed(self._transformers):
             data = transformer.inverse_transform(data)
         return data
-    
+
     def invertible(self) -> bool:
         """
         Returns whether the pipeline is invertible or not.

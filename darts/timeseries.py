@@ -1082,6 +1082,37 @@ class TimeSeries:
 
         return TimeSeries(new_dataframe, self.freq_str())
 
+    def to_json(self) -> str:
+        """
+        Converts the `TimeSeries` object to a JSON String
+
+        Returns
+        -------
+        str
+            A JSON String representing the time series
+        """
+        return self._df.to_json(orient='split', date_format='iso')
+
+    @staticmethod
+    def from_json(json_str: str) -> 'TimeSeries':
+        """
+        Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
+        into a `TimeSeries` object
+
+        Parameters
+        ----------
+        json_str
+            The JSON String to convert
+
+        Returns
+        -------
+        TimeSeries
+            The time series object converted from the JSON String
+        """
+
+        df = pd.read_json(json_str, orient='split')
+        return TimeSeries.from_times_and_values(df.index, df)
+
     @staticmethod
     def _combine_or_none(df_a: Optional[pd.DataFrame],
                          df_b: Optional[pd.DataFrame],
