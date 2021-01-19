@@ -601,7 +601,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.from_scratch:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
-                dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_size).to(self.device)
+                dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
