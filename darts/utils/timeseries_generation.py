@@ -230,11 +230,10 @@ def holidays_timeseries(time_index,
     TimeSeries
         A new binary holiday TimeSeries instance.
     """
-
-    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state)
-    scoped_country_holidays = country_holidays[time_index[0]:time_index[-1] + pd.Timedelta(days=1)]
+    scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
+    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state, years=scope)
     index_series = pd.Series(time_index, index=time_index)
-    values = index_series.apply(lambda x: x in scoped_country_holidays).astype(int)
+    values = index_series.apply(lambda x: x in country_holidays).astype(int)
     return TimeSeries.from_times_and_values(time_index, values)
 
 
