@@ -9,9 +9,10 @@ References
 ----------
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
-
+# Note: statsmodels.tsa.arima_model.ARIMA is Deprecated since version 0.12: Use statsmodels.tsa.arima.model.ARIMA instead
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
+from typing import Optional
 
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
@@ -42,16 +43,20 @@ class ARIMA(ForecastingModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, covariates: Optional[TimeSeries] = None): # Shall we move this to global forecasting model???
         super().fit(series)
-        series = self.training_series
-        m = staARIMA(series.values(),
-                     order=(self.p, self.d, self.q)) if self.d > 0 else staARMA(series.values(), order=(self.p, self.q))
+        series = self.training_series # Is this laine really needed?
+        covars = covariates.values() if covariates else None
+        if self.d > 0:
+            m = staARIMA(series.values(), exog=covars, order=(self.p, self.d, self.q))
+        else:
+            m = staARMA(series.values(), exog=covars, order=(self.p, self.q))
         self.model = m.fit(disp=0)
 
-    def predict(self, n):
+    def predict(self, n, covariates: Optional[TimeSeries] = None):
         super().predict(n)
-        forecast = self.model.forecast(steps=n)[0]
+        forecast = self.model.forecast(steps=n,
+                                       exog=covariates.values() if covariates else None)[0]
         return self._build_forecast_series(forecast)
 
     @property
