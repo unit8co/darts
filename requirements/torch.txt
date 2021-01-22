@@ -1,2 +1,2 @@
-torch==1.5.1
-tensorboard==2.2.2
+torch==1.7.1
+tensorboard==2.4.0

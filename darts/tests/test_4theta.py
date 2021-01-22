@@ -1,8 +1,8 @@
 import unittest
-import logging
 import numpy as np
 import random
 
+from .base_test_class import DartsBaseTestClass
 from .. import SeasonalityMode, TrendMode, ModelMode
 from ..models import Theta, FourTheta
 from ..metrics import mape
@@ -13,12 +13,7 @@ from ..utils.timeseries_generation import (
 )
 
 
-class FourThetaTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class FourThetaTestCase(DartsBaseTestClass):
     def test_input(self):
         with self.assertRaises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)
@@ -59,7 +54,7 @@ class FourThetaTestCase(unittest.TestCase):
         series = sine_series + linear_series
         train_series, val_series = series.split_before(series.time_index()[-10])
         thetas = np.linspace(-3, 3, 30)
-        best_model = FourTheta.select_best_model(train_series, thetas)
+        best_model, _ = FourTheta.select_best_model(train_series, thetas)
         model = FourTheta(random.choice(thetas), model_mode=random.choice(list(ModelMode)),
                           trend_mode=random.choice(list(TrendMode)), season_mode=random.choice(list(SeasonalityMode)))
         model.fit(train_series)

@@ -1,15 +1,14 @@
-import logging
-import unittest
 import math
 
 import numpy as np
 import pandas as pd
 
-from darts.timeseries import TimeSeries
-from darts.utils.timeseries_generation import linear_timeseries, constant_timeseries
+from .base_test_class import DartsBaseTestClass
+from ..timeseries import TimeSeries
+from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 
-class TimeSeriesTestCase(unittest.TestCase):
+class TimeSeriesTestCase(DartsBaseTestClass):
 
     times = pd.date_range('20130101', '20130110')
     pd_series1 = pd.Series(range(10), index=times)
@@ -18,10 +17,6 @@ class TimeSeriesTestCase(unittest.TestCase):
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
     series3: TimeSeries = TimeSeries.from_series(pd_series2)
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_creation(self):
         with self.assertRaises(ValueError):

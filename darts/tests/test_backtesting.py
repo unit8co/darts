@@ -2,7 +2,6 @@ import unittest
 import numpy as np
 import pandas as pd
 import random
-import logging
 
 from darts.metrics import mape, r2_score
 from darts.utils.timeseries_generation import (
@@ -21,6 +20,7 @@ from darts.models import (
     NaiveDrift,
 )
 
+from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1 = model_class.gridsearch(params,
+    best_model_1, _ = model_class.gridsearch(params,
                                           series,
                                           forecast_horizon=10,
                                           metric=mape,
@@ -43,7 +43,7 @@ def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index()[-10])
-    best_model_2 = model_class.gridsearch(params, train, val_target_series=val, metric=mape)
+    best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random_param_choice = {}
@@ -69,108 +69,75 @@ def compare_best_against_random(model_class, params, series):
     return expanding_window_ok and split_ok
 
 
-class BacktestingTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
+class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
-        score = NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000201'), 3, metric=r2_score)
+        score = NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000201'),
+                                      forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3)
+            NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000217'), forecast_horizon=3)
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000217'), forecast_horizon=3,
+            NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000217'), forecast_horizon=3,
                                   overlap_end=False)
-        NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'), forecast_horizon=3)
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000216'), forecast_horizon=3)
         NaiveDrift().backtest(linear_series,
-                              None,
-                              pd.Timestamp('20000217'),
+                              start=pd.Timestamp('20000217'),
                               forecast_horizon=3,
                               overlap_end=True)
 
         # Using forecast_horizon default value
-        NaiveDrift().backtest(linear_series, None, start=pd.Timestamp('20000216'))
-        NaiveDrift().backtest(linear_series, None, pd.Timestamp('20000217'), overlap_end=True)
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000216'))
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000217'), overlap_end=True)
 
         # Using an int or float value for start
-        NaiveDrift().backtest(linear_series, None, start=30)
-        NaiveDrift().backtest(linear_series, None, start=0.7, overlap_end=True)
+        NaiveDrift().backtest(linear_series, start=30)
+        NaiveDrift().backtest(linear_series, start=0.7, overlap_end=True)
 
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=0.7, forecast_horizon=-1)
+            NaiveDrift().backtest(linear_series, start=0.7, forecast_horizon=-1)
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, 0.7, -1)
+            NaiveDrift().backtest(linear_series, start=-0.7, forecast_horizon=1)
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=100)
+            NaiveDrift().backtest(linear_series, start=100)
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=1.2)
+            NaiveDrift().backtest(linear_series, start=1.2)
         with self.assertRaises(TypeError):
-            NaiveDrift().backtest(linear_series, None, start='wrong type')
+            NaiveDrift().backtest(linear_series, start='wrong type')
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(linear_series, None, start=49, forecast_horizon=2, overlap_end=False)
+            NaiveDrift().backtest(linear_series, start=49, forecast_horizon=2, overlap_end=False)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
-            NaiveDrift().backtest(linear_series_multi, None, pd.Timestamp('20000201'), 3)
+            NaiveDrift().backtest(linear_series_multi, start=pd.Timestamp('20000201'), forecast_horizon=3)
 
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
-            tcn_model = TCNModel(batch_size=1, n_epochs=1)
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(linear_series,
-                                                  None,
-                                                  pd.Timestamp('20000125'),
-                                                  3,
+                                                  start=pd.Timestamp('20000125'),
+                                                  forecast_horizon=3,
                                                   verbose=False,
                                                   last_points_only=True)
             self.assertEqual(pred.width, 1)
 
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
-                tcn_model.backtest(linear_series_multi, None, pd.Timestamp('20000125'), 3, verbose=False)
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3)
-            with self.assertRaises(ValueError):
-                tcn_model.backtest(linear_series_multi,
-                                   None,
-                                   pd.Timestamp('20000125'),
-                                   3,
-                                   verbose=False,
-                                   use_full_output_length=False)
+                tcn_model.backtest(linear_series_multi, start=pd.Timestamp('20000125'),
+                                   forecast_horizon=3, verbose=False)
 
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(linear_series_multi,
-                                                  linear_series_multi[['0']],
-                                                  pd.Timestamp('20000125'),
-                                                  1,
+                                                  start=pd.Timestamp('20000125'),
+                                                  forecast_horizon=3,
                                                   verbose=False,
-                                                  use_full_output_length=True,
-                                                  last_points_only=True)
-            self.assertEqual(pred.width, 1)
-
-            pred = tcn_model.historical_forecasts(linear_series_multi,
-                                                  linear_series_multi[['1']],
-                                                  pd.Timestamp('20000125'),
-                                                  3,
-                                                  verbose=False,
-                                                  use_full_output_length=True,
-                                                  last_points_only=True)
-            self.assertEqual(pred.width, 1)
-
-            tcn_model = TCNModel(batch_size=1, n_epochs=1, input_size=2, output_length=3, output_size=2)
-            pred = tcn_model.historical_forecasts(linear_series_multi,
-                                                  linear_series_multi,
-                                                  pd.Timestamp('20000125'),
-                                                  3,
-                                                  verbose=False,
-                                                  use_full_output_length=True,
                                                   last_points_only=True)
             self.assertEqual(pred.width, 2)
 
@@ -250,18 +217,16 @@ class BacktestingTestCase(unittest.TestCase):
     def test_gridsearch_multi(self):
         dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
+            'input_chunk_length': [12],
+            'output_chunk_length': [3],
             'n_epochs': [1],
             'batch_size': [1],
-            'input_size': [2],
-            'output_length': [3],
-            'output_size': [2],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,
                             dummy_series,
                             forecast_horizon=3,
-                            metric=mape,
-                            use_full_output_length=True)
+                            metric=mape)
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)

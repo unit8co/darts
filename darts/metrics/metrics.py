@@ -347,7 +347,7 @@ def smape(actual_series: TimeSeries,
     y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
                  'The actual series must be strictly positive to compute the sMAPE.', logger)
-    return 200. * np.mean(np.abs((y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat))))
+    return 200. * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
 
 
 @multivariate_support

@@ -1,8 +1,8 @@
-import unittest
 import logging
 
 from sklearn.ensemble import RandomForestRegressor
 
+from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal
 from ..models import StandardRegressionModel
@@ -19,7 +19,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class RegressionEnsembleModelsTestCase(unittest.TestCase):
+class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
 
@@ -27,10 +27,6 @@ class RegressionEnsembleModelsTestCase(unittest.TestCase):
 
     def get_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_accepts_different_regression_models(self):
         regr1 = StandardRegressionModel()
@@ -71,8 +67,8 @@ class RegressionEnsembleModelsTestCase(unittest.TestCase):
 
     if TORCH_AVAILABLE:
         def test_torch_models_retrain(self):
-            model1 = RNNModel(random_state=0)
-            model2 = RNNModel(random_state=0)
+            model1 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+            model2 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
 
             ensemble = RegressionEnsembleModel([model1], 5)
             ensemble.fit(self.combined)
@@ -83,8 +79,4 @@ class RegressionEnsembleModelsTestCase(unittest.TestCase):
             model2.fit(self.combined)
             forecast2 = model2.predict(10)
 
-            self.assertEqual(forecast1, forecast2)
-
-
-if __name__ == '__main__':
-    unittest.main()
+            self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=3)

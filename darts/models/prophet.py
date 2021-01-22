@@ -7,7 +7,7 @@ from typing import Optional
 import logging
 
 from ..timeseries import TimeSeries
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 import pandas as pd
 from ..logging import get_logger, execute_and_suppress_output
 import fbprophet
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
-class Prophet(UnivariateForecastingModel):
+class Prophet(ForecastingModel):
     def __init__(self,
                  frequency: Optional[int] = None,
                  country_holidays: Optional[str] = None,

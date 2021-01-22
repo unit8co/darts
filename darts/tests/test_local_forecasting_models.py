@@ -1,10 +1,9 @@
-import logging
 import shutil
-import unittest
 
 import numpy as np
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
@@ -51,7 +50,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-class ForecastingModelsTestCase(unittest.TestCase):
+class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5
@@ -64,15 +63,6 @@ class ForecastingModelsTestCase(unittest.TestCase):
     df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
     ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
-
-    @classmethod
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def tearDownClass(cls):
-        shutil.rmtree('.darts')
 
     def test_models_runnability(self):
         for model, _ in models:
@@ -92,20 +82,8 @@ class ForecastingModelsTestCase(unittest.TestCase):
     def test_multivariate_input(self):
         es_model = ExponentialSmoothing()
         ts_passengers_enhanced = self.ts_passengers.add_datetime_attribute('month')
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             es_model.fit(ts_passengers_enhanced)
         es_model.fit(ts_passengers_enhanced["#Passengers"])
         with self.assertRaises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
-
-        if TORCH_AVAILABLE:
-            tcn_model = TCNModel(n_epochs=1, input_size=2)
-            with self.assertRaises(ValueError):
-                tcn_model.fit(ts_passengers_enhanced)
-            tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["Month"])
-            with self.assertRaises(KeyError):
-                tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced["2"])
-            tcn_model = TCNModel(n_epochs=1, input_size=2, output_size=2)
-            with self.assertRaises(KeyError):
-                tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "2"]])
-            tcn_model.fit(ts_passengers_enhanced, ts_passengers_enhanced[["#Passengers", "Month"]])

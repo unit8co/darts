@@ -143,7 +143,7 @@ class RegressionModel(ABC):
         Parameters
         ----------
         feature_series
-            A list of time series representing the features for the regression model (independent variables)
+            An iterable of time series representing the features for the regression model (independent variables)
         target_series
             The univariate target time series for the regression model (dependent variable)
         start
@@ -242,7 +242,7 @@ class RegressionModel(ABC):
         Parameters
         ----------
         feature_series
-            A list of time series representing the features for the regression model (independent variables)
+            An iterable of time series representing the features for the regression model (independent variables)
         target_series
             The univariate target time series for the regression model (dependent variable)
         start

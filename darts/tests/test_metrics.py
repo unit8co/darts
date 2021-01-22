@@ -1,13 +1,13 @@
-import unittest
 import numpy as np
 import pandas as pd
 import logging
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..metrics import metrics
 
 
-class MetricsTestCase(unittest.TestCase):
+class MetricsTestCase(DartsBaseTestClass):
 
     pd_train = pd.Series(np.sin(np.pi * np.arange(31) / 4) + 1, index=pd.date_range('20121201', '20121231'))
     pd_series1 = pd.Series(range(10), index=pd.date_range('20130101', '20130110'))
@@ -23,10 +23,6 @@ class MetricsTestCase(unittest.TestCase):
     series21: TimeSeries = series2.stack(series1)
     series1b = TimeSeries.from_times_and_values(pd.date_range('20130111', '20130120'), series1.values())
     series2b = TimeSeries.from_times_and_values(pd.date_range('20130111', '20130120'), series2.values())
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_zero(self):
         with self.assertRaises(ValueError):

@@ -1,14 +1,12 @@
-import logging
-import unittest
-
 import numpy as np
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from .test_timeseries import TimeSeriesTestCase
 
 
-class TimeSeriesMultivariateTestCase(unittest.TestCase):
+class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
 
     times1 = pd.date_range('20130101', '20130110')
     times2 = pd.date_range('20130206', '20130215')
@@ -29,10 +27,6 @@ class TimeSeriesMultivariateTestCase(unittest.TestCase):
     series1 = TimeSeries(dataframe1)
     series2 = TimeSeries(dataframe2)
     series3 = TimeSeries(dataframe3)
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_creation(self):
         with self.assertRaises(ValueError):
