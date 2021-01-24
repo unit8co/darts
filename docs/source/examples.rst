@@ -77,16 +77,6 @@ You will find below an example Jupyter notebook showcasing the usage of the N-BE
 
    examples/NBEATS-examples.ipynb
 
-Multivariate Examples
-=====================
-
-You will find below an example Jupyter notebook showcasing the usage of multivariate TimeSeries instances
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/multivariate-examples.ipynb
-
 M4 Competition Exploration
 ==========================
 

@@ -1,10 +1,11 @@
-import unittest
 import pandas as pd
+import logging
+import unittest
 import numpy as np
 import re
-import logging
 from testfixtures import LogCapture
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..logging import raise_log, raise_if_not, time_log, get_logger
 

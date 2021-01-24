@@ -10,7 +10,7 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
 from .. import SeasonalityMode, TrendMode, ModelMode
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 ALPHA_START = 0.2
 
 
-class Theta(UnivariateForecastingModel):
+class Theta(ForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(self,
@@ -139,7 +139,7 @@ class Theta(UnivariateForecastingModel):
         return 'Theta({})'.format(self.theta)
 
 
-class FourTheta(UnivariateForecastingModel):
+class FourTheta(ForecastingModel):
     def __init__(self,
                  theta: int = 2,
                  seasonality_period: Optional[int] = None,
@@ -215,20 +215,20 @@ class FourTheta(UnivariateForecastingModel):
         raise_if_not(season_mode in SeasonalityMode,
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
-    def fit(self, ts):
-        super().fit(ts)
+    def fit(self, series):
+        super().fit(series)
         # Check univariate time series
-        ts._assert_univariate()
+        series._assert_univariate()
 
-        self.length = len(ts)
+        self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = ts.mean().mean()
+            self.mean = series.mean().mean()
             raise_if_not(not np.isclose(self.mean, 0),
                          "The mean value of the provided series is too close to zero to perform normalization", logger)
-            new_ts = ts / self.mean
+            new_ts = series / self.mean
         else:
-            new_ts = ts
+            new_ts = series
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
@@ -237,8 +237,8 @@ class FourTheta(UnivariateForecastingModel):
         else:
             self.season_period = self.seasonality_period
         if self.season_period is None:
-            max_lag = len(ts) // 2
-            self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
+            max_lag = len(series) // 2
+            self.is_seasonal, self.season_period = check_seasonality(series, self.season_period, max_lag=max_lag)
             logger.info('FourTheta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.

@@ -1,6 +1,6 @@
-import unittest
-
 from numpy.random import RandomState
+
+from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,7 +26,7 @@ if TORCH_AVAILABLE:
         def fit(self, some_params=None):
             self.fit_value = torch.randn(5)
 
-    class RandomMethodTestCase(unittest.TestCase):
+    class RandomMethodTestCase(DartsBaseTestClass):
         def test_it_raises_error_if_used_on_function(self):
             with self.assertRaises(ValueError):
                 @random_method
