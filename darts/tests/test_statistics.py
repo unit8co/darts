@@ -1,13 +1,12 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from .. import TimeSeries
 from ..utils.statistics import check_seasonality
 
 
-class TimeSeriesTestCase(unittest.TestCase):
+class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_check_seasonality(self):
         pd_series = pd.Series(range(50), index=pd.date_range('20130101', '20130219'))

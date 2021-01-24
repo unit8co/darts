@@ -1,11 +1,11 @@
-import unittest
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..utils import retain_period_common_to_all, _with_sanity_checks
 from ..timeseries import TimeSeries
 
 
-class UtilsTestCase(unittest.TestCase):
+class UtilsTestCase(DartsBaseTestClass):
 
     def test_retain_period_common_to_all(self):
         seriesA = TimeSeries.from_times_and_values(pd.date_range('20000101', '20000110'), range(10))

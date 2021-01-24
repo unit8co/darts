@@ -1,5 +1,3 @@
-import unittest
-
 from ..utils.timeseries_generation import (
     constant_timeseries,
     linear_timeseries,
@@ -7,9 +5,10 @@ from ..utils.timeseries_generation import (
     gaussian_timeseries,
     random_walk_timeseries,
 )
+from .base_test_class import DartsBaseTestClass
 
 
-class TimeSeriesGenerationTestCase(unittest.TestCase):
+class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
     def test_constant_timeseries(self):
         # testing parameters

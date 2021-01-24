@@ -5,14 +5,14 @@ Auto-ARIMA
 
 from pmdarima import AutoARIMA as PmdAutoARIMA
 
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(UnivariateForecastingModel):
+class AutoARIMA(ForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """ Auto-ARIMA
 

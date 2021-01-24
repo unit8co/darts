@@ -1,9 +1,7 @@
-import unittest
-import logging
-
 import numpy as np
 import pandas as pd
 
+from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..metrics import r2_score
 from ..models import StandardRegressionModel
@@ -44,7 +42,7 @@ def test_models_accuracy(test_case, models, features, target, min_r2):
                              "A r2 score of {} was recorded.".format(str(model), current_r2))
 
 
-class RegressionModelsTestCase(unittest.TestCase):
+class RegressionModelsTestCase(DartsBaseTestClass):
 
     np.random.seed(1)
 
@@ -64,10 +62,6 @@ class RegressionModelsTestCase(unittest.TestCase):
     models = [
         StandardRegressionModel(regression_window)
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_models_runnability(self):
         for model in self.models:

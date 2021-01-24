@@ -13,14 +13,14 @@ References
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
 
-from .forecasting_model import UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class ARIMA(UnivariateForecastingModel):
+class ARIMA(ForecastingModel):
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
         """ ARIMA
 
