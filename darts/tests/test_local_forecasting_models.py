@@ -87,3 +87,26 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         es_model.fit(ts_passengers_enhanced["#Passengers"])
         with self.assertRaises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
+
+    def test_covariates_support(self):
+
+        model = ARIMA()
+
+        # Test models runnability
+        model.fit(self.ts_gaussian, covariates=self.ts_gaussian)
+        prediction = model.predict(
+            self.forecasting_horizon,
+            covariates=tg.gaussian_timeseries(length=self.forecasting_horizon))
+        self.assertTrue(len(prediction) == self.forecasting_horizon)
+
+        # Test mismatch in length between covariates and forecasting horizon
+        with self.assertRaises(ValueError):
+            model.predict(
+                self.forecasting_horizon,
+                covariates=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
+
+        # Test mismatch in time-index/length between series and covariates
+        with self.assertRaises(ValueError):
+            model.fit(self.ts_gaussian, covariates=self.ts_gaussian[:-1])
+        with self.assertRaises(ValueError):
+            model.fit(self.ts_gaussian[1:], covariates=self.ts_gaussian[:-1])

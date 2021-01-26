@@ -14,14 +14,14 @@ from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
 from typing import Optional
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger
+from ..logging import get_logger, raise_if_not
 
 logger = get_logger(__name__)
 
 
-class ARIMA(ForecastingModel):
+class ARIMA(ExtendedForecastingModel):
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
         """ ARIMA
 
@@ -43,18 +43,20 @@ class ARIMA(ForecastingModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries, covariates: Optional[TimeSeries] = None): # Shall we move this to global forecasting model???
-        super().fit(series)
-        series = self.training_series # Is this laine really needed?
-        covars = covariates.values() if covariates else None
+    def fit(self, series: TimeSeries, covariates: Optional[TimeSeries] = None):
+        super().fit(series, covariates)
+        series = self.training_series
+        covariates = covariates.values() if covariates else None
+
         if self.d > 0:
-            m = staARIMA(series.values(), exog=covars, order=(self.p, self.d, self.q))
+            m = staARIMA(series.values(), exog=covariates, order=(self.p, self.d, self.q))
         else:
-            m = staARMA(series.values(), exog=covars, order=(self.p, self.q))
+            m = staARMA(series.values(), exog=covariates, order=(self.p, self.q))
+
         self.model = m.fit(disp=0)
 
-    def predict(self, n, covariates: Optional[TimeSeries] = None):
-        super().predict(n)
+    def predict(self, n: int, covariates: Optional[TimeSeries] = None):
+        super().predict(n, covariates)
         forecast = self.model.forecast(steps=n,
                                        exog=covariates.values() if covariates else None)[0]
         return self._build_forecast_series(forecast)
