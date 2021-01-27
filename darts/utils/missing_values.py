@@ -6,7 +6,7 @@ Utils for filling missing values
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
 
-from typing import Union
+from typing import List, Optional, Union
 
 logger = get_logger(__name__)
 
@@ -61,6 +61,43 @@ def fill_missing_values(series: TimeSeries, fill: Union[str, float] = 'auto', **
     if fill == 'auto':
         return _auto_fill(series, **interpolate_kwargs)
     return _const_fill(series, fill)
+
+
+def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1) -> List[TimeSeries]:
+    """
+    Partitions the series into a sequence of sub-series by using significant gaps of missing values
+
+    Parameters
+    ----------
+    series
+        The TimeSeries to partition into sub-series
+
+    min_gap_size
+        The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.
+
+    Returns
+    -------
+    subseries
+        A list of TimeSeries, sub-series without significant gaps of missing values
+    """
+
+    # Remove null values from the series extremes
+    series = series.strip()
+    freq = series.freq()
+
+    if series.pd_dataframe().isna().sum().sum() == 0:
+        return [series]
+
+    # Get start/end times of sub-series without gaps of missing values
+    gaps_df = series.gaps().query(f'gap_size>={min_gap_size}')
+    start_times = [series.start_time()] + (gaps_df['gap_end'] + freq).to_list()
+    end_times = (gaps_df['gap_start'] - freq).to_list() + [series.end_time() + freq]
+
+    subseries = []
+    for start, end in zip(start_times, end_times):
+        subseries.append(series[start:end])
+
+    return subseries
 
 
 def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
