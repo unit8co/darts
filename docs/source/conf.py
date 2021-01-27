@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'darts'
-copyright = '2020, Unit8 SA'
+copyright = '2021, Unit8 SA'
 author = 'Unit8 SA'
 version = 'dev'
 
@@ -41,6 +41,12 @@ extensions = [
     'nbsphinx',
     'm2r'
 ]
+
+autodoc_default_options = {
+    'inherited-members': None,
+    'show-inheritance': None,
+    'exclude-members': 'TimeSeriesTorchDataset'
+}
 
 # In order to also have the docstrings of __init__() methods included
 autoclass_content = 'both'
