@@ -16,6 +16,17 @@ You will find below an example Jupyter notebook containing an intro to the usage
 
    examples/darts-intro.ipynb
 
+Training on multiple series and using Covariates
+================================================
+
+You will find below a Jupyter notebook containing a tutorial to darts *global models*,
+training on multiple series, and using covariates.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/multi-time-series-and-covariates.ipynb
+
 Data (pre) Processing
 =====================
 
@@ -76,13 +87,3 @@ You will find below an example Jupyter notebook showcasing the usage of the N-BE
    :maxdepth: 1
 
    examples/NBEATS-examples.ipynb
-
-M4 Competition Exploration
-==========================
-
-You will find below an example Jupyter notebook with a benchmark of different darts models and example usage of FourTheta model
-
-.. toctree::
-    :maxdepth: 1
-
-    examples/M4_competition/M4_competition_benchmark.ipynb
