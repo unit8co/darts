@@ -9,7 +9,6 @@ References
 ----------
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
-# Note: statsmodels.tsa.arima_model.ARIMA is Deprecated since version 0.12: Use statsmodels.tsa.arima.model.ARIMA instead
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
 from typing import Optional
