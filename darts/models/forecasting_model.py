@@ -1,6 +1,6 @@
 """
-Forecasting Model Base Class
-----------------------------
+Forecasting Model Base Classes
+------------------------------
 
 A forecasting model captures the future values of a time series as a function of the past as follows:
 
@@ -594,8 +594,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             One or several target time series. The model will be trained to forecast these time series.
         covariates
             One or several covariate time series. These time series will not be forecast, but can be used by
-            some models as an input. Some of these covariates may represent forecasts known in advance. This knowledge
-            is a property of the `TimeSeries`.
+            some models as an input.
         """
         if isinstance(series, TimeSeries) and covariates is None:
             super().fit(series)  # handle the single series case
