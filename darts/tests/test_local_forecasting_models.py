@@ -29,6 +29,8 @@ models = [
     (FFT(trend='poly'), 11.4),
     (NaiveSeasonal(), 32.4),
 ]
+# forecasting models with covariates support
+extended_models = [ARIMA()]
 
 try:
     from ..models import Prophet
@@ -39,6 +41,7 @@ except ImportError:
 try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 13.7))
+    extended_models.append(AutoARIMA())
 except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
 
@@ -89,8 +92,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             es_model.fit(ts_passengers_enhanced["2"])
 
     def test_covariates_support(self):
-
-        for model in [ARIMA(), AutoARIMA()]:
+        for model in extended_models:
 
             # Test models runnability
             model.fit(self.ts_gaussian, covariates=self.ts_gaussian)

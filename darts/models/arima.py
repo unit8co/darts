@@ -9,13 +9,14 @@ References
 ----------
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
+
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
 from typing import Optional
 
 from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_if_not
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 
