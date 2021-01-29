@@ -591,8 +591,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             One or several target time series. The model will be trained to forecast these time series.
         covariates
             One or several covariate time series. These time series will not be forecast, but can be used by
-            some models as an input. Some of these covariates may represent forecasts known in advance. This knowledge
-            is a property of the `TimeSeries`.
+            some models as an input.
         """
         if isinstance(series, TimeSeries) and covariates is None:
             super().fit(series)  # handle the single series case
@@ -659,13 +658,12 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def fit(self,
             series: TimeSeries,
-            covariates: Optional[Union[TimeSeries]] = None
+            covariates: Optional[TimeSeries] = None
             ) -> None:
         """ Fits/trains the model on the provided series
 
-        Defines behavior that should happen when calling the `fit()` method of every forecasting model.
-
-        The models can handle covariates.
+        Defines behavior that should happen when calling the `fit()` method for the forecasting models handling
+        optional covariates.
 
         Parameters
         ----------
@@ -673,13 +671,12 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
             A time series. The model will be trained to forecast this time series.
         covariates
             A time series of covariates. This time series will not be forecasted, but can be used by
-            some models as an input. Some of the covariates may represent forecasts known in advance. This knowledge
-            is a property of the `TimeSeries`.
+            some models as an input.
         """
         if covariates is None:
             super().fit(series)
         if covariates is not None:
-            raise_if_not(len(covariates) == len(series) and all(covariates._df.index == series._df.index),
+            raise_if_not(series.has_same_time_as(covariates),
                          'The target series and the covariates series must have the same time index.')
             self._expect_covariates = True
             self.training_series = series
