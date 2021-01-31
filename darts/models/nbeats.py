@@ -239,6 +239,10 @@ class _NBEATSModule(nn.Module):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -261,10 +265,6 @@ class _NBEATSModule(nn.Module):
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
 
         Inputs
         ------
@@ -342,6 +342,10 @@ class NBEATSModel(TorchForecastingModel):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -365,10 +369,6 @@ class NBEATSModel(TorchForecastingModel):
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
