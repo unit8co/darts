@@ -17,13 +17,13 @@ from .torch_forecasting_model import TorchForecastingModel
 logger = get_logger(__name__)
 
 
-class GType(Enum):
+class _GType(Enum):
     GENERIC = 1
     TREND = 2
     SEASONALITY = 3
 
 
-GTypes = NewType('GTypes', GType)
+GTypes = NewType('GTypes', _GType)
 
 
 class _TrendGenerator(nn.Module):
@@ -106,7 +106,7 @@ class _Block(nn.Module):
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
         # fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)
-        if g_type == GType.SEASONALITY:
+        if g_type == _GType.SEASONALITY:
             self.backcast_linear_layer = nn.Linear(layer_width, 2 * int(input_chunk_length / 2 - 1) + 1)
             self.forecast_linear_layer = nn.Linear(layer_width, 2 * int(target_length / 2 - 1) + 1)
         else:
@@ -114,13 +114,13 @@ class _Block(nn.Module):
             self.forecast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
 
         # waveform generator functions
-        if g_type == GType.GENERIC:
+        if g_type == _GType.GENERIC:
             self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
             self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length)
-        elif g_type == GType.TREND:
+        elif g_type == _GType.TREND:
             self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length)
             self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
-        elif g_type == GType.SEASONALITY:
+        elif g_type == _GType.SEASONALITY:
             self.backcast_g = _SeasonalityGenerator(input_chunk_length)
             self.forecast_g = _SeasonalityGenerator(target_length)
         else:
@@ -192,7 +192,7 @@ class _Stack(nn.Module):
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
 
-        if g_type == GType.GENERIC:
+        if g_type == _GType.GENERIC:
             self.blocks_list = [
                 _Block(num_layers, layer_width, expansion_coefficient_dim, input_chunk_length, target_length, g_type)
                 for _ in range(num_blocks)
@@ -239,6 +239,10 @@ class _NBEATSModule(nn.Module):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -261,10 +265,6 @@ class _NBEATSModule(nn.Module):
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
 
         Inputs
         ------
@@ -285,14 +285,14 @@ class _NBEATSModule(nn.Module):
         if generic_architecture:
             self.stacks_list = [
                 _Stack(num_blocks, num_layers, layer_widths[i], expansion_coefficient_dim,
-                       input_chunk_length, output_chunk_length, GType.GENERIC) for i in range(num_stacks)
+                       input_chunk_length, output_chunk_length, _GType.GENERIC) for i in range(num_stacks)
             ]
         else:
             num_stacks = 2
             trend_stack = _Stack(num_blocks, num_layers, layer_widths[0], trend_polynomial_degree + 1,
-                                 input_chunk_length, output_chunk_length, GType.TREND)
+                                 input_chunk_length, output_chunk_length, _GType.TREND)
             seasonality_stack = _Stack(num_blocks, num_layers, layer_widths[1], -1,
-                                       input_chunk_length, output_chunk_length, GType.SEASONALITY)
+                                       input_chunk_length, output_chunk_length, _GType.SEASONALITY)
             self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
@@ -342,6 +342,10 @@ class NBEATSModel(TorchForecastingModel):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -365,10 +369,6 @@ class NBEATSModel(TorchForecastingModel):
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.

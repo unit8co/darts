@@ -1,6 +1,7 @@
 """
-Torch Forecasting Model
------------------------
+Torch Forecasting Model Base Class
+----------------------------------
+This is the super class for all PyTorch-based forecasting models.
 """
 
 import numpy as np

@@ -1,8 +1,14 @@
+"""
+Sequential Training Dataset
+---------------------------
+"""
+
 from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
 from .timeseries_dataset import TrainingDataset
+
 from ..utils import raise_if_not
 
 
@@ -17,7 +23,7 @@ class SequentialDataset(TrainingDataset):
         A time series dataset containing tuples of (input, output, input_covariates) arrays, where "input" and
         "input_covariates" have length `input_chunk_length`, and "output" has length `output_chunk_length`.
 
-        The target and covariates series are sliced together, and therefore must have the same time axes.
+        The target and covariates series are sliced together, and therefore must have the same length.
         In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
         series must have length at least `input_chunk_length + output_chunk_length`.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
@@ -28,8 +34,7 @@ class SequentialDataset(TrainingDataset):
         be sampled more often than others if they belong to shorter time series.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
-        in memory), or implement your own `Sequence` of time series
-        (i.e., re-implement `__len__()` and `__getitem__()`).
+        in memory), or implement your own `Sequence` of time series.
 
         Parameters
         ----------
@@ -38,7 +43,6 @@ class SequentialDataset(TrainingDataset):
         covariates:
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
-            In addition, all the target series must have the same time axis as the corresponding target series.
         input_chunk_length
             The length of the emitted input series.
         output_chunk_length
@@ -105,7 +109,6 @@ class SequentialDataset(TrainingDataset):
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx].values(copy=False)
 
-            # TODO: check full time index
             raise_if_not(len(ts_covariate) == len(ts_target),
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))

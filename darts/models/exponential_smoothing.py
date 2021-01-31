@@ -9,7 +9,7 @@ import statsmodels.tsa.holtwinters as hw
 from .forecasting_model import ForecastingModel
 from ..logging import get_logger
 from ..timeseries import TimeSeries
-from .. import ModelMode
+from ..utils.utils import ModelMode
 
 logger = get_logger(__name__)
 

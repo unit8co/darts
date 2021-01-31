@@ -1,3 +1,8 @@
+"""
+Horizon-Based Training Dataset
+------------------------------
+"""
+
 from typing import Union, Optional, Sequence, Tuple
 import numpy as np
 
@@ -8,7 +13,7 @@ from .timeseries_dataset import TrainingDataset
 logger = get_logger(__name__)
 
 
-class HorizonBasedTrainDataset(TrainingDataset):
+class HorizonBasedDataset(TrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -32,7 +37,7 @@ class HorizonBasedTrainDataset(TrainingDataset):
         All the series in the provided sequence must be long enough; i.e. have length at least
         `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be at least 1
         (to have targets of length exactly `1 * output_chunk_length`).
-        The target and covariates time series are sliced together, and therefore must have the same time axes.
+        The target and covariates time series are sliced together, and therefore must have the same length.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
 
         The sampling is uniform both over the number of time series and the number of samples per series;
@@ -40,8 +45,7 @@ class HorizonBasedTrainDataset(TrainingDataset):
         time series in the sequence.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
-        in memory), or implement your own `Sequence` of time series
-        (i.e., re-implement `__len__()` and `__getitem__()`).
+        in memory), or implement your own `Sequence` of time series.
 
         Parameters
         ----------
@@ -50,7 +54,6 @@ class HorizonBasedTrainDataset(TrainingDataset):
         covariates:
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
-            In addition, all the target series must have the same time axis as the corresponding target series.
         output_chunk_length
             The length of the "output" series emitted by the model
         lh
@@ -123,7 +126,6 @@ class HorizonBasedTrainDataset(TrainingDataset):
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx].values(copy=False)
 
-            # TODO: check full time index
             raise_if_not(len(ts_covariate) == len(ts_target),
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))

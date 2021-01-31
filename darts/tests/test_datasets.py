@@ -1,5 +1,5 @@
 from .base_test_class import DartsBaseTestClass
-from ..utils.data import SimpleInferenceDataset, SequentialDataset, ShiftedDataset, HorizonBasedTrainDataset
+from ..utils.data import SimpleInferenceDataset, SequentialDataset, ShiftedDataset, HorizonBasedDataset
 from ..utils.timeseries_generation import gaussian_timeseries
 
 
@@ -95,24 +95,24 @@ class DatasetTestCase(DartsBaseTestClass):
 
     def test_horizon_based_dataset(self):
         # one target series
-        ds = HorizonBasedTrainDataset(target_series=self.target1, output_chunk_length=10, lh=(1, 3), lookback=2)
+        ds = HorizonBasedDataset(target_series=self.target1, output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 20)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
 
         # two target series
-        ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
-                                      output_chunk_length=10, lh=(1, 3), lookback=2)
+        ds = HorizonBasedDataset(target_series=[self.target1, self.target2],
+                                 output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 40)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
         self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], None))
 
         # two targets and one covariate
         with self.assertRaises(ValueError):
-            ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+            ds = HorizonBasedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
 
         # two targets and two covariates
-        ds = HorizonBasedTrainDataset(target_series=[self.target1, self.target2],
-                                      covariates=[self.cov1, self.cov2],
-                                      output_chunk_length=10, lh=(1, 3), lookback=2)
+        ds = HorizonBasedDataset(target_series=[self.target1, self.target2],
+                                 covariates=[self.cov1, self.cov2],
+                                 output_chunk_length=10, lh=(1, 3), lookback=2)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], self.cov1[65:85]))
         self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], self.cov2[115:135]))
