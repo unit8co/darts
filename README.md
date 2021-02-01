@@ -21,7 +21,10 @@ multiple time series.
 ## Documentation
 * [Examples & Tutorials](https://unit8co.github.io/darts/examples.html)
 * [API Documentation](https://unit8co.github.io/darts/generated_api/darts.html)
-* [High Level Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
+
+##### High Level Introductions
+* [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
+* [Introductory Video](https://www.youtube.com/watch?v=Sx-uI-PypmU&t=8s&ab_channel=Unit8)
 
 ## Install
 
