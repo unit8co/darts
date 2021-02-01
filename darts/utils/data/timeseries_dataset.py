@@ -1,3 +1,8 @@
+"""
+TimeSeries Dataset Base Classes
+-------------------------------
+"""
+
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -11,7 +16,7 @@ logger = get_logger(__name__)
 class TimeSeriesInferenceDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` inference dataset. It emits 2-tuples of
+        Abstract class for a `TimeSeries` inference dataset. It contains 2-tuples of
         `(input_target, input_covariate)` `TimeSeries`.
         The emitted covariates are optional and can be `None`.
 
@@ -23,9 +28,6 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
 
         It contains `TimeSeries` (and not e.g. `np.ndarray`), because inference requires the time axes,
         and typically the performance penalty should be lower than for training datasets because there's no slicing.
-
-        TODO: handle data processing
-        TODO: handle optional "future" covariates
         """
         pass
 
@@ -41,21 +43,21 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
 class TrainingDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a training dataset. It emits 3-tuples of
+        Abstract class for a training dataset. It contains 3-tuples of
         `(input_target, output_target, input_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
 
         This is meant to be used for training (or validation), where `input*` series represent model
         inputs and `output_target` represent model outputs.
 
+        Darts `GlobalForecastingModel`s can be fit from instances of `TrainingDataset` using the
+        `fit_from_dataset()` method.
+
         `TrainingDataset` inherits from `Sequence`; meaning that the implementations have to
         provide the `__len__()` and `__getitem__()` methods.
 
         It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
         and so we can get big performance gains when slicing by returning only numpy views of the data.
-
-        TODO: handle data processing
-        TODO: handle optional "future" covariates
         """
         pass
 

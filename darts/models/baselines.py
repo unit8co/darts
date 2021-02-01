@@ -2,7 +2,7 @@
 Baseline Models
 ---------------
 
-A collection of simple benchmark models.
+A collection of simple benchmark models for univariate series.
 """
 
 from typing import List, Optional

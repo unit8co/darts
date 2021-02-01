@@ -13,8 +13,26 @@ from tqdm.notebook import tqdm as tqdm_notebook
 from functools import wraps
 from types import SimpleNamespace
 from inspect import signature, Parameter, getcallargs
+from enum import Enum
 
 logger = get_logger(__name__)
+
+
+# Enums
+class SeasonalityMode(Enum):
+    MULTIPLICATIVE = 'multiplicative'
+    ADDITIVE = 'additive'
+    NONE = None
+
+
+class TrendMode(Enum):
+    LINEAR = 'linear'
+    EXPONENTIAL = 'exponential'
+
+
+class ModelMode(Enum):
+    MULTIPLICATIVE = 'multiplicative'
+    ADDITIVE = 'additive'
 
 
 # TODO: we do not check the time index here
