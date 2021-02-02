@@ -1,0 +1,563 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.theta &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../index.html">
+    
+      <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.theta</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Theta Method</span>
+<span class="sd">------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
+
+<span class="kn">from</span> <span class="nn">..utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">extract_trend_and_seasonality</span><span class="p">,</span> <span class="n">remove_from_series</span>
+<span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..utils.utils</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">TrendMode</span><span class="p">,</span> <span class="n">ModelMode</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">ALPHA_START</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+
+<div class="viewcode-block" id="Theta"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.Theta">[docs]</a><span class="k">class</span> <span class="nc">Theta</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
+    <span class="c1"># .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)</span>
+    <span class="c1"># .. todo: Try with something different than SES? They do that in the paper.</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">seasonality_period</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">season_mode</span><span class="p">:</span> <span class="n">SeasonalityMode</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        An implementation of the Theta method with configurable `theta` parameter.</span>
+
+<span class="sd">        See `Unmasking the Theta method &lt;https://robjhyndman.com/papers/Theta.pdf&gt;`_ paper.</span>
+
+<span class="sd">        The training time series is de-seasonalized according to `seasonality_period`,</span>
+<span class="sd">        or an inferred seasonality period.</span>
+
+<span class="sd">        `season_mode` must be a SeasonalityMode Enum member.</span>
+<span class="sd">        You can access the Enum with `from darts import SeasonalityMode`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta</span>
+<span class="sd">            Value of the theta parameter. Defaults to 2. Cannot be set to 0.</span>
+<span class="sd">            If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)</span>
+<span class="sd">        seasonality_period</span>
+<span class="sd">            User-defined seasonality period. If not set, will be tentatively inferred from the training series upon</span>
+<span class="sd">            calling `fit()`.</span>
+<span class="sd">        season_mode</span>
+<span class="sd">            Type of seasonality.</span>
+<span class="sd">            Either SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.ADDITIVE or SeasonalityMode.NONE.</span>
+<span class="sd">            Defaults to `SeasonalityMode.MULTIPLICATIVE`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seasonality_period</span> <span class="o">=</span> <span class="n">seasonality_period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="o">=</span> <span class="n">season_mode</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">season_mode</span> <span class="ow">in</span> <span class="n">SeasonalityMode</span><span class="p">,</span>
+                     <span class="s2">&quot;Unknown value for season_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">season_mode</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The parameter theta cannot be equal to 0.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Theta.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.Theta.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+
+        <span class="c1"># Check for statistical significance of user-defined season period</span>
+        <span class="c1"># or infers season_period from the TimeSeries itself.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality_period</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_lag</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="n">max_lag</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Theta model inferred seasonality of training series: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># force the user-defined seasonality to be considered as a true seasonal period.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+        <span class="n">new_ts</span> <span class="o">=</span> <span class="n">ts</span>
+
+        <span class="c1"># Store and remove seasonality effect if there is any.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span><span class="p">)</span>
+            <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span><span class="p">)</span>
+
+        <span class="c1"># SES part of the decomposition.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">SimpleExpSmoothing</span><span class="p">(</span><span class="n">new_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+
+        <span class="c1"># Linear Regression part of the decomposition. We select the degree one coefficient.</span>
+        <span class="n">b_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)]),</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">new_ts</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Normalization of the coefficient b_theta.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">=</span> <span class="n">b_theta</span> <span class="o">/</span> <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;smoothing_level&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">SimpleExpSmoothing</span><span class="p">(</span><span class="n">new_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">initial_level</span><span class="o">=</span><span class="n">ALPHA_START</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;smoothing_level&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="c1"># Forecast of the SES part.</span>
+        <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="c1"># Forecast of the Linear Regression part.</span>
+        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)])</span>
+
+        <span class="c1"># Combining the two forecasts</span>
+        <span class="n">forecast</span> <span class="o">+=</span> <span class="n">drift</span>
+
+        <span class="c1"># Re-apply the seasonal trend of the TimeSeries</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
+
+            <span class="n">replicated_seasonality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">:],</span>
+                                             <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">))[:</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+                <span class="n">forecast</span> <span class="o">*=</span> <span class="n">replicated_seasonality</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">:</span>
+                <span class="n">forecast</span> <span class="o">+=</span> <span class="n">replicated_seasonality</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Theta(</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FourTheta"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta">[docs]</a><span class="k">class</span> <span class="nc">FourTheta</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">seasonality_period</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">season_mode</span><span class="p">:</span> <span class="n">SeasonalityMode</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
+                 <span class="n">model_mode</span><span class="p">:</span> <span class="n">ModelMode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
+                 <span class="n">trend_mode</span><span class="p">:</span> <span class="n">TrendMode</span> <span class="o">=</span> <span class="n">TrendMode</span><span class="o">.</span><span class="n">LINEAR</span><span class="p">,</span>
+                 <span class="n">normalization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        An implementation of the 4Theta method with configurable `theta` parameter.</span>
+
+<span class="sd">        See M4 competition `solution &lt;https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R&gt;`_.</span>
+
+<span class="sd">        The training time series is de-seasonalized according to `seasonality_period`,</span>
+<span class="sd">        or an inferred seasonality period.</span>
+
+<span class="sd">        `season_mode` must be a SeasonalityMode Enum member.</span>
+<span class="sd">        `model_mode` must be a ModelMode Enum member.</span>
+<span class="sd">        `trend_mode` must be a TrendMode Enum member.</span>
+<span class="sd">        You can access the different Enums with `from darts import SeasonalityMode, TrendMode, ModelMode`.</span>
+
+<span class="sd">        When called with `theta = X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,</span>
+<span class="sd">        this model is equivalent to calling `Theta(theta=X)`.</span>
+<span class="sd">        Even though this model is an improvement of `Theta`, `FourTheta` is a naive implementation of the algorithm.</span>
+<span class="sd">        Thus, a difference in performance can be observed.</span>
+<span class="sd">        `Theta` is recommended if the model is good enough for the application.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        theta</span>
+<span class="sd">            Value of the theta parameter. Defaults to 2.</span>
+<span class="sd">            If theta = 1, then the fourtheta method restricts to a simple exponential smoothing (SES).</span>
+<span class="sd">            If theta = 0, then the fourtheta method restricts to a simple `trend_mode` regression.</span>
+<span class="sd">        seasonality_period</span>
+<span class="sd">            User-defined seasonality period. If not set, will be tentatively inferred from the training series upon</span>
+<span class="sd">            calling `fit()`.</span>
+<span class="sd">        model_mode</span>
+<span class="sd">            Type of model combining the Theta lines. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.</span>
+<span class="sd">            Defaults to `ModelMode.ADDITIVE`.</span>
+<span class="sd">        season_mode</span>
+<span class="sd">            Type of seasonality.</span>
+<span class="sd">            Either SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.ADDITIVE or SeasonalityMode.NONE.</span>
+<span class="sd">            Defaults to `SeasonalityMode.MULTIPLICATIVE`.</span>
+<span class="sd">        trend_mode</span>
+<span class="sd">            Type of trend to fit. Either TrendMode.LINEAR or TrendMode.EXPONENTIAL.</span>
+<span class="sd">            Defaults to `TrendMode.LINEAR`.</span>
+<span class="sd">        normalization</span>
+<span class="sd">            If `True`, the data is normalized so that the mean is 1. Defaults to `True`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drift</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seasonality_period</span> <span class="o">=</span> <span class="n">seasonality_period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="o">=</span> <span class="n">model_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="o">=</span> <span class="n">season_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span> <span class="o">=</span> <span class="n">trend_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wses</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wdrift</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">wses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalization</span> <span class="o">=</span> <span class="n">normalization</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">model_mode</span> <span class="ow">in</span> <span class="n">ModelMode</span><span class="p">,</span>
+                     <span class="s2">&quot;Unknown value for model_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_mode</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">trend_mode</span> <span class="ow">in</span> <span class="n">TrendMode</span><span class="p">,</span>
+                     <span class="s2">&quot;Unknown value for trend_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trend_mode</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">season_mode</span> <span class="ow">in</span> <span class="n">SeasonalityMode</span><span class="p">,</span>
+                     <span class="s2">&quot;Unknown value for season_mode: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">season_mode</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FourTheta.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="c1"># Check univariate time series</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="c1"># normalization of data</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalization</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                         <span class="s2">&quot;The mean value of the provided series is too close to zero to perform normalization&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+            <span class="n">new_ts</span> <span class="o">=</span> <span class="n">series</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_ts</span> <span class="o">=</span> <span class="n">series</span>
+
+        <span class="c1"># Check for statistical significance of user-defined season period</span>
+        <span class="c1"># or infers season_period from the TimeSeries itself.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality_period</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_lag</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="n">max_lag</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;FourTheta model inferred seasonality of training series: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># force the user-defined seasonality to be considered as a true seasonal period.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+        <span class="c1"># Store and remove seasonality effect if there is any.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">new_ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">,</span>
+                                                                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span><span class="p">)</span>
+            <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">new_ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span><span class="p">)</span>
+
+        <span class="n">ts_values</span> <span class="o">=</span> <span class="n">new_ts</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ts_values</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span> <span class="o">=</span> <span class="n">TrendMode</span><span class="o">.</span><span class="n">LINEAR</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Time series has negative values. Fallback to additive and linear model&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Drift part of the decomposition</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span> <span class="ow">is</span> <span class="n">TrendMode</span><span class="o">.</span><span class="n">LINEAR</span><span class="p">:</span>
+            <span class="n">linreg</span> <span class="o">=</span> <span class="n">ts_values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">linreg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ts_values</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">),</span> <span class="n">linreg</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">theta0_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span> <span class="ow">is</span> <span class="n">TrendMode</span><span class="o">.</span><span class="n">EXPONENTIAL</span><span class="p">:</span>
+            <span class="n">theta0_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta0_in</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">theta0_in</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="ow">is</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+            <span class="n">theta_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">ts_values</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">theta0_in</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="ow">is</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Negative Theta line. Fallback to additive model&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span>
+            <span class="n">theta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="n">ts_values</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">theta0_in</span>
+
+        <span class="c1"># SES part of the decomposition.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">SimpleExpSmoothing</span><span class="p">(</span><span class="n">theta_t</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+        <span class="n">theta2_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fittedvalues</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">theta2_in</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="ow">is</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">=</span> <span class="n">theta2_in</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">wses</span> <span class="o">*</span> <span class="n">theta0_in</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">wdrift</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="ow">is</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Negative Theta line. Fallback to additive model&quot;</span><span class="p">)</span>
+                <span class="n">theta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">*</span> <span class="n">ts_values</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span> <span class="o">*</span> <span class="n">theta0_in</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">SimpleExpSmoothing</span><span class="p">(</span><span class="n">theta_t</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+                <span class="n">theta2_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fittedvalues</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wses</span> <span class="o">*</span> <span class="n">theta2_in</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wdrift</span> <span class="o">*</span> <span class="n">theta0_in</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+        <span class="c1"># Fitted values are the results of the fit of the model on the train series. A good fit of the model</span>
+        <span class="c1"># will lead to fitted_values similar to ts. But one cannot see if it overfits.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalization</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span></div>
+
+<div class="viewcode-block" id="FourTheta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="c1"># Forecast of the SES part.</span>
+        <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="c1"># Forecast of the Linear Regression part.</span>
+        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">n</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span> <span class="ow">is</span> <span class="n">TrendMode</span><span class="o">.</span><span class="n">EXPONENTIAL</span><span class="p">:</span>
+            <span class="n">drift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">drift</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span> <span class="ow">is</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">:</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wses</span> <span class="o">*</span> <span class="n">forecast</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wdrift</span> <span class="o">*</span> <span class="n">drift</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">wses</span> <span class="o">*</span> <span class="n">drift</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">wdrift</span>
+
+        <span class="c1"># Re-apply the seasonal trend of the TimeSeries</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
+
+            <span class="n">replicated_seasonality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">:],</span>
+                                             <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">))[:</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span> <span class="ow">is</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">:</span>
+                <span class="n">forecast</span> <span class="o">*=</span> <span class="n">replicated_seasonality</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">forecast</span> <span class="o">+=</span> <span class="n">replicated_seasonality</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalization</span><span class="p">:</span>
+            <span class="n">forecast</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FourTheta.select_best_model"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.select_best_model">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">select_best_model</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">thetas</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">normalization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FourTheta&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a grid search over all hyper parameters to select the best model,</span>
+<span class="sd">        using the fitted values on the training series `ts`.</span>
+
+
+<span class="sd">        Uses &#39;ForecastingModel.gridsearch&#39; with &#39;use_fitted_values=True&#39; and &#39;metric=metrics.mae`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ts</span>
+<span class="sd">            The TimeSeries on which the model will be tested.</span>
+<span class="sd">        thetas</span>
+<span class="sd">            A list of thetas to loop over. Defaults to [1, 2, 3].</span>
+<span class="sd">        m</span>
+<span class="sd">            Optionally, the season used to decompose the time series.</span>
+<span class="sd">        normalization</span>
+<span class="sd">            If `True`, the data is normalized so that the mean is 1. Defaults to `True`.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FourTheta</span>
+<span class="sd">            The best performing model on the time series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Only import if needed</span>
+        <span class="kn">from</span> <span class="nn">..metrics</span> <span class="kn">import</span> <span class="n">mae</span>
+        <span class="k">if</span> <span class="n">thetas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">thetas</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">drift_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">TrendMode</span><span class="o">.</span><span class="n">LINEAR</span><span class="p">]</span>
+            <span class="n">model_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">]</span>
+            <span class="n">season_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;The given TimeSeries has negative values. The method will only test &quot;</span>
+                           <span class="s2">&quot;linear trend and additive modes.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">season_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">season</span> <span class="k">for</span> <span class="n">season</span> <span class="ow">in</span> <span class="n">SeasonalityMode</span><span class="p">]</span>
+            <span class="n">model_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">ModelMode</span><span class="p">]</span>
+            <span class="n">drift_mode</span> <span class="o">=</span> <span class="p">[</span><span class="n">trend</span> <span class="k">for</span> <span class="n">trend</span> <span class="ow">in</span> <span class="n">TrendMode</span><span class="p">]</span>
+
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">FourTheta</span><span class="o">.</span><span class="n">gridsearch</span><span class="p">({</span><span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="n">thetas</span><span class="p">,</span>
+                                      <span class="s2">&quot;model_mode&quot;</span><span class="p">:</span> <span class="n">model_mode</span><span class="p">,</span>
+                                      <span class="s2">&quot;season_mode&quot;</span><span class="p">:</span> <span class="n">season_mode</span><span class="p">,</span>
+                                      <span class="s2">&quot;trend_mode&quot;</span><span class="p">:</span> <span class="n">drift_mode</span><span class="p">,</span>
+                                      <span class="s2">&quot;seasonality_period&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="p">],</span>
+                                      <span class="s2">&quot;normalization&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">normalization</span><span class="p">]},</span>
+                                     <span class="n">ts</span><span class="p">,</span> <span class="n">use_fitted_values</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">theta</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;4Theta(theta:</span><span class="si">{}</span><span class="s1">, curve:</span><span class="si">{}</span><span class="s1">, model:</span><span class="si">{}</span><span class="s1">, seasonality:</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_mode</span><span class="p">,</span>
+                                                                             <span class="bp">self</span><span class="o">.</span><span class="n">model_mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_mode</span><span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

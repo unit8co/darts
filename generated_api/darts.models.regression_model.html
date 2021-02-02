@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Regression Model Base Class &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,8 +37,12 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.models.rnn_model.html" />
+    <link rel="prev" title="Regression ensemble model" href="darts.models.regression_ensemble_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -62,6 +66,10 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -112,6 +120,84 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.models.html">Models</a>
+                    <ul>
+                    
+                        <li class="">
+                            <a href="darts.models.arima.html">ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.baselines.html">Baseline Models</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.ensemble_model.html">Ensemble Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.fft.html">Fast Fourier Transform</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.forecasting_model.html">Forecasting Model Base Classes</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_ensemble_model.html">Regression ensemble model</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="">Regression Model Base Class</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.theta.html">Theta Method</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
         
       </ul>
   
@@ -139,13 +225,159 @@
               
               <div>
                 
-  
+  <span class="target" id="module-darts.models.regression_model"></span><div class="section" id="regression-model-base-class">
+<h1>Regression Model Base Class<a class="headerlink" href="#regression-model-base-class" title="Permalink to this headline">¶</a></h1>
+<p>A regression model predicts values for a time series <span class="math notranslate nohighlight">\(Y_t\)</span> as a function
+of <span class="math notranslate nohighlight">\(N\)</span> “features” time series <span class="math notranslate nohighlight">\(X^i_t\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[Y_t = f(X^1_t, ..., X^N_t),\]</div>
+<p>where <span class="math notranslate nohighlight">\(t\)</span> denotes the time step. Here, the function <span class="math notranslate nohighlight">\(f()\)</span> is not necessarily linear.</p>
+<dl class="py class">
+<dt id="darts.models.regression_model.RegressionModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.regression_model.</code><code class="sig-name descname">RegressionModel</code><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Regression Model.</p>
+<p>This is the base class for all regression models.</p>
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.backtest">
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">feature_series: Iterable[darts.timeseries.TimeSeries], target_series: darts.timeseries.TimeSeries, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[numpy.ndarray, float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an error score between the historical forecasts the model would have produced
+with an expanding training window over <cite>series</cite> and the actual series.</p>
+<p>To this end, it repeatedly builds a training set composed of both features and targets,
+from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
+It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+and then moves the end of the training set forward by <cite>stride</cite> time steps.</p>
+<p>By default, this method will use each historical forecast (whole) to compute error scores.
+If <cite>last_points_only</cite> is set to True, it will use only the last point of each historical forecast.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expanding window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_series</strong> – An iterable of time series representing the features for the regression model (independent variables)</p></li>
+<li><p><strong>target_series</strong> – The univariate target time series for the regression model (dependent variable)</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to keep the whole historical forecasts or only the last point of each forecast</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>reduction</strong> – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
+If explicitely set to <cite>None</cite>, the method will return a list of the individual error scores instead.
+Set to np.mean by default.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The error score, or the list of individual error scores if <cite>reduction</cite> is <cite>None</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float or List[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.fit">
+<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">train_target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model using the provided list of features time series and the target time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_features</strong> – A list of features time series, all of the same length as the target series</p></li>
+<li><p><strong>train_target</strong> – A target time series, of the same length as the features series</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.historical_forecasts">
+<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.historical_forecasts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the historical forecasts the model would have produced with an expanding training window
+and (by default) returns a time series created from the last point of each of these individual forecasts</p>
+<p>To this end, it repeatedly builds a training set composed of both features and targets,
+from <cite>feature_series</cite> and <cite>target_series</cite>, respectively.
+It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+and then moves the end of the training set forward by <cite>stride</cite> time steps.</p>
+<p>By default, this method will return a single time series made up of the last point of each
+historical forecast. This time series will thus have a frequency of training_series.freq() * stride
+If <cite>last_points_only</cite> is set to False, it will instead return a list of the historical forecasts.</p>
+<p>This always re-trains the models on the entire available history,
+corresponding an expanding window strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_series</strong> – An iterable of time series representing the features for the regression model (independent variables)</p></li>
+<li><p><strong>target_series</strong> – The univariate target time series for the regression model (dependent variable)</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point predictions</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to retain only the last point of each historical forecast.
+If set to True, the method returns a single <cite>TimeSeries</cite> of the point forecasts.
+Otherwise returns a list of historical <cite>TimeSeries</cite> forecasts.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>By default, a single TimeSeries instance created from the last point of each individual forecast.
+If <cite>last_points_only</cite> is set to False, a list of the historical forecasts</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a> or List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.predict">
+<em class="property">abstract </em><code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">features</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predicts values of the target time series, given a list of features time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>features</strong> – The list of features time series, of the same length</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A series containing the predicted targets, of the same length as the features series</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.models.regression_model.RegressionModel.residuals">
+<code class="sig-name descname">residuals</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.residuals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the time series of residuals of this model on the training time series</p>
+<p>The residuals are computed as</p>
+<div class="math notranslate nohighlight">
+\[z_t := y_t - \hat{y}_t,\]</div>
+<p>where <span class="math notranslate nohighlight">\(y_t\)</span> is the actual target time series over the training set,
+and <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> is the time series of predicted targets, over the training set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The time series containing the residuals</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
+    <a class='left-prev' id="prev-link" href="darts.models.regression_ensemble_model.html" title="previous page">Regression ensemble model</a>
+    <a class='right-next' id="next-link" href="darts.models.rnn_model.html" title="next page">&lt;no title&gt;</a>
 
               </div>
               
@@ -156,7 +388,7 @@
     </div>
 
     
-  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

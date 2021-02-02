@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Inference Dataset &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,8 +37,12 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="TimeSeries Dataset Base Classes" href="darts.utils.data.timeseries_dataset.html" />
+    <link rel="prev" title="Shifted Training Dataset" href="darts.utils.data.shifted_dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -62,6 +66,10 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -112,6 +120,64 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.utils.html">Utils</a>
+                    <ul>
+                    
+                        <li class="active">
+                            <a href="darts.utils.data.html">TimeSeries Datasets</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.utils.html">Additional util functions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
         
       </ul>
   
@@ -139,13 +205,46 @@
               
               <div>
                 
-  
+  <span class="target" id="module-darts.utils.data.simple_inference_dataset"></span><div class="section" id="inference-dataset">
+<h1>Inference Dataset<a class="headerlink" href="#inference-dataset" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.utils.data.simple_inference_dataset.SimpleInferenceDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.simple_inference_dataset.</code><code class="sig-name descname">SimpleInferenceDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/simple_inference_dataset.html#SimpleInferenceDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.simple_inference_dataset.SimpleInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset</span></code></a></p>
+<p>Abstract class for a <cite>TimeSeries</cite> inference dataset. It contains 2-tuples of
+<cite>(input_target, input_covariate)</cite> <cite>TimeSeries</cite>.
+The emitted covariates are optional and can be <cite>None</cite>.</p>
+<p>It can be used as models’ inputs, to obtain simple forecasts on each <cite>TimeSeries</cite>
+(using covariates if specified).</p>
+<p><cite>TimeSeriesInferenceDataset</cite> inherits from <cite>Sequence</cite>; meaning that the implementations have to
+provide the <cite>__len__()</cite> and <cite>__getitem__()</cite> methods.</p>
+<p>It contains <cite>TimeSeries</cite> (and not e.g. <cite>np.ndarray</cite>), because inference requires the time axes,
+and typically the performance penalty should be lower than for training datasets because there’s no slicing.</p>
+<dl class="py method">
+<dt id="darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.count">
+<code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span> &#x2192; integer – return number of occurrences of value<a class="headerlink" href="#darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.index">
+<code class="sig-name descname">index</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="optional">[</span>, <em class="sig-param">start</em><span class="optional">[</span>, <em class="sig-param">stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; integer – return first index of value.<a class="headerlink" href="#darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+<p>Supporting start and stop arguments is optional, but
+recommended.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.shifted_dataset.html" title="previous page">Shifted Training Dataset</a>
+    <a class='right-next' id="next-link" href="darts.utils.data.timeseries_dataset.html" title="next page">TimeSeries Dataset Base Classes</a>
 
               </div>
               
@@ -156,7 +255,7 @@
     </div>
 
     
-  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

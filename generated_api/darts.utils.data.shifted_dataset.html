@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Shifted Training Dataset &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,8 +37,12 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Inference Dataset" href="darts.utils.data.simple_inference_dataset.html" />
+    <link rel="prev" title="Sequential Training Dataset" href="darts.utils.data.sequential_dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -62,6 +66,10 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -112,6 +120,64 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.utils.html">Utils</a>
+                    <ul>
+                    
+                        <li class="active">
+                            <a href="darts.utils.data.html">TimeSeries Datasets</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.utils.html">Additional util functions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
         
       </ul>
   
@@ -139,13 +205,69 @@
               
               <div>
                 
-  
+  <span class="target" id="module-darts.utils.data.shifted_dataset"></span><div class="section" id="shifted-training-dataset">
+<h1>Shifted Training Dataset<a class="headerlink" href="#shifted-training-dataset" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.utils.data.shifted_dataset.ShiftedDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.shifted_dataset.</code><code class="sig-name descname">ShiftedDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/shifted_dataset.html#ShiftedDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.shifted_dataset.ShiftedDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TrainingDataset" title="darts.utils.data.timeseries_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.timeseries_dataset.TrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of (input, output, input_covariates) arrays, which all have length
+<cite>length</cite>.
+The “output” is the “input” target shifted by <cite>shift</cite> time steps forward. So if an emitted “input”
+(and “input_covariates”) goes from position <cite>i</cite> to <cite>i+length</cite>, the emitted output will go from position
+<cite>i+shift</cite> to <cite>i+shift+length</cite>.</p>
+<p>The target and covariates series are sliced together, and therefore must have the same length.
+In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
+series must have length at least <cite>length + shift</cite>.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<p>The recommended use of this class is to either build it from a list of <cite>TimeSeries</cite> (if all your series fit
+in memory), or implement your own <cite>Sequence</cite> of time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>.</p></li>
+<li><p><strong>length</strong> – The length of the emitted input and output series.</p></li>
+<li><p><strong>shift</strong> – The number of time steps by which to shift the output relative to the input.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
+per time series. It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="darts.utils.data.shifted_dataset.ShiftedDataset.count">
+<code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span> &#x2192; integer – return number of occurrences of value<a class="headerlink" href="#darts.utils.data.shifted_dataset.ShiftedDataset.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.utils.data.shifted_dataset.ShiftedDataset.index">
+<code class="sig-name descname">index</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="optional">[</span>, <em class="sig-param">start</em><span class="optional">[</span>, <em class="sig-param">stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; integer – return first index of value.<a class="headerlink" href="#darts.utils.data.shifted_dataset.ShiftedDataset.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+<p>Supporting start and stop arguments is optional, but
+recommended.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.sequential_dataset.html" title="previous page">Sequential Training Dataset</a>
+    <a class='right-next' id="next-link" href="darts.utils.data.simple_inference_dataset.html" title="next page">Inference Dataset</a>
 
               </div>
               
@@ -156,7 +278,7 @@
     </div>
 
     
-  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">

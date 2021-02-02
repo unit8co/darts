@@ -5,7 +5,6 @@ Examples
 Here you will find some example notebooks to get more familiar with the API.
 
 
-
 darts intro
 ===========
 
@@ -18,7 +17,7 @@ You will find below an example Jupyter notebook containing an intro to the usage
 
 
 Multiple Time Series, Pre-trained Models and Covariates
-===========
+=======================================================
 
 You will find below an example Jupyter notebook showcasing models trained on multiple time series, pre-trained models, and the usage of covariates.
 
@@ -27,17 +26,6 @@ You will find below an example Jupyter notebook showcasing models trained on mul
 
    examples/02-multi-time-series-and-covariates.ipynb
 
-
-Training on multiple series and using Covariates
-================================================
-
-You will find below a Jupyter notebook containing a tutorial to darts *global models*,
-training on multiple series, and using covariates.
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/multi-time-series-and-covariates.ipynb
 
 Data (pre) Processing
 =====================

@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.utils.utils &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../index.html">
+    
+      <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.utils.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Additional util functions</span>
+<span class="sd">-------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_notebook</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">SimpleNamespace</span>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Enums</span>
+<div class="viewcode-block" id="SeasonalityMode"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.SeasonalityMode">[docs]</a><span class="k">class</span> <span class="nc">SeasonalityMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">MULTIPLICATIVE</span> <span class="o">=</span> <span class="s1">&#39;multiplicative&#39;</span>
+    <span class="n">ADDITIVE</span> <span class="o">=</span> <span class="s1">&#39;additive&#39;</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TrendMode"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.TrendMode">[docs]</a><span class="k">class</span> <span class="nc">TrendMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">LINEAR</span> <span class="o">=</span> <span class="s1">&#39;linear&#39;</span>
+    <span class="n">EXPONENTIAL</span> <span class="o">=</span> <span class="s1">&#39;exponential&#39;</span></div>
+
+
+<div class="viewcode-block" id="ModelMode"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.ModelMode">[docs]</a><span class="k">class</span> <span class="nc">ModelMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">MULTIPLICATIVE</span> <span class="o">=</span> <span class="s1">&#39;multiplicative&#39;</span>
+    <span class="n">ADDITIVE</span> <span class="o">=</span> <span class="s1">&#39;additive&#39;</span></div>
+
+
+<span class="c1"># TODO: we do not check the time index here</span>
+<div class="viewcode-block" id="retain_period_common_to_all"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.retain_period_common_to_all">[docs]</a><span class="k">def</span> <span class="nf">retain_period_common_to_all</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Trims all series in the provided list, if necessary, so that the returned time series have</span>
+<span class="sd">    a common span (corresponding to largest time sub-interval common to all series).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        The list of series to consider.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If no common time sub-interval exists</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[TimeSeries]</span>
+<span class="sd">        A list of series, where each series have the same span</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">last_first</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">series</span><span class="p">))</span>
+    <span class="n">first_last</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">series</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">last_first</span> <span class="o">&gt;=</span> <span class="n">first_last</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The provided time series must have nonzero overlap&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">last_first</span><span class="p">,</span> <span class="n">first_last</span><span class="p">),</span> <span class="n">series</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">_build_tqdm_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build an iterable, possibly using tqdm (either in notebook or regular mode)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    iterable</span>
+<span class="sd">    verbose</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_isnotebook</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">shell</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;ZMQInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># Jupyter notebook or qtconsole</span>
+            <span class="k">elif</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;TerminalInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Terminal running IPython</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Other type (?)</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Probably standard Python interpreter</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_isnotebook</span><span class="p">():</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm_notebook</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">iterable</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">iterable</span>
+    <span class="k">return</span> <span class="n">iterator</span>
+
+
+<span class="c1"># Types for sanity checks decorator</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_with_sanity_checks</span><span class="p">(</span><span class="o">*</span><span class="n">sanity_check_methods</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">T</span><span class="p">]],</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">T</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decorator allowing to specify some sanity check method(s) to be used on a class method.</span>
+<span class="sd">    The decorator guarantees that args and kwargs from the method to sanitize will be available in the</span>
+<span class="sd">    sanity check methods as specified in the sanitized method&#39;s signature, irrespective of how it was called.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    *sanity_check_methods</span>
+<span class="sd">        one or more sanity check methods that will be called with all the parameter of the decorated method.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A Callable corresponding to the decorated method.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    class Model:</span>
+<span class="sd">        def _a_sanity_check(self, *args, **kwargs):</span>
+<span class="sd">            raise_if_not(kwargs[&#39;b&#39;] == kwargs[&#39;c&#39;], &#39;b must equal c&#39;, logger)</span>
+
+<span class="sd">        @_with_sanity_checks(&quot;_a_sanity_check&quot;)</span>
+<span class="sd">        def fit(self, a, b=0, c=0):</span>
+<span class="sd">            # at this point we can safely assume that &#39;b&#39; and &#39;c&#39; are equal...</span>
+<span class="sd">            ...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">method_to_sanitize</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">T</span><span class="p">]:</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">method_to_sanitize</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">sanitized_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">A</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">B</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">sanity_check_method</span> <span class="ow">in</span> <span class="n">sanity_check_methods</span><span class="p">:</span>
+                <span class="c1"># Convert all arguments into keyword arguments</span>
+                <span class="n">all_as_kwargs</span> <span class="o">=</span> <span class="n">getcallargs</span><span class="p">(</span><span class="n">method_to_sanitize</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="c1"># Then separate args from kwargs according to the function&#39;s signature</span>
+                <span class="n">only_args</span> <span class="o">=</span> <span class="n">all_as_kwargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">only_kwargs</span> <span class="o">=</span> <span class="n">all_as_kwargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="p">(</span><span class="n">method_to_sanitize</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="o">==</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span> <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">:</span>
+                        <span class="n">only_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">only_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">param_name</span><span class="p">)</span>
+
+                <span class="n">only_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;self&#39;</span><span class="p">)</span>
+
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sanity_check_method</span><span class="p">)(</span><span class="o">*</span><span class="n">only_args</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="o">**</span><span class="n">only_kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">method_to_sanitize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">only_args</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="o">**</span><span class="n">only_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sanitized_method</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+
+<span class="k">def</span> <span class="nf">_historical_forecasts_general_checks</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs checks common to ForecastingModel and RegressionModel backtest() methods</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        Either series when called from ForecastingModel, or target_series if called from RegressionModel</span>
+<span class="sd">    signature_params</span>
+<span class="sd">        A dictionary of the signature parameters of the calling method, to get the default values</span>
+<span class="sd">        Typically would be signature(self.backtest).parameters</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Params specified by the caller of backtest(), they take precedence over the arguments&#39; default values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># parse kwargs</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># check forecast horizon</span>
+    <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">forecast_horizon</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">forecast_horizon</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;The provided forecasting horizon must be a positive integer.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="c1"># check stride</span>
+    <span class="n">stride</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">stride</span>
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;The provided stride parameter must be a positive integer.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="c1"># check start parameter</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;`start` should be between 0.0 and 1.0.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span> <span class="s1">&#39;`start` timestamp must be an entry in the time series</span><span class="se">\&#39;</span><span class="s1"> time index&#39;</span><span class="p">)</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">==</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;`start` timestamp is the last timestamp of the series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span> <span class="s1">&#39;`start` index should be smaller than length of the series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;`start` needs to be either `float`, `int` or `pd.Timestamp`&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+
+    <span class="c1"># check start parameter</span>
+    <span class="n">raise_if</span><span class="p">(</span><span class="n">start</span> <span class="o">==</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;`start` timestamp is the last timestamp of the series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span><span class="n">start</span> <span class="o">==</span> <span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
+             <span class="s1">&#39;`start` corresponds to the first timestamp of the series, resulting in empty training set&#39;</span><span class="p">,</span>
+             <span class="n">logger</span><span class="p">)</span>
+
+    <span class="c1"># check that overlap_end and start together form a valid combination</span>
+    <span class="n">overlap_end</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">overlap_end</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">overlap_end</span><span class="p">:</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span> <span class="o">*</span> <span class="n">forecast_horizon</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span>
+                     <span class="s1">&#39;`start` timestamp is too late in the series to make any predictions with&#39;</span>
+                     <span class="s1">&#39;`overlap_end` set to `False`.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_timestamp_at_point"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.get_timestamp_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_timestamp_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a point into a pandas.Timestamp in the time series</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    point</span>
+<span class="sd">        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">        In case of a `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">        that should lie before the point.</span>
+<span class="sd">        In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
+<span class="sd">        `series`. Will raise a ValueError if not a valid index in `series`</span>
+<span class="sd">        In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp</span>
+<span class="sd">        is present in the series time index, otherwise will raise a ValueError.</span>
+<span class="sd">    series</span>
+<span class="sd">        The time series to index in</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">point</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">point</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;point (float) should be between 0.0 and 1.0.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">point_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">point</span><span class="p">)</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="s2">&quot;point (int) should be a valid index in series&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span>
+                 <span class="s1">&#39;point (pandas.Timestamp) must be an entry in the time series</span><span class="se">\&#39;</span><span class="s1"> time index&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">point</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;`point` needs to be either `float`, `int` or `pd.Timestamp`&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">timestamp</span></div>
+
+
+<div class="viewcode-block" id="get_index_at_point"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.get_index_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_index_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a point into the corresponding index in the time series</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    point</span>
+<span class="sd">        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">        In case of a `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">        that should lie before the point.</span>
+<span class="sd">        In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series</span>
+<span class="sd">        if the timestamp is present in the series time index, otherwise will raise a ValueError.</span>
+<span class="sd">        In case of an `int`, the parameter will be returned as is provided that it is a valid index,</span>
+<span class="sd">        otherwise will raise a ValueError.</span>
+<span class="sd">    series</span>
+<span class="sd">        The time series to index in</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

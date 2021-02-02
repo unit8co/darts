@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.utils.data.sequential_dataset &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../../index.html">
+    
+      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.utils.data.sequential_dataset</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Sequential Training Dataset</span>
+<span class="sd">---------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">.timeseries_dataset</span> <span class="kn">import</span> <span class="n">TrainingDataset</span>
+
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+
+
+<div class="viewcode-block" id="SequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.SequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">SequentialDataset</span><span class="p">(</span><span class="n">TrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A time series dataset containing tuples of (input, output, input_covariates) arrays, where &quot;input&quot; and</span>
+<span class="sd">        &quot;input_covariates&quot; have length `input_chunk_length`, and &quot;output&quot; has length `output_chunk_length`.</span>
+
+<span class="sd">        The target and covariates series are sliced together, and therefore must have the same length.</span>
+<span class="sd">        In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
+<span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit</span>
+<span class="sd">        in memory), or implement your own `Sequence` of time series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        covariates:</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted input series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted output series.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced</span>
+<span class="sd">            per time series. It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">),</span>
+                     <span class="s1">&#39;The provided sequence of target series must have the same length as &#39;</span>
+                     <span class="s1">&#39;the provided sequence of covariate series.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># read all time series to get the maximum size</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">-</span> \
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+        <span class="c1"># determine the index of the time series.</span>
+        <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+        <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># determine the actual number of possible samples in this time series</span>
+        <span class="n">n_samples_in_ts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">n_samples_in_ts</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span>
+                     <span class="s1">&#39;The dataset contains some time series that are too short to contain &#39;</span>
+                     <span class="s1">&#39;`input_chunk_length + `output_chunk_length` (</span><span class="si">{}</span><span class="s1">-th series)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
+
+        <span class="c1"># Determine the index of the forecasting point.</span>
+        <span class="c1"># It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)</span>
+        <span class="n">lh_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">ts_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span><span class="p">))</span> <span class="o">%</span> <span class="n">n_samples_in_ts</span>
+
+        <span class="c1"># The time series index of our forecasting point (indexed from the end of the series):</span>
+        <span class="n">forecast_point_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span>
+
+        <span class="c1"># select input and outputs, using the previously computed indexes</span>
+        <span class="n">input_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">forecast_point_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
+            <span class="c1"># we need this case because &quot;-0&quot; is not supported as an indexing bound</span>
+            <span class="n">output_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:</span><span class="o">-</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">]</span>
+
+        <span class="c1"># optionally also produce the input covariate</span>
+        <span class="n">input_covariate</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts_covariate</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">),</span>
+                         <span class="s1">&#39;The dataset contains some target/covariate series &#39;</span>
+                         <span class="s1">&#39;pair that are not the same size (</span><span class="si">{}</span><span class="s1">-th)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
+
+            <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">input_target</span><span class="p">,</span> <span class="n">output_target</span><span class="p">,</span> <span class="n">input_covariate</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

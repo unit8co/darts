@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Horizon-Based Training Dataset &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,8 +37,12 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sequential Training Dataset" href="darts.utils.data.sequential_dataset.html" />
+    <link rel="prev" title="TimeSeries Datasets" href="darts.utils.data.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -62,6 +66,10 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -112,6 +120,64 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.utils.html">Utils</a>
+                    <ul>
+                    
+                        <li class="active">
+                            <a href="darts.utils.data.html">TimeSeries Datasets</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.utils.html">Additional util functions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
+        
+        
         
       </ul>
   
@@ -139,13 +205,72 @@
               
               <div>
                 
-  
+  <span class="target" id="module-darts.utils.data.horizon_based_dataset"></span><div class="section" id="horizon-based-training-dataset">
+<h1>Horizon-Based Training Dataset<a class="headerlink" href="#horizon-based-training-dataset" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="darts.utils.data.horizon_based_dataset.HorizonBasedDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.horizon_based_dataset.</code><code class="sig-name descname">HorizonBasedDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/horizon_based_dataset.html#HorizonBasedDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.horizon_based_dataset.HorizonBasedDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TrainingDataset" title="darts.utils.data.timeseries_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.timeseries_dataset.TrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of (input, output, input_covariates) arrays, in a way inspired
+by the N-BEATS way of training on the M4 dataset: <a class="reference external" href="https://arxiv.org/abs/1905.10437">https://arxiv.org/abs/1905.10437</a>.</p>
+<p>The “input” and “input_covariates” have length <cite>lookback * output_chunk_length</cite>, and the “output” has length
+<cite>output_chunk_length</cite>.</p>
+<p>Given the horizon <cite>output_chunk_length</cite> of a model, this dataset will compute some (input, target) splits as follows
+(the logic for “input_covariates” is the same as for “input”):
+First a “forecast point” is selected in the the range of the last
+<cite>(min_lh * output_chunk_length, max_lh * output_chunk_length)</cite> points before the end of the time series.
+The target then consists in the following <cite>output_chunk_length</cite> points, and the data will be the preceding
+<cite>lookback * output_chunk_length</cite> points.</p>
+<p>All the series in the provided sequence must be long enough; i.e. have length at least
+<cite>(lookback + max_lh) * output_chunk_length</cite>, and <cite>min_lh</cite> must be at least 1
+(to have targets of length exactly <cite>1 * output_chunk_length</cite>).
+The target and covariates time series are sliced together, and therefore must have the same length.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform both over the number of time series and the number of samples per series;
+i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
+time series in the sequence.</p>
+<p>The recommended use of this class is to either build it from a list of <cite>TimeSeries</cite> (if all your series fit
+in memory), or implement your own <cite>Sequence</cite> of time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the “output” series emitted by the model</p></li>
+<li><p><strong>lh</strong> – A <cite>(min_lh, max_lh)</cite> interval for the forecast point, starting from the end of the series.
+For example, <cite>(1, 3)</cite> will select forecast points uniformly between <cite>1*H</cite> and <cite>3*H</cite> points
+before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</p></li>
+<li><p><strong>lookback</strong> – A integer interval for the length of the input in the emitted input and output splits, expressed as a
+multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths <cite>3 * output_chunk_length</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="darts.utils.data.horizon_based_dataset.HorizonBasedDataset.count">
+<code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span> &#x2192; integer – return number of occurrences of value<a class="headerlink" href="#darts.utils.data.horizon_based_dataset.HorizonBasedDataset.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.utils.data.horizon_based_dataset.HorizonBasedDataset.index">
+<code class="sig-name descname">index</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="optional">[</span>, <em class="sig-param">start</em><span class="optional">[</span>, <em class="sig-param">stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; integer – return first index of value.<a class="headerlink" href="#darts.utils.data.horizon_based_dataset.HorizonBasedDataset.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+<p>Supporting start and stop arguments is optional, but
+recommended.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.html" title="previous page">TimeSeries Datasets</a>
+    <a class='right-next' id="next-link" href="darts.utils.data.sequential_dataset.html" title="next page">Sequential Training Dataset</a>
 
               </div>
               
@@ -156,7 +281,7 @@
     </div>
 
     
-  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
