@@ -23,6 +23,6 @@ ADD . /home/jovyan/work
 
 WORKDIR /home/jovyan/work
 
-RUN pip install -q .
+RUN pip install -q '.[all]'
 RUN pip install -q -r requirements/dev.txt
 
