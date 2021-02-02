@@ -1,11 +1,11 @@
-import unittest
 import numpy as np
 
+from .base_test_class import DartsBaseTestClass
 from ..models.fft import _find_relevant_timestamp_attributes
 from ..utils import timeseries_generation as tg
 
 
-class FFTTestCase(unittest.TestCase):
+class FFTTestCase(DartsBaseTestClass):
 
     def helper_relevant_attributes(self, freq, length, period_attributes_tuples):
 

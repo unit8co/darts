@@ -2,13 +2,13 @@
 Baseline Models
 ---------------
 
-A collection of simple benchmark models.
+A collection of simple benchmark models for univariate series.
 """
 
 from typing import List, Optional
 import numpy as np
 
-from .forecasting_model import ForecastingModel, UnivariateForecastingModel
+from .forecasting_model import ForecastingModel
 from .ensemble_model import EnsembleModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
@@ -16,7 +16,7 @@ from ..logging import raise_if_not, get_logger
 logger = get_logger(__name__)
 
 
-class NaiveMean(UnivariateForecastingModel):
+class NaiveMean(ForecastingModel):
     def __init__(self):
         """ Naive Mean Model
 
@@ -39,7 +39,7 @@ class NaiveMean(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(UnivariateForecastingModel):
+class NaiveSeasonal(ForecastingModel):
     def __init__(self, K: int = 1):
         """ Naive Seasonal Model
 
@@ -74,7 +74,7 @@ class NaiveSeasonal(UnivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(UnivariateForecastingModel):
+class NaiveDrift(ForecastingModel):
     def __init__(self):
         """ Naive Drift Model
 
@@ -112,13 +112,10 @@ class NaiveEnsembleModel(EnsembleModel):
         super().__init__(models)
 
     def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        super().fit(training_series, target_series)
+        super().fit(training_series)
 
         for model in self.models:
-            if isinstance(model, UnivariateForecastingModel):
-                model.fit(self.training_series)
-            else:
-                model.fit(self.training_series, self.target_series)
+            model.fit(self.training_series)
 
     def ensemble(self, predictions: List[TimeSeries]):
         return sum(predictions) / len(self.models)

@@ -1,6 +1,6 @@
 """
-Ensemble model
---------------
+Ensemble Model Base Class
+-------------------------
 """
 
 from abc import abstractmethod
@@ -34,13 +34,13 @@ class EnsembleModel(ForecastingModel):
         super().__init__()
         self.models = models
 
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
+    def fit(self, training_series: TimeSeries) -> None:
         """
         Fits the model on the provided series.
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
-        super().fit(training_series, target_series)
+        super().fit(training_series)
 
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)

@@ -69,6 +69,17 @@ def _get_values_or_raise(series_a: TimeSeries,
     return series_a_common.univariate_values(), series_b_common.univariate_values()
 
 
+def _remove_nan_union(array_a: np.ndarray,
+                      array_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Returnes the two inputs arrays where all elements are deleted that have an index that corresponds to
+    a NaN value in either of the two input arrays.
+    """
+
+    isnan_mask = np.logical_or(np.isnan(array_a), np.isnan(array_b))
+    return np.delete(array_a, isnan_mask), np.delete(array_b, isnan_mask)
+
+
 @multivariate_support
 def mae(series1: TimeSeries,
         series2: TimeSeries,
@@ -100,6 +111,7 @@ def mae(series1: TimeSeries,
     """
 
     y1, y2 = _get_values_or_raise(series1, series2, intersect)
+    y1, y2 = _remove_nan_union(y1, y2)
     return np.mean(np.abs(y1 - y2))
 
 
@@ -134,6 +146,7 @@ def mse(series1: TimeSeries,
     """
 
     y_true, y_pred = _get_values_or_raise(series1, series2, intersect)
+    y_true, y_pred = _remove_nan_union(y_true, y_pred)
     return np.mean((y_true - y_pred)**2)
 
 
@@ -202,6 +215,7 @@ def rmsle(series1: TimeSeries,
     """
 
     y1, y2 = _get_values_or_raise(series1, series2, intersect)
+    y1, y2 = _remove_nan_union(y1, y2)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2)**2))
 
@@ -283,6 +297,7 @@ def mape(actual_series: TimeSeries,
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not((y_true != 0).all(), 'The actual series must be strictly positive to compute the MAPE.', logger)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
@@ -329,9 +344,10 @@ def smape(actual_series: TimeSeries,
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
                  'The actual series must be strictly positive to compute the sMAPE.', logger)
-    return 200. * np.mean(np.abs((y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat))))
+    return 200. * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
 
 
 @multivariate_support
@@ -431,6 +447,7 @@ def ope(actual_series: TimeSeries,
     """
 
     y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_pred = _remove_nan_union(y_true, y_pred)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.', logger)
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
@@ -474,6 +491,7 @@ def marre(actual_series: TimeSeries,
     """
 
     y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not(y_true.max() > y_true.min(), 'The difference between the max and min values must be strictly'
                  'positive to compute the MARRE.', logger)
     true_range = y_true.max() - y_true.min()
@@ -512,6 +530,7 @@ def r2_score(series1: TimeSeries,
     """
 
     y1, y2 = _get_values_or_raise(series1, series2, intersect)
+    y1, y2 = _remove_nan_union(y1, y2)
     ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)

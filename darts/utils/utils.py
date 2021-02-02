@@ -13,8 +13,26 @@ from tqdm.notebook import tqdm as tqdm_notebook
 from functools import wraps
 from types import SimpleNamespace
 from inspect import signature, Parameter, getcallargs
+from enum import Enum
 
 logger = get_logger(__name__)
+
+
+# Enums
+class SeasonalityMode(Enum):
+    MULTIPLICATIVE = 'multiplicative'
+    ADDITIVE = 'additive'
+    NONE = None
+
+
+class TrendMode(Enum):
+    LINEAR = 'linear'
+    EXPONENTIAL = 'exponential'
+
+
+class ModelMode(Enum):
+    MULTIPLICATIVE = 'multiplicative'
+    ADDITIVE = 'additive'
 
 
 # TODO: we do not check the time index here
@@ -148,7 +166,7 @@ def _historical_forecasts_general_checks(series, kwargs):
     Parameters
     ----------
     series
-        Either training_series when called from ForecastingModel, or target_series if called from RegressionModel
+        Either series when called from ForecastingModel, or target_series if called from RegressionModel
     signature_params
         A dictionary of the signature parameters of the calling method, to get the default values
         Typically would be signature(self.backtest).parameters

@@ -14,7 +14,30 @@ You will find below an example Jupyter notebook containing an intro to the usage
 .. toctree::
    :maxdepth: 1
 
-   examples/darts-intro.ipynb
+   examples/01-darts-intro.ipynb
+
+
+Multiple Time Series, Pre-trained Models and Covariates
+===========
+
+You will find below an example Jupyter notebook showcasing models trained on multiple time series, pre-trained models, and the usage of covariates.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/02-multi-time-series-and-covariates.ipynb
+
+
+Training on multiple series and using Covariates
+================================================
+
+You will find below a Jupyter notebook containing a tutorial to darts *global models*,
+training on multiple series, and using covariates.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/multi-time-series-and-covariates.ipynb
 
 Data (pre) Processing
 =====================
@@ -24,7 +47,7 @@ You will find below an example Jupyter notebook showcasing the data processing a
 .. toctree::
    :maxdepth: 1
 
-   examples/data-processing.ipynb
+   examples/03-data-processing.ipynb
 
 
 Fast Fourier Transform
@@ -35,7 +58,7 @@ You will find below an example Jupyter notebook showcasing the usage of the FFT 
 .. toctree::
    :maxdepth: 1
 
-   examples/FFT-examples.ipynb
+   examples/04-FFT-examples.ipynb
 
 Recurrent Neural Networks
 =========================
@@ -45,7 +68,7 @@ You will find below an example Jupyter notebook showcasing the usage of the RNN 
 .. toctree::
    :maxdepth: 1
 
-   examples/RNN-examples.ipynb
+   examples/05-RNN-examples.ipynb
 
 Temporal Convolutional Networks
 ===============================
@@ -55,7 +78,7 @@ You will find below an example Jupyter notebook showcasing the usage of the TCN 
 .. toctree::
    :maxdepth: 1
 
-   examples/TCN-examples.ipynb
+   examples/06-TCN-examples.ipynb
 
 Transformer Model Examples
 ==========================
@@ -65,7 +88,7 @@ You will find below an example Jupyter notebook showcasing the usage of the Tran
 .. toctree::
    :maxdepth: 1
 
-   examples/Transformer-examples.ipynb
+   examples/07-Transformer-examples.ipynb
 
 N-BEATS Model Examples
 ==========================
@@ -75,24 +98,4 @@ You will find below an example Jupyter notebook showcasing the usage of the N-BE
 .. toctree::
    :maxdepth: 1
 
-   examples/NBEATS-examples.ipynb
-
-Multivariate Examples
-=====================
-
-You will find below an example Jupyter notebook showcasing the usage of multivariate TimeSeries instances
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/multivariate-examples.ipynb
-
-M4 Competition Exploration
-==========================
-
-You will find below an example Jupyter notebook with a benchmark of different darts models and example usage of FourTheta model
-
-.. toctree::
-    :maxdepth: 1
-
-    examples/M4_competition/M4_competition_benchmark.ipynb
+   examples/08-NBEATS-examples.ipynb

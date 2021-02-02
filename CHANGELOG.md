@@ -4,7 +4,43 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.5.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.6.0...develop)
+
+
+## [0.6.0](https://github.com/unit8co/darts/tree/0.6.0) (2021-02-02)
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.5.0...0.6.0)
+### For users of the library:
+**Added:**
+- `Pipeline.invertible()` a getter which returns whether the pipeline is invertible or not.
+- `TimeSeries.to_json()` and `TimeSeries.from_json()` methods to convert `TimeSeries` to/from a `JSON` string.
+- New base class `GlobalForecastingModel` for all models supporting training on multiple time series, as well
+as covariates. All PyTorch models are now `GlobalForecastingModel`s.
+- As a consequence of the above, the `fit()` function of PyTorch models (all neural networks) can optionally be called
+with a sequence of time series (instead of a single time series).
+- Similarly, the `predict()` function of these models also accepts a specification of which series should be forecasted
+- A new `TrainingDataset` base class.
+- Some implementations of `TrainingDataset` containing some slicing logic for the training of neural networks on
+several time series.
+- A new `TimeSeriesInferenceDataset` base class.
+- An implementation `SimpleInferenceDataset` of `TimeSeriesInferenceDataset`.
+- All PyTorch models have a new `fit_from_dataset()` method which allows to directly fit the model from a specified
+`TrainingDataset` instance (instead of using a default instance when going via the `fit()` method).
+- A new explanatory notebooks for global models: 
+https://github.com/unit8co/darts/blob/master/examples/02-multi-time-series-and-covariates.ipynb
+
+**Changed:**
+&#x1F534; removed the arguments `training_series` and `target_series` in `ForecastingModel`s. Please consult
+the API documentation of forecasting models to see the new signatures.
+&#x1F534; removed `UnivariateForecastingModel` and `MultivariateForecastingModel` base classes. This distinction does
+not exist anymore. Instead, now some models are "global" (can be trained on multiple series) or "local" (they cannot).
+All implementations of `GlobalForecastingModel`s support multivariate time series out of the box, except N-BEATS.
+- Improved the documentation and README.
+- Re-ordered the example notebooks to improve the flow of examples.
+
+**Fixed:**
+- Many small bug fixes.
+- Unit test speedup by about 15x.
 
 ## [0.5.0](https://github.com/unit8co/darts/tree/0.5.0) (2020-11-09)
 

@@ -1,6 +1,6 @@
 """
-Transformer
------------
+Transformer Model
+-----------------
 """
 
 from numpy.random import RandomState
@@ -63,9 +63,9 @@ class _PositionalEncoding(nn.Module):
 
 class _TransformerModule(nn.Module):
     def __init__(self,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
                  input_size: int,
-                 input_length: int,
-                 output_length: int,
                  output_size: int,
                  d_model: int,
                  nhead: int,
@@ -85,9 +85,9 @@ class _TransformerModule(nn.Module):
         ----------
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
-        input_length
+        input_chunk_length
             Number of time steps to be input to the forecasting module.
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
@@ -112,23 +112,23 @@ class _TransformerModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size)`
             Tensor containing the features of the input sequence.
 
         Outputs
         -------
-        y of shape `(batch_size, output_length, output_size)`
+        y of shape `(batch_size, output_chunk_length, output_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
         super(_TransformerModule, self).__init__()
 
         self.input_size = input_size
-        self.output_size = output_size
-        self.output_length = output_length
+        self.target_size = output_size
+        self.target_length = output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_length)
+        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_chunk_length)
 
         # Defining the Transformer module
         self.transformer = nn.Transformer(d_model=d_model,
@@ -141,12 +141,12 @@ class _TransformerModule(nn.Module):
                                           custom_encoder=custom_encoder,
                                           custom_decoder=custom_decoder)
 
-        self.decoder = nn.Linear(d_model, output_length * output_size)
+        self.decoder = nn.Linear(d_model, output_chunk_length * output_size)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
-        # (batch_size, input_length, input_size) format. PyTorch's nn.Transformer
-        # module needs it the (input_length, batch_size, input_size) format.
+        # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
+        # module needs it the (input_chunk_length, batch_size, input_size) format.
         # Therefore, the first two dimensions need to be swapped.
         src = data.permute(1, 0, 2)
         tgt = src[-1:, :, :]
@@ -171,10 +171,10 @@ class _TransformerModule(nn.Module):
         out = self.decoder(x)
 
         # Here we change the data format
-        # from (1, batch_size, output_length * output_size)
-        # to (batch_size, output_length, output_size)
+        # from (1, batch_size, output_chunk_length * output_size)
+        # to (batch_size, output_chunk_length, output_size)
         predictions = out[0, :, :]
-        predictions = predictions.view(-1, self.output_length, self.output_size)
+        predictions = predictions.view(-1, self.target_length, self.target_size)
 
         return predictions
 
@@ -182,16 +182,13 @@ class _TransformerModule(nn.Module):
 class TransformerModel(TorchForecastingModel):
     @random_method
     def __init__(self,
-                 model: Optional[nn.Module] = None,
-                 input_size: int = 1,
-                 input_length: int = 1,
-                 output_length: int = 1,
-                 output_size: int = 1,
-                 d_model: int = 512,
-                 nhead: int = 8,
-                 num_encoder_layers: int = 6,
-                 num_decoder_layers: int = 6,
-                 dim_feedforward: int = 2048,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
+                 d_model: int = 64,
+                 nhead: int = 4,
+                 num_encoder_layers: int = 3,
+                 num_decoder_layers: int = 3,
+                 dim_feedforward: int = 512,
                  dropout: float = 0.1,
                  activation: str = "relu",
                  custom_encoder: Optional[nn.Module] = None,
@@ -228,13 +225,9 @@ class TransformerModel(TorchForecastingModel):
         model
             a custom PyTorch module with the same specifications as
             `darts.models.transformer_model._TransformerModule` (default=None).
-        input_size
-            The dimensionality of the TimeSeries that will be fed to the fit and predict functions (default=1).
-        input_length
+        input_chunk_length
             Number of time steps to be input to the forecasting module (default=1).
-        output_size
-            The dimensionality of the output time series (default=1).
-        output_length
+        output_chunk_length
             Number of time steps to be output by the forecasting module (default=1).
         d_model
             the number of expected features in the transformer encoder/decoder inputs (default=512).
@@ -259,31 +252,34 @@ class TransformerModel(TorchForecastingModel):
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         """
 
-        kwargs['output_length'] = output_length
-        kwargs['input_size'] = input_size
-        kwargs['output_size'] = output_size
-
-        # set self.model
-        if model is None:
-            self.model = _TransformerModule(input_size=input_size,
-                                            input_length=input_length,
-                                            output_length=output_length,
-                                            output_size=output_size,
-                                            d_model=d_model,
-                                            nhead=nhead,
-                                            num_encoder_layers=num_encoder_layers,
-                                            num_decoder_layers=num_decoder_layers,
-                                            dim_feedforward=dim_feedforward,
-                                            dropout=dropout,
-                                            activation=activation,
-                                            custom_encoder=custom_encoder,
-                                            custom_decoder=custom_decoder)
-        else:
-            self.model = model
-            raise_if_not(isinstance(self.model, nn.Module),
-                         '{} is not a valid Transformer model instance.'
-                         '\n Please set "model" to "None" or give your own PyTorch nn.Module'.format(
-                             model.__class__.__name__),
-                         logger)
-
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
         super().__init__(**kwargs)
+
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.d_model = d_model
+        self.nhead = nhead
+        self.num_encoder_layers = num_encoder_layers
+        self.num_decoder_layers = num_decoder_layers
+        self.dim_feedforward = dim_feedforward
+        self.dropout = dropout
+        self.activation = activation
+        self.custom_encoder = custom_encoder
+        self.custom_decoder = custom_decoder
+
+    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        return _TransformerModule(input_chunk_length=self.input_chunk_length,
+                                  output_chunk_length=self.output_chunk_length,
+                                  input_size=input_dim,
+                                  output_size=output_dim,
+                                  d_model=self.d_model,
+                                  nhead=self.nhead,
+                                  num_encoder_layers=self.num_encoder_layers,
+                                  num_decoder_layers=self.num_decoder_layers,
+                                  dim_feedforward=self.dim_feedforward,
+                                  dropout=self.dropout,
+                                  activation=self.activation,
+                                  custom_encoder=self.custom_encoder,
+                                  custom_decoder=self.custom_decoder)
+

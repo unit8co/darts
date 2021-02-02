@@ -37,16 +37,16 @@ if __name__ == "__main__":
                                                'trend_poly_degree': [0, 1, 2, 3],
                                                'required_matches': [None]},
                                               train[:-2*len(test)],
-                                              val_target_series=train[-2*len(test):],
-                                              metric=lambda x, y: np.mean(mase_m4(train[-2*len(test)], x, y, m=m)))
+                                         val_series=train[-2 * len(test):],
+                                         metric=lambda x, y: np.mean(mase_m4(train[-2*len(test)], x, y, m=m)))
                 except ValueError:
                     fft = FFT.gridsearch({'nr_freqs_to_keep': [5, 7, 10, 15, 25, 50],
                                                'trend': ['poly', 'exp'],
                                                'trend_poly_degree': [0, 1, 2, 3],
                                                'required_matches': [None]},
                                               train[:-len(test)],
-                                              val_target_series=train[-len(test):],
-                                              metric=lambda x, y: np.mean(mase_m4(train[-len(test)], x, y, m=m)))
+                                         val_series=train[-len(test):],
+                                         metric=lambda x, y: np.mean(mase_m4(train[-len(test)], x, y, m=m)))
                 fft.fit(train)
                 forecast_fft = fft.predict(len(test))
                 mase_all.append(np.vstack([

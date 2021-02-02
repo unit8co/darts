@@ -7,7 +7,7 @@ from typing import Optional, List
 
 from darts.timeseries import TimeSeries
 from darts.models import EnsembleModel, StandardRegressionModel
-from darts.models.forecasting_model import ForecastingModel, UnivariateForecastingModel
+from darts.models.forecasting_model import ForecastingModel
 from darts.logging import get_logger, raise_if
 
 logger = get_logger(__name__)
@@ -51,25 +51,20 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.regression_model = regression_model
 
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        super().fit(training_series, target_series)
+    def fit(self, training_series: TimeSeries) -> None:
+        super().fit(training_series)
 
         # spare train_n_points points to serve as regression target
         raise_if(len(self.training_series) <= self.regression_model.train_n_points,
-                 "regression_train_n_points parameter too big (greater or equal"
-                 " the number of points in training_series)",
+                 "regression_train_n_points parameter too big (must be smaller or equal" +
+                 " to the number of points in training_series)",
                  logger)
         forecast_training = self.training_series[:-self.regression_model.train_n_points]
-        forecast_target = self.target_series[:-self.regression_model.train_n_points]
-
-        regression_target = self.target_series[-self.regression_model.train_n_points:]
+        regression_target = self.training_series[-self.regression_model.train_n_points:]
 
         # fit the forecasting models
         for model in self.models:
-            if isinstance(model, UnivariateForecastingModel):
-                model.fit(forecast_training)
-            else:
-                model.fit(forecast_training, forecast_target)
+            model.fit(forecast_training)
 
         # predict train_n_points points for each model
         predictions = []
@@ -89,10 +84,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # fit the forecasting models
         for model in self.models:
-            if isinstance(model, UnivariateForecastingModel):
-                model.fit(self.training_series)
-            else:
-                model.fit(self.training_series, self.target_series)
+            model.fit(self.training_series)
 
     def ensemble(self, predictions: List[TimeSeries]) -> TimeSeries:
         return self.regression_model.predict(predictions)

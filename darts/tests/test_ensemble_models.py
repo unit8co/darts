@@ -1,18 +1,12 @@
-import unittest
-import logging
-
+from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
 from ..models import NaiveEnsembleModel
 
 
-class EnsembleModelsTestCase(unittest.TestCase):
+class EnsembleModelsTestCase(DartsBaseTestClass):
     series1 = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     series2 = tg.linear_timeseries(length=50)
-
-    @classmethod
-    def setUpClass(cls):
-        logging.disable(logging.CRITICAL)
 
     def test_input_models(self):
         with self.assertRaises(ValueError):

@@ -1,12 +1,12 @@
-import unittest
 import pandas as pd
 import numpy as np
 
+from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils.missing_values import fill_missing_values, missing_values_ratio
 
 
-class MissingValuesTestCase(unittest.TestCase):
+class MissingValuesTestCase(DartsBaseTestClass):
 
     time = pd.date_range('20130101', '20130130')
     lin = [float(i) for i in range(len(time))]
