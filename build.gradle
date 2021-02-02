@@ -71,7 +71,7 @@ for(String flavour : flavours) {
 }
 
 task installLocally(type:Exec) {
-    commandLine "pip", "install", "."
+    commandLine "pip", "install", ".[all]"
 }
 
 task pipInstall() {
