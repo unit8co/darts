@@ -1,0 +1,847 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.torch_forecasting_model &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../index.html">
+    
+      <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.torch_forecasting_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Torch Forecasting Model Base Class</span>
+<span class="sd">----------------------------------</span>
+<span class="sd">This is the super class for all PyTorch-based forecasting models.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">Dataset</span>
+<span class="kn">from</span> <span class="nn">torch.utils.tensorboard</span> <span class="kn">import</span> <span class="n">SummaryWriter</span>
+
+<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span>
+<span class="kn">from</span> <span class="nn">..utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
+<span class="kn">from</span> <span class="nn">..utils.data.timeseries_dataset</span> <span class="kn">import</span> <span class="n">TimeSeriesInferenceDataset</span><span class="p">,</span> <span class="n">TrainingDataset</span>
+<span class="kn">from</span> <span class="nn">..utils.data.sequential_dataset</span> <span class="kn">import</span> <span class="n">SequentialDataset</span>
+<span class="kn">from</span> <span class="nn">..utils.data.simple_inference_dataset</span> <span class="kn">import</span> <span class="n">SimpleInferenceDataset</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
+
+<span class="n">CHECKPOINTS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;checkpoints&#39;</span><span class="p">)</span>
+<span class="n">RUNS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;runs&#39;</span><span class="p">)</span>
+<span class="n">UNTRAINED_MODELS_FOLDER</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;.darts&#39;</span><span class="p">,</span> <span class="s1">&#39;untrained_models&#39;</span><span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_checkpoint_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">CHECKPOINTS_FOLDER</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_untrained_models_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">UNTRAINED_MODELS_FOLDER</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_runs_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">RUNS_FOLDER</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">TimeSeriesTorchDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts_dataset</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeriesInferenceDataset</span><span class="p">,</span> <span class="n">TrainingDataset</span><span class="p">],</span> <span class="n">device</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wraps around `TimeSeriesDataset`, in order to provide translation</span>
+<span class="sd">        from `TimeSeries` to torch tensors and stack target series with covariates when needed.</span>
+<span class="sd">        Inherits from torch `Dataset`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ts_dataset</span>
+<span class="sd">            the `TimeSeriesDataset` or `TrainingDataset` underlying this torch Dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_dataset</span> <span class="o">=</span> <span class="n">ts_dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_cat_with_optional</span><span class="p">(</span><span class="n">tsr1</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">tsr2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">tsr2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tsr1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">tsr1</span><span class="p">,</span> <span class="n">tsr2</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts_dataset</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cast the content of the dataset to torch tensors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_dataset</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># the dataset contains (input_target, input_covariate) only</span>
+            <span class="n">input_tgt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+            <span class="n">input_cov</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cat_with_optional</span><span class="p">(</span><span class="n">input_tgt</span><span class="p">,</span> <span class="n">input_cov</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># the dataset contains (input_target, output_target, input_covariate)</span>
+            <span class="n">input_tgt</span><span class="p">,</span> <span class="n">output_tgt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+            <span class="n">input_cov</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cat_with_optional</span><span class="p">(</span><span class="n">input_tgt</span><span class="p">,</span> <span class="n">input_cov</span><span class="p">),</span> <span class="n">output_tgt</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The dataset has to contain tuples of size 2 or 4&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TorchForecastingModel"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel">[docs]</a><span class="k">class</span> <span class="nc">TorchForecastingModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="c1"># TODO: add is_stochastic &amp; reset methods</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+                 <span class="n">n_epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+                 <span class="n">optimizer_cls</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
+                 <span class="n">optimizer_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lr_scheduler_cls</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">_LRScheduler</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lr_scheduler_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">loss_fn</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">_Loss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(),</span>
+                 <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;torch_model_run&quot;</span><span class="p">,</span>  <span class="c1"># TODO: uid</span>
+                 <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
+                 <span class="n">log_tensorboard</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">nr_epochs_val_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                 <span class="n">torch_device_str</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; Pytorch-based Forecasting Model.</span>
+
+<span class="sd">        This class is meant to be inherited to create a new pytorch-based forecasting module.</span>
+<span class="sd">        When subclassing this class, please make sure to set the self.model attribute</span>
+<span class="sd">        in the __init__ function and then call super().__init__ while passing the kwargs.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            Number of past time steps that are fed to the internal forecasting module.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps to be output by the internal forecasting module.</span>
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{&#39;lr&#39;: 1e-3}`</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training (default: `torch.nn.MSELoss()`).</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating the checkpoints and saving tensorboard data.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            `[work_dir]/.darts/runs/`.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            `TimeSeries` is passed to the `fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">torch_device_str</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_best_torch_device</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="n">torch_device_str</span><span class="p">)</span>
+
+        <span class="c1"># We will fill these dynamically, upon first call of fit_from_dataset():</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_tensorboard</span> <span class="o">=</span> <span class="n">log_tensorboard</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_epochs_val_period</span> <span class="o">=</span> <span class="n">nr_epochs_val_period</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">=</span> <span class="n">work_dir</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span> <span class="o">=</span> <span class="n">n_epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">from_scratch</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># do we train the model from scratch  # TODO clean this</span>
+
+        <span class="c1"># Define the loss function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span> <span class="o">=</span> <span class="n">loss_fn</span>
+
+        <span class="c1"># The tensorboard writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tb_writer</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Persist optimiser and LR scheduler parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_cls</span> <span class="o">=</span> <span class="n">optimizer_cls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">optimizer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">optimizer_kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span> <span class="o">=</span> <span class="n">lr_scheduler_cls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">lr_scheduler_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lr_scheduler_kwargs</span>
+
+    <span class="k">def</span> <span class="nf">_init_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Init self.model - the torch module of this class, based on examples of input/output tensors (to get the</span>
+<span class="sd">        sizes right).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># the tensors have shape (chunk_length, nr_dimensions)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># A utility function to create optimizer and lr scheduler from desired classes</span>
+        <span class="k">def</span> <span class="nf">_create_from_cls_and_kwargs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kws</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kws</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Error when building the optimizer or learning rate scheduler;&#39;</span>
+                                     <span class="s1">&#39;please check the provided class and arguments&#39;</span>
+                                     <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">class: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                     <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">arguments (kwargs): </span><span class="si">{}</span><span class="s1">&#39;</span>
+                                     <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">error:</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kws</span><span class="p">,</span> <span class="n">e</span><span class="p">)),</span>
+                          <span class="n">logger</span><span class="p">)</span>
+
+        <span class="c1"># Create the optimizer and (optionally) the learning rate scheduler</span>
+        <span class="c1"># we have to create copies because we cannot save model.parameters into object state (not serializable)</span>
+        <span class="n">optimizer_kws</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">optimizer_kws</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">_create_from_cls_and_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer_cls</span><span class="p">,</span> <span class="n">optimizer_kws</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lr_sched_kws</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">lr_sched_kws</span><span class="p">[</span><span class="s1">&#39;optimizer&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">_create_from_cls_and_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span><span class="p">,</span> <span class="n">lr_sched_kws</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># We won&#39;t use a LR scheduler</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_untrained_model</span><span class="p">(</span><span class="n">_get_untrained_models_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">))</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method has to be implemented by all children. It is in charge of instantiating the actual torch model,</span>
+<span class="sd">        based on examples input/output tensors (i.e. implement a model with the right input/output sizes).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                             <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">TrainingDataset</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SequentialDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                 <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TorchForecastingModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.fit">[docs]</a>    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">val_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The fit method for torch models.</span>
+<span class="sd">        It wraps around `fit_from_dataset()`.</span>
+
+<span class="sd">        *** Currently future covariates are not yet supported ***</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, a series or sequence of series specifying covariates</span>
+<span class="sd">        val_series</span>
+<span class="sd">            Optionally, one or a sequence of validation target series, which will be used to compute the validation</span>
+<span class="sd">            loss throughout training and keep track of the best performing models.</span>
+<span class="sd">        val_covariates</span>
+<span class="sd">            Optionally, the covariates corresponding to the validation series (must match `covariates`)</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, whether to print progress.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
+
+        <span class="n">wrap_fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="p">[</span><span class="n">ts</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">ts</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">wrap_fn</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">covariates</span> <span class="o">=</span> <span class="n">wrap_fn</span><span class="p">(</span><span class="n">covariates</span><span class="p">)</span>
+        <span class="n">val_series</span> <span class="o">=</span> <span class="n">wrap_fn</span><span class="p">(</span><span class="n">val_series</span><span class="p">)</span>
+        <span class="n">val_covariates</span> <span class="o">=</span> <span class="n">wrap_fn</span><span class="p">(</span><span class="n">val_covariates</span><span class="p">)</span>
+        <span class="c1"># TODO - if one covariate is provided, we could repeat it N times for each of the N target series</span>
+
+        <span class="c1"># Check that dimensions of train and val set match; on first series only</span>
+        <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">train_set_dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">covariates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="p">))</span>
+            <span class="n">val_set_dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">val_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">val_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">val_covariates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="p">))</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">train_set_dim</span> <span class="o">==</span> <span class="n">val_set_dim</span><span class="p">,</span> <span class="s1">&#39;The dimensions of the series in the training set &#39;</span>
+                                                       <span class="s1">&#39;and the validation set do not match. </span><span class="si">{}</span><span class="s1"> != </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                        <span class="n">train_set_dim</span><span class="p">,</span> <span class="n">val_set_dim</span><span class="p">))</span>
+
+        <span class="n">train_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_train_dataset</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
+        <span class="n">val_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_train_dataset</span><span class="p">(</span><span class="n">val_series</span><span class="p">,</span> <span class="n">val_covariates</span><span class="p">)</span> <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Train dataset contains </span><span class="si">{}</span><span class="s1"> samples.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_from_dataset</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">val_dataset</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TorchForecastingModel.fit_from_dataset"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.fit_from_dataset">[docs]</a>    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="nf">fit_from_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">,</span>
+                         <span class="n">val_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TrainingDataset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="s1">&#39;The provided training time series dataset is too short for obtaining even one training point.&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">val_dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">val_dataset</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="s1">&#39;The provided validation time series dataset is too short for obtaining even one training point.&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_scratch</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">_get_checkpoint_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">),</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">torch_train_dataset</span> <span class="o">=</span> <span class="n">TimeSeriesTorchDataset</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">torch_val_dataset</span> <span class="o">=</span> <span class="n">TimeSeriesTorchDataset</span><span class="p">(</span><span class="n">val_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span> <span class="o">=</span> <span class="n">torch_train_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">torch_train_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Build model, based on the dimensions of the first series in the train set.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_model</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Check existing model has input/output dim matching what&#39;s provided in the training set.</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">input_dim</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="ow">and</span> <span class="n">output_dim</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span>
+                         <span class="s1">&#39;The dimensionality of the series in the training set do not match the dimensionality&#39;</span>
+                         <span class="s1">&#39;of the series the model has previously been trained on. &#39;</span>
+                         <span class="s1">&#39;Model input/output dimensions = </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">, provided input/ouptput dimensions = </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">output_dim</span>
+                         <span class="p">))</span>
+
+        <span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">torch_train_dataset</span><span class="p">,</span>
+                                  <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                                  <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                  <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">drop_last</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Prepare validation data</span>
+        <span class="n">val_loader</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">val_dataset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">torch_val_dataset</span><span class="p">,</span>
+                                                                 <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                                                                 <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                                 <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                                 <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                                 <span class="n">drop_last</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Prepare tensorboard writer</span>
+        <span class="n">tb_writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_tensorboard_writer</span><span class="p">()</span>
+
+        <span class="c1"># Train model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_train</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">val_loader</span><span class="p">,</span> <span class="n">tb_writer</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+        <span class="c1"># Close tensorboard writer</span>
+        <span class="k">if</span> <span class="n">tb_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tb_writer</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">tb_writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TorchForecastingModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predicts values for a certain number of time steps after the end of the training series,</span>
+<span class="sd">        or after the end of the specified `series`.</span>
+
+<span class="sd">        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an</span>
+<span class="sd">        auto-regressive way, by iteratively feeding the last `output_chunk_length` forecast points as</span>
+<span class="sd">        inputs to the model until a forecast of length `n` is obtained. This is at the moment only</span>
+<span class="sd">        supported when covariates are not used, as this functionality requires future covariates,</span>
+<span class="sd">        which are not supported yet.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The number of time steps after the end of the training time series for which to produce predictions</span>
+<span class="sd">        series</span>
+<span class="sd">            Optionally, one or several input `TimeSeries`, representing the history of the target series&#39; whose</span>
+<span class="sd">            future is to be predicted. If specified, the method returns the forecasts of these</span>
+<span class="sd">            series. Otherwise, the method returns the forecast of the (single) training series.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, the covariates series needed as inputs for the model. They must match the covariates used</span>
+<span class="sd">            for training.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
+<span class="sd">            One or several time series containing the forecasts of `series`, or the forecast of the training series</span>
+<span class="sd">            if `series` is not specified and the model has been trained on a single series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
+
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                 <span class="s1">&#39;The horizon `n` must be smaller or equal to the model output length when covariates are used. &#39;</span>
+                 <span class="s1">&#39;n: </span><span class="si">{}</span><span class="s1">, output_chunk_length: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
+
+        <span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">SimpleInferenceDataset</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_from_dataset</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">predictions</span></div>
+
+<div class="viewcode-block" id="TorchForecastingModel.predict_from_dataset"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.predict_from_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">predict_from_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                             <span class="n">input_series_dataset</span><span class="p">:</span> <span class="n">TimeSeriesInferenceDataset</span>
+                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="c1"># check that the input sizes match</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">input_series_dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">in_dim</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">ts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">),</span> <span class="n">sample</span><span class="p">))</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">in_dim</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span>
+                     <span class="s1">&#39;The dimensionality of the series provided for prediction does not match the dimensionality&#39;</span>
+                     <span class="s1">&#39;of the series this model has been trained on. Provided input dim = </span><span class="si">{}</span><span class="s1">, &#39;</span>
+                     <span class="s1">&#39;model input dim = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">in_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">))</span>
+
+        <span class="c1"># TODO use a torch Dataset and DataLoader for parallel loading and batching</span>
+        <span class="c1"># TODO also currently we assume all forecasts fit in memory</span>
+        <span class="n">ts_forecasts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">target_series</span><span class="p">,</span> <span class="n">covariate_series</span> <span class="ow">in</span> <span class="n">input_series_dataset</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                         <span class="s1">&#39;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">))</span>
+
+            <span class="c1"># TODO: here we could be smart and handle cases where target and covariates do not have same time axis.</span>
+            <span class="c1"># TODO: e.g. by taking their latest common timestamp.</span>
+
+            <span class="n">in_tsr</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
+            <span class="n">in_tsr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">in_tsr</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">in_cov_tsr</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
+                <span class="n">in_cov_tsr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">in_cov_tsr</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">in_tsr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">in_tsr</span><span class="p">,</span> <span class="n">in_cov_tsr</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">in_tsr</span> <span class="o">=</span> <span class="n">in_tsr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">out_sequence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_prediction</span><span class="p">(</span><span class="n">in_tsr</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+            <span class="c1"># translate to numpy</span>
+            <span class="n">out_sequence</span> <span class="o">=</span> <span class="n">out_sequence</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">ts_forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">out_sequence</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+                                                            <span class="n">input_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ts_forecasts</span></div>
+
+    <span class="k">def</span> <span class="nf">_produce_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_sequence</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="c1"># produces output tensor for one time series</span>
+        <span class="c1"># TODO: make it work for batches</span>
+        <span class="c1"># TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)</span>
+
+        <span class="n">prediction</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># (length, width)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)</span>  <span class="c1"># (1, output_chunk_length, width)</span>
+        <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+        <span class="k">while</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">prediction</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+            <span class="n">roll_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">)</span>
+            <span class="n">in_sequence</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">in_sequence</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
+
+            <span class="c1"># take only last part of the output sequence where needed</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:]</span>
+
+            <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">prediction</span><span class="p">[:</span><span class="n">n</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># prediction[:n]</span>
+        <span class="k">return</span> <span class="n">prediction</span>
+
+<div class="viewcode-block" id="TorchForecastingModel.untrained_model"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.untrained_model">[docs]</a>    <span class="k">def</span> <span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_untrained_model</span><span class="p">(</span><span class="n">_get_untrained_models_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">))</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">first_prediction_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the first predicted within the output of self.model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">_train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+               <span class="n">train_loader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+               <span class="n">val_loader</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataLoader</span><span class="p">],</span>
+               <span class="n">tb_writer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SummaryWriter</span><span class="p">],</span>
+               <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs the actual training</span>
+<span class="sd">        :param train_loader: the training data loader feeding the training data and targets</span>
+<span class="sd">        :param val_loader: optionally, a validation set loader</span>
+<span class="sd">        :param tb_writer: optionally, a TensorBoard writer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">best_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_epochs</span><span class="p">),</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+            <span class="n">epoch</span> <span class="o">=</span> <span class="n">epoch</span>
+            <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_loader</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">target</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+                <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">tb_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+                    <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_histogram</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;/gradients&#39;</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">epoch</span><span class="p">)</span>
+                <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="s2">&quot;training/loss&quot;</span><span class="p">,</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="p">(</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">epoch</span><span class="p">)</span>
+                <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="s2">&quot;training/loss_total&quot;</span><span class="p">,</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="p">(</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">epoch</span><span class="p">)</span>
+                <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="s2">&quot;training/learning_rate&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_learning_rate</span><span class="p">(),</span> <span class="n">epoch</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_save_model</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">_get_checkpoint_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">),</span> <span class="n">epoch</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_epochs_val_period</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">training_loss</span> <span class="o">=</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">val_loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">validation_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate_validation_loss</span><span class="p">(</span><span class="n">val_loader</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">tb_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_scalar</span><span class="p">(</span><span class="s2">&quot;validation/loss_total&quot;</span><span class="p">,</span> <span class="n">validation_loss</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">validation_loss</span> <span class="o">&lt;</span> <span class="n">best_loss</span><span class="p">:</span>
+                        <span class="n">best_loss</span> <span class="o">=</span> <span class="n">validation_loss</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_save_model</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">_get_checkpoint_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">),</span> <span class="n">epoch</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training loss: </span><span class="si">{:.4f}</span><span class="s2">, validation loss: </span><span class="si">{:.4f}</span><span class="s2">, best val loss: </span><span class="si">{:.4f}</span><span class="s2">&quot;</span><span class="o">.</span>
+                              <span class="nb">format</span><span class="p">(</span><span class="n">training_loss</span><span class="p">,</span> <span class="n">validation_loss</span><span class="p">,</span> <span class="n">best_loss</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training loss: </span><span class="si">{:.4f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">training_loss</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_evaluate_validation_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val_loader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">):</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">val_loader</span><span class="p">):</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">target</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+                <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="n">validation_loss</span> <span class="o">=</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="p">(</span><span class="n">batch_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">validation_loss</span>
+
+    <span class="k">def</span> <span class="nf">_save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">is_best</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                    <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves the whole torch model object to a file</span>
+
+<span class="sd">        :param is_best: whether the model we&#39;re currently saving is the best (on validation set)</span>
+<span class="sd">        :param folder:</span>
+<span class="sd">        :param epoch:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">checklist</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s2">&quot;checkpoint_*&quot;</span><span class="p">))</span>
+        <span class="n">checklist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">checklist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(\d+)&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;checkpoint_</span><span class="si">{0}</span><span class="s1">.pth.tar&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">checklist</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="c1"># remove older files</span>
+            <span class="k">for</span> <span class="n">chkpt</span> <span class="ow">in</span> <span class="n">checklist</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chkpt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_best</span><span class="p">:</span>
+            <span class="n">best_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s1">&#39;model_best_</span><span class="si">{0}</span><span class="s1">.pth.tar&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">))</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">best_name</span><span class="p">)</span>
+            <span class="n">checklist</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s2">&quot;model_best_*&quot;</span><span class="p">))</span>
+            <span class="n">checklist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">checklist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(\d+)&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">checklist</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># remove older files</span>
+                <span class="k">for</span> <span class="n">chkpt</span> <span class="ow">in</span> <span class="n">checklist</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chkpt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_save_untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s1">&#39;model.pth.tar&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_load_untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s1">&#39;model.pth.tar&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_tensorboard_writer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">runs_folder</span> <span class="o">=</span> <span class="n">_get_runs_folder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_tensorboard</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_scratch</span><span class="p">:</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">runs_folder</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">tb_writer</span> <span class="o">=</span> <span class="n">SummaryWriter</span><span class="p">(</span><span class="n">runs_folder</span><span class="p">)</span>
+                <span class="n">dummy_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="n">tb_writer</span><span class="o">.</span><span class="n">add_graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">dummy_input</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tb_writer</span> <span class="o">=</span> <span class="n">SummaryWriter</span><span class="p">(</span><span class="n">runs_folder</span><span class="p">,</span> <span class="n">purge_step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_epoch</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tb_writer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">tb_writer</span>
+
+<div class="viewcode-block" id="TorchForecastingModel.load_from_checkpoint"><a class="viewcode-back" href="../../../generated_api/darts.models.torch_forecasting_model.html#darts.models.nbeats.TorchForecastingModel.load_from_checkpoint">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
+                             <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">best</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TorchForecastingModel&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the model from the given checkpoint.</span>
+<span class="sd">        if file is not given, will try to restore the most recent checkpoint.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_name</span>
+<span class="sd">            The name of the model (used to retrieve the checkpoints folder&#39;s name).</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Working directory (containing the checkpoints folder). Defaults to current working directory.</span>
+<span class="sd">        filename</span>
+<span class="sd">            The name of the checkpoint file. If not specified, use the most recent one.</span>
+<span class="sd">        best</span>
+<span class="sd">            If set, will retrieve the best model (according to validation loss) instead of the most recent one.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TorchForecastingModel</span>
+<span class="sd">            The corresponding trained `TorchForecastingModel`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">_get_checkpoint_folder</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">model_name</span><span class="p">)</span>
+
+        <span class="c1"># if filename is none, find most recent file in savepath that is a checkpoint</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="s2">&quot;model_best_*&quot;</span> <span class="k">if</span> <span class="n">best</span> <span class="k">else</span> <span class="s2">&quot;checkpoint_*&quot;</span><span class="p">)</span>
+            <span class="n">checklist</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">checklist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;There is no file matching prefix </span><span class="si">{}</span><span class="s1"> in </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                          <span class="s2">&quot;model_best_*&quot;</span> <span class="k">if</span> <span class="n">best</span> <span class="k">else</span> <span class="s2">&quot;checkpoint_*&quot;</span><span class="p">,</span> <span class="n">checkpoint_dir</span><span class="p">)),</span>
+                          <span class="n">logger</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">checklist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getctime</span><span class="p">)</span>  <span class="c1"># latest file TODO: check case where no files match</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="n">full_fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loading </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">full_fname</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_best_torch_device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">is_cuda</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_cuda</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda:0&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_learning_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
