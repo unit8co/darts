@@ -1,0 +1,5 @@
+
+.. automodule:: darts.utils.data.shifted_dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:

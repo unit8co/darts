@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Box-Cox Transformer &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,12 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Fittable Data Transformer" href="darts.dataprocessing.transformers.fittable_data_transformer.html" />
-    <link rel="prev" title="Base Data Transformer" href="darts.dataprocessing.transformers.base_data_transformer.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +62,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,52 +112,6 @@
         
         
         
-          
-            
-  
-                <li class="active">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                    <ul>
-                    
-                        <li class="active">
-                            <a href="darts.dataprocessing.transformers.html">Data Transformers</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.dataprocessing.pipeline.html">Pipeline</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.metrics.html">Metrics</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.utils.html">Utils</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -193,100 +139,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.dataprocessing.transformers.boxcox"></span><div class="section" id="box-cox-transformer">
-<h1>Box-Cox Transformer<a class="headerlink" href="#box-cox-transformer" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="darts.dataprocessing.transformers.boxcox.BoxCox">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.boxcox.</code><code class="sig-name descname">BoxCox</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
-<p>Box-Cox data transformer.
-See <a class="reference external" href="https://otexts.com/fpp2/transformations.html#mathematical-transformations">https://otexts.com/fpp2/transformations.html#mathematical-transformations</a> for more information</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> – A specific name for the transformer</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.boxcox.BoxCox.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">lmbda</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>float<span class="p">, </span>Sequence<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">optim_method</span><span class="o">=</span><span class="default_value">'mle'</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox" title="darts.dataprocessing.transformers.boxcox.BoxCox">darts.dataprocessing.transformers.boxcox.BoxCox</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the <cite>lmbda</cite> parameter value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – The time series to fit on</p></li>
-<li><p><strong>lmbda</strong> – If None given, will automatically find an optimal value of lmbda (for each dimension
-of the time series) using <cite>scipy.stats.boxcox_normmax</cite> with <cite>method=optim_method</cite>
-If a single float is given, the same lmbda value will be used for all dimensions of the series.
-Also allows to specify a different lmbda value for each dimension of the time series by passing
-a sequence of values.</p></li>
-<li><p><strong>optim_method</strong> – Specifies which method to use to find an optimal value for the lmbda parameter.
-Either ‘mle’ or ‘pearsonr’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Fitted transformer (self)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform">
-<code class="sig-name descname">inverse_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.inverse_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform inverse transformation of the data. Not implemented in base class.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – Object which will be inverse transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>inverse_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>inverse_transform()</cite> method</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Inverse transformed data.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>T</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.boxcox.BoxCox.transform">
-<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform the data. Not implemented in base class.
-Will raise an error if called before a call to <cite>fit()</cite></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – Object which will be inverse transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>transform()</cite> method</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Transformed data.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>T</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.base_data_transformer.html" title="previous page">Base Data Transformer</a>
-    <a class='right-next' id="next-link" href="darts.dataprocessing.transformers.fittable_data_transformer.html" title="next page">Fittable Data Transformer</a>
 
               </div>
               
@@ -297,13 +156,13 @@ Will raise an error if called before a call to <cite>fit()</cite></p>
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

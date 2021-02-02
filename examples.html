@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Examples &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
@@ -37,12 +37,10 @@
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction to darts" href="examples/darts-intro.html" />
-    <link rel="prev" title="Timeseries" href="generated_api/darts.timeseries.html" />
+    <link rel="next" title="Introduction to darts" href="examples/01-darts-intro.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="generated_api/darts.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +64,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="README.html">Home</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="generated_api/darts.html">API Reference</a>
         </li>
         
         <li class="nav-item active">
@@ -120,8 +114,6 @@
         
         
         
-        
-        
           
         
         
@@ -143,6 +135,14 @@
     
         <li class="nav-item toc-entry toc-h2">
             <a href="#darts-intro" class="nav-link">darts intro</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#multiple-time-series-pre-trained-models-and-covariates" class="nav-link">Multiple Time Series, Pre-trained Models and Covariates</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#training-on-multiple-series-and-using-covariates" class="nav-link">Training on multiple series and using Covariates</a>
         </li>
     
         <li class="nav-item toc-entry toc-h2">
@@ -169,14 +169,6 @@
             <a href="#n-beats-model-examples" class="nav-link">N-BEATS Model Examples</a>
         </li>
     
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#multivariate-examples" class="nav-link">Multivariate Examples</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#m4-competition-exploration" class="nav-link">M4 Competition Exploration</a>
-        </li>
-    
     </ul>
 </nav>
 
@@ -198,8 +190,24 @@
 <p>You will find below an example Jupyter notebook containing an intro to the usage of darts.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/01-darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
 </ul>
+</div>
+</div>
+<div class="section" id="multiple-time-series-pre-trained-models-and-covariates">
+<h2>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#multiple-time-series-pre-trained-models-and-covariates" title="Permalink to this headline">¶</a></h2>
+<p>You will find below an example Jupyter notebook showcasing models trained on multiple time series, pre-trained models, and the usage of covariates.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/02-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="training-on-multiple-series-and-using-covariates">
+<h2>Training on multiple series and using Covariates<a class="headerlink" href="#training-on-multiple-series-and-using-covariates" title="Permalink to this headline">¶</a></h2>
+<p>You will find below a Jupyter notebook containing a tutorial to darts <em>global models</em>,
+training on multiple series, and using covariates.</p>
+<div class="toctree-wrapper compound">
 </div>
 </div>
 <div class="section" id="data-pre-processing">
@@ -207,7 +215,7 @@
 <p>You will find below an example Jupyter notebook showcasing the data processing abilities of darts.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/03-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 </div>
 </div>
@@ -216,7 +224,7 @@
 <p>You will find below an example Jupyter notebook showcasing the usage of the FFT model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/04-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
 </ul>
 </div>
 </div>
@@ -225,7 +233,7 @@
 <p>You will find below an example Jupyter notebook showcasing the usage of the RNN model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/RNN-examples.html">Recurrent Neural Networks Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/05-RNN-examples.html">Recurrent Neural Networks Models</a></li>
 </ul>
 </div>
 </div>
@@ -234,7 +242,7 @@
 <p>You will find below an example Jupyter notebook showcasing the usage of the TCN model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/TCN-examples.html">Temporal Convolutional Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/06-TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 </div>
 </div>
@@ -243,7 +251,7 @@
 <p>You will find below an example Jupyter notebook showcasing the usage of the Transformer model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/Transformer-examples.html">Transformer Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/07-Transformer-examples.html">Transformer Model</a></li>
 </ul>
 </div>
 </div>
@@ -252,28 +260,8 @@
 <p>You will find below an example Jupyter notebook showcasing the usage of the N-BEATS model</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/NBEATS-examples.html">General model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/NBEATS-examples.html#Interpretable-model">Interpretable model</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="multivariate-examples">
-<h2>Multivariate Examples<a class="headerlink" href="#multivariate-examples" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of multivariate TimeSeries instances</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/multivariate-examples.html">Multivariate Time Series</a></li>
-</ul>
-</div>
-</div>
-<div class="section" id="m4-competition-exploration">
-<h2>M4 Competition Exploration<a class="headerlink" href="#m4-competition-exploration" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook with a benchmark of different darts models and example usage of FourTheta model</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/M4_competition/M4_competition_benchmark.html">Download and create TimeSeries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/M4_competition/M4_competition_benchmark.html#dataset-info">dataset info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples/M4_competition/M4_competition_benchmark.html#evaluating-methods">evaluating methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/08-NBEATS-examples.html">General model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/08-NBEATS-examples.html#Interpretable-model">Interpretable model</a></li>
 </ul>
 </div>
 </div>
@@ -285,8 +273,8 @@
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="generated_api/darts.timeseries.html" title="previous page">Timeseries</a>
-    <a class='right-next' id="next-link" href="examples/darts-intro.html" title="next page">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a>
+    <a class='left-prev' id="prev-link" href="generated_api/darts.html" title="previous page">&lt;no title&gt;</a>
+    <a class='right-next' id="next-link" href="examples/01-darts-intro.html" title="next page">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a>
 
               </div>
               
@@ -297,13 +285,13 @@
     </div>
 
     
-  <script src="_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Download and create TimeSeries &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
@@ -37,11 +37,8 @@
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="prev" title="Multivariate Time Series" href="../multivariate-examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -68,10 +65,6 @@
         </li>
         
         <li class="nav-item ">
-            <a class="nav-link" href="../../generated_api/darts.html">API Reference</a>
-        </li>
-        
-        <li class="nav-item active">
             <a class="nav-link" href="../../examples.html">Examples</a>
         </li>
         
@@ -118,10 +111,6 @@
         
         
         
-        
-        
-        
-          
         
         
       </ul>
@@ -498,15 +487,15 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">download</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">preprocess</span> <span class="o">=</span> <span class="kc">False</span>
+<span></span><span class="n">download</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">preprocess</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="Download-and-create-TimeSeries">
 <h1>Download and create TimeSeries<a class="headerlink" href="#Download-and-create-TimeSeries" title="Permalink to this headline">¶</a></h1>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -517,11 +506,43 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+M4-info already exists
+Yearly-train already exists
+Yearly-test already exists
+Quarterly-train already exists
+Quarterly-test already exists
+Monthly-train already exists
+Monthly-test already exists
+Weekly-train already exists
+Weekly-test already exists
+Daily-train already exists
+Daily-test already exists
+Hourly-train already exists
+Hourly-test already exists
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5cc8b953ac2a47f6ade4a90f091ef37b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "509d0310b9734210be674a6e78e6a42f", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 </div>
 <div class="section" id="dataset-info">
 <h1>dataset info<a class="headerlink" href="#dataset-info" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -531,8 +552,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -540,91 +561,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
-</pre></div>
-</div>
-<div class="output_area rendered_html docutils container">
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>category</th>
-      <th>Frequency</th>
-      <th>Horizon</th>
-      <th>SP</th>
-      <th>StartingDate</th>
-    </tr>
-    <tr>
-      <th>M4id</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Y1</th>
-      <td>Macro</td>
-      <td>1</td>
-      <td>6</td>
-      <td>Yearly</td>
-      <td>01-01-79 12:00</td>
-    </tr>
-    <tr>
-      <th>Y2</th>
-      <td>Macro</td>
-      <td>1</td>
-      <td>6</td>
-      <td>Yearly</td>
-      <td>01-01-79 12:00</td>
-    </tr>
-    <tr>
-      <th>Y3</th>
-      <td>Macro</td>
-      <td>1</td>
-      <td>6</td>
-      <td>Yearly</td>
-      <td>01-01-79 12:00</td>
-    </tr>
-    <tr>
-      <th>Y4</th>
-      <td>Macro</td>
-      <td>1</td>
-      <td>6</td>
-      <td>Yearly</td>
-      <td>01-01-79 12:00</td>
-    </tr>
-    <tr>
-      <th>Y5</th>
-      <td>Macro</td>
-      <td>1</td>
-      <td>6</td>
-      <td>Yearly</td>
-      <td>01-01-79 12:00</td>
-    </tr>
-  </tbody>
-</table>
-</div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -632,18 +570,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-array([&#39;Other&#39;, &#39;Macro&#39;, &#39;Industry&#39;, &#39;Finance&#39;, &#39;Demographic&#39;, &#39;Micro&#39;],
-      dtype=object)
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -651,91 +579,8 @@ array([&#39;Other&#39;, &#39;Macro&#39;, &#39;Industry&#39;, &#39;Finance&#39;, 
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
-</pre></div>
-</div>
-<div class="output_area rendered_html docutils container">
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>category</th>
-      <th>Frequency</th>
-      <th>Horizon</th>
-      <th>StartingDate</th>
-    </tr>
-    <tr>
-      <th>SP</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Daily</th>
-      <td>4227</td>
-      <td>4227</td>
-      <td>4227</td>
-      <td>4227</td>
-    </tr>
-    <tr>
-      <th>Hourly</th>
-      <td>414</td>
-      <td>414</td>
-      <td>414</td>
-      <td>414</td>
-    </tr>
-    <tr>
-      <th>Monthly</th>
-      <td>48000</td>
-      <td>48000</td>
-      <td>48000</td>
-      <td>48000</td>
-    </tr>
-    <tr>
-      <th>Quarterly</th>
-      <td>24000</td>
-      <td>24000</td>
-      <td>24000</td>
-      <td>24000</td>
-    </tr>
-    <tr>
-      <th>Weekly</th>
-      <td>359</td>
-      <td>359</td>
-      <td>359</td>
-      <td>359</td>
-    </tr>
-    <tr>
-      <th>Yearly</th>
-      <td>23000</td>
-      <td>23000</td>
-      <td>23000</td>
-      <td>23000</td>
-    </tr>
-  </tbody>
-</table>
-</div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -744,34 +589,11 @@ array([&#39;Other&#39;, &#39;Macro&#39;, &#39;Industry&#39;, &#39;Finance&#39;, 
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-SP
-Daily         [1]
-Hourly       [24]
-Monthly      [12]
-Quarterly     [4]
-Weekly        [1]
-Yearly        [1]
-Name: Frequency, dtype: object
-SP
-Daily        [14]
-Hourly       [48]
-Monthly      [18]
-Quarterly     [8]
-Weekly       [13]
-Yearly        [6]
-Name: Horizon, dtype: object
-</pre></div></div>
-</div>
 </div>
 <div class="section" id="evaluating-methods">
 <h1>evaluating methods<a class="headerlink" href="#evaluating-methods" title="Permalink to this headline">¶</a></h1>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -781,8 +603,8 @@ Name: Horizon, dtype: object
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -845,22 +667,8 @@ Name: Horizon, dtype: object
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b7fda80d505449e8a274f87600712dfb", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -875,24 +683,8 @@ Name: Horizon, dtype: object
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-MASE; naiveSeason: 1.193, naive2: 2.400, 4Theta: 1.768,
-SES: 2.373, Holt: 8.728, Damp: 2.938, Comb: 4.237
-
-sMAPE; naiveSeason: 13.912, naive2: 18.820, 4Theta: 17.510,
-SES: 18.216, Holt: 27.997, Damp: 19.194, Comb: 21.475
-
-OWA; naiveSeason: 0.628, naive2: 1.013, 4Theta: 0.845,
-SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
-
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -904,24 +696,8 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x17a812b07c8&gt;
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_18_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_18_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -931,16 +707,9 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_19_0.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_19_0.png" />
-</div>
-</div>
 <p>Visualization</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -951,7 +720,7 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -962,7 +731,7 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -999,8 +768,8 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1015,26 +784,10 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x17a82c29cc8&gt;
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_24_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_24_1.png" />
-</div>
-</div>
 <div class="section" id="4Theta">
 <h2>4Theta<a class="headerlink" href="#4Theta" title="Permalink to this headline">¶</a></h2>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1066,25 +819,8 @@ SES: 0.991, Holt: 2.584, Damp: 1.135, Comb: 1.469
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
-Theta MASE: 1.594
-4Theta MASE: 1.485
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_26_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_26_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1116,25 +852,8 @@ Theta MASE: 1.594
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
-Theta MASE: 1.373
-4Theta MASE: 1.501
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_27_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_27_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1166,25 +885,8 @@ Theta MASE: 1.373
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.ADDITIVE)
-Theta MASE: 1.053
-4Theta MASE: 0.992
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_28_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_28_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1216,25 +918,8 @@ Theta MASE: 1.053
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
-Theta MASE: 10.147
-4Theta MASE: 9.599
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_29_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_29_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1266,25 +951,8 @@ Theta MASE: 10.147
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.LINEAR, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
-Theta MASE: 2.055
-4Theta MASE: 2.049
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_30_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_30_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1316,26 +984,9 @@ Theta MASE: 2.055
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:2, curve:TrendMode.EXPONENTIAL, model:ModelMode.ADDITIVE, seasonality:SeasonalityMode.MULTIPLICATIVE)
-Theta MASE: 0.649
-4Theta MASE: 0.646
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_31_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_31_1.png" />
-</div>
-</div>
 <p>Now, let’s try to find a better theta, and a better frequency</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1366,28 +1017,11 @@ Theta MASE: 0.649
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-4Theta(theta:10.0, curve:TrendMode.EXPONENTIAL, model:ModelMode.MULTIPLICATIVE, seasonality:SeasonalityMode.ADDITIVE)
-Theta MASE: 1.649
-4Theta MASE: 1.074
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_33_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_33_1.png" />
-</div>
-</div>
 </div>
 <div class="section" id="run-evaluation">
 <h2>run evaluation<a class="headerlink" href="#run-evaluation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1398,7 +1032,7 @@ Theta MASE: 1.649
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1409,7 +1043,7 @@ Theta MASE: 1.649
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1420,7 +1054,7 @@ Theta MASE: 1.649
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1431,7 +1065,7 @@ Theta MASE: 1.649
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1445,7 +1079,7 @@ Theta MASE: 1.649
 <div class="section" id="Ensembling">
 <h2>Ensembling<a class="headerlink" href="#Ensembling" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1454,7 +1088,7 @@ Theta MASE: 1.649
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1463,8 +1097,8 @@ Theta MASE: 1.649
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1595,22 +1229,8 @@ Theta MASE: 1.649
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ceff6262b2a4050926d35051bd9ebde", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1621,17 +1241,8 @@ Theta MASE: 1.649
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-MASE; Naive2: 1.098, Linear Regression: 1.068, Mean ensembling: 0.966, GROE ensembling: 0.973, BO3 ensembling: 1.003, BO3 Mean: 0.994
-sMAPE; Naive2: 8.974, Linear Regression: 8.678, Mean ensembling: 7.705, GROE ensembling: 7.830, BO3 ensembling: 8.160, BO3 Mean: 8.026
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1641,20 +1252,12 @@ sMAPE; Naive2: 8.974, Linear Regression: 8.678, Mean ensembling: 7.705, GROE ens
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-OWA:  [4.25921273 4.11861286 3.65788532 3.71683597 3.87316115 3.80968261]
-</pre></div></div>
-</div>
 </div>
 <div class="section" id="Visualization">
 <h2>Visualization<a class="headerlink" href="#Visualization" title="Permalink to this headline">¶</a></h2>
 <p>Linear Regression (Lasso)</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1669,24 +1272,8 @@ OWA:  [4.25921273 4.11861286 3.65788532 3.71683597 3.87316115 3.80968261]
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Text(0.5, 1.0, &#39;Validation MASE = 0.432&#39;)
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_48_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_48_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1694,18 +1281,8 @@ Text(0.5, 1.0, &#39;Validation MASE = 0.432&#39;)
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-array([0.21215518, 0.63937082, 0.00330463, 0.14516937, 0.        ,
-       0.        , 0.        ])
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1719,25 +1296,9 @@ array([0.21215518, 0.63937082, 0.00330463, 0.14516937, 0.        ,
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Text(0.5, 1.0, &#39;Test MASE = 0.421&#39;)
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_50_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_50_1.png" />
-</div>
-</div>
 <p>GROE and other Ensembling</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1751,24 +1312,8 @@ Text(0.5, 1.0, &#39;Test MASE = 0.421&#39;)
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Text(0.5, 1.0, &#39;MASE mean = 0.430, GROE = 0.496&#39;)
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/examples_M4_competition_M4_competition_benchmark_52_1.png" src="../../_images/examples_M4_competition_M4_competition_benchmark_52_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1776,16 +1321,6 @@ Text(0.5, 1.0, &#39;MASE mean = 0.430, GROE = 0.496&#39;)
 <span class="n">pesos</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-array([0.00705447, 0.14044403, 0.05853393, 0.43958416, 0.05530406,
-       0.18642169, 0.11265765])
-</pre></div></div>
 </div>
 </div>
 </div>
@@ -1796,7 +1331,6 @@ array([0.00705447, 0.14044403, 0.05853393, 0.43958416, 0.05530406,
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="../multivariate-examples.html" title="previous page">Multivariate Time Series</a>
 
               </div>
               
@@ -1807,13 +1341,13 @@ array([0.00705447, 0.14044403, 0.05853393, 0.43958416, 0.05530406,
     </div>
 
     
-  <script src="../../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

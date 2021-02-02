@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Metrics &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,12 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Models" href="darts.models.html" />
-    <link rel="prev" title="Metrics" href="darts.metrics.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +62,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,48 +112,6 @@
         
         
         
-          
-            
-                <li class="">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                </li>
-            
-          
-            
-  
-                <li class="active">
-                    <a href="darts.metrics.html">Metrics</a>
-                    <ul>
-                    
-                        <li class="active">
-                            <a href="">Metrics</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.utils.html">Utils</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -189,363 +139,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.metrics.metrics"></span><div class="section" id="metrics">
-<h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h1>
-<p>Some metrics to compare time series.</p>
-<dl class="py function">
-<dt id="darts.metrics.metrics.coefficient_of_variation">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">coefficient_of_variation</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#coefficient_of_variation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.coefficient_of_variation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Coefficient of Variation (percentage).</p>
-<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>,
-it is a percentage value, computed as</p>
-<div class="math notranslate nohighlight">
-\[100 \cdot \text{RMSE}(y_t, \hat{y}_t) / \bar{y_t},\]</div>
-<p>where <span class="math notranslate nohighlight">\(\text{RMSE}()\)</span> denotes the root mean squred error, and
-<span class="math notranslate nohighlight">\(\bar{y_t}\)</span> is the average of <span class="math notranslate nohighlight">\(y_t\)</span>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Coefficient of Variation</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.mae">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mae</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mae"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mae" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Absolute Error (MAE).</p>
-<p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
-<div class="math notranslate nohighlight">
-\[\frac{1}{T}\sum_{t=1}^T{(|y^1_t - y^2_t|)}.\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Mean Absolute Error (MAE)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.mape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mape" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Absolute Percentage Error (MAPE).</p>
-<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
-both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
-<div class="math notranslate nohighlight">
-\[100 \cdot \frac{1}{T} \sum_{t=1}^{T}{\left| \frac{y_t - \hat{y}_t}{y_t} \right|}.\]</div>
-<p>Note that it will raise a <cite>ValueError</cite> if <span class="math notranslate nohighlight">\(y_t = 0\)</span> for some <span class="math notranslate nohighlight">\(t\)</span>. Consider using
-the Mean Absolute Scaled Error (MASE) in these cases.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If the actual series contains some zeros.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The Mean Absolute Percentage Error (MAPE)</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.marre">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">marre</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#marre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.marre" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Absolute Ranged Relative Error (MARRE).</p>
-<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
-both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
-<div class="math notranslate nohighlight">
-\[100 \cdot \frac{1}{T} \sum_{t=1}^{T} {\left| \frac{y_t - \hat{y}_t} {\max_t{y_t} -
-\min_t{y_t}} \right|}\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If <span class="math notranslate nohighlight">\(\max_t{y_t} = \min_t{y_t}\)</span>.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The Mean Absolute Ranged Relative Error (MARRE)</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.mase">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">insample: darts.timeseries.TimeSeries</em>, <em class="sig-param">m: Optional[int] = 1</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Absolute Scaled Error (MASE).</p>
-<p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_scaled_error">Mean absolute scaled error wikipedia page</a>
-for details about the MASE and how it is computed.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>insample</strong> – The training series used to forecast <cite>pred_series</cite> .
-This series serves to compute the scale of the error obtained by a naive forecaster on the training data.</p></li>
-<li><p><strong>m</strong> – Optionally, the seasonality to use for differencing.
-<cite>m=1</cite> corresponds to the non-seasonal MASE, whereas <cite>m&gt;1</cite> corresponds to seasonal MASE.
-If <cite>m=None</cite>, it will be tentatively inferred
-from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If the <cite>insample</cite> series is periodic ( <span class="math notranslate nohighlight">\(X_t = X_{t-m}\)</span> )</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The Mean Absolute Scaled Error (MASE)</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.mse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Squared Error (MSE).</p>
-<p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
-<div class="math notranslate nohighlight">
-\[\frac{1}{T}\sum_{t=1}^T{(y^1_t - y^2_t)^2}.\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Mean Squared Error (MSE)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.multivariate_support">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">multivariate_support</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#multivariate_support"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.multivariate_support" title="Permalink to this definition">¶</a></dt>
-<dd><p>This decorator transforms a metric function that takes as input two univariate TimeSeries instances
-into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
-metrics for components with the same indices, and returns a float value that is computed as a function of all the
-univariate metrics using a <cite>reduction</cite> subroutine passed as argument to the metric function.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.ope">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">ope</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#ope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.ope" title="Permalink to this definition">¶</a></dt>
-<dd><p>Overall Percentage Error (OPE).</p>
-<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
-both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
-<div class="math notranslate nohighlight">
-\[100 \cdot \left| \frac{\sum_{t=1}^{T}{y_t}
-- \sum_{t=1}^{T}{\hat{y}_t}}{\sum_{t=1}^{T}{y_t}} \right|.\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If <span class="math notranslate nohighlight">\(\sum_{t=1}^{T}{y_t} = 0\)</span>.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The Overall Percentage Error (OPE)</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.r2_score">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">r2_score</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span>.</p>
-<p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Coefficient of determination wikipedia page</a>
-for details about the <span class="math notranslate nohighlight">\(R^2\)</span> score and how it is computed.
-Please note that this metric is not symmetric, <cite>series1</cite> should correspond to the ground truth series,
-whereas <cite>series2</cite> should correspond to the predicted series.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series. This should correspond to the ground truth values.</p></li>
-<li><p><strong>series2</strong> – The second time series. This should correspond to the predicted values.</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.rmse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Root Mean Squared Error (RMSE).</p>
-<p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
-<div class="math notranslate nohighlight">
-\[\sqrt{\frac{1}{T}\sum_{t=1}^T{(y^1_t - y^2_t)^2}}.\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Root Mean Squared Error (RMSE)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.rmsle">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmsle</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmsle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Root Mean Squared Log Error (RMSLE).</p>
-<p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
-<div class="math notranslate nohighlight">
-\[\sqrt{\frac{1}{T}\sum_{t=1}^T{\left(\log{(y^1_t + 1)} - \log{(y^2_t + 1)}\right)^2}},\]</div>
-<p>using the natural logarithm.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The Root Mean Squared Log Error (RMSLE)</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.metrics.metrics.smape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">smape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#smape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.smape" title="Permalink to this definition">¶</a></dt>
-<dd><p>symmetric Mean Absolute Percentage Error (sMAPE).</p>
-<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
-both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
-<div class="math notranslate nohighlight">
-\[200 \cdot \frac{1}{T}
-\sum_{t=1}^{T}{\frac{\left| y_t - \hat{y}_t \right|}{\left| y_t \right| + \left| \hat{y}_t \right|} }.\]</div>
-<dl class="simple">
-<dt>Note that it will raise a <cite>ValueError</cite> if <span class="math notranslate nohighlight">\(\left| y_t \right| + \left| \hat{y}_t \right| = 0\)</span></dt><dd><p>for some <span class="math notranslate nohighlight">\(t\)</span>. Consider using the Mean Absolute Scaled Error (MASE) in these cases.</p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
-<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
-will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If the actual series and the pred series contains some zeros at the same time index.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The symmetric Mean Absolute Percentage Error (sMAPE)</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.metrics.html" title="previous page">Metrics</a>
-    <a class='right-next' id="next-link" href="darts.models.html" title="next page">Models</a>
 
               </div>
               
@@ -556,13 +156,13 @@ the metrics of different components in case of multivariate TimeSeries instances
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

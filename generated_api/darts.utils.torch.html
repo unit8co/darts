@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Utils for Pytorch and its usage &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,12 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Additional util functions" href="darts.utils.utils.html" />
-    <link rel="prev" title="Utils for time series generation" href="darts.utils.timeseries_generation.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +62,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,64 +112,6 @@
         
         
         
-          
-            
-                <li class="">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.metrics.html">Metrics</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-  
-                <li class="active">
-                    <a href="darts.utils.html">Utils</a>
-                    <ul>
-                    
-                        <li class="">
-                            <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
-                        </li>
-                    
-                        <li class="active">
-                            <a href="">Utils for Pytorch and its usage</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.utils.html">Additional util functions</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -205,110 +139,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.torch"></span><div class="section" id="utils-for-pytorch-and-its-usage">
-<h1>Utils for Pytorch and its usage<a class="headerlink" href="#utils-for-pytorch-and-its-usage" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt id="darts.utils.torch.randint">
-<code class="sig-prename descclassname">darts.utils.torch.</code><code class="sig-name descname">randint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">low</span></em>, <em class="sig-param"><span class="n">high</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">int</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.torch.randint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return random integers from <cite>low</cite> (inclusive) to <cite>high</cite> (exclusive).</p>
-<p>Return random integers from the “discrete uniform” distribution of
-the specified dtype in the “half-open” interval [<cite>low</cite>, <cite>high</cite>). If
-<cite>high</cite> is None (the default), then results are from [0, <cite>low</cite>).</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>New code should use the <code class="docutils literal notranslate"><span class="pre">integers</span></code> method of a <code class="docutils literal notranslate"><span class="pre">default_rng()</span></code>
-instance instead; see <cite>random-quick-start</cite>.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>low</strong> (<em>int</em><em> or </em><em>array-like of ints</em>) – Lowest (signed) integers to be drawn from the distribution (unless
-<code class="docutils literal notranslate"><span class="pre">high=None</span></code>, in which case this parameter is one above the
-<em>highest</em> such integer).</p></li>
-<li><p><strong>high</strong> (<em>int</em><em> or </em><em>array-like of ints</em><em>, </em><em>optional</em>) – If provided, one above the largest (signed) integer to be drawn
-from the distribution (see above for behavior if <code class="docutils literal notranslate"><span class="pre">high=None</span></code>).
-If array-like, must contain integer values</p></li>
-<li><p><strong>size</strong> (<em>int</em><em> or </em><em>tuple of ints</em><em>, </em><em>optional</em>) – Output shape.  If the given shape is, e.g., <code class="docutils literal notranslate"><span class="pre">(m,</span> <span class="pre">n,</span> <span class="pre">k)</span></code>, then
-<code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span> <span class="pre">*</span> <span class="pre">k</span></code> samples are drawn.  Default is None, in which case a
-single value is returned.</p></li>
-<li><p><strong>dtype</strong> (<em>dtype</em><em>, </em><em>optional</em>) – <p>Desired dtype of the result. Byteorder must be native.
-The default value is int.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 1.11.0.</span></p>
-</div>
-</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>out</strong> – <cite>size</cite>-shaped array of random integers from the appropriate
-distribution, or a single such random int if <cite>size</cite> not provided.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>int or ndarray of ints</p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">random_integers()</span></code></dt><dd><p>similar to <cite>randint</cite>, only for the closed interval [<cite>low</cite>, <cite>high</cite>], and 1 is the lowest value if <cite>high</cite> is omitted.</p>
-</dd>
-<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">Generator.integers()</span></code></dt><dd><p>which should be used for new code.</p>
-</dd>
-</dl>
-</div>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="go">array([1, 0, 0, 0, 1, 1, 0, 0, 1, 0]) # random</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="go">array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])</span>
-</pre></div>
-</div>
-<p>Generate a 2 x 4 array of ints between 0 and 4, inclusive:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-<span class="go">array([[4, 0, 2, 1], # random</span>
-<span class="go">       [3, 2, 2, 0]])</span>
-</pre></div>
-</div>
-<p>Generate a 1 x 3 array with 3 different upper bounds</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span>
-<span class="go">array([2, 2, 9]) # random</span>
-</pre></div>
-</div>
-<p>Generate a 1 by 3 array with 3 different lower bounds</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="mi">10</span><span class="p">)</span>
-<span class="go">array([9, 8, 7]) # random</span>
-</pre></div>
-</div>
-<p>Generate a 2 by 4 array using broadcasting with dtype of uint8</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="p">[[</span><span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="mi">20</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-<span class="go">array([[ 8,  6,  9,  7], # random</span>
-<span class="go">       [ 1, 16,  9, 12]], dtype=uint8)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.utils.torch.random_method">
-<code class="sig-prename descclassname">darts.utils.torch.</code><code class="sig-name descname">random_method</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decorated</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">…</span><span class="p">, </span>T<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Callable<span class="p">[</span><span class="p">…</span><span class="p">, </span>T<span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/torch.html#random_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.torch.random_method" title="Permalink to this definition">¶</a></dt>
-<dd><p>Decorator usable on any method within a class that will provide an isolated torch random context.</p>
-<p>The decorator will store a <cite>_random_instance</cite> property on the object in order to persist successive calls to the RNG</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>decorated</strong> – A method to be run in an isolated torch random context.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.utils.timeseries_generation.html" title="previous page">Utils for time series generation</a>
-    <a class='right-next' id="next-link" href="darts.utils.utils.html" title="next page">Additional util functions</a>
 
               </div>
               
@@ -319,13 +156,13 @@ distribution, or a single such random int if <cite>size</cite> not provided.</p>
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

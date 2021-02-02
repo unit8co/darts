@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Time Series Made Easy in Python &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
@@ -37,11 +37,9 @@
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="darts" href="generated_api/darts.html" />
+    <link rel="next" title="&lt;no title&gt;" href="generated_api/darts.html" />
     <link rel="prev" title="Time Series Made Easy in Python" href="index.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -66,10 +64,6 @@
         
         <li class="nav-item active">
             <a class="nav-link" href="">Home</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="generated_api/darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -123,8 +117,6 @@
         
         
         
-        
-        
       </ul>
   
   </nav>
@@ -142,25 +134,21 @@
     <ul class="nav section-nav flex-column">
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#install" class="nav-link">Install</a><ul class="nav section-nav flex-column">
+            <a href="#documentation" class="nav-link">Documentation</a><ul class="nav section-nav flex-column">
                 
         <li class="nav-item toc-entry toc-h3">
-            <a href="#quick-install" class="nav-link">Quick Install</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#step-by-step-install" class="nav-link">Step-by-step Install</a>
+            <a href="#high-level-introductions" class="nav-link">High Level Introductions</a>
         </li>
     
             </ul>
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#example-usage" class="nav-link">Example Usage</a>
+            <a href="#install" class="nav-link">Install</a>
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#documentation" class="nav-link">Documentation</a>
+            <a href="#example-usage" class="nav-link">Example Usage</a>
         </li>
     
         <li class="nav-item toc-entry toc-h2">
@@ -176,39 +164,7 @@
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#installation-guide" class="nav-link">Installation Guide</a><ul class="nav section-nav flex-column">
-                
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#preconditions" class="nav-link">Preconditions</a><ul class="nav section-nav flex-column">
-                
-        <li class="nav-item toc-entry toc-h4">
-            <a href="#mac" class="nav-link">MAC</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h4">
-            <a href="#linux-and-windows" class="nav-link">Linux and Windows</a>
-        </li>
-    
-            </ul>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#id1" class="nav-link">Install darts</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#running-the-examples-only-without-installing" class="nav-link">Running the examples only, without installing:</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#tests" class="nav-link">Tests</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#id2" class="nav-link">Documentation</a>
-        </li>
-    
-            </ul>
+            <a href="#installation-guide" class="nav-link">Installation Guide</a>
         </li>
     
     </ul>
@@ -239,21 +195,30 @@ It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models.</p>
+univariate and multivariate time series and models, and the neural networks can be trained
+multiple time series.</p>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples &amp; Tutorials</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Documentation</a></p></li>
+</ul>
+<div class="section" id="high-level-introductions">
+<h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878">Introductory Blog Post</a></p></li>
+<li><p><a class="reference external" href="https://www.youtube.com/watch?v=Sx-uI-PypmU&amp;t=8s&amp;ab_channel=Unit8">Introductory Video</a></p></li>
+</ul>
+</div>
+</div>
 <div class="section" id="install">
 <h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
 <p>We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
-<div class="section" id="quick-install">
-<h3>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h3>
-<p>Once your environment is setup you can install darts using the pip package:</p>
+<p>Once your environment is setup you can install darts using pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s1">&#39;u8darts[all]&#39;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="step-by-step-install">
-<h3>Step-by-step Install<a class="headerlink" href="#step-by-step-install" title="Permalink to this headline">¶</a></h3>
 <p>For more detailed install instructions you can refer to our installation guide at the end of this page.</p>
-</div>
 </div>
 <div class="section" id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
@@ -288,11 +253,8 @@ univariate and multivariate time series and models.</p>
 </div>
 <div style="text-align:center;">
 <img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
-</div><p>We invite you to go over the example notebooks in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> directory.</p>
-</div>
-<div class="section" id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
-<p>The documentation of the API and models is available <a class="reference external" href="https://unit8co.github.io/darts/">here</a>.</p>
+</div><p>We invite you to go over the example and tutorial notebooks in
+the <a class="reference external" href="https://github.com/unit8co/darts/tree/master/examples">examples</a> directory.</p>
 </div>
 <div class="section" id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
@@ -357,8 +319,6 @@ We welcome pull requests and issues on GitHub.</p>
 </div>
 <div class="section" id="installation-guide">
 <h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="preconditions">
-<h3>Preconditions<a class="headerlink" href="#preconditions" title="Permalink to this headline">¶</a></h3>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
 <p>The following steps assume running inside a conda environment.
@@ -375,21 +335,12 @@ and <a class="reference external" href="https://pytorch.org/get-started/locally/
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<div class="section" id="mac">
-<h4>MAC<a class="headerlink" href="#mac" title="Permalink to this headline">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="linux-and-windows">
-<h4>Linux and Windows<a class="headerlink" href="#linux-and-windows" title="Permalink to this headline">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="id1">
-<h3>Install darts<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[all]'</span></code>.</p>
 <p>As some models have relatively heavy (or non-Python) dependencies,
 we also provide the following alternate lighter install options:</p>
@@ -399,9 +350,6 @@ we also provide the following alternate lighter install options:</p>
 <li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[fbprophet]'</span></code></p></li>
 <li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[pmdarima]'</span></code></p></li>
 </ul>
-</div>
-<div class="section" id="running-the-examples-only-without-installing">
-<h3>Running the examples only, without installing:<a class="headerlink" href="#running-the-examples-only-without-installing" title="Permalink to this headline">¶</a></h3>
 <p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew docker <span class="o">&amp;&amp;</span> ./gradlew dockerRun
@@ -409,9 +357,6 @@ To run the example notebooks without installing our libraries natively on your m
 </div>
 <p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
 <p>For this setup to work you need to have a Docker service installed. You can get it at <a class="reference external" href="https://docs.docker.com/get-docker/">Docker website</a>.</p>
-</div>
-<div class="section" id="tests">
-<h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
 <p>The gradle setup works best when used in a python environment, but the only requirement is to have <code class="docutils literal notranslate"><span class="pre">pip</span></code> installed for Python 3+</p>
 <p>To run all tests at once just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew test_all
@@ -424,15 +369,11 @@ To run the example notebooks without installing our libraries natively on your m
 </pre></div>
 </div>
 <p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_fbprophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
-</div>
-<div class="section" id="id2">
-<h3>Documentation<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <p>To build documantation locally just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
 </pre></div>
 </div>
 <p>After that docs will be available in <code class="docutils literal notranslate"><span class="pre">./docs/build/html</span></code> directory. You can just open <code class="docutils literal notranslate"><span class="pre">./docs/build/html/index.html</span></code> using your favourite browser.</p>
-</div>
 </div>
 </div>
 
@@ -443,7 +384,7 @@ To run the example notebooks without installing our libraries natively on your m
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="index.html" title="previous page">Time Series Made Easy in Python</a>
-    <a class='right-next' id="next-link" href="generated_api/darts.html" title="next page">darts</a>
+    <a class='right-next' id="next-link" href="generated_api/darts.html" title="next page">&lt;no title&gt;</a>
 
               </div>
               
@@ -454,13 +395,13 @@ To run the example notebooks without installing our libraries natively on your m
     </div>
 
     
-  <script src="_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

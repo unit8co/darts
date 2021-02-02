@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Utils for filling missing values &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,12 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Utils for time series statistics" href="darts.utils.statistics.html" />
-    <link rel="prev" title="Utils" href="darts.utils.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +62,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,64 +112,6 @@
         
         
         
-          
-            
-                <li class="">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.metrics.html">Metrics</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-  
-                <li class="active">
-                    <a href="darts.utils.html">Utils</a>
-                    <ul>
-                    
-                        <li class="active">
-                            <a href="">Utils for filling missing values</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.torch.html">Utils for Pytorch and its usage</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.utils.utils.html">Additional util functions</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -205,59 +139,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.missing_values"></span><div class="section" id="utils-for-filling-missing-values">
-<h1>Utils for filling missing values<a class="headerlink" href="#utils-for-filling-missing-values" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt id="darts.utils.missing_values.fill_missing_values">
-<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">fill_missing_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fill</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>float<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'auto'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">interpolate_kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/missing_values.html#fill_missing_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.fill_missing_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fills missing values in the provided time series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The time series for which to fill missing values</p></li>
-<li><p><strong>fill</strong> – The value used to replace the missing values.
-If set to ‘auto’, will auto-fill missing values using the <cite>pandas.Dataframe.interpolate()</cite> method.</p></li>
-<li><p><strong>interpolate_kwargs</strong> – Keyword arguments for <cite>pandas.Dataframe.interpolate()</cite>, only used when fit is set to ‘auto’.
-See <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html">the documentation</a>
-for the list of supported parameters.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new TimeSeries with all missing values filled according to the rules above.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.utils.missing_values.missing_values_ratio">
-<code class="sig-prename descclassname">darts.utils.missing_values.</code><code class="sig-name descname">missing_values_ratio</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/utils/missing_values.html#missing_values_ratio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.missing_values.missing_values_ratio" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the ratio of missing values</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – The time series to compute ratio on</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The ratio of missing values</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.utils.html" title="previous page">Utils</a>
-    <a class='right-next' id="next-link" href="darts.utils.statistics.html" title="next page">Utils for time series statistics</a>
 
               </div>
               
@@ -268,13 +156,13 @@ for the list of supported parameters.</p></li>
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

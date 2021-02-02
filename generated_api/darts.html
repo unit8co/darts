@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,11 +37,9 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Data Processing" href="darts.dataprocessing.html" />
+    <link rel="next" title="Examples" href="../examples.html" />
     <link rel="prev" title="Time Series Made Easy in Python" href="../README.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -66,10 +64,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,40 +114,6 @@
         
         
         
-          
-            
-                <li class="">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.metrics.html">Metrics</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.utils.html">Utils</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -181,77 +141,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts"></span><div class="section" id="darts">
-<h1>darts<a class="headerlink" href="#darts" title="Permalink to this headline">¶</a></h1>
-<blockquote>
-<div><div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="darts.dataprocessing.html">Data Processing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.metrics.html">Metrics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.models.html">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.utils.html">Utils</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
-</ul>
-</div>
-</div></blockquote>
-<dl class="py class">
-<dt id="darts.ModelMode">
-<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">ModelMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#ModelMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.ModelMode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>An enumeration.</p>
-<dl class="py attribute">
-<dt id="darts.ModelMode.ADDITIVE">
-<code class="sig-name descname">ADDITIVE</code><em class="property"> = 'additive'</em><a class="headerlink" href="#darts.ModelMode.ADDITIVE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="darts.ModelMode.MULTIPLICATIVE">
-<code class="sig-name descname">MULTIPLICATIVE</code><em class="property"> = 'multiplicative'</em><a class="headerlink" href="#darts.ModelMode.MULTIPLICATIVE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="darts.SeasonalityMode">
-<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">SeasonalityMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#SeasonalityMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.SeasonalityMode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>An enumeration.</p>
-<dl class="py attribute">
-<dt id="darts.SeasonalityMode.ADDITIVE">
-<code class="sig-name descname">ADDITIVE</code><em class="property"> = 'additive'</em><a class="headerlink" href="#darts.SeasonalityMode.ADDITIVE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="darts.SeasonalityMode.MULTIPLICATIVE">
-<code class="sig-name descname">MULTIPLICATIVE</code><em class="property"> = 'multiplicative'</em><a class="headerlink" href="#darts.SeasonalityMode.MULTIPLICATIVE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="darts.SeasonalityMode.NONE">
-<code class="sig-name descname">NONE</code><em class="property"> = None</em><a class="headerlink" href="#darts.SeasonalityMode.NONE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="darts.TrendMode">
-<em class="property">class </em><code class="sig-prename descclassname">darts.</code><code class="sig-name descname">TrendMode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts.html#TrendMode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.TrendMode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>An enumeration.</p>
-<dl class="py attribute">
-<dt id="darts.TrendMode.EXPONENTIAL">
-<code class="sig-name descname">EXPONENTIAL</code><em class="property"> = 'exponential'</em><a class="headerlink" href="#darts.TrendMode.EXPONENTIAL" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt id="darts.TrendMode.LINEAR">
-<code class="sig-name descname">LINEAR</code><em class="property"> = 'linear'</em><a class="headerlink" href="#darts.TrendMode.LINEAR" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
@@ -259,7 +149,7 @@
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="../README.html" title="previous page">Time Series Made Easy in Python</a>
-    <a class='right-next' id="next-link" href="darts.dataprocessing.html" title="next page">Data Processing</a>
+    <a class='right-next' id="next-link" href="../examples.html" title="next page">Examples</a>
 
               </div>
               
@@ -270,13 +160,13 @@
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>

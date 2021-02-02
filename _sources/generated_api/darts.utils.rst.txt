@@ -8,6 +8,7 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.utils.data
         
         darts.utils.missing_values
         darts.utils.statistics

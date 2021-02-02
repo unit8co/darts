@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scaler &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
     
   <link rel="stylesheet"
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
 
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -37,12 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Pipeline" href="darts.dataprocessing.pipeline.html" />
-    <link rel="prev" title="Missing Values Filler" href="darts.dataprocessing.transformers.missing_values_filler.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -66,10 +62,6 @@
         
         <li class="nav-item ">
             <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
         <li class="nav-item ">
@@ -120,52 +112,6 @@
         
         
         
-          
-            
-  
-                <li class="active">
-                    <a href="darts.dataprocessing.html">Data Processing</a>
-                    <ul>
-                    
-                        <li class="active">
-                            <a href="darts.dataprocessing.transformers.html">Data Transformers</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.dataprocessing.pipeline.html">Pipeline</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.metrics.html">Metrics</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.models.html">Models</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.utils.html">Utils</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="darts.timeseries.html">Timeseries</a>
-                </li>
-            
-          
-        
-        
-        
         
       </ul>
   
@@ -193,89 +139,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.dataprocessing.transformers.scaler"></span><div class="section" id="scaler">
-<h1>Scaler<a class="headerlink" href="#scaler" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="darts.dataprocessing.transformers.scaler.Scaler">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.scaler.</code><code class="sig-name descname">Scaler</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
-<p>Generic wrapper class for using scalers that implement <cite>fit()</cite>, <cite>transform()</cite> and
-<cite>inverse_transform()</cite> methods (typically from scikit-learn) on <cite>TimeSeries</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>scaler</strong> – The scaler to transform the data.
-It must provide the <cite>fit()</cite>, <cite>transform()</cite> and <cite>inverse_transform()</cite> methods.
-Default: <cite>sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))</cite>; this
-will scale all the values of a time series between 0 and 1.</p></li>
-<li><p><strong>name</strong> – A specific name for the scaler</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.scaler.Scaler.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.dataprocessing.transformers.scaler.Scaler" title="darts.dataprocessing.transformers.scaler.Scaler">darts.dataprocessing.transformers.scaler.Scaler</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits this scaler to the provided time series data</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – The time series to fit the scaler on</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Fitted scaler (self)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.scaler.Scaler.inverse_transform">
-<code class="sig-name descname">inverse_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler.inverse_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler.inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs the inverse transformation on a time series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – The time series to inverse transform</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The inverse transform</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="darts.dataprocessing.transformers.scaler.Scaler.transform">
-<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a new time series, transformed with this (fitted) scaler.
-This does not handle series with confidence intervals - the intervals are discarded.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – The time series to transform</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new time series, transformed with this (fitted) scaler.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-
+  
 
               </div>
               
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.missing_values_filler.html" title="previous page">Missing Values Filler</a>
-    <a class='right-next' id="next-link" href="darts.dataprocessing.pipeline.html" title="next page">Pipeline</a>
 
               </div>
               
@@ -286,13 +156,13 @@ This does not handle series with confidence intervals - the intervals are discar
     </div>
 
     
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
 
 
     <footer class="footer mt-5 mt-md-0">
   <div class="container">
     <p>
-          &copy; Copyright 2020, Unit8 SA.<br/>
+          &copy; Copyright 2021, Unit8 SA.<br/>
         Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
     </p>
   </div>
