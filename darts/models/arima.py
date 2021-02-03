@@ -43,22 +43,22 @@ class ARIMA(ExtendedForecastingModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries, covariates: Optional[TimeSeries] = None):
-        super().fit(series, covariates)
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+        super().fit(series, exog)
         series = self.training_series
-        covariates = covariates.values() if covariates else None
+        exog = exog.values() if exog else None
 
         if self.d > 0:
-            m = staARIMA(series.values(), exog=covariates, order=(self.p, self.d, self.q))
+            m = staARIMA(series.values(), exog=exog, order=(self.p, self.d, self.q))
         else:
-            m = staARMA(series.values(), exog=covariates, order=(self.p, self.q))
+            m = staARMA(series.values(), exog=exog, order=(self.p, self.q))
 
         self.model = m.fit(disp=0)
 
-    def predict(self, n: int, covariates: Optional[TimeSeries] = None):
-        super().predict(n, covariates)
+    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+        super().predict(n, exog)
         forecast = self.model.forecast(steps=n,
-                                       exog=covariates.values() if covariates else None)[0]
+                                       exog=exog.values() if exog else None)[0]
         return self._build_forecast_series(forecast)
 
     @property

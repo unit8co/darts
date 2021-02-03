@@ -29,7 +29,7 @@ models = [
     (FFT(trend='poly'), 11.4),
     (NaiveSeasonal(), 32.4),
 ]
-# forecasting models with covariates support
+# forecasting models with exogenous variables support
 extended_models = [ARIMA()]
 
 try:
@@ -91,24 +91,24 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
 
-    def test_covariates_support(self):
+    def test_exogenous_variables_support(self):
         for model in extended_models:
 
             # Test models runnability
-            model.fit(self.ts_gaussian, covariates=self.ts_gaussian)
+            model.fit(self.ts_gaussian, exog=self.ts_gaussian)
             prediction = model.predict(
                 self.forecasting_horizon,
-                covariates=tg.gaussian_timeseries(length=self.forecasting_horizon))
+                exog=tg.gaussian_timeseries(length=self.forecasting_horizon))
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
-            # Test mismatch in length between covariates and forecasting horizon
+            # Test mismatch in length between exogenous variables and forecasting horizon
             with self.assertRaises(ValueError):
                 model.predict(
                     self.forecasting_horizon,
-                    covariates=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
+                    exog=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
 
-            # Test mismatch in time-index/length between series and covariates
+            # Test mismatch in time-index/length between series and exogenous variables
             with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian, covariates=self.ts_gaussian[:-1])
+                model.fit(self.ts_gaussian, exog=self.ts_gaussian[:-1])
             with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian[1:], covariates=self.ts_gaussian[:-1])
+                model.fit(self.ts_gaussian[1:], exog=self.ts_gaussian[:-1])

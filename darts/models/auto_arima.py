@@ -41,16 +41,16 @@ class AutoARIMA(ExtendedForecastingModel):
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries, covariates: Optional[TimeSeries] = None):
-        super().fit(series, covariates)
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+        super().fit(series, exog)
         series = self.training_series
         self.model.fit(series.values(),
-                       exogenous=covariates.values() if covariates else None)
+                       exogenous=exog.values() if exog else None)
 
-    def predict(self, n: int, covariates: Optional[TimeSeries] = None):
-        super().predict(n, covariates)
+    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+        super().predict(n, exog)
         forecast = self.model.predict(n_periods=n,
-                                      exogenous=covariates.values() if covariates else None)
+                                      exogenous=exog.values() if exog else None)
         return self._build_forecast_series(forecast)
 
     @property
