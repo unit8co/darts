@@ -1,16 +1,16 @@
 # docs
 sphinx==3.2.1
-sphinx-automodapi
-sphinx_autodoc_typehints
-nbsphinx
-pydata-sphinx-theme
-recommonmark
+sphinx-automodapi==0.13
+sphinx_autodoc_typehints==1.11.1
+nbsphinx==0.8.0
+pydata-sphinx-theme==0.4.1
+recommonmark==0.7.1
 # Do not change it due to https://github.com/sphinx-doc/sphinx/issues/7420
 m2r @ git+https://github.com/crossnox/m2r@dev#egg=m2r
 
 # publish
-twine>=3.0.0
-bump2version
-ipykernel
-papermill
-ipywidgets
+twine==3.3.0
+bump2version==1.0.1
+ipykernel==5.3.4
+papermill==2.2.2
+ipywidgets==7.5.1
