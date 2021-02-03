@@ -1,3 +1,8 @@
+"""
+Shifted Training Dataset
+------------------------
+"""
+
 from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
@@ -20,7 +25,7 @@ class ShiftedDataset(TrainingDataset):
         (and "input_covariates") goes from position `i` to `i+length`, the emitted output will go from position
         `i+shift` to `i+shift+length`.
 
-        The target and covariates series are sliced together, and therefore must have the same time axes.
+        The target and covariates series are sliced together, and therefore must have the same length.
         In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
         series must have length at least `length + shift`.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
@@ -31,8 +36,7 @@ class ShiftedDataset(TrainingDataset):
         be sampled more often than others if they belong to shorter time series.
 
         The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
-        in memory), or implement your own `Sequence` of time series
-        (i.e., re-implement `__len__()` and `__getitem__()`).
+        in memory), or implement your own `Sequence` of time series.
 
         Parameters
         ----------
@@ -41,7 +45,6 @@ class ShiftedDataset(TrainingDataset):
         covariates:
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
-            In addition, all the target series must have the same time axis as the corresponding target series.
         length
             The length of the emitted input and output series.
         shift
@@ -107,7 +110,6 @@ class ShiftedDataset(TrainingDataset):
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx].values(copy=False)
 
-            # TODO: check full time index
             raise_if_not(len(ts_covariate) == len(ts_target),
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))

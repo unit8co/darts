@@ -1,5 +1,8 @@
+import pandas as pd
+
 from ..utils.timeseries_generation import (
     constant_timeseries,
+    holidays_timeseries,
     linear_timeseries,
     sine_timeseries,
     gaussian_timeseries,
@@ -74,3 +77,20 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         for length in [1, 2, 5, 10, 100]:
             test_routine(length)
+
+    def test_holidays_timeseries(self):
+        time_index_1 = pd.date_range(periods=365*3, freq='D', start=pd.Timestamp('2012-01-01'))
+        time_index_2 = pd.date_range(periods=365 * 3, freq='D', start=pd.Timestamp('2014-12-24'))
+        time_index_3 = pd.date_range(periods=10, freq='Y', start=pd.Timestamp('1950-01-01')) + pd.Timedelta(days=1)
+
+        # testing we have at least one holiday flag in each year
+        def test_routine(time_index, country_code):
+            ts = holidays_timeseries(time_index, country_code)
+            self.assertTrue(
+                all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
+            )
+
+        for time_index in [time_index_1, time_index_2, time_index_3]:
+            for country_code in ['US', 'CH', 'AR']:
+                test_routine(time_index, country_code)
+

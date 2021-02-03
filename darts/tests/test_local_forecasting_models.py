@@ -8,7 +8,7 @@ from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
 from ..models import NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT
-from .. import SeasonalityMode, TrendMode, ModelMode
+from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
 
 logger = get_logger(__name__)

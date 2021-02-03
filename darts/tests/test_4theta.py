@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 from .base_test_class import DartsBaseTestClass
-from .. import SeasonalityMode, TrendMode, ModelMode
+from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..models import Theta, FourTheta
 from ..metrics import mape
 from ..utils.timeseries_generation import (

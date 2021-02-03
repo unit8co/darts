@@ -13,7 +13,7 @@ from ..utils.statistics import check_seasonality, extract_trend_and_seasonality,
 from .forecasting_model import ForecastingModel
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
-from .. import SeasonalityMode, TrendMode, ModelMode
+from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 
 logger = get_logger(__name__)
 ALPHA_START = 0.2
