@@ -87,6 +87,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
+          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
 
       - name: "3. Login to docker hub"
         run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
