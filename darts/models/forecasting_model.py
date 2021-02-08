@@ -26,7 +26,6 @@ from ..logging import get_logger, raise_log, raise_if_not
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
-    get_timestamp_at_point,
     _historical_forecasts_general_checks
 )
 from .. import metrics
@@ -205,7 +204,7 @@ class ForecastingModel(ABC):
                          'The provided series and covariates must have the same time index.')
 
         # prepare the start parameter -> pd.Timestamp
-        start = get_timestamp_at_point(start, series)
+        start = series.get_timestamp_at_point(start)
 
         # build the prediction times in advance (to be able to use tqdm)
         if not overlap_end:
