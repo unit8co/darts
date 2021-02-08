@@ -200,7 +200,7 @@ class ForecastingModel(ABC):
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
 
-        if covariates is not None:
+        if covariates:
             raise_if_not(series.has_same_time_as(covariates),
                          'The provided series and covariates must have the same time index.')
 
@@ -208,10 +208,10 @@ class ForecastingModel(ABC):
         start = get_timestamp_at_point(start, series)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if not overlap_end:
-            last_valid_pred_time = series.time_index()[-1 - forecast_horizon]
+        if overlap_end:
+            last_valid_pred_time = series.time_index()[-1]
         else:
-            last_valid_pred_time = series.time_index()[-2]
+            last_valid_pred_time = series.time_index()[-forecast_horizon]
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
@@ -237,16 +237,16 @@ class ForecastingModel(ABC):
         # iterate and forecast
         for pred_time in iterator:
             train = series.drop_after(pred_time)  # build the training series
-            if covariates is not None:
+            if covariates:
                 train_cov = covariates.drop_after(pred_time)
 
             if retrain:
-                if covariates is not None and 'covariates' in fit_signature.parameters:
+                if covariates and 'covariates' in fit_signature.parameters:
                     self.fit(series=train, covariates=train_cov)
                 else:
                     self.fit(series=train)
 
-            if covariates is not None and 'covariates' in predict_signature.parameters:
+            if covariates and 'covariates' in predict_signature.parameters:
                 forecast = self.predict(n=forecast_horizon, series=train, covariates=train_cov)
             else:
                 if 'series' in predict_signature.parameters:
