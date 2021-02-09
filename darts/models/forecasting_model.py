@@ -695,8 +695,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         exog
-            The exogenous time series which can be fed as inputs to the model. They must be consistent with the
-            exogenous variables that have been used with the `fit()` function for training.
+            The time series of exogenous variables which can be fed as input to the model. It must correspond to the
+            exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
 
         Returns
         -------
