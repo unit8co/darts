@@ -12,15 +12,16 @@ References
 
 from statsmodels.tsa.arima_model import ARMA as staARMA
 from statsmodels.tsa.arima_model import ARIMA as staARIMA
+from typing import Optional
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class ARIMA(ForecastingModel):
+class ARIMA(ExtendedForecastingModel):
     def __init__(self, p: int = 12, d: int = 1, q: int = 0):
         """ ARIMA
 
@@ -42,16 +43,22 @@ class ARIMA(ForecastingModel):
     def __str__(self):
         return 'ARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+        super().fit(series, exog)
         series = self.training_series
-        m = staARIMA(series.values(),
-                     order=(self.p, self.d, self.q)) if self.d > 0 else staARMA(series.values(), order=(self.p, self.q))
+        exog = exog.values() if exog else None
+
+        if self.d > 0:
+            m = staARIMA(series.values(), exog=exog, order=(self.p, self.d, self.q))
+        else:
+            m = staARMA(series.values(), exog=exog, order=(self.p, self.q))
+
         self.model = m.fit(disp=0)
 
-    def predict(self, n):
-        super().predict(n)
-        forecast = self.model.forecast(steps=n)[0]
+    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+        super().predict(n, exog)
+        forecast = self.model.forecast(steps=n,
+                                       exog=exog.values() if exog else None)[0]
         return self._build_forecast_series(forecast)
 
     @property
