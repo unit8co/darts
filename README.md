@@ -15,19 +15,24 @@ It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models.
+univariate and multivariate time series and models, and the neural networks can be trained
+multiple time series.
+
+## Documentation
+* [Examples & Tutorials](https://unit8co.github.io/darts/examples.html)
+* [API Documentation](https://unit8co.github.io/darts/generated_api/darts.html)
+
+##### High Level Introductions
+* [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
+* [Introductory Video](https://www.youtube.com/watch?v=Sx-uI-PypmU&t=8s&ab_channel=Unit8)
 
 ## Install
 
 We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
-### Quick Install
-
-Once your environment is setup you can install darts using the pip package:
+Once your environment is setup you can install darts using pip:
 
     pip install 'u8darts[all]'
-
-### Step-by-step Install
 
 For more detailed install instructions you can refer to our installation guide at the end of this page.
 
@@ -70,11 +75,9 @@ plt.xlabel('Year')
 <img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
 </div>
 
-We invite you to go over the example notebooks in the `examples` directory.
+We invite you to go over the example and tutorial notebooks in 
+the [examples](https://github.com/unit8co/darts/tree/master/examples) directory.
 
-## Documentation
-
-The documentation of the API and models is available [here](https://unit8co.github.io/darts/).
 
 ## Features
 
