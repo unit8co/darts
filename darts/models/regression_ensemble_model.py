@@ -51,8 +51,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
         self.regression_model = regression_model
 
-    def fit(self, training_series: TimeSeries) -> None:
-        super().fit(training_series)
+    def fit(self, series: TimeSeries) -> None:
+        super().fit(series)
 
         # spare train_n_points points to serve as regression target
         raise_if(len(self.training_series) <= self.regression_model.train_n_points,
