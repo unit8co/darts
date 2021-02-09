@@ -645,3 +645,71 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if self._expect_covariates and covariates is None:
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
+
+
+class ExtendedForecastingModel(ForecastingModel, ABC):
+    """ The base class for "extended" forecasting models, handling optional exogenous variables.
+
+    All implementations have to implement the `fit()` and `predict()` methods defined below.
+    The `fit()` method is meant to train the model on a time series, along with optional
+    exogenous variables.
+    """
+
+    _expect_exog = False
+
+    @abstractmethod
+    def fit(self,
+            series: TimeSeries,
+            exog: Optional[TimeSeries] = None
+            ) -> None:
+        """ Fits/trains the model on the provided series
+
+        Defines behavior that should happen when calling the `fit()` method for the forecasting models handling
+        optional exogenous variables.
+
+        Parameters
+        ----------
+        series
+            A time series. The model will be trained to forecast this time series.
+        exog
+            A time series of exogenous variables. This time series will not be forecasted, but can be used by
+            some models as an input.
+        """
+        if exog is None:
+            super().fit(series)
+        if exog is not None:
+            raise_if_not(series.has_same_time_as(exog),
+                         'The target series and the exogenous variables series must have the same time index.')
+            self._expect_exog = True
+            self.training_series = series
+
+    @abstractmethod
+    def predict(self,
+                n: int,
+                exog: Optional[TimeSeries] = None
+                ) -> TimeSeries:
+        """ Forecasts values for a certain number of time steps after the end of the series.
+
+        If exogenous variables were specified during the training, they must also be specified here.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        exog
+            The time series of exogenous variables which can be fed as input to the model. It must correspond to the
+            exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
+
+        Returns
+        -------
+        TimeSeries, a single time series containing the `n` next points after then end of the training series.
+        """
+        if exog is None:
+            super().predict(n)
+        if self._expect_exog and exog is None:
+            raise_log(ValueError('The model has been trained with exogenous variables. Some matching '
+                                 'exogenous variables have to be provided to `predict()`.'))
+        if self._expect_exog and len(exog) != n:
+            raise_log(ValueError(f'Expecting exogenous variables with the same length as the'
+                                 f' forecasting horizon ({n}).'))
+

@@ -4,15 +4,16 @@ Auto-ARIMA
 """
 
 from pmdarima import AutoARIMA as PmdAutoARIMA
+from typing import Optional
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(ForecastingModel):
+class AutoARIMA(ExtendedForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """ Auto-ARIMA
 
@@ -40,14 +41,16 @@ class AutoARIMA(ForecastingModel):
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+        super().fit(series, exog)
         series = self.training_series
-        self.model.fit(series.values())
+        self.model.fit(series.values(),
+                       exogenous=exog.values() if exog else None)
 
-    def predict(self, n):
-        super().predict(n)
-        forecast = self.model.predict(n_periods=n)
+    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+        super().predict(n, exog)
+        forecast = self.model.predict(n_periods=n,
+                                      exogenous=exog.values() if exog else None)
         return self._build_forecast_series(forecast)
 
     @property
