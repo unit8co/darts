@@ -29,6 +29,8 @@ models = [
     (FFT(trend='poly'), 11.4),
     (NaiveSeasonal(), 32.4),
 ]
+# forecasting models with exogenous variables support
+extended_models = [ARIMA()]
 
 try:
     from ..models import Prophet
@@ -39,6 +41,7 @@ except ImportError:
 try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 13.7))
+    extended_models.append(AutoARIMA())
 except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
 
@@ -87,3 +90,25 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         es_model.fit(ts_passengers_enhanced["#Passengers"])
         with self.assertRaises(KeyError):
             es_model.fit(ts_passengers_enhanced["2"])
+
+    def test_exogenous_variables_support(self):
+        for model in extended_models:
+
+            # Test models runnability
+            model.fit(self.ts_gaussian, exog=self.ts_gaussian)
+            prediction = model.predict(
+                self.forecasting_horizon,
+                exog=tg.gaussian_timeseries(length=self.forecasting_horizon))
+            self.assertTrue(len(prediction) == self.forecasting_horizon)
+
+            # Test mismatch in length between exogenous variables and forecasting horizon
+            with self.assertRaises(ValueError):
+                model.predict(
+                    self.forecasting_horizon,
+                    exog=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
+
+            # Test mismatch in time-index/length between series and exogenous variables
+            with self.assertRaises(ValueError):
+                model.fit(self.ts_gaussian, exog=self.ts_gaussian[:-1])
+            with self.assertRaises(ValueError):
+                model.fit(self.ts_gaussian[1:], exog=self.ts_gaussian[:-1])
