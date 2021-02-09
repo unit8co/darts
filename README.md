@@ -10,13 +10,13 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 
-**darts** is a python library for easy manipulation and forecasting of time series.
+**darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
 univariate and multivariate time series and models, and the neural networks can be trained
-multiple time series.
+on multiple time series.
 
 ## Documentation
 * [Examples & Tutorials](https://unit8co.github.io/darts/examples.html)
@@ -28,9 +28,9 @@ multiple time series.
 
 ## Install
 
-We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
+We recommend to first setup a clean Python environment for your project with at least Python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
-Once your environment is setup you can install darts using pip:
+Once your environment is set up you can install darts using pip:
 
     pip install 'u8darts[all]'
 
@@ -117,7 +117,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
 2. Fork the repository.
 3. Clone the forked repository locally.
-4. Create a clean python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
+4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
 5. Create a new branch:
     * Branch off from the **develop** branch.
     * Prefix the branch with the type of update you are making:
@@ -181,7 +181,7 @@ we also provide the following alternate lighter install options:
    
 ### Running the examples only, without installing:
 
-If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
+If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 ```bash
 ./gradlew docker && ./gradlew dockerRun
