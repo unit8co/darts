@@ -116,10 +116,20 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(len(seriesG), round(0.7 * len(test_series)) - 1)
         test_case.assertEqual(len(seriesH), round(0.3 * len(test_series)) + 1)
 
+        seriesI, seriesJ = test_series.split_after(5)
+        test_case.assertEqual(len(seriesI), 6)
+        test_case.assertEqual(len(seriesJ), len(test_series) - 6)
+
+        seriesK, seriesL = test_series.split_before(5)
+        test_case.assertEqual(len(seriesK), 5)
+        test_case.assertEqual(len(seriesL), len(test_series) - 5)
+
         test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
         test_case.assertEqual(test_series.freq_str(), seriesC.freq_str())
         test_case.assertEqual(test_series.freq_str(), seriesE.freq_str())
         test_case.assertEqual(test_series.freq_str(), seriesG.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesI.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesK.freq_str())
 
         # Test split points outside of range
         for value in [-5, 1.1, pd.Timestamp('21300104')]:
