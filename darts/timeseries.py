@@ -325,7 +325,7 @@ class TimeSeries:
         -------
         Tuple[TimeSeries, TimeSeries]
             A tuple of two time series. The first time series contains the first samples up to the `split_point`,
-            and the second contains the remaining samples.
+            and the second contains the remaining ones.
         """
         ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
@@ -349,7 +349,7 @@ class TimeSeries:
         -------
         Tuple[TimeSeries, TimeSeries]
             A tuple of two time series. The first time series contains the first samples before the `split_point`,
-            and the second contains the remaining samples.
+            and the second contains the remaining ones.
         """
         ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
