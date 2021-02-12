@@ -21,7 +21,6 @@ from ..logging import raise_if_not, get_logger, raise_log
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
-    get_timestamp_at_point,
     _historical_forecasts_general_checks
 )
 from .. import metrics
@@ -167,7 +166,7 @@ class RegressionModel(ABC):
             By default, a single TimeSeries instance created from the last point of each individual forecast.
             If `last_points_only` is set to False, a list of the historical forecasts
         """
-        start = get_timestamp_at_point(start, target_series)
+        start = target_series.get_timestamp_at_point(start)
 
         # build the prediction times in advance (to be able to use tqdm)
         if not overlap_end:

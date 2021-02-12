@@ -108,8 +108,33 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesC.end_time(), pd.Timestamp('20130103'))
         test_case.assertEqual(seriesD.start_time(), pd.Timestamp('20130104'))
 
+        seriesE, seriesF = test_series.split_after(0.7)
+        test_case.assertEqual(len(seriesE), round(0.7 * len(test_series)))
+        test_case.assertEqual(len(seriesF), round(0.3 * len(test_series)))
+
+        seriesG, seriesH = test_series.split_before(0.7)
+        test_case.assertEqual(len(seriesG), round(0.7 * len(test_series)) - 1)
+        test_case.assertEqual(len(seriesH), round(0.3 * len(test_series)) + 1)
+
+        seriesI, seriesJ = test_series.split_after(5)
+        test_case.assertEqual(len(seriesI), 6)
+        test_case.assertEqual(len(seriesJ), len(test_series) - 6)
+
+        seriesK, seriesL = test_series.split_before(5)
+        test_case.assertEqual(len(seriesK), 5)
+        test_case.assertEqual(len(seriesL), len(test_series) - 5)
+
         test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
         test_case.assertEqual(test_series.freq_str(), seriesC.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesE.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesG.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesI.freq_str())
+        test_case.assertEqual(test_series.freq_str(), seriesK.freq_str())
+
+        # Test split points outside of range
+        for value in [-5, 1.1, pd.Timestamp('21300104')]:
+            with test_case.assertRaises(ValueError):
+                test_series.split_before(value)
 
     @staticmethod
     def helper_test_drop(test_case, test_series: TimeSeries):
