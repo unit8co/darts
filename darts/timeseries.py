@@ -309,45 +309,49 @@ class TimeSeries:
             raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
                                                                               self.end_time())), logger)
 
-    def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+    def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
-        Splits the TimeSeries in two, around a provided timestamp `ts`.
-
-        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-        first of the two TimeSeries, and not in the second.
+        Splits the TimeSeries in two, after a provided `split_point`.
 
         Parameters
         ----------
-        ts
-            The timestamp that indicates the splitting time.
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after
+            which the split is performed. If timestamp, it will be contained in the first TimeSeries, but not
+            in the second one. The timestamp may not appear in the original TimeSeries index.
 
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series contains the first samples up to the `split_point`,
+            and the second contains the remaining ones.
         """
+        ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
-    def split_before(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+    def split_before(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
-        Splits a TimeSeries in two, around a provided timestamp `ts`.
-
-        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-        second of the two TimeSeries, and not in the first.
+        Splits a TimeSeries in two, before a provided `split_point`.
 
         Parameters
         ----------
-        ts
-            The timestamp that indicates the splitting time.
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before
+            which the split is performed. If timestamp, it will be contained in the second TimeSeries, but not
+            in the first one. The timestamp may not appear in the original TimeSeries index.
 
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series contains the first samples before the `split_point`,
+            and the second contains the remaining ones.
         """
+        ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
         end_first_series: pd.Timestamp = ts - self.freq()  # second series does not include ts
@@ -500,6 +504,59 @@ class TimeSeries:
         """
         time_index = self.time_index().intersection(other.time_index())
         return self.__getitem__(time_index)
+
+    def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> pd.Timestamp:
+        """
+        Converts a point into a pandas.Timestamp in the time series
+
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
+            is present in the series time index, otherwise will raise a ValueError.
+        series
+            The time series to index in
+        """
+        if isinstance(point, float):
+            raise_if_not(point >= 0.0 and point < 1.0, 'point (float) should be between 0.0 and 1.0.', logger)
+            point_index = int((len(self) - 1) * point)
+            timestamp = self._df.index[point_index]
+        elif isinstance(point, int):
+            raise_if(point not in range(len(self)), "point (int) should be a valid index in series", logger)
+            timestamp = self._df.index[point]
+        elif isinstance(point, pd.Timestamp):
+            raise_if(point not in self,
+                     'point (pandas.Timestamp) must be an entry in the time series\' time index',
+                     logger)
+            timestamp = point
+        else:
+            raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
+        return timestamp
+
+    def get_index_at_point(self, point: Union[pd.Timestamp, float, int]) -> int:
+        """
+        Converts a point into the corresponding index in the time series
+
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+            In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series
+            if the timestamp is present in the series time index, otherwise will raise a ValueError.
+            In case of an `int`, the parameter will be returned as is provided that it is a valid index,
+            otherwise will raise a ValueError.
+        series
+            The time series to index in
+        """
+        timestamp = self.get_timestamp_at_point(point)
+        return self._df.index.get_loc(timestamp)
 
     def strip(self) -> 'TimeSeries':
         """

@@ -198,7 +198,7 @@ def _historical_forecasts_general_checks(series, kwargs):
         else:
             raise_log(TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
 
-    start = get_timestamp_at_point(n.start, series)
+    start = series.get_timestamp_at_point(n.start)
 
     # check start parameter
     raise_if(start == series.end_time(), '`start` timestamp is the last timestamp of the series', logger)
@@ -213,58 +213,3 @@ def _historical_forecasts_general_checks(series, kwargs):
         raise_if_not(start + series.freq() * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
                      '`overlap_end` set to `False`.', logger)
-
-
-def get_timestamp_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> pd.Timestamp:
-    """
-    Converts a point into a pandas.Timestamp in the time series
-
-    Parameters
-    ----------
-    point
-        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
-        In case of a `float`, the parameter will be treated as the proportion of the time series
-        that should lie before the point.
-        In the case of `int`, the parameter will be treated as an integer index to the time index of
-        `series`. Will raise a ValueError if not a valid index in `series`
-        In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
-        is present in the series time index, otherwise will raise a ValueError.
-    series
-        The time series to index in
-    """
-    if isinstance(point, float):
-        raise_if_not(point >= 0.0 and point < 1.0, 'point (float) should be between 0.0 and 1.0.', logger)
-        point_index = int((len(series) - 1) * point)
-        timestamp = series._df.index[point_index]
-    elif isinstance(point, int):
-        raise_if(point not in range(len(series)), "point (int) should be a valid index in series", logger)
-        timestamp = series._df.index[point]
-    elif isinstance(point, pd.Timestamp):
-        raise_if(point not in series,
-                 'point (pandas.Timestamp) must be an entry in the time series\' time index',
-                 logger)
-        timestamp = point
-    else:
-        raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
-    return timestamp
-
-
-def get_index_at_point(point: Union[pd.Timestamp, float, int], series: TimeSeries) -> int:
-    """
-    Converts a point into the corresponding index in the time series
-
-    Parameters
-    ----------
-    point
-        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
-        In case of a `float`, the parameter will be treated as the proportion of the time series
-        that should lie before the point.
-        In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series
-        if the timestamp is present in the series time index, otherwise will raise a ValueError.
-        In case of an `int`, the parameter will be returned as is provided that it is a valid index,
-        otherwise will raise a ValueError.
-    series
-        The time series to index in
-    """
-    timestamp = get_timestamp_at_point(point, series)
-    return series._df.index.get_loc(timestamp)
