@@ -281,7 +281,9 @@ class TimeSeries:
         gap_df = pd.DataFrame()
         gap_df['gap_start'] = gap_starts
         gap_df['gap_end'] = gap_ends
-        gap_df['gap_size'] = ((gap_ends - gap_starts) / self.freq()).astype(int) + 1
+        gap_df['gap_size'] = gap_df.apply(
+            lambda row: pd.date_range(start=row.gap_start, end=row.gap_end, freq=self.freq()).size, axis=1
+        )
 
         return gap_df
 
