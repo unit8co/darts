@@ -15,9 +15,9 @@ logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [
-    (ExponentialSmoothing(), 4.8),
-    (ARIMA(0, 1, 1), 17.1),
-    (ARIMA(1, 1, 1), 14.2),
+    (ExponentialSmoothing(), 5.6),
+    (ARIMA(0, 1, 1, trend='t'), 17.1),
+    (ARIMA(1, 1, 1, trend='t'), 14.2),
     (Theta(), 11.3),
     (Theta(1), 20.2),
     (Theta(-1), 9.8),
