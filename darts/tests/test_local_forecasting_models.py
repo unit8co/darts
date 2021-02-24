@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 models = [
     (ExponentialSmoothing(), 5.6),
     (ARIMA(0, 1, 1, trend='t'), 17.1),
-    (ARIMA(1, 1, 1, trend='t'), 14.2),
+    (ARIMA(1, 1, 1, trend='t'), 18.3),
     (Theta(), 11.3),
     (Theta(1), 20.2),
     (Theta(-1), 9.8),
