@@ -107,7 +107,6 @@ class Theta(ForecastingModel):
         self.coef = b_theta / (-self.theta)
 
         self.alpha = self.model.params["smoothing_level"]
-        print('Theta: alpha', self.alpha)
         if self.alpha == 0.:
             self.model = hw.SimpleExpSmoothing(new_ts.values(), initialization_method='estimated').fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
@@ -117,7 +116,6 @@ class Theta(ForecastingModel):
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
-        print('Theta: forecast', forecast)
 
         # Forecast of the Linear Regression part.
         drift = self.coef * np.array([i + (1 - (1 - self.alpha) ** self.length) / self.alpha for i in range(0, n)])
@@ -305,7 +303,6 @@ class FourTheta(ForecastingModel):
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
-        print('Four theta forecast:', forecast)
 
         # Forecast of the Linear Regression part.
         drift = self.drift(np.arange(self.length, self.length + n))
