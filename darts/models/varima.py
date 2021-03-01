@@ -1,8 +1,8 @@
 """
-VARMA
+VARIMA
 -----
 
-Models for VARMA (Vector Autoregressive moving average) [1]_.
+Models for VARIMA (Vector Autoregressive moving average) [1]_.
 The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
 
 References
@@ -22,9 +22,9 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 
-class VARMA(ExtendedForecastingModel):
+class VARIMA(ExtendedForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
-        """ VARMA
+        """ VARIMA
 
         Parameters
         ----------
@@ -54,7 +54,7 @@ class VARMA(ExtendedForecastingModel):
 
     def __str__(self):
         if self.d == 0:
-            return 'VARMA({},{})'.format(self.p, self.q)
+            return 'VARIMA({},{})'.format(self.p, self.q)
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
     def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
