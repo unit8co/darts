@@ -54,7 +54,7 @@ class VARIMA(ExtendedForecastingModel):
 
     def __str__(self):
         if self.d == 0:
-            return 'VARIMA({},{})'.format(self.p, self.q)
+            return 'VARMA({},{})'.format(self.p, self.q)
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
     def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
