@@ -32,7 +32,10 @@ class VARMA(ExtendedForecastingModel):
             Order (number of time lags) of the autoregressive model (AR)
         d : int
             The order of differentiation; i.e., the number of times the data
-            have had past values subtracted. (I)
+            have had past values subtracted. (I) Note that Darts only supports d <= 1 because for
+            d > 1 the optimizer often does not result in stable predictions. If results are not stable
+            for d = 1 try to set d = 0 and enable the trend parameter
+            to account for possible non-stationarity.
         q : int
             The size of the moving average window (MA).
         trend: str
@@ -55,7 +58,7 @@ class VARMA(ExtendedForecastingModel):
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
     def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
-        self._last_values = series.last_values() # needed for backtransforamtion when d=1
+        self._last_values = series.last_values() # needed for back-transformation when d=1
         for _ in range(self.d):
             series = TimeSeries(series._df.diff().dropna())
 
