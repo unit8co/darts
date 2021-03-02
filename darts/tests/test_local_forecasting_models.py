@@ -85,7 +85,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
-        for model, max_mape in [models[13]]:
+        for model, max_mape in models:
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
