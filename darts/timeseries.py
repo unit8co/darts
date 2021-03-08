@@ -669,7 +669,9 @@ class TimeSeries:
         new_series.index = new_time_index
         return TimeSeries(new_series, self.freq_str())
 
-    def diff(self, n: Optional[int] = 1, dropna: Optional[bool] = True) -> 'TimeSeries':
+    def diff(self, n: Optional[int] = 1,
+                periods: Optional[int] = 1,
+                dropna: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a pandas Series.
 
@@ -677,6 +679,8 @@ class TimeSeries:
         ----------
         n
             Optionally, a signed integer indicating the number of differencing steps.
+        periods
+            Optionally, periods to shift for calculating difference.
         dropna
             Optionally, a boolean value indicating whether to drop the missing values created by
             the pandas.DataFrame.diff method.
@@ -688,10 +692,12 @@ class TimeSeries:
         """
         if not isinstance(n, int) or n < 1:
              raise_log(ValueError("'n' must be a positive integer >= 1."))
+        if not isinstance(periods, int):
+             raise_log(ValueError("'periods' must be an integer."))
 
         temp_df = self.pd_dataframe(copy=True)
         for _ in range(n):
-            temp_df = temp_df.diff()
+            temp_df = temp_df.diff(periods=periods)
         if dropna:
             temp_df.dropna(inplace=True)
         return TimeSeries.from_dataframe(temp_df)
