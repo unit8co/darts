@@ -336,6 +336,24 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesD = seriesD.update(self.times, new_series)
         self.assertEqual(seriesD, self.series1)
 
+    def test_diff(self):
+        target_diff1 = TimeSeries.from_dataframe(self.series1._df.diff())
+        target_diff2 = TimeSeries.from_dataframe(target_diff1._df.diff())
+        target_diff1_no_na = TimeSeries.from_dataframe(target_diff1._df.dropna())
+        target_diff2_no_na = TimeSeries.from_dataframe(target_diff2._df.dropna())
+
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=0)
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=-5)
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=0.2)
+
+        self.assertEqual(self.series1.diff(), target_diff1_no_na)
+        self.assertEqual(self.series1.diff(n=2), target_diff2_no_na)
+        self.assertEqual(self.series1.diff(dropna=False), target_diff1)
+        self.assertEqual(self.series1.diff(n=2, dropna=0), target_diff2)
+
     def test_ops(self):
         seriesA = TimeSeries.from_series(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
         targetAdd = TimeSeries.from_series(pd.Series(range(2, 12), index=self.pd_series1.index))
