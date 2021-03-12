@@ -437,21 +437,56 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
 
     def test_from_dataframe(self):
-        data_dict = {"Month": pd.date_range(start="20180501", end="20200301", freq="MS")}
-        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Month"]))
-        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Month"]))
+        data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
 
         data_pd1 = pd.DataFrame(data_dict)
         data_pd2 = data_pd1.copy()
-        data_pd2["Month"] = data_pd2["Month"].apply(lambda date: str(date))
-        data_pd3 = data_pd1.set_index("Month")
+        data_pd2["Time"] = data_pd2["Time"].apply(lambda date: str(date))
+        data_pd3 = data_pd1.set_index("Time")
 
-        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Month")
-        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Month")
+        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Time")
+        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Time")
         data_darts3 = TimeSeries.from_dataframe(df=data_pd3)
 
         self.assertEqual(data_darts1, data_darts2)
         self.assertEqual(data_darts1, data_darts3)
+
+    def test_create_with_dummy_index(self):
+        times = pd.date_range(start="20210312", periods=15, freq="MS")
+        values1 = np.random.uniform(low=-10, high=10, size=len(times))
+        values2 = np.random.uniform(low=0, high=1, size=len(times))
+
+        df1 = pd.DataFrame({"V1": values1, "V2": values2})
+        df2 = pd.DataFrame({"V1": values1, "V2": values2}, index=times)
+        series1 = pd.Series(values1)
+        series2 = pd.Series(values1, index=times)
+
+        with self.assertRaises(ValueError):
+            TimeSeries.create_with_dummy_index(df2)
+        with self.assertRaises(ValueError):
+            TimeSeries.create_with_dummy_index(series2)
+        ts_df1 = TimeSeries.create_with_dummy_index(df1)
+        ts_series1 = TimeSeries.create_with_dummy_index(series1)
+
+        self.assertEqual(
+            ts_df1,
+            TimeSeries(pd.DataFrame(
+                {"V1": values1, "V2": values2},
+                index=pd.date_range(start="19700101", periods=len(ts_df1), freq="S")
+                )
+            )
+        )
+
+        self.assertEqual(
+            ts_series1,
+            TimeSeries.from_times_and_values(
+                times=pd.date_range(start="19700101", periods=len(ts_series1), freq="S"),
+                values=values1
+            )
+        )
+
 
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))

@@ -772,6 +772,19 @@ class TimeSeries:
             df.columns = columns
         return TimeSeries(df, freq, fill_missing_dates)
 
+    @staticmethod
+    def create_with_dummy_index(df: Union[pd.DataFrame, pd.Series]) -> 'TimeSeries':
+        raise_if_not(
+            isinstance(df.index, pd.RangeIndex),
+            "'df' index must be RangeIndex, not DateTimeIndex or other."
+        )
+        dummy_df = df.copy()
+        dummy_df.index = pd.date_range(start="19700101", periods=len(df), freq="S")
+        if isinstance(dummy_df, pd.Series):
+            dummy_df = pd.DataFrame(dummy_df)
+
+        return TimeSeries(df=dummy_df)
+
     def plot(self,
              new_plot: bool = False,
              *args,
