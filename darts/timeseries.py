@@ -673,7 +673,7 @@ class TimeSeries:
                 periods: Optional[int] = 1,
                 dropna: Optional[bool] = True) -> 'TimeSeries':
         """
-        Returns a TimeSeries built from a pandas Series.
+        Returns a differenced time series with the goal to make a time series stationary.
 
         Parameters
         ----------
