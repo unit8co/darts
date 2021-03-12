@@ -758,7 +758,7 @@ class TimeSeries:
             A univariate or multivariate TimeSeries constructed from the inputs.
         """
         if value_cols is None:
-            series_df = df
+            series_df = df.loc[:, df.columns != time_col]
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]

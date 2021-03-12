@@ -7,7 +7,7 @@ from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT
+from ..models import NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT, VARIMA
 from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
 
@@ -30,6 +30,11 @@ models = [
     (NaiveSeasonal(), 32.4),
 ]
 # forecasting models with exogenous variables support
+multivariate_models = [
+    (VARIMA(1, 0, 0), 55.6),
+    (VARIMA(1, 1, 1), 57.0),
+]
+
 extended_models = [ARIMA()]
 
 try:
@@ -67,6 +72,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
 
+    # real multivariate timeseries for functionality tests
+    multivariate_df = pd.read_csv('examples/ice_cream_heater.csv', delimiter=",")
+    ts_ice_heater = TimeSeries.from_dataframe(multivariate_df, 'Month', ['ice cream', 'heater'])
+    ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
+
     def test_models_runnability(self):
         for model, _ in models:
             model.fit(self.ts_gaussian)
@@ -79,6 +89,15 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
+            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
+                            "with a MAPE of {}".format(str(model), max_mape, current_mape))
+
+    def test_multivariate_models_performance(self):
+        # for every model, check whether its errors do not exceed the given bounds
+        for model, max_mape in multivariate_models:
+            model.fit(self.ts_ice_heater_train)
+            prediction = model.predict(len(self.ts_ice_heater_val))
+            current_mape = mape(prediction, self.ts_ice_heater_val)
             self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
                             "with a MAPE of {}".format(str(model), max_mape, current_mape))
 

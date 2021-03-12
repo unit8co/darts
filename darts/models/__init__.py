@@ -12,6 +12,7 @@ from .exponential_smoothing import ExponentialSmoothing
 from .theta import Theta, FourTheta
 from .arima import ARIMA
 from .fft import FFT
+from .varima import VARIMA
 
 try:
     from .auto_arima import AutoARIMA
