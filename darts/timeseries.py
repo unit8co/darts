@@ -774,6 +774,23 @@ class TimeSeries:
 
     @staticmethod
     def create_with_dummy_index(df: Union[pd.DataFrame, pd.Series]) -> 'TimeSeries':
+        """
+        Returns a TimeSeries built from a data frame or series with a dummy time index.
+
+        Some longitudinal series might not be measured at certain time stamps but in steps. Others
+        might not be a time series at all but autocorrelated analysis is still appropriate.
+        In these instances an artificial time index is needed for Darts TimeSeries.
+
+        Parameters
+        ----------
+        df
+            A `pandas.DataFrame` or `pandas.Series` without DateTimeIndex.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed from the input.
+        """
         raise_if_not(
             isinstance(df.index, pd.RangeIndex),
             "'df' index must be RangeIndex, not DateTimeIndex or other."
