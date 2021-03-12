@@ -487,7 +487,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))
         self.assertEqual(len(seriesA), 8)
