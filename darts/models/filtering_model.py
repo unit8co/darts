@@ -13,7 +13,7 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain more accurate predictions of the measured values(s)
 """
 
-from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
+from typing import Optional
 from itertools import product
 from abc import ABC, abstractmethod
 from inspect import signature
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 class FilteringModel(ABC):
 
-    """ The base class for filterin models. It defines the *minimal* behavior that all filtering models have to support.
+    """ The base class for filtering models. It defines the *minimal* behavior that all filtering models have to support.
         The signatures in this base class are for "local" models handling only one series and no covariates.
         Sub-classes can handle more complex cases.
     """
