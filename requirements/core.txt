@@ -7,3 +7,4 @@ ipython==7.15.0
 tqdm==4.46.1
 holidays==0.10.2
 scikit-learn==0.23.2
+filterpy==1.4.5
