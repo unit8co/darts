@@ -87,7 +87,7 @@ class FilteringModel(ABC):
 class MovingAverage(FilteringModel, ABC):
     
     """ Moving average class which implements Filtering Model and shows
-    a simple example of filtering dara using moving average.
+    a simple example of filtering data using moving average.
     """
 
     def __init__(self, window):
