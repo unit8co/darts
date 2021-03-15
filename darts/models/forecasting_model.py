@@ -599,6 +599,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             super().fit(series)  # handle the single series case
         if covariates is not None:
             self._expect_covariates = True
+            self.training_series = series
+            self._fit_called = True
 
 
     @abstractmethod
