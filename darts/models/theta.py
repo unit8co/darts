@@ -98,7 +98,7 @@ class Theta(ForecastingModel):
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(new_ts.values(), initialization_method='estimated').fit()
+        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
@@ -108,7 +108,7 @@ class Theta(ForecastingModel):
 
         self.alpha = self.model.params["smoothing_level"]
         if self.alpha == 0.:
-            self.model = hw.SimpleExpSmoothing(new_ts.values(), initialization_method='estimated').fit(initial_level=ALPHA_START)
+            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
 
     def predict(self, n: int) -> 'TimeSeries':
@@ -275,7 +275,7 @@ class FourTheta(ForecastingModel):
             theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(theta_t, initialization_method='estimated').fit()
+        self.model = hw.SimpleExpSmoothing(theta_t).fit()
         theta2_in = self.model.fittedvalues
 
         if (theta2_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
@@ -285,7 +285,7 @@ class FourTheta(ForecastingModel):
                 self.model_mode = ModelMode.ADDITIVE
                 logger.warning("Negative Theta line. Fallback to additive model")
                 theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
-                self.model = hw.SimpleExpSmoothing(theta_t, initialization_method='estimated').fit()
+                self.model = hw.SimpleExpSmoothing(theta_t).fit()
                 theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
         if self.is_seasonal:
