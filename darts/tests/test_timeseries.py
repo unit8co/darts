@@ -488,26 +488,34 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         df1 = pd.DataFrame({"V1": values1, "V2": values2})
         df2 = pd.DataFrame({"V1": values1, "V2": values2}, index=times)
-        df2 = pd.DataFrame({"V1": values1, "V2": values2, "Time": times})
+        df3 = pd.DataFrame({"V1": values1, "V2": values2, "Time": times})
         series1 = pd.Series(values1)
         series2 = pd.Series(values1, index=times)
 
         with self.assertRaises(ValueError):
-            TimeSeries(df2, dummy_index=True)
-        with self.assertRaises(ValueError):
-            TimeSeries(series2, dummy_index=True)
-        ts_df1 = TimeSeries(df1, dummy_index=True)
-        ts_series1 = TimeSeries(series1, dummy_index=True)
-
-        self.assertTrue(ts_df1.has_dummy_index)
-        self.assertTrue(ts_series1.has_dummy_index)
+            TimeSeries(df2, dummy_index=True) # Has DatetimeIndex
         self.assertFalse(TimeSeries(df2).has_dummy_index)
 
+        with self.assertRaises(ValueError):
+            TimeSeries.from_dataframe(df3, time_col="Time", dummy_index=True)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_dataframe(df3, dummy_index=True) # Has "Time" column which is not numerical
+        self.assertFalse(TimeSeries.from_dataframe(df3, time_col="Time").has_dummy_index)
+
+        ts_df1_1 = TimeSeries(df1, dummy_index=True)
+        ts_df1_2 = TimeSeries.from_dataframe(df1, dummy_index=True)
+        ts_series1 = TimeSeries.from_series(series1, dummy_index=True)
+
+        self.assertTrue(ts_df1_1.has_dummy_index)
+        self.assertTrue(ts_df1_2.has_dummy_index)
+        self.assertTrue(ts_series1.has_dummy_index)
+
+        self.assertEqual(ts_df1_1, ts_df1_2)
         self.assertEqual(
-            ts_df1,
+            ts_df1_1,
             TimeSeries(pd.DataFrame(
                 {"V1": values1, "V2": values2},
-                index=pd.date_range(start="19700101", periods=len(ts_df1), freq="S")
+                index=pd.date_range(start="19700101", periods=len(ts_df1_1), freq="S")
                 )
             )
         )
@@ -519,6 +527,19 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                 values=values1
             )
         )
+
+    def test_plot_with_dummy_index(self):
+        values1 = np.random.uniform(low=-10, high=10, size=20)
+        values2 = np.random.uniform(low=0, high=1, size=20)
+        df1 = pd.DataFrame({"V1": values1})
+        df2 = pd.DataFrame({"V1": values1, "V2": values2})
+
+        ts_df1 = TimeSeries(df1, dummy_index=True)
+        ts_df2 = TimeSeries(df2, dummy_index=True)
+
+        import matplotlib.pyplot as plt
+        print(ts_df1.plot())
+        plt.show()
 
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))

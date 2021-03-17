@@ -42,6 +42,9 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present or even available. Creates a dummy index to be
+            compatible with the Darts package.
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
@@ -58,6 +61,11 @@ class TimeSeries:
             raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
                      logger)
         else:
+            raise_if(isinstance(df.index, pd.DatetimeIndex), (
+                'Time series must not be indexed with a DatetimeIndex if dummy_index=True.'
+                ),
+                logger
+            )
             self._df.index = self.create_dummy_index()
             self.has_dummy_index = True
         self._df.columns = self._clean_df_columns(df.columns)
@@ -712,7 +720,8 @@ class TimeSeries:
     @staticmethod
     def from_series(pd_series: pd.Series,
                     freq: Optional[str] = None,
-                    fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                    fill_missing_dates: Optional[bool] = True,
+                    dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a pandas Series.
 
@@ -731,14 +740,15 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        freq: Optional[str] = None,
-                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                       fill_missing_dates: Optional[bool] = True,
+                       dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -764,20 +774,21 @@ class TimeSeries:
         TimeSeries
             A univariate or multivariate TimeSeries constructed from the inputs.
         """
+        raise_if(dummy_index and time_col, "If time_col is given, dummy_index must be false.", logger)
         if value_cols is None:
             series_df = df.loc[:, df.columns != time_col]
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
-
             series_df = df[value_cols]
 
-        if time_col is None:
-            series_df.index = pd.to_datetime(df.index, errors='raise')
-        else:
-            series_df.index = pd.to_datetime(df[time_col], errors='raise')
+        if not dummy_index:
+            if time_col is None:
+                series_df.index = pd.to_datetime(df.index, errors='raise')
+            else:
+                series_df.index = pd.to_datetime(df[time_col], errors='raise')
 
-        return TimeSeries(series_df, freq, fill_missing_dates)
+        return TimeSeries(series_df, freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
