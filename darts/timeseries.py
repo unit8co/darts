@@ -871,7 +871,15 @@ class TimeSeries:
                 kwargs['figure'] = plt.gcf()
                 if 'label' in kwargs:
                     kwargs['label'] = label + '_' + str(i)
-            self.univariate_component(i).pd_series().plot(*args, **kwargs)
+            if self.has_dummy_index:
+                x_ticks = [f"Step {i}" for i in range(len(self))]
+                plot_series = pd.Series(
+                    data=self.univariate_component(i).pd_series().values,
+                    index=x_ticks
+                )
+                plot_series.plot(*args, **kwargs)
+            else:
+                self.univariate_component(i).pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)

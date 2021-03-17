@@ -528,19 +528,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_plot_with_dummy_index(self):
-        values1 = np.random.uniform(low=-10, high=10, size=20)
-        values2 = np.random.uniform(low=0, high=1, size=20)
-        df1 = pd.DataFrame({"V1": values1})
-        df2 = pd.DataFrame({"V1": values1, "V2": values2})
-
-        ts_df1 = TimeSeries(df1, dummy_index=True)
-        ts_df2 = TimeSeries(df2, dummy_index=True)
-
-        import matplotlib.pyplot as plt
-        print(ts_df1.plot())
-        plt.show()
-
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))
         self.assertEqual(len(seriesA), 8)
