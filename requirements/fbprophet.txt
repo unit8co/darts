@@ -1,1 +1,3 @@
+python-dateutil==2.8.0
+LunarCalendar==0.0.9
 fbprophet==0.6
