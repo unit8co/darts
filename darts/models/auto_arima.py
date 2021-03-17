@@ -34,9 +34,9 @@ class AutoARIMA(ExtendedForecastingModel):
         autoarima_kwargs
             Keyword arguments for the pmdarima.txt AutoARIMA model
         """
-
         super().__init__()
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
+        self.trend = self.model.trend
 
     def __str__(self):
         return 'Auto-ARIMA'

@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
+from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
@@ -61,6 +61,13 @@ class ForecastingModel(ABC):
                      .format(len(series), str(self), self.min_train_series_length))
         self.training_series = series
         self._fit_called = True
+
+        if hasattr(self, "trend"):
+            raise_if(
+                self.trend and self.trend != "c" and self.training_series.has_dummy_index,
+                "'trend' is not None. Dummy indexing is not supported in that case.",
+                logger
+            )
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:

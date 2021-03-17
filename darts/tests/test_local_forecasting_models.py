@@ -37,6 +37,7 @@ multivariate_models = [
 
 extended_models = [ARIMA()]
 
+
 try:
     from ..models import Prophet
     models.append((Prophet(), 13.5))
@@ -131,3 +132,15 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.fit(self.ts_gaussian, exog=self.ts_gaussian[:-1])
             with self.assertRaises(ValueError):
                 model.fit(self.ts_gaussian[1:], exog=self.ts_gaussian[:-1])
+
+    def test_dummy_series(self):
+        values = np.random.uniform(low=-10, high=10, size=100)
+        ts = TimeSeries(pd.DataFrame({"V1": values}), dummy_index=True)
+
+        varima = VARIMA(trend="t")
+        with self.assertRaises(ValueError):
+            varima.fit(series=ts)
+
+        autoarima = AutoARIMA(trend="t")
+        with self.assertRaises(ValueError):
+            autoarima.fit(series=ts)
