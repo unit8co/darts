@@ -14,6 +14,11 @@ from .arima import ARIMA
 from .fft import FFT
 
 try:
+    from .lightgbm import LightGBM
+except ModuleNotFoundError:
+    logger.warning("Support for LightGBM is not available. To enable it, install u8darts[lightgbm] or u8darts[all].")
+
+try:
     from .auto_arima import AutoARIMA
 except ModuleNotFoundError:
     logger.warning("Support for AutoARIMA is not available. To enable it, install u8darts[pmdarima] or u8darts[all].")
