@@ -46,7 +46,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
     frac = 1 / 4
 
     # return False if there are not enough entries in the TimeSeries instance
-    if (len(series) < seasonality_period * (1 + frac)):
+    if len(series) < seasonality_period * (1 + frac):
         return False
 
     # compute relevant autocorrelation values
@@ -84,39 +84,39 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
     """
     relevant_attributes = set()
 
-    if (type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
+    if type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}:
         # check for yearly seasonality
-        if (_check_approximate_seasonality(series, 12, 1, 0)):
+        if _check_approximate_seasonality(series, 12, 1, 0):
             relevant_attributes.add('month')
-    elif (type(series.freq()) == pd.tseries.offsets.Day):
+    elif type(series.freq()) == pd.tseries.offsets.Day:
         # check for yearly seasonality
-        if (_check_approximate_seasonality(series, 365, 5, 20)):
+        if _check_approximate_seasonality(series, 365, 5, 20):
             relevant_attributes.update({'month', 'day'})
         # check for monthly seasonality
-        elif (_check_approximate_seasonality(series, 30, 2, 2)):
+        elif _check_approximate_seasonality(series, 30, 2, 2):
             relevant_attributes.add('day')
         # check for weekly seasonality
-        elif (_check_approximate_seasonality(series, 7, 0, 0)):
+        elif _check_approximate_seasonality(series, 7, 0, 0):
             relevant_attributes.add('weekday')
-    elif (type(series.freq()) == pd.tseries.offsets.Hour):
+    elif type(series.freq()) == pd.tseries.offsets.Hour:
         # check for yearly seasonality
-        if (_check_approximate_seasonality(series, 8760, 100, 100)):
+        if _check_approximate_seasonality(series, 8760, 100, 100):
             relevant_attributes.update({'month', 'day', 'hour'})
         # check for monthly seasonality
-        elif (_check_approximate_seasonality(series, 730, 10, 30)):
+        elif _check_approximate_seasonality(series, 730, 10, 30):
             relevant_attributes.update({'day', 'hour'})
         # check for weekly seasonality
-        elif (_check_approximate_seasonality(series, 168, 3, 10)):
+        elif _check_approximate_seasonality(series, 168, 3, 10):
             relevant_attributes.update({'weekday', 'hour'})
         # check for daily seasonality
-        elif (_check_approximate_seasonality(series, 24, 1, 1)):
+        elif _check_approximate_seasonality(series, 24, 1, 1):
             relevant_attributes.add('hour')
-    elif (type(series.freq()) == pd.tseries.offsets.Minute):
+    elif type(series.freq()) == pd.tseries.offsets.Minute:
         # check for daily seasonality
-        if (_check_approximate_seasonality(series, 1440, 20, 50)):
+        if _check_approximate_seasonality(series, 1440, 20, 50):
             relevant_attributes.update({'hour', 'minute'})
         # check for hourly seasonality
-        elif (_check_approximate_seasonality(series, 60, 4, 3)):
+        elif _check_approximate_seasonality(series, 60, 4, 3):
             relevant_attributes.add('minute')
 
     return relevant_attributes
@@ -166,7 +166,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     TimeSeries
         New TimeSeries instance that is cropped as described above.
     """
-    if (required_matches is None or len(required_matches) == 0):
+    if required_matches is None or len(required_matches) == 0:
         return series
 
     first_ts = series.time_index()[0]
@@ -175,7 +175,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
 
     # start at first timestamp of given series and move forward until a matching timestamp is found
     curr_ts = first_ts
-    while (curr_ts < pred_ts - 4 * freq):
+    while curr_ts < pred_ts - 4 * freq:
         curr_ts += freq
         if _compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
             new_series = series.drop_before(curr_ts)
@@ -238,10 +238,10 @@ class FFT(ForecastingModel):
         series = self.training_series
 
         # determine trend
-        if (self.trend == 'poly'):
+        if self.trend == 'poly':
             trend_coefficients = np.polyfit(range(len(series)), series.univariate_values(), self.trend_poly_degree)
             self.trend_function = np.poly1d(trend_coefficients)
-        elif (self.trend == 'exp'):
+        elif self.trend == 'exp':
             trend_coefficients = np.polyfit(range(len(series)), np.log(series.univariate_values()), 1)
             self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
         else:
@@ -252,7 +252,7 @@ class FFT(ForecastingModel):
         detrended_series = TimeSeries.from_times_and_values(series.time_index(), detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
-        if (self.required_matches is None):
+        if self.required_matches is None:
             curr_required_matches = _find_relevant_timestamp_attributes(detrended_series)
         else:
             curr_required_matches = self.required_matches
@@ -264,7 +264,7 @@ class FFT(ForecastingModel):
         # get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array
         first_n = self.nr_freqs_to_keep
-        if (first_n is None or first_n < 1 or first_n > len(self.fft_values)):
+        if first_n is None or first_n < 1 or first_n > len(self.fft_values):
             first_n = len(self.fft_values)
         self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
 

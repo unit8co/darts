@@ -84,6 +84,6 @@ class ExponentialSmoothing(ForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        if (self.seasonal_periods is not None and self.seasonal_periods > 1):
+        if self.seasonal_periods is not None and self.seasonal_periods > 1:
             return 2 * self.seasonal_periods
         return 3
