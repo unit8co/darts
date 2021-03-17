@@ -669,6 +669,40 @@ class TimeSeries:
         new_series.index = new_time_index
         return TimeSeries(new_series, self.freq_str())
 
+    def diff(self,
+             n: Optional[int] = 1,
+             periods: Optional[int] = 1,
+             dropna: Optional[bool] = True) -> 'TimeSeries':
+        """
+        Returns a differenced time series. This is often used to make a time series stationary.
+
+        Parameters
+        ----------
+        n
+            Optionally, a signed integer indicating the number of differencing steps.
+        periods
+            Optionally, periods to shift for calculating difference.
+        dropna
+            Optionally, a boolean value indicating whether to drop the missing values created by
+            the pandas.DataFrame.diff method.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed after differencing.
+        """
+        if not isinstance(n, int) or n < 1:
+             raise_log(ValueError("'n' must be a positive integer >= 1."))
+        if not isinstance(periods, int):
+             raise_log(ValueError("'periods' must be an integer."))
+
+        diff_df = self._df.diff(periods=periods)
+        for _ in range(n-1):
+            diff_df = diff_df.diff(periods=periods)
+        if dropna:
+            diff_df.dropna(inplace=True)
+        return TimeSeries(diff_df, freq=None, fill_missing_dates=False)
+
     @staticmethod
     def from_series(pd_series: pd.Series,
                     freq: Optional[str] = None,
