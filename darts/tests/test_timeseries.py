@@ -453,22 +453,27 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(data_darts1, data_darts2)
         self.assertEqual(data_darts1, data_darts3)
 
-    def test_create_with_dummy_index(self):
+    def test_create_dummy_index(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
         values1 = np.random.uniform(low=-10, high=10, size=len(times))
         values2 = np.random.uniform(low=0, high=1, size=len(times))
 
         df1 = pd.DataFrame({"V1": values1, "V2": values2})
         df2 = pd.DataFrame({"V1": values1, "V2": values2}, index=times)
+        df2 = pd.DataFrame({"V1": values1, "V2": values2, "Time": times})
         series1 = pd.Series(values1)
         series2 = pd.Series(values1, index=times)
 
         with self.assertRaises(ValueError):
-            TimeSeries.create_with_dummy_index(df2)
+            TimeSeries(df2, dummy_index=True)
         with self.assertRaises(ValueError):
-            TimeSeries.create_with_dummy_index(series2)
-        ts_df1 = TimeSeries.create_with_dummy_index(df1)
-        ts_series1 = TimeSeries.create_with_dummy_index(series1)
+            TimeSeries(series2, dummy_index=True)
+        ts_df1 = TimeSeries(df1, dummy_index=True)
+        ts_series1 = TimeSeries(series1, dummy_index=True)
+
+        self.assertTrue(ts_df1.has_dummy_index)
+        self.assertTrue(ts_series1.has_dummy_index)
+        self.assertFalse(TimeSeries(df2).has_dummy_index)
 
         self.assertEqual(
             ts_df1,

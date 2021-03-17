@@ -22,7 +22,8 @@ class TimeSeries:
     def __init__(self,
                  df: pd.DataFrame,
                  freq: Optional[str] = None,
-                 fill_missing_dates: Optional[bool] = True):
+                 fill_missing_dates: Optional[bool] = True,
+                 dummy_index: Optional[bool] = False):
         """
         A TimeSeries is an object representing a univariate or multivariate time series.
 
@@ -46,20 +47,25 @@ class TimeSeries:
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
                      logger)
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
-        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
-                     logger)
         raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
                      ' contain only numerical values.', logger)
         raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      ' is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time **returns a copy**
+        self.has_dummy_index = False
+        if not dummy_index:
+            raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
+                     logger)
+        else:
+            self._df.index = self.create_dummy_index()
+            self.has_dummy_index = True
         self._df.columns = self._clean_df_columns(df.columns)
 
         if (len(df) < 3):
             self._freq: str = freq
         else:
-            if not df.index.inferred_freq:
+            if not self._df.index.inferred_freq:
                 if fill_missing_dates:
                     self._df = self._fill_missing_dates(self._df, freq)
                 else:
@@ -772,35 +778,27 @@ class TimeSeries:
             df.columns = columns
         return TimeSeries(df, freq, fill_missing_dates)
 
-    @staticmethod
-    def create_with_dummy_index(df: Union[pd.DataFrame, pd.Series]) -> 'TimeSeries':
+    def create_dummy_index(self, start="19700101", freq="S") -> 'TimeSeries':
         """
-        Returns a TimeSeries built from a data frame or series with a dummy time index.
+        Returns a pd.DatetimeIndex. Used to attach a time index to a data frame.
 
         Some longitudinal series might not be measured at certain time stamps but in steps. Others
         might not be a time series at all but autocorrelated analysis is still appropriate.
-        In these instances an artificial time index is needed for Darts TimeSeries.
+        In these instances an artificial time index is created for Darts TimeSeries.
 
         Parameters
         ----------
-        df
-            A `pandas.DataFrame` or `pandas.Series` without DateTimeIndex.
+        start
+            Optionally, the starting time stamp of the dummy index.
+        freq
+            Optionally, the frequency of the dummy time index.
 
         Returns
         -------
-        TimeSeries
+        pd.DatetimeIndex
             A TimeSeries constructed from the input.
         """
-        raise_if_not(
-            isinstance(df.index, pd.RangeIndex),
-            "'df' index must be RangeIndex, not DateTimeIndex or other."
-        )
-        dummy_df = df.copy()
-        dummy_df.index = pd.date_range(start="19700101", periods=len(df), freq="S")
-        if isinstance(dummy_df, pd.Series):
-            dummy_df = pd.DataFrame(dummy_df)
-
-        return TimeSeries(df=dummy_df)
+        return pd.date_range(start=start, periods=len(self), freq=freq)
 
     def plot(self,
              new_plot: bool = False,
