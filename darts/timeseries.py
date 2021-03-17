@@ -872,7 +872,7 @@ class TimeSeries:
                 if 'label' in kwargs:
                     kwargs['label'] = label + '_' + str(i)
             if self.has_dummy_index:
-                x_ticks = [f"Step {i}" for i in range(len(self))]
+                x_ticks = np.arange(len(self))
                 plot_series = pd.Series(
                     data=self.univariate_component(i).pd_series().values,
                     index=x_ticks
