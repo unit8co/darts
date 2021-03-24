@@ -48,8 +48,10 @@ try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 13.7))
     extended_models.append(AutoARIMA())
+    PMDARIMA_AVAILABLE = True
 except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
+    PMDARIMA_AVAILABLE = False
 
 try:
     from ..models import TCNModel
@@ -141,6 +143,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             varima.fit(series=ts)
 
-        autoarima = AutoARIMA(trend="t")
-        with self.assertRaises(ValueError):
-            autoarima.fit(series=ts)
+        if PMDARIMA_AVAILABLE:
+            autoarima = AutoARIMA(trend="t")
+            with self.assertRaises(ValueError):
+                autoarima.fit(series=ts)
