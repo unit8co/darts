@@ -336,6 +336,34 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesD = seriesD.update(self.times, new_series)
         self.assertEqual(seriesD, self.series1)
 
+    def test_diff(self):
+        diff1 = TimeSeries.from_dataframe(self.series1._df.diff())
+        diff2 = TimeSeries.from_dataframe(diff1._df.diff())
+        diff1_no_na = TimeSeries.from_dataframe(diff1._df.dropna())
+        diff2_no_na = TimeSeries.from_dataframe(diff2._df.dropna())
+
+        diff_shift2 = TimeSeries.from_dataframe(self.series1._df.diff(periods=2))
+        diff_shift2_no_na = TimeSeries.from_dataframe(self.series1._df.diff(periods=2).dropna())
+
+        diff2_shift2 = TimeSeries.from_dataframe(diff_shift2._df.diff(periods=2))
+        diff2_shift2_no_na = TimeSeries.from_dataframe(diff2_shift2._df.diff(periods=2).dropna())
+
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=0)
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=-5)
+        with self.assertRaises(ValueError):
+            self.series1.diff(n=0.2)
+        with self.assertRaises(ValueError):
+            self.series1.diff(periods=0.2)
+
+        self.assertEqual(self.series1.diff(), diff1_no_na)
+        self.assertEqual(self.series1.diff(n=2), diff2_no_na)
+        self.assertEqual(self.series1.diff(dropna=False), diff1)
+        self.assertEqual(self.series1.diff(n=2, dropna=0), diff2)
+        self.assertEqual(self.series1.diff(periods=2), diff_shift2_no_na)
+        self.assertEqual(self.series1.diff(n=2, periods=2, dropna=False), diff2_shift2)
+
     def test_ops(self):
         seriesA = TimeSeries.from_series(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
         targetAdd = TimeSeries.from_series(pd.Series(range(2, 12), index=self.pd_series1.index))
@@ -435,6 +463,23 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(seriesA.freq(), 'D')
         # test successful instantiation of TimeSeries with length 2
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
+
+    def test_from_dataframe(self):
+        data_dict = {"Month": pd.date_range(start="20180501", end="20200301", freq="MS")}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Month"]))
+        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Month"]))
+
+        data_pd1 = pd.DataFrame(data_dict)
+        data_pd2 = data_pd1.copy()
+        data_pd2["Month"] = data_pd2["Month"].apply(lambda date: str(date))
+        data_pd3 = data_pd1.set_index("Month")
+
+        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Month")
+        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Month")
+        data_darts3 = TimeSeries.from_dataframe(df=data_pd3)
+
+        self.assertEqual(data_darts1, data_darts2)
+        self.assertEqual(data_darts1, data_darts3)
 
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))
