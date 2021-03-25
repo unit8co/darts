@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
+from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
@@ -61,6 +61,17 @@ class ForecastingModel(ABC):
                      .format(len(series), str(self), self.min_train_series_length))
         self.training_series = series
         self._fit_called = True
+
+        if series.has_dummy_index:
+            self._supports_dummy_index()
+
+    def _supports_dummy_index(self) -> bool:
+        """ Checks if the forecasting model supports a dummy index.
+
+        By default, returns True. Needs to be overwritten by models that do not support
+        dummy indexing and raise meaningful exception.
+        """
+        return True
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
