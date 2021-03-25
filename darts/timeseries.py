@@ -43,8 +43,9 @@ class TimeSeries:
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
         dummy_index
-            Optionally, if no date time index is present or even available. Creates a dummy index to be
-            compatible with the Darts package.
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
@@ -66,7 +67,7 @@ class TimeSeries:
                 ),
                 logger
             )
-            self._df.index = self.create_dummy_index()
+            self._df.index = self._create_dummy_index()
             self.has_dummy_index = True
         self._df.columns = self._clean_df_columns(df.columns)
 
@@ -734,6 +735,10 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
@@ -768,6 +773,10 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
@@ -823,7 +832,7 @@ class TimeSeries:
             df.columns = columns
         return TimeSeries(df, freq, fill_missing_dates)
 
-    def create_dummy_index(self, start="19700101", freq="S") -> 'TimeSeries':
+    def _create_dummy_index(self, start="19700101", freq="S") -> 'TimeSeries':
         """
         Returns a pd.DatetimeIndex. Used to attach a time index to a data frame.
 

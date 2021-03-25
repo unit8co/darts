@@ -62,12 +62,16 @@ class ForecastingModel(ABC):
         self.training_series = series
         self._fit_called = True
 
-        if hasattr(self, "trend"):
-            raise_if(
-                self.trend and self.trend != "c" and self.training_series.has_dummy_index,
-                "'trend' is not None. Dummy indexing is not supported in that case.",
-                logger
-            )
+        if series.has_dummy_index:
+            self._supports_dummy_index()
+
+    def _supports_dummy_index(self) -> bool:
+        """ Checks if the forecasting model supports a dummy index.
+
+        By default, returns True. Needs to be overwritten by models that do not support
+        dummy indexing and raise meaningful exception.
+        """
+        return True
 
     @abstractmethod
     def predict(self, n: int) -> TimeSeries:
