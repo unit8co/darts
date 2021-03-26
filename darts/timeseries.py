@@ -22,7 +22,8 @@ class TimeSeries:
     def __init__(self,
                  df: pd.DataFrame,
                  freq: Optional[str] = None,
-                 fill_missing_dates: Optional[bool] = True):
+                 fill_missing_dates: Optional[bool] = True,
+                 dummy_index: Optional[bool] = False):
         """
         A TimeSeries is an object representing a univariate or multivariate time series.
 
@@ -41,25 +42,39 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
                      logger)
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
-        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
-                     logger)
         raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
                      ' contain only numerical values.', logger)
         raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      ' is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time **returns a copy**
+        self.has_dummy_index = False
+        if not dummy_index:
+            raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
+                     logger)
+        else:
+            raise_if(isinstance(df.index, pd.DatetimeIndex), (
+                'Time series must not be indexed with a DatetimeIndex if dummy_index=True.'
+                ),
+                logger
+            )
+            self._df.index = self._create_dummy_index()
+            self.has_dummy_index = True
         self._df.columns = self._clean_df_columns(df.columns)
 
         if (len(df) < 3):
             self._freq: str = freq
         else:
-            if not df.index.inferred_freq:
+            if not self._df.index.inferred_freq:
                 if fill_missing_dates:
                     self._df = self._fill_missing_dates(self._df, freq)
                 else:
@@ -706,7 +721,8 @@ class TimeSeries:
     @staticmethod
     def from_series(pd_series: pd.Series,
                     freq: Optional[str] = None,
-                    fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                    fill_missing_dates: Optional[bool] = True,
+                    dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a pandas Series.
 
@@ -719,20 +735,25 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        freq: Optional[str] = None,
-                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                       fill_missing_dates: Optional[bool] = True,
+                       dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -752,26 +773,31 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
         TimeSeries
             A univariate or multivariate TimeSeries constructed from the inputs.
         """
+        raise_if(dummy_index and time_col, "If time_col is given, dummy_index must be false.", logger)
         if value_cols is None:
             series_df = df.loc[:, df.columns != time_col]
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
-
             series_df = df[value_cols]
 
-        if time_col is None:
-            series_df.index = pd.to_datetime(df.index, errors='raise')
-        else:
-            series_df.index = pd.to_datetime(df[time_col], errors='raise')
+        if not dummy_index:
+            if time_col is None:
+                series_df.index = pd.to_datetime(df.index, errors='raise')
+            else:
+                series_df.index = pd.to_datetime(df[time_col], errors='raise')
 
-        return TimeSeries(series_df, freq, fill_missing_dates)
+        return TimeSeries(series_df, freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
@@ -806,6 +832,28 @@ class TimeSeries:
             df.columns = columns
         return TimeSeries(df, freq, fill_missing_dates)
 
+    def _create_dummy_index(self, start="19700101", freq="S") -> 'TimeSeries':
+        """
+        Returns a pd.DatetimeIndex. Used to attach a time index to a data frame.
+
+        Some longitudinal series might not be measured at certain time stamps but in steps. Others
+        might not be a time series at all but autocorrelated analysis is still appropriate.
+        In these instances an artificial time index is created for Darts TimeSeries.
+
+        Parameters
+        ----------
+        start
+            Optionally, the starting time stamp of the dummy index.
+        freq
+            Optionally, the frequency of the dummy time index.
+
+        Returns
+        -------
+        pd.DatetimeIndex
+            A TimeSeries constructed from the input.
+        """
+        return pd.date_range(start=start, periods=len(self), freq=freq)
+
     def plot(self,
              new_plot: bool = False,
              *args,
@@ -832,7 +880,15 @@ class TimeSeries:
                 kwargs['figure'] = plt.gcf()
                 if 'label' in kwargs:
                     kwargs['label'] = label + '_' + str(i)
-            self.univariate_component(i).pd_series().plot(*args, **kwargs)
+            if self.has_dummy_index:
+                x_ticks = np.arange(len(self))
+                plot_series = pd.Series(
+                    data=self.univariate_component(i).pd_series().values,
+                    index=x_ticks
+                )
+                plot_series.plot(*args, **kwargs)
+            else:
+                self.univariate_component(i).pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
