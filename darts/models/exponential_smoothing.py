@@ -70,7 +70,7 @@ class ExponentialSmoothing(ForecastingModel):
         series = self.training_series
         hw_model = hw.ExponentialSmoothing(series.values(),
                                            trend=self.trend.value,
-                                           damped=self.damped,
+                                           damped_trend=self.damped,
                                            seasonal=self.seasonal.value,
                                            seasonal_periods=self.seasonal_periods)
 
