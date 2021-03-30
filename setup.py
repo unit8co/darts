@@ -28,7 +28,7 @@ PROJECT_URLS = {
 
 
 setup(
-      name='darts',
+      name='u8darts',
       version="0.6.1",
       description='A python library for easy manipulation and forecasting of time series.',
       long_description=LONG_DESCRIPTION,
@@ -39,7 +39,13 @@ setup(
       maintainer_email='darts@unit8.co',
       license='Apache License 2.0',
       packages=find_packages(),
-      install_requires=all_reqs,
+      install_requires=base_reqs,
+      extras_require={
+            'all': all_reqs,
+            'pmdarima': pmdarima_reqs,
+            'torch': torch_reqs,
+            'fbprophet': fbprophet_reqs,
+      },
       package_data={
           'darts': ['py.typed'],
       },
