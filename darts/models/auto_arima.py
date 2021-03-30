@@ -8,7 +8,7 @@ from typing import Optional
 
 from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger
+from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
@@ -34,9 +34,9 @@ class AutoARIMA(ExtendedForecastingModel):
         autoarima_kwargs
             Keyword arguments for the pmdarima.txt AutoARIMA model
         """
-
         super().__init__()
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
+        self.trend = self.model.trend
 
     def __str__(self):
         return 'Auto-ARIMA'
@@ -56,3 +56,10 @@ class AutoARIMA(ExtendedForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         return 30
+
+    def _supports_dummy_index(self) -> bool:
+        raise_if(self.trend and self.trend != "c",
+            "'trend' is not None. Dummy indexing is not supported in that case.",
+            logger
+        )
+        return True
