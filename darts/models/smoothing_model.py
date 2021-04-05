@@ -2,7 +2,8 @@
 Filtering Model Base Class
 ------------------------------
 
-A filtering model captures the measured values of a time series as a function of the past as follows:
+A smoothing model more accurate value from measured values of a time series
+Using the current value and historic values as follows:
 
 .. math:: y_{t+1} = f(y_{t+1}, y_t, y_{t-1}, ..., y_1),
 
@@ -26,7 +27,7 @@ from ..logging import get_logger, raise_log, raise_if_not
 logger = get_logger(__name__)
 
 
-class FilteringModel(ABC):
+class SmoothingModel(ABC):
 
     """ The base class for filtering models. It defines the *minimal* behavior that all filtering models have to support.
         The signatures in this base class are for "local" models handling only one series and no covariates.
@@ -48,7 +49,7 @@ class FilteringModel(ABC):
         Parameters
         ----------
         series
-            A target time series. The model will be trained to forecast this time series.
+            A target time series. The model will be fit on this time series.
         """
         raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
@@ -57,7 +58,7 @@ class FilteringModel(ABC):
         self._fit_called = True
 
     @abstractmethod
-    def filter(self) -> TimeSeries:
+    def smooth(self) -> TimeSeries:
         """ Predicts filtered values from train TimeSeries
 
         Parameters
@@ -84,10 +85,10 @@ class FilteringModel(ABC):
         return 3
 
 
-class MovingAverage(FilteringModel, ABC):
+class MovingAverage(SmoothingModel, ABC):
     
-    """ Moving average class which implements Filtering Model and shows
-    a simple example of filtering data using moving average.
+    """ Moving average class which implements Smoothing Model and shows
+    a simple example of data smoothing using moving average.
     """
 
     def __init__(self, window):
@@ -98,7 +99,7 @@ class MovingAverage(FilteringModel, ABC):
         super().fit(series)
 
 
-    def filter(self):
+    def smooth(self):
         return self.training_series.map(self._ma_iteration)
 
 

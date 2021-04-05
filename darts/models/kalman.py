@@ -6,11 +6,11 @@ from abc import ABC
 from typing import Optional
 from filterpy.kalman import KalmanFilter
 
-from .filtering_model import FilteringModel
+from .smoothing_model import SmoothingModel
 from ..timeseries import TimeSeries
 
 
-class Kalman(FilteringModel, ABC):
+class Kalman(SmoothingModel, ABC):
 
     def __init__(
             self, 
@@ -67,7 +67,7 @@ class Kalman(FilteringModel, ABC):
     def fit(self, series: TimeSeries):
         super().fit(series)
 
-    def filter(self):
+    def smooth(self):
         return self.training_series.map(self._kalman_iteration)
 
     def _kalman_iteration(self, observation):
