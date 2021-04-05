@@ -32,7 +32,7 @@ We recommend to first setup a clean Python environment for your project with at 
 
 Once your environment is set up you can install darts using pip:
 
-    pip install 'u8darts[all]'
+    pip install darts
 
 For more detailed install instructions you can refer to our installation guide at the end of this page.
 
@@ -169,10 +169,10 @@ Don't forget to activate your virtual environment
 
 ### Install darts
 
-Install Darts with all available models: `pip install 'u8darts[all]'`.
+Install Darts with all available models: `pip install darts`.
 
 As some models have relatively heavy (or non-Python) dependencies,
-we also provide the following alternate lighter install options: 
+we also maintain the `u8darts` package, which provides the following alternate lighter install options: 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
 * Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
