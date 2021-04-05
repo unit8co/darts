@@ -1,5 +1,5 @@
 """
-Filtering Model Base Class
+Smoothing Model Base Class
 ------------------------------
 
 A smoothing model more accurate value from measured values of a time series
@@ -7,7 +7,7 @@ Using the current value and historic values as follows:
 
 .. math:: y_{t+1} = f(y_{t+1}, y_t, y_{t-1}, ..., y_1),
 
-where :math:`y_t` represents the time series' filtered value(s) at time :math:`t`.
+where :math:`y_t` represents the time series' smoothed value(s) at time :math:`t`.
 
 The main functions are `fit()` and `predict()`. `fit()` learns the function `f()`, over the history of
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 class SmoothingModel(ABC):
 
-    """ The base class for filtering models. It defines the *minimal* behavior that all filtering models have to support.
+    """ The base class for smoothing models. It defines the *minimal* behavior that all smoothing models have to support.
         The signatures in this base class are for "local" models handling only one series and no covariates.
         Sub-classes can handle more complex cases.
     """
@@ -59,7 +59,7 @@ class SmoothingModel(ABC):
 
     @abstractmethod
     def smooth(self) -> TimeSeries:
-        """ Predicts filtered values from train TimeSeries
+        """ Predicts smoothed values from train TimeSeries
 
         Parameters
         ----------
@@ -69,7 +69,7 @@ class SmoothingModel(ABC):
         Returns
         -------
         TimeSeries
-            A time series containing the filtered values.
+            A time series containing the smoothed values.
         """
         if not self._fit_called:
             raise_log(ValueError('The model must be fit before calling `predict()`.'
