@@ -22,7 +22,8 @@ class TimeSeries:
     def __init__(self,
                  df: pd.DataFrame,
                  freq: Optional[str] = None,
-                 fill_missing_dates: Optional[bool] = True):
+                 fill_missing_dates: Optional[bool] = True,
+                 dummy_index: Optional[bool] = False):
         """
         A TimeSeries is an object representing a univariate or multivariate time series.
 
@@ -41,25 +42,39 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
         """
 
         raise_if_not(isinstance(df, pd.DataFrame), "Data must be provided in form of a pandas.DataFrame instance",
                      logger)
         raise_if_not(len(df) > 0 and df.shape[1] > 0, 'Time series must not be empty.', logger)
-        raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
-                     logger)
         raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), 'Time series must'
                      ' contain only numerical values.', logger)
         raise_if_not(len(df) >= 3 or freq is not None, 'Time series must have at least 3 values if the "freq" argument'
                      ' is not passed', logger)
 
         self._df = df.sort_index()  # Sort by time **returns a copy**
+        self.has_dummy_index = False
+        if not dummy_index:
+            raise_if_not(isinstance(df.index, pd.DatetimeIndex), 'Time series must be indexed with a DatetimeIndex.',
+                     logger)
+        else:
+            raise_if(isinstance(df.index, pd.DatetimeIndex), (
+                'Time series must not be indexed with a DatetimeIndex if dummy_index=True.'
+                ),
+                logger
+            )
+            self._df.index = self._create_dummy_index()
+            self.has_dummy_index = True
         self._df.columns = self._clean_df_columns(df.columns)
 
         if (len(df) < 3):
             self._freq: str = freq
         else:
-            if not df.index.inferred_freq:
+            if not self._df.index.inferred_freq:
                 if fill_missing_dates:
                     self._df = self._fill_missing_dates(self._df, freq)
                 else:
@@ -281,7 +296,9 @@ class TimeSeries:
         gap_df = pd.DataFrame()
         gap_df['gap_start'] = gap_starts
         gap_df['gap_end'] = gap_ends
-        gap_df['gap_size'] = ((gap_ends - gap_starts) / self.freq()).astype(int) + 1
+        gap_df['gap_size'] = gap_df.apply(
+            lambda row: pd.date_range(start=row.gap_start, end=row.gap_end, freq=self.freq()).size, axis=1
+        )
 
         return gap_df
 
@@ -309,45 +326,49 @@ class TimeSeries:
             raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
                                                                               self.end_time())), logger)
 
-    def split_after(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+    def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
-        Splits the TimeSeries in two, around a provided timestamp `ts`.
-
-        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-        first of the two TimeSeries, and not in the second.
+        Splits the TimeSeries in two, after a provided `split_point`.
 
         Parameters
         ----------
-        ts
-            The timestamp that indicates the splitting time.
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after
+            which the split is performed. If timestamp, it will be contained in the first TimeSeries, but not
+            in the second one. The timestamp may not appear in the original TimeSeries index.
 
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series contains the first samples up to the `split_point`,
+            and the second contains the remaining ones.
         """
+        ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() <= ts][-1]  # closest index before ts (new ts)
         start_second_series: pd.Timestamp = ts + self.freq()  # second series does not include ts
         return self.slice(self.start_time(), ts), self.slice(start_second_series, self.end_time())
 
-    def split_before(self, ts: pd.Timestamp) -> Tuple['TimeSeries', 'TimeSeries']:
+    def split_before(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
-        Splits a TimeSeries in two, around a provided timestamp `ts`.
-
-        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-        second of the two TimeSeries, and not in the first.
+        Splits a TimeSeries in two, before a provided `split_point`.
 
         Parameters
         ----------
-        ts
-            The timestamp that indicates the splitting time.
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before
+            which the split is performed. If timestamp, it will be contained in the second TimeSeries, but not
+            in the first one. The timestamp may not appear in the original TimeSeries index.
 
         Returns
         -------
         Tuple[TimeSeries, TimeSeries]
-            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.
+            A tuple of two time series. The first time series contains the first samples before the `split_point`,
+            and the second contains the remaining ones.
         """
+        ts = self.get_timestamp_at_point(split_point) if isinstance(split_point, (int, float)) else split_point
         self._raise_if_not_within(ts)
         ts = self.time_index()[self.time_index() >= ts][0]  # closest index after ts (new ts)
         end_first_series: pd.Timestamp = ts - self.freq()  # second series does not include ts
@@ -501,6 +522,59 @@ class TimeSeries:
         time_index = self.time_index().intersection(other.time_index())
         return self.__getitem__(time_index)
 
+    def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> pd.Timestamp:
+        """
+        Converts a point into a pandas.Timestamp in the time series
+
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
+            is present in the series time index, otherwise will raise a ValueError.
+        series
+            The time series to index in
+        """
+        if isinstance(point, float):
+            raise_if_not(point >= 0.0 and point < 1.0, 'point (float) should be between 0.0 and 1.0.', logger)
+            point_index = int((len(self) - 1) * point)
+            timestamp = self._df.index[point_index]
+        elif isinstance(point, int):
+            raise_if(point not in range(len(self)), "point (int) should be a valid index in series", logger)
+            timestamp = self._df.index[point]
+        elif isinstance(point, pd.Timestamp):
+            raise_if(point not in self,
+                     'point (pandas.Timestamp) must be an entry in the time series\' time index',
+                     logger)
+            timestamp = point
+        else:
+            raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
+        return timestamp
+
+    def get_index_at_point(self, point: Union[pd.Timestamp, float, int]) -> int:
+        """
+        Converts a point into the corresponding index in the time series
+
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+            In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series
+            if the timestamp is present in the series time index, otherwise will raise a ValueError.
+            In case of an `int`, the parameter will be returned as is provided that it is a valid index,
+            otherwise will raise a ValueError.
+        series
+            The time series to index in
+        """
+        timestamp = self.get_timestamp_at_point(point)
+        return self._df.index.get_loc(timestamp)
+
     def strip(self) -> 'TimeSeries':
         """
         Returns a TimeSeries slice of this time series, where NaN-only entries at the beginning and the end of the
@@ -610,10 +684,45 @@ class TimeSeries:
         new_series.index = new_time_index
         return TimeSeries(new_series, self.freq_str())
 
+    def diff(self,
+             n: Optional[int] = 1,
+             periods: Optional[int] = 1,
+             dropna: Optional[bool] = True) -> 'TimeSeries':
+        """
+        Returns a differenced time series. This is often used to make a time series stationary.
+
+        Parameters
+        ----------
+        n
+            Optionally, a signed integer indicating the number of differencing steps.
+        periods
+            Optionally, periods to shift for calculating difference.
+        dropna
+            Optionally, a boolean value indicating whether to drop the missing values created by
+            the pandas.DataFrame.diff method.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed after differencing.
+        """
+        if not isinstance(n, int) or n < 1:
+             raise_log(ValueError("'n' must be a positive integer >= 1."))
+        if not isinstance(periods, int):
+             raise_log(ValueError("'periods' must be an integer."))
+
+        diff_df = self._df.diff(periods=periods)
+        for _ in range(n-1):
+            diff_df = diff_df.diff(periods=periods)
+        if dropna:
+            diff_df.dropna(inplace=True)
+        return TimeSeries(diff_df, freq=None, fill_missing_dates=False)
+
     @staticmethod
     def from_series(pd_series: pd.Series,
                     freq: Optional[str] = None,
-                    fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                    fill_missing_dates: Optional[bool] = True,
+                    dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries built from a pandas Series.
 
@@ -626,20 +735,25 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates)
+        return TimeSeries(pd.DataFrame(pd_series), freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        freq: Optional[str] = None,
-                       fill_missing_dates: Optional[bool] = True) -> 'TimeSeries':
+                       fill_missing_dates: Optional[bool] = True,
+                       dummy_index: Optional[bool] = False) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -659,26 +773,31 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values
             in case the frequency of `series` cannot be inferred.
+        dummy_index
+            Optionally, if no date time index is present, this flag will instruct Darts to build a
+            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+            where the time index doesn't matter.
 
         Returns
         -------
         TimeSeries
             A univariate or multivariate TimeSeries constructed from the inputs.
         """
+        raise_if(dummy_index and time_col, "If time_col is given, dummy_index must be false.", logger)
         if value_cols is None:
-            series_df = df
+            series_df = df.loc[:, df.columns != time_col]
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
-
             series_df = df[value_cols]
 
-        if time_col is None:
-            series_df.index = pd.to_datetime(df.index, errors='raise')
-        else:
-            series_df.index = pd.to_datetime(df[time_col], errors='raise')
+        if not dummy_index:
+            if time_col is None:
+                series_df.index = pd.to_datetime(df.index, errors='raise')
+            else:
+                series_df.index = pd.to_datetime(df[time_col], errors='raise')
 
-        return TimeSeries(series_df, freq, fill_missing_dates)
+        return TimeSeries(series_df, freq, fill_missing_dates, dummy_index)
 
     @staticmethod
     def from_times_and_values(times: pd.DatetimeIndex,
@@ -713,6 +832,28 @@ class TimeSeries:
             df.columns = columns
         return TimeSeries(df, freq, fill_missing_dates)
 
+    def _create_dummy_index(self, start="19700101", freq="S") -> 'TimeSeries':
+        """
+        Returns a pd.DatetimeIndex. Used to attach a time index to a data frame.
+
+        Some longitudinal series might not be measured at certain time stamps but in steps. Others
+        might not be a time series at all but autocorrelated analysis is still appropriate.
+        In these instances an artificial time index is created for Darts TimeSeries.
+
+        Parameters
+        ----------
+        start
+            Optionally, the starting time stamp of the dummy index.
+        freq
+            Optionally, the frequency of the dummy time index.
+
+        Returns
+        -------
+        pd.DatetimeIndex
+            A TimeSeries constructed from the input.
+        """
+        return pd.date_range(start=start, periods=len(self), freq=freq)
+
     def plot(self,
              new_plot: bool = False,
              *args,
@@ -739,7 +880,15 @@ class TimeSeries:
                 kwargs['figure'] = plt.gcf()
                 if 'label' in kwargs:
                     kwargs['label'] = label + '_' + str(i)
-            self.univariate_component(i).pd_series().plot(*args, **kwargs)
+            if self.has_dummy_index:
+                x_ticks = np.arange(len(self))
+                plot_series = pd.Series(
+                    data=self.univariate_component(i).pd_series().values,
+                    index=x_ticks
+                )
+                plot_series.plot(*args, **kwargs)
+            else:
+                self.univariate_component(i).pd_series().plot(*args, **kwargs)
         x_label = self.time_index().name
         if x_label is not None and len(x_label) > 0:
             plt.xlabel(x_label)
