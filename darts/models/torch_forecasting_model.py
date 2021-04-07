@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -525,7 +525,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
 
-            return torch.cat(prediction).squeeze()
+            return torch.cat(prediction).squeeze(dim=2)
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
