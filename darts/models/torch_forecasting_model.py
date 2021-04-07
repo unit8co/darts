@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
+from tqdm.autonotebook import tqdm
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -406,65 +407,125 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def predict_from_dataset(self,
                              n: int,
-                             input_series_dataset: TimeSeriesInferenceDataset
-                             ) -> Sequence[TimeSeries]:
+                             input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.array],
+                             batch_size: Optional[int] = None
+                             ) -> Union[Sequence[TimeSeries], torch.Tensor, np.array]:
         self.model.eval()
 
-        # check that the input sizes match
-        sample = input_series_dataset[0]
-        in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
-        raise_if_not(in_dim == self.input_dim,
-                     'The dimensionality of the series provided for prediction does not match the dimensionality'
-                     'of the series this model has been trained on. Provided input dim = {}, '
-                     'model input dim = {}'.format(in_dim, self.input_dim))
+        ### preprocessing ###
 
-        # TODO use a torch Dataset and DataLoader for parallel loading and batching
-        # TODO also currently we assume all forecasts fit in memory
-        ts_forecasts = []
-        for target_series, covariate_series in input_series_dataset:
-            raise_if_not(len(target_series) >= self.input_chunk_length,
-                         'All input series must have length >= `input_chunk_length` ({}).'.format(self.input_chunk_length))
+        if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
 
-            # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
-            # TODO: e.g. by taking their latest common timestamp.
+            # check that the input sizes match
+            sample = input_series_dataset[0]
+            in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
+            raise_if_not(in_dim == self.input_dim,
+                         'The dimensionality of the series provided for prediction does not match the dimensionality'
+                         'of the series this model has been trained on. Provided input dim = {}, '
+                         'model input dim = {}'.format(in_dim, self.input_dim))
 
-            in_tsr = target_series.values(copy=False)[-self.input_chunk_length:]
-            in_tsr = torch.from_numpy(in_tsr).float().to(self.device)
-            if covariate_series is not None:
-                in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
-                in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
-                in_tsr = torch.cat([in_tsr, in_cov_tsr], dim=1)
-            in_tsr = in_tsr.view(1, self.input_chunk_length, -1)
+            # TODO currently we assume all forecasts fit in memory
+            in_tsr_arr = []
+            for target_series, covariate_series in input_series_dataset:
+                raise_if_not(len(target_series) >= self.input_chunk_length,
+                             'All input series must have length >= `input_chunk_length` ({}).'.format(
+                                 self.input_chunk_length))
 
-            out_sequence = self._produce_prediction(in_tsr, n)
+                # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
+                # TODO: e.g. by taking their latest common timestamp.
 
-            # translate to numpy
-            out_sequence = out_sequence.cpu().detach().numpy()
-            ts_forecasts.append(self._build_forecast_series(out_sequence.reshape(n, -1),
-                                                            input_series=target_series))
+                in_tsr_sample = target_series.values(copy=False)[-self.input_chunk_length:]
+                in_tsr_sample = torch.from_numpy(in_tsr_sample).float().to(self.device)
+                if covariate_series is not None:
+                    in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
+                    in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
+                    in_tsr_sample = torch.cat([in_tsr_sample, in_cov_tsr], dim=1)
+                in_tsr_sample = in_tsr_sample.view(1, self.input_chunk_length, -1)
+
+                in_tsr_arr.append(in_tsr_sample)
+
+            # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 1 + # of covariates)]
+            in_tsr = torch.cat(in_tsr_arr, dim=0)
+
+        elif isinstance(input_series_dataset, torch.Tensor):
+
+            raise_if_not(input_series_dataset.ndim == 3,
+                         "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
+                         "dim 2 for covariates")
+            in_tsr = input_series_dataset
+
+        elif isinstance(input_series_dataset, np.ndarray):
+
+            raise_if_not(input_series_dataset.ndim == 3,
+                         "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
+                         "dim 2 for covariates")
+            in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
+
+        else:
+            raise_log(
+                AttributeError('Unsupported data type in `input_series_dataset`. Available data types are: '
+                               'TimeSeriesInferenceDataset, torch.Tensor or NumPy array'))
+
+        ### prediction ###
+
+        pred_loader = DataLoader(in_tsr,
+                                 batch_size=batch_size or self.batch_size,
+                                 shuffle=False,
+                                 num_workers=0,
+                                 pin_memory=False,
+                                 drop_last=False)
+
+        predictions_tensor = self._produce_prediction(pred_loader, n)
+
+        ### postprocessing ###
+
+        if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
+
+            predictions_array = predictions_tensor.cpu().detach().numpy()
+            ts_forecasts = []
+
+            for sequence_num, (target_series, _) in enumerate(input_series_dataset):
+                ts_forecasts.append(
+                    self._build_forecast_series(
+                        predictions_array[sequence_num, :].reshape(n, -1),
+                        input_series=target_series
+                    ))
+
+        elif isinstance(input_series_dataset, torch.Tensor):
+
+            ts_forecasts = predictions_tensor
+
+        elif isinstance(input_series_dataset, np.ndarray):
+
+            ts_forecasts = predictions_tensor.cpu().detach().numpy()
+
+        else:
+            raise_log(
+                AttributeError('Unsupported data type in `input_series_dataset`. Available data types are: '
+                               'TimeSeriesInferenceDataset, torch.Tensor or NumPy array'))
+
         return ts_forecasts
 
-    def _produce_prediction(self, in_sequence: torch.Tensor, n: int) -> torch.Tensor:
-        # produces output tensor for one time series
-        # TODO: make it work for batches
-        # TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)
+    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int) -> torch.Tensor:
+        prediction = []
+        with torch.no_grad():
+            for batch in tqdm(in_dataset):
+                batch_prediction = []  # (num_batches, n % output_chunk_length)
+                out = self.model(batch)  # (batch_size, output_chunk_length, width)
+                batch_prediction.append(out)
+                while sum(map(lambda t: t.shape[1], batch_prediction)) < n:
+                    roll_size = min(self.output_chunk_length, self.input_chunk_length)
+                    batch = torch.roll(batch, -roll_size, 1)
+                    batch[:, -roll_size:, :] = out[:, :roll_size, :]
 
-        prediction = []  # (length, width)
-        out = self.model(in_sequence)  # (1, output_chunk_length, width)
-        prediction.append(out[0, :, :])
-        while sum(map(lambda t: len(t), prediction)) < n:
-            roll_size = min(self.output_chunk_length, self.input_chunk_length)
-            in_sequence = torch.roll(in_sequence, -roll_size, 1)
-            in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
+                    # take only last part of the output sequence where needed
+                    out = self.model(batch)[self.first_prediction_index:]
+                    batch_prediction.append(out)
 
-            # take only last part of the output sequence where needed
-            out = self.model(in_sequence)[self.first_prediction_index:]
+                batch_prediction = torch.cat(batch_prediction, dim=1)
+                prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
 
-            prediction.append(out[0, :, :])
-
-        prediction = torch.cat(prediction)
-        prediction = prediction[:n, :]  # prediction[:n]
-        return prediction
+            return torch.cat(prediction).squeeze()
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
