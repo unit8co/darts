@@ -355,7 +355,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                verbose: bool = False
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -378,6 +379,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates
             Optionally, the covariates series needed as inputs for the model. They must match the covariates used
             for training.
+        verbose
+            Optionally, whether to print progress.
 
         Returns
         -------
@@ -408,7 +411,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.ndarray],
-                             batch_size: Optional[int] = None
+                             batch_size: Optional[int] = None,
+                             verbose: bool = False
                              ) -> Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]:
 
         """
@@ -538,7 +542,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=False,
                                  drop_last=False)
 
-        predictions_tensor = self._produce_prediction(pred_loader, n)
+        predictions_tensor = self._produce_prediction(pred_loader, n, verbose)
 
         ### postprocessing ###
 
@@ -568,10 +572,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return ts_forecasts
 
-    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int) -> torch.Tensor:
+    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int, verbose: bool = False) -> torch.Tensor:
+        
+        def _tqdm_switch(obj):
+            return tqdm(obj) if verbose else obj
+           
+        
         prediction = []
         with torch.no_grad():
-            for batch in tqdm(in_dataset):
+            for batch in _tqdm_switch(in_dataset):
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
                 out = self.model(batch)  # (batch_size, output_chunk_length, width)
                 batch_prediction.append(out)
