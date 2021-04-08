@@ -5,7 +5,7 @@
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/u8darts)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
-![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
+![Supported versions](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
@@ -28,7 +28,7 @@ on multiple time series.
 
 ## Install
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
+We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
 Once your environment is set up you can install darts using pip:
 
