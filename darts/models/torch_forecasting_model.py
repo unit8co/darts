@@ -407,9 +407,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def predict_from_dataset(self,
                              n: int,
-                             input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.array],
+                             input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.ndarray],
                              batch_size: Optional[int] = None
-                             ) -> Union[Sequence[TimeSeries], torch.Tensor, np.array]:
+                             ) -> Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]:
         self.model.eval()
 
         ### preprocessing ###
@@ -448,17 +448,39 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             in_tsr = torch.cat(in_tsr_arr, dim=0)
 
         elif isinstance(input_series_dataset, torch.Tensor):
-
+            
+            # checks if we have 3 dimensions
             raise_if_not(input_series_dataset.ndim == 3,
                          "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
                          "dim 2 for covariates")
+            
             in_tsr = input_series_dataset
 
         elif isinstance(input_series_dataset, np.ndarray):
-
+            
+            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim 
+            # includes both target series (univariate or multivariate) and covariate (univariate or multivariate)
+            
             raise_if_not(input_series_dataset.ndim == 3,
                          "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
                          "dim 2 for covariates")
+            
+            # checking input dimension (target series + covariates dimensions)
+            in_dim = input_series_dataset.shape[2]
+            raise_if_not(in_dim==self.input_dim,
+                         'The dimensionality of the series provided for prediction does not match the dimensionality'
+                         'of the series this model has been trained on. Provided input dim = {}, '
+                         'model input dim = {}'.format(in_dim, self.input_dim))
+            
+            # checking if the TS length (time points) are at least input_chunk_length
+            in_len = input_series_dataset.shape[1]
+            raise_if_not(in_len >= self.input_chunk_length,
+                             'All input series must have length >= `input_chunk_length` ({}).'.format(
+                                 self.input_chunk_length))
+            
+            # keeping only the last slice (useful for predicting)
+            input_series_dataset = input_series_dataset[:, -self.input_chunk_length:, :]
+            
             in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
 
         else:
@@ -475,7 +497,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=False,
                                  drop_last=False)
 
-        predictions_tensor = self._produce_prediction(pred_loader, n)
+        predictions_tensor = self._produce_prediction(pred_loader, n) #np -> (dim0, dim1, dim2)
 
         ### postprocessing ###
 
@@ -483,11 +505,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             predictions_array = predictions_tensor.cpu().detach().numpy()
             ts_forecasts = []
-
             for sequence_num, (target_series, _) in enumerate(input_series_dataset):
                 ts_forecasts.append(
                     self._build_forecast_series(
-                        predictions_array[sequence_num, :].reshape(n, -1),
+                        predictions_array[sequence_num, :, :],
                         input_series=target_series
                     ))
 
@@ -524,8 +545,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
-
-            return torch.cat(prediction).squeeze(dim=2)
+            return torch.cat(prediction)
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
