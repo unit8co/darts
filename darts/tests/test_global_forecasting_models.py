@@ -127,71 +127,93 @@ if TORCH_AVAILABLE:
                 model.predict_from_dataset(n=1, input_series_dataset=UNSUPPORTED_TYPE)
             
                 
-        def test_multi_ts_numpy(self):
-            # testing the predictions with np.array as input. The function should return a numpy array as well,
+        def test_multi_ts_numpy_and_tensor(self):
+            # testing the predictions with np.ndarray/torch.Tensor as input. The function should return a np.ndarray/torch.Tensor as well,
             # containing all the predictions
             
-            for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
-                model.fit([self.ts_pass_train, self.ts_pass_train_1])
-                
-                # the np.array should have 3 dimensions, dim 0 for samples, dim 1 for time points and dim 2 for covariates
-                with self.assertRaises(ValueError):
-                    dummy_np_array = np.ones(shape=(1,1))
-                    model.predict_from_dataset(n=1, input_series_dataset=dummy_np_array)
-                
-                # chek input not long enough
-                with self.assertRaises(ValueError):
-                    dummy_np_array = self.ts_pass_train.values()[-1:]  # making the input too short
-                    dummy_np_array = np.stack([dummy_np_array], axis=0) # but right dimension
-                    model.predict_from_dataset(n=1, input_series_dataset=dummy_np_array)
-                
+            # since the test for np.ndarray and torch were pretty identical, using module, type and custom functions for avoiding too much
+            # code repetition
+            
+            def _np_to_tensor(array: np.ndarray) -> torch.Tensor:
+                return torch.from_numpy(array).float()
+            
+            def _identity(x):
+                return x
+            
+            def _tensor_to_np(tensor: torch.Tensor) ->  np.ndarray:
+                return tensor.cpu().detach().numpy()
+            
+            
+            prediction_types = [np.ndarray, torch.Tensor]
+            modules = [np, torch]
+            adjust_type_fns = [_identity, _np_to_tensor] # convert numpy to tensor when needed
+            to_np_fns = [_identity, _tensor_to_np] # converting the tensor back for building TS
+            
+            for prediction_type, module, adjust_type_fn, to_np_fn in zip(prediction_types, modules, adjust_type_fns, to_np_fns):
+            
+                for model_cls, kwargs, err in models_cls_kwargs_errs:
+                    model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                    model.fit([self.ts_pass_train, self.ts_pass_train_1])
                     
-                ts_pass_train_array = self.ts_pass_train.values()
-                # stacking creating the new 0 axis for multiple samples
-                input_array = np.stack([ts_pass_train_array], axis=0)
-                
-                PRED_LEN = len(self.ts_pass_val)
-                pred = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=input_array)
-                
-                # checking return type
-                self.assertIsInstance(pred, np.ndarray, 'Return type not as expected.'
-                                      'Expected type: {}, current type {}'.format(np.ndarray, type(pred)))
-                
-                # checking the overall returned shape
-                expected_shape = (input_array.shape[0], PRED_LEN, 1) # (n_samples, prediction_length, prediction_width)
-                self.assertEqual(expected_shape, pred.shape, 'Model prediction size not as expected.'
-                                 'Expected shape: {}, current shape: {}'.format(expected_shape, pred.shape))
-               
-                # converting the pred into TS for checking the metric
-                pred_ts = TimeSeries.from_times_and_values(self.ts_pass_val.time_index(), pred[0])
-                mape_err = mape(self.ts_pass_val, pred_ts)
-                self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
-                                                                    'series). Error = {}'.format(model_cls, mape_err))
-                
-                #### checking the output dimensions and error with multiple TS ###
-
-                # getting the numpy view of the second TS
-                ts_pass_train_array_1 = self.ts_pass_train_1.values()
-                
-                input_array = np.stack([ts_pass_train_array, ts_pass_train_array_1], axis=0)
-                
-                # (samples, TSlen, 1)
-                pred_list = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=input_array)
-                
-                
-                self.assertTrue(pred_list.shape[0] == 2, 'Model {} did not return a list of prediction'.format(model_cls))
-                
-                for pred in pred_list:
-                    # turn into a TS
-                    pred_ts = TimeSeries.from_times_and_values(self.ts_pass_val.time_index(), pred)
+                    # the np.array should have 3 dimensions, dim 0 for samples, dim 1 for time points and dim 2 for covariates
+                    with self.assertRaises(ValueError):
+                        dummy_input = module.ones((1,1))
+                        model.predict_from_dataset(n=1, input_series_dataset=dummy_input)
                     
+                    # chek input not long enough
+                    with self.assertRaises(ValueError):
+                        dummy_input = adjust_type_fn(self.ts_pass_train.values()[-1:])  # making the input too short
+                    
+                        dummy_input = module.stack([dummy_input], axis=0) # but right dimension
+                        model.predict_from_dataset(n=1, input_series_dataset=dummy_input)
+                    
+                        
+                    ts_pass_train = adjust_type_fn(self.ts_pass_train.values())
+                    
+                    # stacking creating the new 0 axis for multiple samples
+                    dummy_input = module.stack([ts_pass_train], axis=0)
+                    
+                    PRED_LEN = len(self.ts_pass_val)
+                    pred = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=dummy_input)
+                    
+                    # checking return type
+                    self.assertIsInstance(pred, prediction_type, 'Return type not as expected.'
+                                        'Expected type: {}, current type {}'.format(prediction_type, type(pred)))
+                    
+                    # checking the overall returned shape
+                    expected_shape = (dummy_input.shape[0], PRED_LEN, 1) # (n_samples, prediction_length, prediction_width)
+                    self.assertEqual(expected_shape, pred.shape, 'Model prediction size not as expected.'
+                                    'Expected shape: {}, current shape: {}'.format(expected_shape, pred.shape))
+                    
+                    
+                    # converting the pred into TS for checking the metric
+                    pred_ts = TimeSeries.from_times_and_values(self.ts_pass_val.time_index(), to_np_fn(pred[0]))
                     mape_err = mape(self.ts_pass_val, pred_ts)
-                    self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time series 2). '
-                                                    'Error = {}'.format(model_cls, mape_err))
+                    self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
+                                                                        'series). Error = {}'.format(model_cls, mape_err))
                     
-                # TODO check with multivariate target series and covariates
-        
+                    #### checking the output dimensions and error with multiple TS ###
+
+                    # getting the numpy view of the second TS
+                    ts_pass_train_1 = adjust_type_fn(self.ts_pass_train_1.values())
+                    
+                    dummy_input = module.stack([ts_pass_train, ts_pass_train_1], axis=0)
+                    
+                    # (samples, TSlen, 1)
+                    pred_list = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=dummy_input)
+                    
+                    
+                    self.assertTrue(pred_list.shape[0] == 2, 'Model {} did not return a list of prediction'.format(model_cls))
+                    
+                    for pred in pred_list:
+                        # turn into a TS
+                        pred_ts = TimeSeries.from_times_and_values(self.ts_pass_val.time_index(), to_np_fn(pred))
+                        
+                        mape_err = mape(self.ts_pass_val, pred_ts)
+                        self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time series 2). '
+                                                        'Error = {}'.format(model_cls, mape_err))
+                    
+    
         def test_multivariates_and_covariates_numpy(self):
             
             for model_cls, kwargs, err in models_cls_kwargs_errs:
@@ -219,12 +241,32 @@ if TORCH_AVAILABLE:
                 expected_shape = (input_array.shape[0], PRED_LEN, multivariate_array.shape[1]) # (n_samples, prediction_length, prediction_width)
                 self.assertEqual(expected_shape, pred.shape, 'Model prediction size not as expected.'
                                  'Expected shape: {}, current shape: {}'.format(expected_shape, pred.shape))
-        
-
+             
+        def test_multivariates_and_covariates_torch(self):
+            
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                if model_cls == NBEATSModel:
+                    # N-BEATS does not support multivariate
+                    continue
+                    
+                PRED_LEN = len(self.ts_pass_val)
+                ts_pass_train_array = torch.from_numpy(self.ts_pass_train.values()).float()
+                ts_pass_train_array_1 = torch.from_numpy(self.ts_pass_train_1.values()).float()
                 
+                multivariate_array = torch.cat([ts_pass_train_array, ts_pass_train_array_1], axis=1) # (108, 2)
+                covariate_array = torch.from_numpy(self.time_covariates_train.values()).float() # (108, 2)
+                
+                input_array = torch.cat([multivariate_array, covariate_array], axis=1) # (108, 4)
+                input_array = torch.unsqueeze(input_array, axis=0) # (1, 108, 4) 1 (multivariate TS) with 2 covariates
+                
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model.fit(series=[self.ts_pass_train.stack(self.ts_pass_train_1)],
+                          covariates=[self.time_covariates_train])
+                
+                pred = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=input_array)
+                
+                # checking the overall returned shape
+                expected_shape = (input_array.shape[0], PRED_LEN, multivariate_array.shape[1]) # (n_samples, prediction_length, prediction_width)
+                self.assertEqual(expected_shape, pred.shape, 'Model prediction size not as expected.'
+                                 'Expected shape: {}, current shape: {}'.format(expected_shape, pred.shape))
         
-        '''
-        # TODO testing with tensors
-        def test_multi_ts_tensor(self):
-            pass
-        '''

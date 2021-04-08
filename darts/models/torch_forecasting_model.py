@@ -447,23 +447,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 1 + # of covariates)]
             in_tsr = torch.cat(in_tsr_arr, dim=0)
 
-        elif isinstance(input_series_dataset, torch.Tensor):
+        elif isinstance(input_series_dataset, np.ndarray) or isinstance(input_series_dataset, torch.Tensor):
+            
+            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim 
+            # includes both target series (univariate or multivariate) and covariate (univariate or multivariate)
             
             # checks if we have 3 dimensions
             raise_if_not(input_series_dataset.ndim == 3,
                          "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
                          "dim 2 for covariates")
             
-            in_tsr = input_series_dataset
-
-        elif isinstance(input_series_dataset, np.ndarray):
-            
-            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim 
-            # includes both target series (univariate or multivariate) and covariate (univariate or multivariate)
-            
-            raise_if_not(input_series_dataset.ndim == 3,
-                         "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
-                         "dim 2 for covariates")
+            # checking if the TS length (time points) are at least input_chunk_length
+            in_len = input_series_dataset.shape[1]
+            raise_if_not(in_len >= self.input_chunk_length,
+                             'All input series must have length >= `input_chunk_length` ({}).'.format(
+                                 self.input_chunk_length))
             
             # checking input dimension (target series + covariates dimensions)
             in_dim = input_series_dataset.shape[2]
@@ -472,16 +470,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          'of the series this model has been trained on. Provided input dim = {}, '
                          'model input dim = {}'.format(in_dim, self.input_dim))
             
-            # checking if the TS length (time points) are at least input_chunk_length
-            in_len = input_series_dataset.shape[1]
-            raise_if_not(in_len >= self.input_chunk_length,
-                             'All input series must have length >= `input_chunk_length` ({}).'.format(
-                                 self.input_chunk_length))
-            
             # keeping only the last slice (useful for predicting)
+            
             input_series_dataset = input_series_dataset[:, -self.input_chunk_length:, :]
             
-            in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
+            if isinstance(input_series_dataset, np.ndarray):
+                in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
+            else:
+                in_tsr = input_series_dataset
 
         else:
             raise_log(
