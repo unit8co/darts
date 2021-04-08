@@ -1,1 +1,1 @@
-pmdarima==1.6.1
+pmdarima==1.8.0
