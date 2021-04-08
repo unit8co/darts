@@ -537,7 +537,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 while sum(map(lambda t: t.shape[1], batch_prediction)) < n:
                     roll_size = min(self.output_chunk_length, self.input_chunk_length)
                     batch = torch.roll(batch, -roll_size, 1)
-                    batch[:, -roll_size:, :] = out[:, :roll_size, :]
+                    # updating the dimension regarding the target series (not updating covariates)
+                    target_series_width = out.size()[2]
+                    batch[:, -roll_size:, :target_series_width] = out[:, :roll_size, :]
 
                     # take only last part of the output sequence where needed
                     out = self.model(batch)[self.first_prediction_index:]

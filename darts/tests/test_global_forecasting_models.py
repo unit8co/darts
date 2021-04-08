@@ -195,7 +195,10 @@ if TORCH_AVAILABLE:
         def test_multivariates_and_covariates_numpy(self):
             
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                
+                if model_cls == NBEATSModel:
+                    # N-BEATS does not support multivariate
+                    continue
+                    
                 PRED_LEN = len(self.ts_pass_val)
                 ts_pass_train_array = self.ts_pass_train.values()
                 ts_pass_train_array_1 = self.ts_pass_train_1.values()
@@ -213,10 +216,10 @@ if TORCH_AVAILABLE:
                 pred = model.predict_from_dataset(n=PRED_LEN, input_series_dataset=input_array)
                 
                 # checking the overall returned shape
-                expected_shape = (input_array.shape[0], PRED_LEN, input_array.shape[2]) # (n_samples, prediction_length, prediction_width)
+                expected_shape = (input_array.shape[0], PRED_LEN, multivariate_array.shape[1]) # (n_samples, prediction_length, prediction_width)
                 self.assertEqual(expected_shape, pred.shape, 'Model prediction size not as expected.'
                                  'Expected shape: {}, current shape: {}'.format(expected_shape, pred.shape))
-                
+        
 
                 
         
