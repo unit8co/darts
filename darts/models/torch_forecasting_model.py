@@ -410,6 +410,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.ndarray],
                              batch_size: Optional[int] = None
                              ) -> Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]:
+
+        """
+        Predicts values for a certain number of time steps after the end of the training series,
+        or after the end of the specified ``series``.
+
+        If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
+        auto-regressive way, by iteratively feeding the last ``output_chunk_length`` forecast points as
+        inputs to the model until a forecast of length ``n`` is obtained. This is at the moment only
+        supported when covariates are not used, as this functionality requires future covariates,
+        which are not supported yet.
+
+        If you provide the ``torch.Tensor`` or ``np.ndarray`` tensor as an ``input_series_dataset``, following order
+        of dimensions is expected:
+
+            - dim 0 (rows): samples
+            - dim 1 (columns): timesteps for all timeseries and covariates (of ``input_chunk_size`` length)
+            - dim 2 (depth): all timeseries (if multivariate problem) and all covariates
+
+        The expected output is of the same type and dimensionality, however dim 2 may be smaller (i.e. in case there are
+        covariates - they will not be present in prediction).
+
+        If your ``input_series_dataset`` has more timesteps that the model was trained with
+        (``len(input_series_dataset) > input_chunk_length``), it will be trimmed to ``input_chunk_length`` truncating
+        the front of timeseries.
+
+        Parameters
+        ----------
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        input_series_dataset
+            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            future is to be predicted. If specified, the method returns the forecasts of these
+            series. Otherwise, the method returns the forecast of the (single) training series. For `torch.Tensor`
+            and `np.ndarray` types the dimension are (samples, timesteps, timeseries_covariates).
+        batch_size
+            Size of batches during prediction. Defaults to the models `batch_size` value.
+        verbose
+            Shows the progress bar for batch predicition. Off by default.
+
+        Returns
+        -------
+        Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]
+            Returns one or more forecasts for time series. The returned type is strictly dependent on the type of
+            object provided in `input_series_dataset`.
+        """
         self.model.eval()
 
         ### preprocessing ###
@@ -493,7 +538,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=False,
                                  drop_last=False)
 
-        predictions_tensor = self._produce_prediction(pred_loader, n) #np -> (dim0, dim1, dim2)
+        predictions_tensor = self._produce_prediction(pred_loader, n)
 
         ### postprocessing ###
 
