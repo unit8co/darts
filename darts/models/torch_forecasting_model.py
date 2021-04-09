@@ -405,7 +405,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         dataset = SimpleInferenceDataset(series, covariates)
-        predictions = self.predict_from_dataset(n, dataset)
+        predictions = self.predict_from_dataset(n, dataset, verbose=verbose)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
@@ -546,7 +546,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=False,
                                  drop_last=False)
 
-        predictions_tensor = self._produce_prediction(pred_loader, n, verbose)
+        predictions_tensor = self._produce_prediction(pred_loader, n, verbose=verbose)
 
         ### postprocessing ###
 
@@ -578,13 +578,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int, verbose: bool = False) -> torch.Tensor:
         
-        def _tqdm_switch(obj):
-            return tqdm(obj) if verbose else obj
-           
-        
         prediction = []
+        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose)
+        
         with torch.no_grad():
-            for batch in _tqdm_switch(in_dataset):
+            for batch in iterator:
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
                 out = self.model(batch)  # (batch_size, output_chunk_length, width)
                 batch_prediction.append(out)
@@ -601,6 +599,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
+                
             return torch.cat(prediction)
 
     def untrained_model(self):
