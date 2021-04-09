@@ -416,8 +416,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              ) -> Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]:
 
         """
-        Predicts values for a certain number of time steps after the end of the training series,
-        or after the end of the specified ``series``.
+        Predicts values for a certain number of time steps after the end of the specified ``series``.
 
         If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
         auto-regressive way, by iteratively feeding the last ``output_chunk_length`` forecast points as
@@ -425,11 +424,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
 
+        Note: it is advised to use the ``TimeSeriesInferenceDataset`` as an input just only in case the prediction dataset is
+        small enough. The current DARTS implementation converts TimeSeries objects into torch.Tensor, and then transform them
+        back. These steps introduce a substantial overhead while handling big datasets. In these cases, it is suggested leveraging 
+        either np.ndarray or torch.Tensor instead.
+        
         If you provide the ``torch.Tensor`` or ``np.ndarray`` tensor as an ``input_series_dataset``, following order
         of dimensions is expected:
 
             - dim 0 (rows): samples
-            - dim 1 (columns): timesteps for all timeseries and covariates (of ``input_chunk_size`` length)
+            - dim 1 (columns): timesteps for all timeseries and covariates (of at least ``input_chunk_size`` length)
             - dim 2 (depth): all timeseries (if multivariate problem) and all covariates
 
         The expected output is of the same type and dimensionality, however dim 2 may be smaller (i.e. in case there are
