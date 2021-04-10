@@ -5,13 +5,13 @@
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/u8darts)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
-![Supported versions](https://img.shields.io/badge/python-3.6+-blue.svg)
+![Supported versions](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/u8darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
-It contains a variety of models, from classics such as ARIMA to neural networks.
+It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
@@ -28,11 +28,11 @@ on multiple time series.
 
 ## Install
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.6 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
+We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
 Once your environment is set up you can install darts using pip:
 
-    pip install 'u8darts[all]'
+    pip install darts
 
 For more detailed install instructions you can refer to our installation guide at the end of this page.
 
@@ -169,10 +169,10 @@ Don't forget to activate your virtual environment
 
 ### Install darts
 
-Install Darts with all available models: `pip install 'u8darts[all]'`.
+Install Darts with all available models: `pip install darts`.
 
 As some models have relatively heavy (or non-Python) dependencies,
-we also provide the following alternate lighter install options: 
+we also maintain the `u8darts` package, which provides the following alternate lighter install options: 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
 * Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
