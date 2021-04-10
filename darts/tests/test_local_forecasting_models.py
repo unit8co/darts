@@ -15,9 +15,9 @@ logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [
-    (ExponentialSmoothing(), 4.8),
-    (ARIMA(0, 1, 1), 17.1),
-    (ARIMA(1, 1, 1), 14.2),
+    (ExponentialSmoothing(), 5.6),
+    (ARIMA(0, 1, 1, trend='t'), 17.1),
+    (ARIMA(1, 1, 1, trend='t'), 18.3),
     (Theta(), 11.3),
     (Theta(1), 20.2),
     (Theta(-1), 9.8),
@@ -37,6 +37,7 @@ multivariate_models = [
 
 extended_models = [ARIMA()]
 
+
 try:
     from ..models import Prophet
     models.append((Prophet(), 13.5))
@@ -47,8 +48,10 @@ try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 13.7))
     extended_models.append(AutoARIMA())
+    PMDARIMA_AVAILABLE = True
 except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
+    PMDARIMA_AVAILABLE = False
 
 try:
     from ..models import TCNModel
@@ -131,3 +134,16 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.fit(self.ts_gaussian, exog=self.ts_gaussian[:-1])
             with self.assertRaises(ValueError):
                 model.fit(self.ts_gaussian[1:], exog=self.ts_gaussian[:-1])
+
+    def test_dummy_series(self):
+        values = np.random.uniform(low=-10, high=10, size=100)
+        ts = TimeSeries(pd.DataFrame({"V1": values}), dummy_index=True)
+
+        varima = VARIMA(trend="t")
+        with self.assertRaises(ValueError):
+            varima.fit(series=ts)
+
+        if PMDARIMA_AVAILABLE:
+            autoarima = AutoARIMA(trend="t")
+            with self.assertRaises(ValueError):
+                autoarima.fit(series=ts)

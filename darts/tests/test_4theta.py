@@ -45,7 +45,8 @@ class FourThetaTestCase(DartsBaseTestClass):
         fourtheta.fit(series)
         forecast_theta = theta.predict(20)
         forecast_fourtheta = fourtheta.predict(20)
-        self.assertTrue((forecast_theta - forecast_fourtheta <= 1e-11).all()[0])
+        weighted_delta = (forecast_theta - forecast_fourtheta)/forecast_theta
+        self.assertTrue((weighted_delta <= 3e-5).all()[0])
 
     def test_best_model(self):
         random.seed(1)
