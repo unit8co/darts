@@ -15,7 +15,7 @@ from ..logging import raise_if_not, get_logger
 T = TypeVar('T')
 logger = get_logger(__name__)
 
-MAX_TORCH_SEED_VALUE = (1 << 63) - 1
+MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
 MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
 
 
