@@ -66,6 +66,9 @@ class ShiftedDataset(TrainingDataset):
                      'The provided sequence of target series must have the same length as '
                      'the provided sequence of covariate series.')
 
+        raise_if_not(min(len(ts) for ts in self.target_series) - length - shift + 1 > 0,
+                     "Every target series needs to be at least `length + shift` long")
+
         self.length, self.shift = length, shift
         self.max_samples_per_ts = max_samples_per_ts
 
