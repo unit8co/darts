@@ -45,12 +45,12 @@ class AutoARIMA(ExtendedForecastingModel):
         super().fit(series, exog)
         series = self.training_series
         self.model.fit(series.values(),
-                       X=exog.values() if exog else None)
+                       exogenous=exog.values() if exog else None)
 
     def predict(self, n: int, exog: Optional[TimeSeries] = None):
         super().predict(n, exog)
         forecast = self.model.predict(n_periods=n,
-                                      X=exog.values() if exog else None)
+                                      exogenous=exog.values() if exog else None)
         return self._build_forecast_series(forecast)
 
     @property
