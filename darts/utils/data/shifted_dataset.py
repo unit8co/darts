@@ -78,11 +78,12 @@ class ShiftedDataset(TrainingDataset):
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
     def __len__(self):
-        raise_if_not(min(len(ts) for ts in self.target_series) - self.length - self.shift + 1 > 0,
-                     "Every target series needs to be at least `length + shift` long")
         return self.ideal_nr_samples
 
     def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+        raise_if_not(min(len(ts) for ts in self.target_series) - self.length - self.shift + 1 > 0,
+                     "Every target series needs to be at least `length + shift` long")
+    
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx].values(copy=False)
