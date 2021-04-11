@@ -79,7 +79,8 @@ class TimeSeries:
                     self._df = self._fill_missing_dates(self._df, freq)
                 else:
                     raise_if_not(False, 'Could not infer frequency. Are some dates missing? '
-                                        'Try specifying `fill_missing_dates=True`.', logger)
+                                        'Try specifying `fill_missing_dates=True` or specify '
+                                        'the `freq` parameter.', logger)
             self._freq: str = self._df.index.inferred_freq  # Infer frequency
             if (freq is not None and self._freq != freq):
                 logger.warning('The inferred frequency does not match the value of the "freq" argument.')
@@ -1425,7 +1426,7 @@ class TimeSeries:
         return len(self._df)
 
     def __add__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float)):
+        if isinstance(other, (int, float, np.integer)):
             new_series = self._df + other
             return TimeSeries(new_series, self.freq_str())
         elif isinstance(other, TimeSeries):
@@ -1438,7 +1439,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float)):
+        if isinstance(other, (int, float, np.integer)):
             new_series = self._df - other
             return TimeSeries(new_series, self.freq_str())
         elif isinstance(other, TimeSeries):
@@ -1451,7 +1452,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float)):
+        if isinstance(other, (int, float, np.integer)):
             new_series = self._df * other
             return TimeSeries(new_series, self.freq_str())
         elif isinstance(other, TimeSeries):
@@ -1464,7 +1465,7 @@ class TimeSeries:
         return self * other
 
     def __pow__(self, n):
-        if isinstance(n, (int, float, np.integer, np.float)):
+        if isinstance(n, (int, float, np.integer)):
             if n < 0 and not all(self.values() != 0):
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
 
@@ -1475,7 +1476,7 @@ class TimeSeries:
                                 .format(type(self).__name__, type(n).__name__)), logger)
 
     def __truediv__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float)):
+        if isinstance(other, (int, float, np.integer)):
             if (other == 0):
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
 
@@ -1510,7 +1511,7 @@ class TimeSeries:
         return TimeSeries(series, self.freq_str())
 
     def __lt__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.ndarray)):
             series = self._df < other
         elif isinstance(other, TimeSeries):
             series = self._df < other.pd_dataframe()
@@ -1520,7 +1521,7 @@ class TimeSeries:
         return series  # TODO should we return only the ndarray, the pd series, or our timeseries?
 
     def __gt__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.ndarray)):
             series = self._df > other
         elif isinstance(other, TimeSeries):
             series = self._df > other.pd_dataframe()
@@ -1530,7 +1531,7 @@ class TimeSeries:
         return series
 
     def __le__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.ndarray)):
             series = self._df <= other
         elif isinstance(other, TimeSeries):
             series = self._df <= other.pd_dataframe()
@@ -1540,7 +1541,7 @@ class TimeSeries:
         return series
 
     def __ge__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float, np.ndarray)):
+        if isinstance(other, (int, float, np.integer, np.ndarray)):
             series = self._df >= other
         elif isinstance(other, TimeSeries):
             series = self._df >= other.pd_dataframe()
