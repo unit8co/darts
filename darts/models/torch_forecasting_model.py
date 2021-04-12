@@ -15,7 +15,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from tqdm.auto import tqdm
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -424,10 +423,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
 
-        Note: it is advised to use the ``TimeSeriesInferenceDataset`` as an input just only in case the prediction dataset is
-        small enough. The current DARTS implementation converts TimeSeries objects into torch.Tensor, and then transform them
-        back. These steps introduce a substantial overhead while handling big datasets. In these cases, it is suggested leveraging 
-        either np.ndarray or torch.Tensor instead.
+        Note: it is advised to use the ``TimeSeriesInferenceDataset`` as an input just only in case the prediction
+        dataset is small enough. The current DARTS implementation converts TimeSeries objects into torch.Tensor,
+        and then transform them back. These steps introduce a substantial overhead while handling big datasets. In
+        these cases, it is suggested leveraging either np.ndarray or torch.Tensor instead.
         
         If you provide the ``torch.Tensor`` or ``np.ndarray`` tensor as an ``input_series_dataset``, following order
         of dimensions is expected:
@@ -465,7 +464,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self.model.eval()
 
-        ### preprocessing ###
+        # preprocessing
 
         if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
 
@@ -501,32 +500,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             in_tsr = torch.cat(in_tsr_arr, dim=0)
 
         elif isinstance(input_series_dataset, np.ndarray) or isinstance(input_series_dataset, torch.Tensor):
-            
-            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim 
+
+            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim
             # includes both target series (univariate or multivariate) and covariate (univariate or multivariate)
-            
+
             # checks if we have 3 dimensions
             raise_if_not(input_series_dataset.ndim == 3,
                          "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
                          "dim 2 for covariates")
-            
+
             # checking if the TS length (time points) are at least input_chunk_length
             in_len = input_series_dataset.shape[1]
             raise_if_not(in_len >= self.input_chunk_length,
-                             'All input series must have length >= `input_chunk_length` ({}).'.format(
-                                 self.input_chunk_length))
-            
+                         'All input series must have length >= `input_chunk_length` ({}).'.format(
+                             self.input_chunk_length))
+
             # checking input dimension (target series + covariates dimensions)
             in_dim = input_series_dataset.shape[2]
-            raise_if_not(in_dim==self.input_dim,
+            raise_if_not(in_dim == self.input_dim,
                          'The dimensionality of the series provided for prediction does not match the dimensionality'
                          'of the series this model has been trained on. Provided input dim = {}, '
                          'model input dim = {}'.format(in_dim, self.input_dim))
-            
+
             # keeping only the last slice (useful for predicting)
-            
+
             input_series_dataset = input_series_dataset[:, -self.input_chunk_length:, :]
-            
+
             if isinstance(input_series_dataset, np.ndarray):
                 in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
             else:
@@ -537,7 +536,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 AttributeError('Unsupported data type in `input_series_dataset`. Available data types are: '
                                'TimeSeriesInferenceDataset, torch.Tensor or NumPy array'))
 
-        ### prediction ###
+        # prediction
 
         pred_loader = DataLoader(in_tsr,
                                  batch_size=batch_size or self.batch_size,
@@ -548,7 +547,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         predictions_tensor = self._produce_prediction(pred_loader, n, verbose=verbose)
 
-        ### postprocessing ###
+        # postprocessing
 
         if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
 
@@ -576,11 +575,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return ts_forecasts
 
-    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int, verbose: bool = False) -> torch.Tensor:
-        
+    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int,
+                            verbose: bool = False) -> torch.Tensor:
+
         prediction = []
         iterator = _build_tqdm_iterator(in_dataset, verbose=verbose)
-        
+
         with torch.no_grad():
             for batch in iterator:
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
@@ -599,7 +599,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
-                
+
             return torch.cat(prediction)
 
     def untrained_model(self):
