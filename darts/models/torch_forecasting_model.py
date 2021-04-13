@@ -9,6 +9,7 @@ import os
 import re
 from glob import glob
 import shutil
+from joblib import Parallel, delayed
 from typing import Optional, Dict, Tuple, Union, Sequence
 from abc import ABC, abstractmethod
 import torch
@@ -355,6 +356,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                batch_size: Optional[int] = None,
                 verbose: bool = False
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
@@ -378,6 +380,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates
             Optionally, the covariates series needed as inputs for the model. They must match the covariates used
             for training.
+        batch_size
+            Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
             Optionally, whether to print progress.
 
@@ -404,15 +408,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         dataset = SimpleInferenceDataset(series, covariates)
-        predictions = self.predict_from_dataset(n, dataset, verbose=verbose)
+        predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
                              n: int,
-                             input_series_dataset: Union[TimeSeriesInferenceDataset, torch.Tensor, np.ndarray],
+                             input_series_dataset: TimeSeriesInferenceDataset,
                              batch_size: Optional[int] = None,
                              verbose: bool = False
-                             ) -> Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]:
+                             ) -> Sequence[TimeSeries]:
 
         """
         Predicts values for a certain number of time steps after the end of the specified ``series``.
@@ -427,7 +431,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataset is small enough. The current DARTS implementation converts TimeSeries objects into torch.Tensor,
         and then transform them back. These steps introduce a substantial overhead while handling big datasets. In
         these cases, it is suggested leveraging either np.ndarray or torch.Tensor instead.
-        
+
         If you provide the ``torch.Tensor`` or ``np.ndarray`` tensor as an ``input_series_dataset``, following order
         of dimensions is expected:
 
@@ -465,79 +469,41 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.eval()
 
         # preprocessing
+        raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
+                     'Only TimeSeriesInferenceDataset is accepted as input type')
 
-        if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
+        # check that the input sizes match
+        sample = input_series_dataset[0]
+        in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
+        raise_if_not(in_dim == self.input_dim,
+                     'The dimensionality of the series provided for prediction does not match the dimensionality'
+                     'of the series this model has been trained on. Provided input dim = {}, '
+                     'model input dim = {}'.format(in_dim, self.input_dim))
 
-            # check that the input sizes match
-            sample = input_series_dataset[0]
-            in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
-            raise_if_not(in_dim == self.input_dim,
-                         'The dimensionality of the series provided for prediction does not match the dimensionality'
-                         'of the series this model has been trained on. Provided input dim = {}, '
-                         'model input dim = {}'.format(in_dim, self.input_dim))
-
-            # TODO currently we assume all forecasts fit in memory
-            in_tsr_arr = []
-            for target_series, covariate_series in input_series_dataset:
-                raise_if_not(len(target_series) >= self.input_chunk_length,
-                             'All input series must have length >= `input_chunk_length` ({}).'.format(
-                                 self.input_chunk_length))
-
-                # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
-                # TODO: e.g. by taking their latest common timestamp.
-
-                in_tsr_sample = target_series.values(copy=False)[-self.input_chunk_length:]
-                in_tsr_sample = torch.from_numpy(in_tsr_sample).float().to(self.device)
-                if covariate_series is not None:
-                    in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
-                    in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
-                    in_tsr_sample = torch.cat([in_tsr_sample, in_cov_tsr], dim=1)
-                in_tsr_sample = in_tsr_sample.view(1, self.input_chunk_length, -1)
-
-                in_tsr_arr.append(in_tsr_sample)
-
-            # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 1 + # of covariates)]
-            in_tsr = torch.cat(in_tsr_arr, dim=0)
-
-        elif isinstance(input_series_dataset, np.ndarray) or isinstance(input_series_dataset, torch.Tensor):
-
-            # input_series_dataset is a numpy array with dim (samples, len of TS, dim of TS (width)). The last dim
-            # includes both target series (univariate or multivariate) and covariate (univariate or multivariate)
-
-            # checks if we have 3 dimensions
-            raise_if_not(input_series_dataset.ndim == 3,
-                         "An input tensor has to have 3 dimensions: dim 0 for samples, dim 1 for time points and "
-                         "dim 2 for covariates")
-
-            # checking if the TS length (time points) are at least input_chunk_length
-            in_len = input_series_dataset.shape[1]
-            raise_if_not(in_len >= self.input_chunk_length,
+        # TODO currently we assume all forecasts fit in memory
+        in_tsr_arr = []
+        for target_series, covariate_series in input_series_dataset:
+            raise_if_not(len(target_series) >= self.input_chunk_length,
                          'All input series must have length >= `input_chunk_length` ({}).'.format(
-                             self.input_chunk_length))
+                self.input_chunk_length))
 
-            # checking input dimension (target series + covariates dimensions)
-            in_dim = input_series_dataset.shape[2]
-            raise_if_not(in_dim == self.input_dim,
-                         'The dimensionality of the series provided for prediction does not match the dimensionality'
-                         'of the series this model has been trained on. Provided input dim = {}, '
-                         'model input dim = {}'.format(in_dim, self.input_dim))
+            # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
+            # TODO: e.g. by taking their latest common timestamp.
 
-            # keeping only the last slice (useful for predicting)
+            in_tsr_sample = target_series.values(copy=False)[-self.input_chunk_length:]
+            in_tsr_sample = torch.from_numpy(in_tsr_sample).float().to(self.device)
+            if covariate_series is not None:
+                in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
+                in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
+                in_tsr_sample = torch.cat([in_tsr_sample, in_cov_tsr], dim=1)
+            in_tsr_sample = in_tsr_sample.view(1, self.input_chunk_length, -1)
 
-            input_series_dataset = input_series_dataset[:, -self.input_chunk_length:, :]
+            in_tsr_arr.append(in_tsr_sample)
 
-            if isinstance(input_series_dataset, np.ndarray):
-                in_tsr = torch.from_numpy(input_series_dataset).float().to(self.device)
-            else:
-                in_tsr = input_series_dataset
-
-        else:
-            raise_log(
-                AttributeError('Unsupported data type in `input_series_dataset`. Available data types are: '
-                               'TimeSeriesInferenceDataset, torch.Tensor or NumPy array'))
+        # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 1 + # of covariates)]
+        in_tsr = torch.cat(in_tsr_arr, dim=0)
 
         # prediction
-
         pred_loader = DataLoader(in_tsr,
                                  batch_size=batch_size or self.batch_size,
                                  shuffle=False,
@@ -549,29 +515,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # postprocessing
 
-        if isinstance(input_series_dataset, TimeSeriesInferenceDataset):
+        predictions_array = predictions_tensor.cpu().detach().numpy()
+        ts_forecasts = []
 
-            predictions_array = predictions_tensor.cpu().detach().numpy()
-            ts_forecasts = []
-            for sequence_num, (target_series, _) in enumerate(input_series_dataset):
-                ts_forecasts.append(
-                    self._build_forecast_series(
-                        predictions_array[sequence_num, :, :],
-                        input_series=target_series
-                    ))
+        iterator = _build_tqdm_iterator([*zip(predictions_array, input_series_dataset)], verbose=verbose)
 
-        elif isinstance(input_series_dataset, torch.Tensor):
-
-            ts_forecasts = predictions_tensor
-
-        elif isinstance(input_series_dataset, np.ndarray):
-
-            ts_forecasts = predictions_tensor.cpu().detach().numpy()
-
-        else:
-            raise_log(
-                AttributeError('Unsupported data type in `input_series_dataset`. Available data types are: '
-                               'TimeSeriesInferenceDataset, torch.Tensor or NumPy array'))
+        ts_forecasts = Parallel(n_jobs=-1)(delayed(self._build_forecast_series)(prediction, input_series[0])
+                                           for prediction, input_series in iterator)
 
         return ts_forecasts
 
