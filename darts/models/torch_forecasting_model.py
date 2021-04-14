@@ -357,7 +357,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 batch_size: Optional[int] = None,
-                verbose: bool = False
+                verbose: bool = False,
+                n_jobs=1
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -384,6 +385,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
             Optionally, whether to print progress.
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
 
         Returns
         -------
@@ -408,14 +411,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         dataset = SimpleInferenceDataset(series, covariates)
-        predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size)
+        predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: TimeSeriesInferenceDataset,
                              batch_size: Optional[int] = None,
-                             verbose: bool = False
+                             verbose: bool = False,
+                             n_jobs=1,
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -426,21 +430,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         inputs to the model until a forecast of length ``n`` is obtained. This is at the moment only
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
-
-        Note: it is advised to use the ``TimeSeriesInferenceDataset`` as an input just only in case the prediction
-        dataset is small enough. The current DARTS implementation converts TimeSeries objects into torch.Tensor,
-        and then transform them back. These steps introduce a substantial overhead while handling big datasets. In
-        these cases, it is suggested leveraging either np.ndarray or torch.Tensor instead.
-
-        If you provide the ``torch.Tensor`` or ``np.ndarray`` tensor as an ``input_series_dataset``, following order
-        of dimensions is expected:
-
-            - dim 0 (rows): samples
-            - dim 1 (columns): timesteps for all timeseries and covariates (of at least ``input_chunk_size`` length)
-            - dim 2 (depth): all timeseries (if multivariate problem) and all covariates
-
-        The expected output is of the same type and dimensionality, however dim 2 may be smaller (i.e. in case there are
-        covariates - they will not be present in prediction).
 
         If your ``input_series_dataset`` has more timesteps that the model was trained with
         (``len(input_series_dataset) > input_chunk_length``), it will be trimmed to ``input_chunk_length`` truncating
@@ -453,18 +442,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         input_series_dataset
             Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
             future is to be predicted. If specified, the method returns the forecasts of these
-            series. Otherwise, the method returns the forecast of the (single) training series. For `torch.Tensor`
-            and `np.ndarray` types the dimension are (samples, timesteps, timeseries_covariates).
+            series. Otherwise, the method returns the forecast of the (single) training series.
         batch_size
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
             Shows the progress bar for batch predicition. Off by default.
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
 
         Returns
         -------
-        Union[Sequence[TimeSeries], torch.Tensor, np.ndarray]
-            Returns one or more forecasts for time series. The returned type is strictly dependent on the type of
-            object provided in `input_series_dataset`.
+        Sequence[TimeSeries]
+            Returns one or more forecasts for time series.
         """
         self.model.eval()
 
@@ -474,9 +463,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # check that the input sizes match
         sample = input_series_dataset[0]
+
         in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
         raise_if_not(in_dim == self.input_dim,
-                     'The dimensionality of the series provided for prediction does not match the dimensionality'
+                     'The dimensionality of the series provided for prediction does not match the dimensionality '
                      'of the series this model has been trained on. Provided input dim = {}, '
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
@@ -518,18 +508,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predictions_array = predictions_tensor.cpu().detach().numpy()
         ts_forecasts = []
 
-        iterator = _build_tqdm_iterator([*zip(predictions_array, input_series_dataset)], verbose=verbose)
+        iterator = _build_tqdm_iterator(zip(predictions_array, input_series_dataset),
+                                        total=len(input_series_dataset),
+                                        verbose=verbose,
+                                        desc="TS creation")
 
-        ts_forecasts = Parallel(n_jobs=-1)(delayed(self._build_forecast_series)(prediction, input_series[0])
-                                           for prediction, input_series in iterator)
+        # parallelizing the time series creation
+        ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
+                                               for prediction, input_series in iterator)
 
         return ts_forecasts
 
-    def _produce_prediction(self, in_dataset: torch.utils.data.DataLoader, n: int,
+    def _produce_prediction(self,
+                            in_dataset: torch.utils.data.DataLoader,
+                            n: int,
                             verbose: bool = False) -> torch.Tensor:
 
         prediction = []
-        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose)
+
+        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose, desc="Batch prediction")
 
         with torch.no_grad():
             for batch in iterator:
