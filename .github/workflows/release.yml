@@ -14,6 +14,7 @@ jobs:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: '1'
 
       - name: "2. Set up Python 3.8"
@@ -55,6 +56,7 @@ jobs:
         with:
           commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
           branch: master
+          push_options: --force
           commit_user_name: Unit8 Bot
           commit_user_email: info@unit8.co
 
