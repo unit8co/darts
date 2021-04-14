@@ -24,8 +24,8 @@ Time Series Made Easy in Python
    :alt: GitHub Workflow Status
 
 
-.. image:: https://img.shields.io/badge/python-3.6+-blue.svg
-   :target: https://img.shields.io/badge/python-3.6+-blue.svg
+.. image:: https://img.shields.io/badge/python-3.7+-blue.svg
+   :target: https://img.shields.io/badge/python-3.7+-blue.svg
    :alt: Supported versions
 
 
@@ -44,13 +44,13 @@ Time Series Made Easy in Python
    :alt: GitHub Release Date
 
 
-**darts** is a python library for easy manipulation and forecasting of time series.
-It contains a variety of models, from classics such as ARIMA to neural networks.
+**darts** is a Python library for easy manipulation and forecasting of time series.
+It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
 univariate and multivariate time series and models, and the neural networks can be trained
-multiple time series.
+on multiple time series.
 
 Documentation
 -------------
@@ -69,13 +69,13 @@ High Level Introductions
 Install
 -------
 
-We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
+We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
 
-Once your environment is setup you can install darts using pip:
+Once your environment is set up you can install darts using pip:
 
 .. code-block::
 
-   pip install 'u8darts[all]'
+   pip install darts
 
 
 For more detailed install instructions you can refer to our installation guide at the end of this page.
@@ -173,7 +173,7 @@ Before working on a contribution (a new feature or a fix) make sure you can't fi
 #. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
 #. Fork the repository.
 #. Clone the forked repository locally.
-#. Create a clean python env and install requirements with pip: ``pip install -r requirements/dev-all.txt``
+#. Create a clean Python env and install requirements with pip: ``pip install -r requirements/dev-all.txt``
 #. Create a new branch:
 
    * Branch off from the **develop** branch.
@@ -249,10 +249,10 @@ Linux and Windows
 Install darts
 ^^^^^^^^^^^^^
 
-Install Darts with all available models: ``pip install 'u8darts[all]'``.
+Install Darts with all available models: ``pip install darts``.
 
 As some models have relatively heavy (or non-Python) dependencies,
-we also provide the following alternate lighter install options: 
+we also maintain the ``u8darts`` package, which provides the following alternate lighter install options: 
 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): ``pip install u8darts``
@@ -263,7 +263,7 @@ we also provide the following alternate lighter install options:
 Running the examples only, without installing:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
+If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 
 .. code-block:: bash

@@ -220,7 +220,7 @@
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
         <span class="n">hw_model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
                                            <span class="n">trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-                                           <span class="n">damped</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">damped</span><span class="p">,</span>
+                                           <span class="n">damped_trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">damped</span><span class="p">,</span>
                                            <span class="n">seasonal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
                                            <span class="n">seasonal_periods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">)</span>
 

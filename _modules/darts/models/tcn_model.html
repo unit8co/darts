@@ -433,7 +433,7 @@
         <span class="k">return</span> <span class="n">ShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
                               <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
                               <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                              <span class="n">shift</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                              <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">first_prediction_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>

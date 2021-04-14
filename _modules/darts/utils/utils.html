@@ -348,7 +348,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;`start` needs to be either `float`, `int` or `pd.Timestamp`&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
-    <span class="n">start</span> <span class="o">=</span> <span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
 
     <span class="c1"># check start parameter</span>
     <span class="n">raise_if</span><span class="p">(</span><span class="n">start</span> <span class="o">==</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="s1">&#39;`start` timestamp is the last timestamp of the series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -363,61 +363,6 @@
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span> <span class="o">*</span> <span class="n">forecast_horizon</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span>
                      <span class="s1">&#39;`start` timestamp is too late in the series to make any predictions with&#39;</span>
                      <span class="s1">&#39;`overlap_end` set to `False`.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-
-
-<div class="viewcode-block" id="get_timestamp_at_point"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.get_timestamp_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_timestamp_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Converts a point into a pandas.Timestamp in the time series</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    point</span>
-<span class="sd">        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
-<span class="sd">        In case of a `float`, the parameter will be treated as the proportion of the time series</span>
-<span class="sd">        that should lie before the point.</span>
-<span class="sd">        In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
-<span class="sd">        `series`. Will raise a ValueError if not a valid index in `series`</span>
-<span class="sd">        In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp</span>
-<span class="sd">        is present in the series time index, otherwise will raise a ValueError.</span>
-<span class="sd">    series</span>
-<span class="sd">        The time series to index in</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">point</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">point</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;point (float) should be between 0.0 and 1.0.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-        <span class="n">point_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">point</span><span class="p">)</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="s2">&quot;point (int) should be a valid index in series&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
-        <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="p">,</span>
-                 <span class="s1">&#39;point (pandas.Timestamp) must be an entry in the time series</span><span class="se">\&#39;</span><span class="s1"> time index&#39;</span><span class="p">,</span>
-                 <span class="n">logger</span><span class="p">)</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">point</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_log</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;`point` needs to be either `float`, `int` or `pd.Timestamp`&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">timestamp</span></div>
-
-
-<div class="viewcode-block" id="get_index_at_point"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.get_index_at_point">[docs]</a><span class="k">def</span> <span class="nf">get_index_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Converts a point into the corresponding index in the time series</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    point</span>
-<span class="sd">        This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
-<span class="sd">        In case of a `float`, the parameter will be treated as the proportion of the time series</span>
-<span class="sd">        that should lie before the point.</span>
-<span class="sd">        In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series</span>
-<span class="sd">        if the timestamp is present in the series time index, otherwise will raise a ValueError.</span>
-<span class="sd">        In case of an `int`, the parameter will be returned as is provided that it is a valid index,</span>
-<span class="sd">        otherwise will raise a ValueError.</span>
-<span class="sd">    series</span>
-<span class="sd">        The time series to index in</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

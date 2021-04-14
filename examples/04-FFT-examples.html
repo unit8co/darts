@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Fast Fourier Transform Forecasting Model (FFT) &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -430,7 +431,7 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Fast-Fourier-Transform-Forecasting-Model-(FFT)">
+<section id="Fast-Fourier-Transform-Forecasting-Model-(FFT)">
 <h1>Fast Fourier Transform Forecasting Model (FFT)<a class="headerlink" href="#Fast-Fourier-Transform-Forecasting-Model-(FFT)" title="Permalink to this headline">¶</a></h1>
 <p>The following is a brief demonstration of the FFT forecasting model. This model is especially suited for data that is very seasonal. The datasets chosen for this demonstration were selected accordingly.</p>
 <div class="nbinput nblast docutils container">
@@ -484,7 +485,7 @@ The autoreload extension is already loaded. To reload it, use:
   %reload_ext autoreload
 </pre></div></div>
 </div>
-<div class="section" id="Read-and-format">
+<section id="Read-and-format">
 <h2>Read and format<a class="headerlink" href="#Read-and-format" title="Permalink to this headline">¶</a></h2>
 <p>Here we simply read the CSV file containing daily temperatures, and transform the values into the desired format.</p>
 <div class="nbinput nblast docutils container">
@@ -497,8 +498,8 @@ The autoreload extension is already loaded. To reload it, use:
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Constructing-TimeSeries-instances-for-training-and-validation">
+</section>
+<section id="Constructing-TimeSeries-instances-for-training-and-validation">
 <h2>Constructing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances for training and validation<a class="headerlink" href="#Constructing-TimeSeries-instances-for-training-and-validation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -519,8 +520,8 @@ The autoreload extension is already loaded. To reload it, use:
 <img alt="../_images/examples_04-FFT-examples_6_0.png" src="../_images/examples_04-FFT-examples_6_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Basic-FFT-model">
+</section>
+<section id="Basic-FFT-model">
 <h2>Basic FFT model<a class="headerlink" href="#Basic-FFT-model" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -560,10 +561,10 @@ MAPE: 416130884490747.6
 <div class="output_area docutils container">
 <img alt="../_images/examples_04-FFT-examples_10_1.svg" src="../_images/examples_04-FFT-examples_10_1.svg" /></div>
 </div>
-</div>
-<div class="section" id="Improvement-1:-Crop-the-training-set">
+</section>
+<section id="Improvement-1:-Crop-the-training-set">
 <h2>Improvement 1: Crop the training set<a class="headerlink" href="#Improvement-1:-Crop-the-training-set" title="Permalink to this headline">¶</a></h2>
-<p>The first improvement consists of cropping the training set before feeding it to the FFT algorithm such that the first timestamp in the cropped series matches the first timestamp to be predicted in terms of seasonality, i.e. it has the same month, day, weekday, time of day, etc. We could achieve this by passing the optional argument <code class="docutils literal notranslate"><span class="pre">required_matches</span></code> to the FFT constructor that explicitly tells our model which timestamp attributes are relevant. But actually, if we don’t set it manually, the
+<p>The first improvement consists of cropping the training set before feeding it to the FFT algorithm such that the first timestamp in the cropped series matches the first timestamp to be predicted in terms of seasonality, i.e. it has the same month, day, weekday, time of day, etc. We could achieve this by passing the optional argument <code class="docutils literal notranslate"><span class="pre">required_matches</span></code> to the FFT constructor that explicitly tells our model which timestamp attributes are relevant. But actually, if we don’t set it manually, the
 model will attempt to automatically find the pd.Timestamp attributes that are relevant and crop the training set accordingly (which we will do here).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -603,8 +604,8 @@ MAPE: 300841486646235.06
 <div class="output_area docutils container">
 <img alt="../_images/examples_04-FFT-examples_14_1.svg" src="../_images/examples_04-FFT-examples_14_1.svg" /></div>
 </div>
-</div>
-<div class="section" id="Improvement-2:-Filtering-out-low-amplitude-waves">
+</section>
+<section id="Improvement-2:-Filtering-out-low-amplitude-waves">
 <h2>Improvement 2: Filtering out low-amplitude waves<a class="headerlink" href="#Improvement-2:-Filtering-out-low-amplitude-waves" title="Permalink to this headline">¶</a></h2>
 <p>The decomposition of the DFT into the frequency domain allows us to selectively filter out waves with low amplitudes. This allows us to keep strong seasonal trends while discarding some noise. This is achieved in the FFT model by passing the optional argument <code class="docutils literal notranslate"><span class="pre">nr_freqs_to_keep</span></code>. This argument represents the total number of frequencies that will be kept. For instance, if a value of 20 is passed, only the 20 frequencies with the highest amplitudes will be utilized. The default value is set to
 10.</p>
@@ -646,8 +647,8 @@ MAPE: 23.280281955513267
 <div class="output_area docutils container">
 <img alt="../_images/examples_04-FFT-examples_18_1.svg" src="../_images/examples_04-FFT-examples_18_1.svg" /></div>
 </div>
-</div>
-<div class="section" id="Improvement-3:-Detrending">
+</section>
+<section id="Improvement-3:-Detrending">
 <h2>Improvement 3: Detrending<a class="headerlink" href="#Improvement-3:-Detrending" title="Permalink to this headline">¶</a></h2>
 <p>Let’s try out a different data set that has a global upward trend</p>
 <div class="nbinput docutils container">
@@ -730,8 +731,8 @@ MAPE: 23.280281955513267
 <img alt="../_images/examples_04-FFT-examples_27_0.png" src="../_images/examples_04-FFT-examples_27_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="New-Data:-Hourly-Nuclear-Energy-Generation">
+</section>
+<section id="New-Data:-Hourly-Nuclear-Energy-Generation">
 <h2>New Data: Hourly Nuclear Energy Generation<a class="headerlink" href="#New-Data:-Hourly-Nuclear-Energy-Generation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -792,8 +793,8 @@ Theta(2) MAPE: 13.329984933305795
 FFT(nr_freqs_to_keep=10, trend=None) MAPE: 10.263184839655274
 </pre></div></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

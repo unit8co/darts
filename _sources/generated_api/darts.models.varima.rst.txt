@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.varima
+   :members:
+   :undoc-members:
+   :show-inheritance:

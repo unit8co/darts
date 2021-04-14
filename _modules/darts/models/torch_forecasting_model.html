@@ -600,7 +600,7 @@
         <span class="c1"># TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)</span>
 
         <span class="n">prediction</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># (length, width)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)</span>  <span class="c1"># (1, output_chunk_length, width)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:,</span> <span class="p">:]</span>  <span class="c1"># (1, output_chunk_length, width)</span>
         <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
         <span class="k">while</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">prediction</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
             <span class="n">roll_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">)</span>
@@ -608,7 +608,7 @@
             <span class="n">in_sequence</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
 
             <span class="c1"># take only last part of the output sequence where needed</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:]</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">in_sequence</span><span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:,</span> <span class="p">:]</span>
 
             <span class="n">prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
 

@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Regression Model Base Class &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -207,6 +208,10 @@
                             <a href="darts.models.transformer_model.html">Transformer Model</a>
                         </li>
                     
+                        <li class="">
+                            <a href="darts.models.varima.html">VARIMA</a>
+                        </li>
+                    
                     </ul>
                 </li>
             
@@ -253,7 +258,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.regression_model"></span><div class="section" id="regression-model-base-class">
+  <span class="target" id="module-darts.models.regression_model"></span><section id="regression-model-base-class">
 <h1>Regression Model Base Class<a class="headerlink" href="#regression-model-base-class" title="Permalink to this headline">¶</a></h1>
 <p>A regression model predicts values for a time series <span class="math notranslate nohighlight">\(Y_t\)</span> as a function
 of <span class="math notranslate nohighlight">\(N\)</span> “features” time series <span class="math notranslate nohighlight">\(X^i_t\)</span>:</p>
@@ -268,7 +273,7 @@ of <span class="math notranslate nohighlight">\(N\)</span> “features” time s
 <p>This is the base class for all regression models.</p>
 <dl class="py method">
 <dt id="darts.models.regression_model.RegressionModel.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">feature_series: Iterable[darts.timeseries.TimeSeries], target_series: darts.timeseries.TimeSeries, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[numpy.ndarray, float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">feature_series: Iterable[darts.timeseries.TimeSeries], target_series: darts.timeseries.TimeSeries, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel.backtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes an error score between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual series.</p>
 <p>To this end, it repeatedly builds a training set composed of both features and targets,
@@ -396,7 +401,7 @@ and <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> is the time 
 
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

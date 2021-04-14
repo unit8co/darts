@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>TimeSeries Dataset Base Classes &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -209,12 +210,12 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.data.timeseries_dataset"></span><div class="section" id="timeseries-dataset-base-classes">
+  <span class="target" id="module-darts.utils.data.timeseries_dataset"></span><section id="timeseries-dataset-base-classes">
 <h1>TimeSeries Dataset Base Classes<a class="headerlink" href="#timeseries-dataset-base-classes" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">
 <em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.timeseries_dataset.</code><code class="sig-name descname">TimeSeriesInferenceDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/timeseries_dataset.html#TimeSeriesInferenceDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Sequence</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.Sequence</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
 <p>Abstract class for a <cite>TimeSeries</cite> inference dataset. It contains 2-tuples of
 <cite>(input_target, input_covariate)</cite> <cite>TimeSeries</cite>.
 The emitted covariates are optional and can be <cite>None</cite>.</p>
@@ -242,7 +243,7 @@ recommended.</p>
 <dl class="py class">
 <dt id="darts.utils.data.timeseries_dataset.TrainingDataset">
 <em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.timeseries_dataset.</code><code class="sig-name descname">TrainingDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/timeseries_dataset.html#TrainingDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.timeseries_dataset.TrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Sequence</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.Sequence</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
 <p>Abstract class for a training dataset. It contains 3-tuples of
 <cite>(input_target, output_target, input_covariate)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
@@ -269,7 +270,7 @@ recommended.</p>
 
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

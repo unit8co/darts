@@ -26,3 +26,4 @@
         darts.models.theta
         darts.models.torch_forecasting_model
         darts.models.transformer_model
+        darts.models.varima

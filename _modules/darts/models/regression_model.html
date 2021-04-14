@@ -171,7 +171,6 @@
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
     <span class="n">_with_sanity_checks</span><span class="p">,</span>
-    <span class="n">get_timestamp_at_point</span><span class="p">,</span>
     <span class="n">_historical_forecasts_general_checks</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">metrics</span>
@@ -317,7 +316,7 @@
 <span class="sd">            By default, a single TimeSeries instance created from the last point of each individual forecast.</span>
 <span class="sd">            If `last_points_only` is set to False, a list of the historical forecasts</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">target_series</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
 
         <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">overlap_end</span><span class="p">:</span>

@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Theta Method &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -207,6 +208,10 @@
                             <a href="darts.models.transformer_model.html">Transformer Model</a>
                         </li>
                     
+                        <li class="">
+                            <a href="darts.models.varima.html">VARIMA</a>
+                        </li>
+                    
                     </ul>
                 </li>
             
@@ -253,7 +258,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.theta"></span><div class="section" id="theta-method">
+  <span class="target" id="module-darts.models.theta"></span><section id="theta-method">
 <h1>Theta Method<a class="headerlink" href="#theta-method" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.models.theta.FourTheta">
@@ -293,7 +298,7 @@ Defaults to <cite>TrendMode.LINEAR</cite>.</p></li>
 </dl>
 <dl class="py method">
 <dt id="darts.models.theta.FourTheta.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[numpy.ndarray, float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.theta.FourTheta.backtest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.theta.FourTheta.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes error scores between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual values.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -359,7 +364,7 @@ Set to np.mean by default.</p></li>
 
 <dl class="py method">
 <dt id="darts.models.theta.FourTheta.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[numpy.ndarray, float] = &lt;function mean&gt;, verbose=False</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.theta.FourTheta.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.theta.FourTheta.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -575,7 +580,7 @@ Defaults to <cite>SeasonalityMode.MULTIPLICATIVE</cite>.</p></li>
 </dl>
 <dl class="py method">
 <dt id="darts.models.theta.Theta.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[numpy.ndarray, float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.theta.Theta.backtest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.theta.Theta.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes error scores between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual values.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -641,7 +646,7 @@ Set to np.mean by default.</p></li>
 
 <dl class="py method">
 <dt id="darts.models.theta.Theta.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[numpy.ndarray, float] = &lt;function mean&gt;, verbose=False</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.theta.Theta.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.theta.Theta.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -808,7 +813,7 @@ Most commonly, unless otherwise specified, the term “residuals” implies a va
 
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

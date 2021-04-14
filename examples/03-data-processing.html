@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Data (pre) processing using DataTransformer and Pipeline &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -438,16 +439,16 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Data-(pre)-processing-using-DataTransformer-and-Pipeline">
+<section id="Data-(pre)-processing-using-DataTransformer-and-Pipeline">
 <h1>Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Data-(pre)-processing-using-DataTransformer-and-Pipeline" title="Permalink to this headline">¶</a></h1>
 <p>In this notebook, we will demonstrate how to perform some common preprocessing tasks using <code class="docutils literal notranslate"><span class="pre">darts</span></code></p>
 <p>As a toy example, we will use the <a class="reference external" href="https://www.kaggle.com/tejasgosavi/monthlymilkproductionpounds">Monthly Milk Production dataset</a>.</p>
-<div class="section" id="The-DataTransformer-abstraction">
+<section id="The-DataTransformer-abstraction">
 <h2>The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction<a class="headerlink" href="#The-DataTransformer-abstraction" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> aims to provide a unified way of dealing with transformations of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>: - <code class="docutils literal notranslate"><span class="pre">transform()</span></code> is implemented by all transformers. This method takes in a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, transforms it and returns it as a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> - <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> is implemented by transformers for which an inverse transformation function exists. It works in a similar way as <code class="docutils literal notranslate"><span class="pre">transform()</span></code> - <code class="docutils literal notranslate"><span class="pre">fit()</span></code> allows transformers to extract some information from the time series first before
 calling <code class="docutils literal notranslate"><span class="pre">transform()</span></code> or <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code></p>
-</div>
-<div class="section" id="Setting-up-the-example">
+</section>
+<section id="Setting-up-the-example">
 <h2>Setting up the example<a class="headerlink" href="#Setting-up-the-example" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -487,7 +488,7 @@ calling <code class="docutils literal notranslate"><span class="pre">transform()
 </pre></div>
 </div>
 </div>
-<div class="section" id="Reading-the-data-and-creating-a-time-series">
+<section id="Reading-the-data-and-creating-a-time-series">
 <h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -531,11 +532,11 @@ Freq: MS
 <div class="output_area docutils container">
 <img alt="../_images/examples_03-data-processing_6_1.svg" src="../_images/examples_03-data-processing_6_1.svg" /></div>
 </div>
-</div>
-</div>
-<div class="section" id="Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">
+</section>
+</section>
+<section id="Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">
 <h2>Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.<a class="headerlink" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler." title="Permalink to this headline">¶</a></h2>
-<p>Some applications may require your datapoints to be between 0 and 1 (e.g. to feed a time series to a Neural Network based forecasting model). This is easily achieved using the default <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which is a wrapper around <code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>.</p>
+<p>Some applications may require your datapoints to be between 0 and 1 (e.g. to feed a time series to a Neural Network based forecasting model). This is easily achieved using the default <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which is a wrapper around <code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -605,8 +606,8 @@ Freq: MS
 </pre></div></div>
 </div>
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> also allows to specify other scalers in its constructor, as long as they implement <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (typically scalers from <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>)</p>
-</div>
-<div class="section" id="Another-example-:-MissingValuesFiller">
+</section>
+<section id="Another-example-:-MissingValuesFiller">
 <h2>Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code><a class="headerlink" href="#Another-example-:-MissingValuesFiller" title="Permalink to this headline">¶</a></h2>
 <p>Let’s look at handling missing values in a dataset.</p>
 <div class="nbinput docutils container">
@@ -662,8 +663,8 @@ Freq: MS
 <div class="output_area docutils container">
 <img alt="../_images/examples_03-data-processing_16_0.svg" src="../_images/examples_03-data-processing_16_0.svg" /></div>
 </div>
-</div>
-<div class="section" id="Mapper-and-InvertibleMapper:-A-special-kind-of-transformers">
+</section>
+<section id="Mapper-and-InvertibleMapper:-A-special-kind-of-transformers">
 <h2><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers<a class="headerlink" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers" title="Permalink to this headline">¶</a></h2>
 <p>Sometimes you may want to perform a simple <code class="docutils literal notranslate"><span class="pre">map()</span></code> function on the data. This can also be done using data transformers. <code class="docutils literal notranslate"><span class="pre">Mapper</span></code> takes in a function and applies it to the data elementwise when calling <code class="docutils literal notranslate"><span class="pre">transform()</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code> also allows to specify an inverse function at creation (if there is one) and provides the <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> method.</p>
@@ -698,7 +699,7 @@ Freq: MS
 <div class="output_area docutils container">
 <img alt="../_images/examples_03-data-processing_18_1.svg" src="../_images/examples_03-data-processing_18_1.svg" /></div>
 </div>
-<div class="section" id="More-complex-(and-useful)-transformations">
+<section id="More-complex-(and-useful)-transformations">
 <h3>More complex (and useful) transformations<a class="headerlink" href="#More-complex-(and-useful)-transformations" title="Permalink to this headline">¶</a></h3>
 <p>In the Monthly Milk Production dataset used earlier, some of the difference between the months comes from the fact that some months contain more days than others, resulting in a larger production of milk during those months. This makes the time series more complex, and thus harder to predict.</p>
 <div class="nbinput docutils container">
@@ -838,9 +839,9 @@ Freq: MS
 <div class="output_area docutils container">
 <img alt="../_images/examples_03-data-processing_26_1.svg" src="../_images/examples_03-data-processing_26_1.svg" /></div>
 </div>
-</div>
-</div>
-<div class="section" id="Chaining-transformations-:-introducing-Pipeline">
+</section>
+</section>
+<section id="Chaining-transformations-:-introducing-Pipeline">
 <h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this headline">¶</a></h2>
 <p>Now suppose that we both want to apply the above transformation (daily averaging), and rescale the dataset between 0 and 1 to use a Neural Network based forecasting model. Instead of applying these two transformations separately, and then inversing them separately, we can use a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="nbinput docutils container">
@@ -877,8 +878,8 @@ Freq: MS
 <div class="output_area docutils container">
 <img alt="../_images/examples_03-data-processing_30_0.svg" src="../_images/examples_03-data-processing_30_0.svg" /></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

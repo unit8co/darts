@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Metrics &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -189,12 +190,12 @@
               
               <div>
                 
-  <span class="target" id="module-darts.metrics.metrics"></span><div class="section" id="metrics">
+  <span class="target" id="module-darts.metrics.metrics"></span><section id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h1>
 <p>Some metrics to compare time series.</p>
 <dl class="py function">
 <dt id="darts.metrics.metrics.coefficient_of_variation">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">coefficient_of_variation</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#coefficient_of_variation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.coefficient_of_variation" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">coefficient_of_variation</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#coefficient_of_variation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.coefficient_of_variation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coefficient of Variation (percentage).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>,
 it is a percentage value, computed as</p>
@@ -224,7 +225,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mae">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mae</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mae"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mae" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mae</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mae"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mae" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Error (MAE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -251,7 +252,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Percentage Error (MAPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -284,7 +285,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.marre">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">marre</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#marre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.marre" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">marre</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#marre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.marre" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Ranged Relative Error (MARRE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -316,7 +317,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mase">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">insample: darts.timeseries.TimeSeries</em>, <em class="sig-param">m: Optional[int] = 1</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, insample: darts.timeseries.TimeSeries, m: Optional[int] = 1, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Scaled Error (MASE).</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_scaled_error">Mean absolute scaled error wikipedia page</a>
 for details about the MASE and how it is computed.</p>
@@ -351,7 +352,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mse" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Squared Error (MSE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -387,7 +388,7 @@ univariate metrics using a <cite>reduction</cite> subroutine passed as argument 
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.ope">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">ope</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#ope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.ope" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">ope</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#ope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.ope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overall Percentage Error (OPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -419,7 +420,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.r2_score">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">r2_score</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">r2_score</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span>.</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Coefficient of determination wikipedia page</a>
 for details about the <span class="math notranslate nohighlight">\(R^2\)</span> score and how it is computed.
@@ -447,7 +448,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.rmse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Root Mean Squared Error (RMSE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -474,7 +475,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.rmsle">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmsle</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries</em>, <em class="sig-param">series2: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmsle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmsle</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmsle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Root Mean Squared Log Error (RMSLE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -502,7 +503,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.smape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">smape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">pred_series: darts.timeseries.TimeSeries</em>, <em class="sig-param">intersect: bool = True</em>, <em class="sig-param">reduction: Callable[numpy.ndarray</em>, <em class="sig-param">float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#smape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.smape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">smape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#smape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.smape" title="Permalink to this definition">¶</a></dt>
 <dd><p>symmetric Mean Absolute Percentage Error (sMAPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -536,7 +537,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

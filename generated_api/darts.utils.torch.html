@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Utils for Pytorch and its usage &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -209,7 +210,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.torch"></span><div class="section" id="utils-for-pytorch-and-its-usage">
+  <span class="target" id="module-darts.utils.torch"></span><section id="utils-for-pytorch-and-its-usage">
 <h1>Utils for Pytorch and its usage<a class="headerlink" href="#utils-for-pytorch-and-its-usage" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="darts.utils.torch.randint">
@@ -221,7 +222,7 @@ the specified dtype in the “half-open” interval [<cite>low</cite>, <cite>hig
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>New code should use the <code class="docutils literal notranslate"><span class="pre">integers</span></code> method of a <code class="docutils literal notranslate"><span class="pre">default_rng()</span></code>
-instance instead; see <cite>random-quick-start</cite>.</p>
+instance instead; please see the <span class="xref std std-ref">random-quick-start</span>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -293,7 +294,7 @@ distribution, or a single such random int if <cite>size</cite> not provided.</p>
 
 <dl class="py function">
 <dt id="darts.utils.torch.random_method">
-<code class="sig-prename descclassname">darts.utils.torch.</code><code class="sig-name descname">random_method</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decorated</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">…</span><span class="p">, </span>T<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Callable<span class="p">[</span><span class="p">…</span><span class="p">, </span>T<span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/torch.html#random_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.torch.random_method" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.torch.</code><code class="sig-name descname">random_method</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decorated</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><span class="p">…</span><span class="p">]</span><span class="p">, </span>T<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Callable<span class="p">[</span><span class="p">[</span><span class="p">…</span><span class="p">]</span><span class="p">, </span>T<span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/torch.html#random_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.torch.random_method" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorator usable on any method within a class that will provide an isolated torch random context.</p>
 <p>The decorator will store a <cite>_random_instance</cite> property on the object in order to persist successive calls to the RNG</p>
 <dl class="field-list simple">
@@ -303,7 +304,7 @@ distribution, or a single such random int if <cite>size</cite> not provided.</p>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

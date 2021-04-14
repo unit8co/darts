@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Additional util functions &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -209,7 +210,7 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.utils"></span><div class="section" id="additional-util-functions">
+  <span class="target" id="module-darts.utils.utils"></span><section id="additional-util-functions">
 <h1>Additional util functions<a class="headerlink" href="#additional-util-functions" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.utils.utils.ModelMode">
@@ -268,46 +269,6 @@
 </dd></dl>
 
 <dl class="py function">
-<dt id="darts.utils.utils.get_index_at_point">
-<code class="sig-prename descclassname">darts.utils.utils.</code><code class="sig-name descname">get_index_at_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/darts/utils/utils.html#get_index_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.utils.get_index_at_point" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts a point into the corresponding index in the time series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>point</strong> – This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
-In case of a <cite>float</cite>, the parameter will be treated as the proportion of the time series
-that should lie before the point.
-In case of a <cite>pandas.Timestamp</cite>, will return the index corresponding to the timestamp in the series
-if the timestamp is present in the series time index, otherwise will raise a ValueError.
-In case of an <cite>int</cite>, the parameter will be returned as is provided that it is a valid index,
-otherwise will raise a ValueError.</p></li>
-<li><p><strong>series</strong> – The time series to index in</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="darts.utils.utils.get_timestamp_at_point">
-<code class="sig-prename descclassname">darts.utils.utils.</code><code class="sig-name descname">get_timestamp_at_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span> &#x2192; pandas._libs.tslibs.timestamps.Timestamp<a class="reference internal" href="../_modules/darts/utils/utils.html#get_timestamp_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.utils.get_timestamp_at_point" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts a point into a pandas.Timestamp in the time series</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>point</strong> – This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
-In case of a <cite>float</cite>, the parameter will be treated as the proportion of the time series
-that should lie before the point.
-In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
-<cite>series</cite>. Will raise a ValueError if not a valid index in <cite>series</cite>
-In case of a <cite>pandas.Timestamp</cite>, point will be returned as is provided that the timestamp
-is present in the series time index, otherwise will raise a ValueError.</p></li>
-<li><p><strong>series</strong> – The time series to index in</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt id="darts.utils.utils.retain_period_common_to_all">
 <code class="sig-prename descclassname">darts.utils.utils.</code><code class="sig-name descname">retain_period_common_to_all</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/utils/utils.html#retain_period_common_to_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.utils.retain_period_common_to_all" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trims all series in the provided list, if necessary, so that the returned time series have
@@ -328,7 +289,7 @@ a common span (corresponding to largest time sub-interval common to all series).
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

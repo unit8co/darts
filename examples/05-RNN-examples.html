@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Recurrent Neural Networks Models &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -424,7 +425,7 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Recurrent-Neural-Networks-Models">
+<section id="Recurrent-Neural-Networks-Models">
 <h1>Recurrent Neural Networks Models<a class="headerlink" href="#Recurrent-Neural-Networks-Models" title="Permalink to this headline">¶</a></h1>
 <p>In this notebook, we show an example of how RNNs can be used with darts. If you are new to darts, we recommend you first follow the <code class="docutils literal notranslate"><span class="pre">darts-intro.ipynb</span></code> notebook.</p>
 <div class="nbinput nblast docutils container">
@@ -479,7 +480,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Air-Passenger-Example">
+<section id="Air-Passenger-Example">
 <h2>Air Passenger Example<a class="headerlink" href="#Air-Passenger-Example" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -547,7 +548,7 @@ div.rendered_html tbody tr:hover {
 Training loss: 0.0019, validation loss: 0.0393
 </pre></div></div>
 </div>
-<div class="section" id="Look-at-predictions-on-the-validation-set">
+<section id="Look-at-predictions-on-the-validation-set">
 <h3>Look at predictions on the validation set<a class="headerlink" href="#Look-at-predictions-on-the-validation-set" title="Permalink to this headline">¶</a></h3>
 <p>Use the “current” model - i.e., the model at the end of the training procedure:</p>
 <div class="nbinput docutils container">
@@ -600,8 +601,8 @@ loading model_best_190.pth.tar
 <img alt="../_images/examples_05-RNN-examples_12_1.png" src="../_images/examples_05-RNN-examples_12_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Backtesting">
+</section>
+<section id="Backtesting">
 <h3>Backtesting<a class="headerlink" href="#Backtesting" title="Permalink to this headline">¶</a></h3>
 <p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">RNN</span></code> model, to see how it performs at a forecast horizon of 6 months:</p>
 <div class="nbinput docutils container">
@@ -661,8 +662,8 @@ MAPE: 11.31%
 <img alt="../_images/examples_05-RNN-examples_15_1.png" src="../_images/examples_05-RNN-examples_15_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Trials-with-a-longer-output-length">
+</section>
+<section id="Trials-with-a-longer-output-length">
 <h3>Trials with a longer output length<a class="headerlink" href="#Trials-with-a-longer-output-length" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -746,9 +747,9 @@ Training loss: 0.0041, validation loss: 0.0661
 <img alt="../_images/examples_05-RNN-examples_21_2.png" src="../_images/examples_05-RNN-examples_21_2.png" />
 </div>
 </div>
-</div>
-</div>
-<div class="section" id="Monthly-sunspots">
+</section>
+</section>
+<section id="Monthly-sunspots">
 <h2>Monthly sunspots<a class="headerlink" href="#Monthly-sunspots" title="Permalink to this headline">¶</a></h2>
 <p>Let’s now try a more challenging time series; that of the monthly number of sunspots since 1749. First, we build the time series from the data, and check its periodicity.</p>
 <div class="nbinput docutils container">
@@ -940,8 +941,8 @@ ETS MAPE: 593.7817328101518
 </pre></div>
 </div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

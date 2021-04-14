@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Introduction to darts &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -176,7 +177,17 @@
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#Ensembling-several-predictions" class="nav-link">Ensembling several predictions</a>
+            <a href="#Ensembling-several-predictions" class="nav-link">Ensembling several predictions</a><ul class="nav section-nav flex-column">
+                
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#RegressionModel-approach" class="nav-link">RegressionModel approach</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#RegressionEnsembleModel-approach" class="nav-link">RegressionEnsembleModel approach</a>
+        </li>
+    
+            </ul>
         </li>
     
         <li class="nav-item toc-entry toc-h2">
@@ -448,7 +459,7 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Introduction-to-darts">
+<section id="Introduction-to-darts">
 <h1>Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code><a class="headerlink" href="#Introduction-to-darts" title="Permalink to this headline">¶</a></h1>
 <p>In this notebook, we will go over the main functionalities of the library: how to build and manipulate time series, train forecasting models, make predictions, evaluate metrics, backtest models and ensemble several models.</p>
 <p>As a toy example, we will use the well known <a class="reference external" href="https://github.com/jbrownlee/Datasets/blob/master/monthly-airline-passengers.csv">monthly airline passengers dataset</a>.</p>
@@ -463,7 +474,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -473,11 +484,12 @@ div.rendered_html tbody tr:hover {
 <span class="o">%</span><span class="k">matplotlib</span> inline
 
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
@@ -487,10 +499,12 @@ div.rendered_html tbody tr:hover {
     <span class="n">ExponentialSmoothing</span><span class="p">,</span>
     <span class="n">ARIMA</span><span class="p">,</span>
     <span class="n">AutoARIMA</span><span class="p">,</span>
+    <span class="n">RegressionEnsembleModel</span><span class="p">,</span>
     <span class="n">StandardRegressionModel</span><span class="p">,</span>
     <span class="n">Theta</span><span class="p">,</span>
     <span class="n">FFT</span>
 <span class="p">)</span>
+
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">mase</span>
 <span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span><span class="p">,</span> <span class="n">plot_residuals_analysis</span>
 
@@ -501,7 +515,15 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Read-data-and-build-a-TimeSeries">
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Importing plotly failed. Interactive plots will not work.
+</pre></div></div>
+</div>
+<section id="Read-data-and-build-a-TimeSeries">
 <h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> simply represents a univariate or multivariate time series, with a proper time index. It is a wrapper around a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, and it can be built in a few different ways: * From an entire Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> directly * From a time index and an array of corresponding values * From a subset of Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> columns, indicating which are the time column and the values columns. This is what we will do here:</p>
 <div class="nbinput docutils container">
@@ -520,10 +542,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_4_0.svg" src="../_images/examples_01-darts-intro_4_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_4_0.png" src="../_images/examples_01-darts-intro_4_0.png" />
 </div>
 </div>
-<div class="section" id="Creating-a-training-and-validation-series">
+</section>
+<section id="Creating-a-training-and-validation-series">
 <h2>Creating a training and validation series<a class="headerlink" href="#Creating-a-training-and-validation-series" title="Permalink to this headline">¶</a></h2>
 <p>First, let’s split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a test series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
@@ -543,10 +566,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_6_0.svg" src="../_images/examples_01-darts-intro_6_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_6_0.png" src="../_images/examples_01-darts-intro_6_0.png" />
 </div>
 </div>
-<div class="section" id="Playing-with-toy-models">
+</section>
+<section id="Playing-with-toy-models">
 <h2>Playing with toy models<a class="headerlink" href="#Playing-with-toy-models" title="Permalink to this headline">¶</a></h2>
 <p>There is a collection of “naive” baseline models in <code class="docutils literal notranslate"><span class="pre">darts</span></code>, which can be very useful to get an idea of the bare minimum accuracy that one could expect. For example, the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal(K)</span></code> model always “repeats” the value that occured <code class="docutils literal notranslate"><span class="pre">K</span></code> time steps ago.</p>
 <p>In its most naive form, when <code class="docutils literal notranslate"><span class="pre">K=1</span></code>, this model simply always repeats the last value of the training series:</p>
@@ -569,10 +593,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_8_0.svg" src="../_images/examples_01-darts-intro_8_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_8_0.png" src="../_images/examples_01-darts-intro_8_0.png" />
+</div>
 </div>
 <p>It’s very easy to fit models and produce predictions on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. All the models have a <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and a <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. This is similar to <a class="reference external" href="https://scikit-learn.org/">https://scikit-learn.org/</a>, except that it is specific to time series. The <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function takes in argument the training time series on which to fit the model, and the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function takes in argument the number of time steps (after the end of the training series) over which to forecast.</p>
-<div class="section" id="Inspect-Seasonality">
+<section id="Inspect-Seasonality">
 <h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Permalink to this headline">¶</a></h3>
 <p>Our model above is perhaps a bit too naive. We can already improve by exploiting the seasonality in the data. It seems quite obvious that the data has a yearly seasonality, which we can confirm by looking at the auto-correlation function (ACF), and highlighting the lag <code class="docutils literal notranslate"><span class="pre">m=12</span></code>:</p>
 <div class="nbinput docutils container">
@@ -588,7 +613,8 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_10_0.svg" src="../_images/examples_01-darts-intro_10_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_10_0.png" src="../_images/examples_01-darts-intro_10_0.png" />
+</div>
 </div>
 <p>The ACF presents a spike at x = 12, which suggests a yearly seasonality trend (highlighted in red). The blue zone determines the significance of the statistics for a confidence level of alpha = 5%. In cases where we are unsure, we can also run a statistical check of seasonality for each candidate period <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
 <div class="nbinput docutils container">
@@ -611,8 +637,8 @@ div.rendered_html tbody tr:hover {
 There is seasonality of order 12.
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="A-less-naive-model">
+</section>
+<section id="A-less-naive-model">
 <h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Permalink to this headline">¶</a></h3>
 <p>Let’s try the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal</span></code> model again with a seasonality of 12:</p>
 <div class="nbinput docutils container">
@@ -634,7 +660,8 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_14_0.svg" src="../_images/examples_01-darts-intro_14_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_14_0.png" src="../_images/examples_01-darts-intro_14_0.png" />
+</div>
 </div>
 <p>This is better, but we are still missing the trend. Fortunately, there is also another naive baseline model capturing the trend, which is called <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code>. This model will simply produce linear predictions, with a slope that is determined by the first and last values of the training set:</p>
 <div class="nbinput docutils container">
@@ -659,10 +686,11 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_16_0.svg" src="../_images/examples_01-darts-intro_16_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_16_0.png" src="../_images/examples_01-darts-intro_16_0.png" />
+</div>
 </div>
 <p>What happened in the last cell? We simply fit a naive drift model, and add its forecast to the seasonal forecast we had previously. We also substract the last value of the training set to the result, so that the resulting combined forecast starts off with the right offset.</p>
-<p>This looks already like a fairly descent forecast, and we did not use any non-naive model yet! In fact - any model should be able to beat this. But hey, what’s the error we are getting here? Let’s see what we’ll have to beat:</p>
+<p>This looks already like a fairly decent forecast, and we did not use any non-naive model yet! In fact - any model should be able to beat this. But hey, what’s the error we are getting here? Let’s see what we’ll have to beat:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
@@ -681,9 +709,9 @@ There is seasonality of order 12.
 Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 </pre></div></div>
 </div>
-</div>
-</div>
-<div class="section" id="Quickly-try-a-few-more-models">
+</section>
+</section>
+<section id="Quickly-try-a-few-more-models">
 <h2>Quickly try a few more models<a class="headerlink" href="#Quickly-try-a-few-more-models" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">darts</span></code> is built to make it easy to train and validate several models in a unified way. Let’s train a few more and compute their respective MAPE on the validation set:</p>
 <div class="nbinput docutils container">
@@ -715,8 +743,8 @@ model Theta(2) obtains MAPE: 8.15%
 </pre></div></div>
 </div>
 <p>Here, we did only built these models with their default parameters. We can probably do better if we fine-tune to our problem. Let’s try with the Theta method.</p>
-</div>
-<div class="section" id="The-Theta-method">
+</section>
+<section id="The-Theta-method">
 <h2>The Theta method<a class="headerlink" href="#The-Theta-method" title="Permalink to this headline">¶</a></h2>
 <p>The model <code class="docutils literal notranslate"><span class="pre">Theta</span></code> contains an implementation of Assimakopoulos and Nikolopoulos’ Theta method. This method has known great success, particularly in the M3-competition.</p>
 <p>Though the value of the Theta parameter is often set to 0 in applications, our implementation supports a variable value for parameter tuning purposes. Let’s try to find a good value for Theta:</p>
@@ -780,13 +808,14 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_26_0.svg" src="../_images/examples_01-darts-intro_26_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_26_0.png" src="../_images/examples_01-darts-intro_26_0.png" />
+</div>
 </div>
 <p>We can observe that the model with <code class="docutils literal notranslate"><span class="pre">best_theta</span></code> is so far the best we have, in terms of MAPE.</p>
-</div>
-<div class="section" id="Backtesting:-simulate-historical-forecasting">
+</section>
+<section id="Backtesting:-simulate-historical-forecasting">
 <h2>Backtesting: simulate historical forecasting<a class="headerlink" href="#Backtesting:-simulate-historical-forecasting" title="Permalink to this headline">¶</a></h2>
-<p>So at this point we have a model that performs well on our validation set, and that’s good. But how can we know the performance we <em>would have obtained</em> if we <em>had been using this model</em> historically.</p>
+<p>So at this point we have a model that performs well on our validation set, and that’s good. But, how can we know the performance we <em>would have obtained</em> if we <em>had been using this model</em> historically?</p>
 <p>Backtesting simulates predictions that would have been obtained historically with a given model. It can take a while to produce, since the model is re-fit every time the simulated prediction time advances.</p>
 <p>Such simulated forecasts are always defined with respect to a <em>forecast horizon</em>, which is the number of time steps that separate the prediction time from the forecast time. In the example below, we simulate forecasts done for 3 months in the future (compared to prediction time).</p>
 <p>Using the <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> method, you can either look at the performance of the model evaluated over the whole forecasts it produces (each point in each forecast is used to compute an error score) or only the last point of each historical forecast. In the latter case, you can get a time series representation of those points by calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> with the default setting (<code class="docutils literal notranslate"><span class="pre">last_points_only=True</span></code>)</p>
@@ -815,7 +844,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "1463a044af2d416595281c7bfaa92f1d"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9a341d725ea64207bb6c8c5b6b09424c", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -829,7 +858,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "da0750f72b2c4dd8a5d5e3c0fb8432a0"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9710f54d626c47eab63eade761d5da44", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -837,15 +866,15 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 
-Average error (MAPE) over all historical forecasts: 6.194975084052747
-Median error (MAPE) over all historical forecasts: 4.2892317587628455
+Average error (MAPE) over all historical forecasts: 6.194975071594859
+Median error (MAPE) over all historical forecasts: 4.289231331115143
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "f2c63003f7bb414fb116f761ac6521c7"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3cdb741636464e3b84f005fa60672654", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -859,13 +888,14 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_29_6.svg" src="../_images/examples_01-darts-intro_29_6.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_29_6.png" src="../_images/examples_01-darts-intro_29_6.png" />
+</div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "116a71b79758458bb4e6cb19c10c3b12"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5634bb8b561047dea1295da0a9284935", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -892,9 +922,10 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_31_0.svg" src="../_images/examples_01-darts-intro_31_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_31_0.png" src="../_images/examples_01-darts-intro_31_0.png" />
 </div>
-<p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values.</p>
+</div>
+<p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
@@ -908,7 +939,8 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_33_0.svg" src="../_images/examples_01-darts-intro_33_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_33_0.png" src="../_images/examples_01-darts-intro_33_0.png" />
+</div>
 </div>
 <p>We can see that the distribution has a mean that is slightly larger than 0. This means that our <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model is biased. We can also make out a large ACF value at lag equal to 12, which indicates that the residuals contain information that was not used by the model.</p>
 <p>Could we maybe do better with a simple <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> model?</p>
@@ -932,7 +964,7 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "b8ac13be305e4e958356c31f6e0618ea"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6d8c4780f9b74b69aa71adadd66d7b52", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -946,7 +978,8 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_35_2.svg" src="../_images/examples_01-darts-intro_35_2.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_35_2.png" src="../_images/examples_01-darts-intro_35_2.png" />
+</div>
 </div>
 <p>This much better! We get a mean absolute percentage error of 4.08% when backtesting with a 3-months forecast horizon in this case.</p>
 <div class="nbinput docutils container">
@@ -962,15 +995,19 @@ Median error (MAPE) over all historical forecasts: 4.2892317587628455
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_37_0.svg" src="../_images/examples_01-darts-intro_37_0.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_37_0.png" src="../_images/examples_01-darts-intro_37_0.png" />
+</div>
 </div>
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
-</div>
-<div class="section" id="Ensembling-several-predictions">
+</section>
+<section id="Ensembling-several-predictions">
 <h2>Ensembling several predictions<a class="headerlink" href="#Ensembling-several-predictions" title="Permalink to this headline">¶</a></h2>
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final – and hopefully better forecast.</p>
-<p>For instance, in our example of a “less naive” model above, we manually combined a naive seasonal model with a naive drift model. Here, we will try to find such combinations in an automated way, using <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s. A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a
-final forecast.</p>
+<p>For instance, in our example of a “less naive” model above, we manually combined a naive seasonal model with a naive drift model. Here, we will try to find such combinations in an automated way, first, using direclty a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, and then, using the convenient <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>.</p>
+<p>If you are in a hurry, jump to the <strong>``RegressionEnsembleModel`` approach</strong>.</p>
+<section id="RegressionModel-approach">
+<h3><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach<a class="headerlink" href="#RegressionModel-approach" title="Permalink to this headline">¶</a></h3>
+<p>A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a final forecast.</p>
 <p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
@@ -979,8 +1016,15 @@ final forecast.</p>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">NaiveDrift</span><span class="p">()]</span>
 
-<span class="n">model_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19570101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span>
+                                            <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19561201&#39;</span><span class="p">),</span>
+                                            <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                                            <span class="n">stride</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                                            <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                      <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
+
+<span class="n">model_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">reduce</span><span class="p">((</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)),</span> <span class="n">model_pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">model_pred</span> <span class="ow">in</span> <span class="n">model_predictions</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -988,7 +1032,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "a66cc1dfb2e34330a4fc005453f6d750"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eff2b67cc3d44f6e8906cc426eff0ed9", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1002,7 +1046,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "e6adf2676a3e4876a6a7f6a5d10fd838"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c8791b2e98db4082924398d65f8cbf3d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1016,7 +1060,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "8ecaa5e4f7c648d38490ac6e5a5e1d87"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d41d877733874cd78d8811da6d97dea1", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1052,7 +1096,7 @@ final forecast.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "14ed478d84134a67a9855540a85b58a8"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "acb61513dcb244e28099eb1a55e61c0b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1068,26 +1112,31 @@ final forecast.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
 
-<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
-    <span class="n">model_predictions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">model_predictions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 
     <span class="c1"># intersect last part, to compare all the methods over the duration of the ensemble forecast</span>
     <span class="n">model_pred</span> <span class="o">=</span> <span class="n">model_predictions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">ensemble_pred</span><span class="p">)</span>
 
     <span class="n">mape_model</span> <span class="o">=</span> <span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">model_pred</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error for </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">mape_model</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">MAPE: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape_model</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;MAPE Error ensemble: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">)))</span>
 
-<span class="n">ensemble_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble&#39;</span><span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">ensemble_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">MAPE, ensemble: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">)))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Coefficients of the features time series:&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Regression coefficients for the individual models:&#39;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Learned coefficient for </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1096,37 +1145,106 @@ final forecast.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE Error for Naive seasonal model, with K=6: 21.17%
-MAPE Error for Naive seasonal model, with K=12: 8.25%
-MAPE Error for Naive drift model: 21.44%
-MAPE Error ensemble: 5.10%
 
-Coefficients of the features time series:
-Learned coefficient for Naive seasonal model, with K=6: 5.33
-Learned coefficient for Naive seasonal model, with K=12: 1.06
-Learned coefficient for Naive drift model: -5.08
+Regression coefficients for the individual models:
+Learned coefficient for Naive seasonal model, with K=6: 0.00
+Learned coefficient for Naive seasonal model, with K=12: 1.05
+Learned coefficient for Naive drift model: 0.09
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_43_1.svg" src="../_images/examples_01-darts-intro_43_1.svg" /></div>
+<img alt="../_images/examples_01-darts-intro_44_1.png" src="../_images/examples_01-darts-intro_44_1.png" />
 </div>
-<p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 5.30%.</p>
-<p>A couple of interesting things to observe: * Note how the seasonal model for <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn coefficients that compensate for this effect. Removing either of the two models results in worse performance. * Note how the regression (ensemble) forecast starts off 12 months after the individual models forecasts – that
-is because the regression model needs 12 data points to fit the weights coefficients of the linear regression.</p>
 </div>
-<div class="section" id="FFT-and-RNNs">
+<p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 6.18%.</p>
+<p>A couple of interesting things to observe: * Note how the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn to ignore the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> (by assigning a coefficient of 0), and learns a coefficient of only 0.09 for the drift model. * Note how the regression (ensemble) forecast starts off 12 months after the
+individual models forecasts – that is because the regression model needs 12 data points to fit the weights coefficients of the linear regression.</p>
+</section>
+<section id="RegressionEnsembleModel-approach">
+<h3><code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> approach<a class="headerlink" href="#RegressionEnsembleModel-approach" title="Permalink to this headline">¶</a></h3>
+<p>Wouldn’t it be great if there would be a way to get an ensemble prediction in fewer lines of code?</p>
+<p>Actually, there is: using the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>. It is as simple as instantiating the ensemble model, calling the method <code class="docutils literal notranslate"><span class="pre">fit</span></code> on the training set, and then, calling the method <code class="docutils literal notranslate"><span class="pre">predict</span></code> with the number of time steps to forecast:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
+    <span class="n">forecasting_models</span><span class="o">=</span><span class="p">[</span><span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">),</span> <span class="n">NaiveDrift</span><span class="p">()],</span>
+    <span class="n">regression_train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="n">ensemble_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">ensemble_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">36</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+<span class="n">ensemble_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble forecast&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;MAPE = </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">ensemble_pred</span><span class="p">,</span> <span class="n">series</span><span class="p">)))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-darts-intro_47_0.png" src="../_images/examples_01-darts-intro_47_0.png" />
+</div>
+</div>
+<p>Quite easy, isn’t it?</p>
+<p>Now, to get a result similar to the one obtained with the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach, just use the <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> method of your ensemble model:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ensemble_pred_hist</span> <span class="o">=</span> <span class="n">ensemble_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="p">,</span>
+                                                    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span>
+                                                    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                                    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+<span class="n">ensemble_pred_hist</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble forecast&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Historical forecast: MAPE = </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">ensemble_pred_hist</span><span class="p">,</span> <span class="n">series</span><span class="p">)))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ad5bc1322c9042adaba704505cfabcd2", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-darts-intro_49_2.png" src="../_images/examples_01-darts-intro_49_2.png" />
+</div>
+</div>
+<p>Note that the when we use <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>, by default, we are using the <code class="docutils literal notranslate"><span class="pre">LinearRegression</span></code> model from scikit-learn. To change this, you can pass to the <code class="docutils literal notranslate"><span class="pre">regression_model</span></code> argument any regression model with <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and <code class="docutils literal notranslate"><span class="pre">fit()</span></code> methods, for example <code class="docutils literal notranslate"><span class="pre">RidgeCV()</span></code>.</p>
+</section>
+</section>
+<section id="FFT-and-RNNs">
 <h2>FFT and RNNs<a class="headerlink" href="#FFT-and-RNNs" title="Permalink to this headline">¶</a></h2>
 <p>If you’d like to try models based on Fast Fourier Transform or Recurrent Neural Networks, we recommend that you go over the <code class="docutils literal notranslate"><span class="pre">03-FFT-examples.ipynb</span></code> and <code class="docutils literal notranslate"><span class="pre">04-RNN-examples.ipynb</span></code> notebooks, respectively.</p>
-</div>
-<div class="section" id="A-final-word-of-caution">
+</section>
+<section id="A-final-word-of-caution">
 <h2>A final word of caution<a class="headerlink" href="#A-final-word-of-caution" title="Permalink to this headline">¶</a></h2>
 <p>So is Theta, exponential smoothing, or a linear regression of naive models the best approach for predicting the future number of airline passengers? Well, at this point it’s still hard to say exactly which one is best. Our time series is small, and our validation set is even smaller. In such cases, it’s very easy to overfit the whole forecasting exercise to such a small validation set. That’s especially true if the number of available models and their degrees of freedom is high; so always take
 results with a grain of salt (especially on small datasets), and apply the scientific method before making any kind of forecast!</p>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

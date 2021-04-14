@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Time Series Made Easy in Python &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -188,47 +189,47 @@
               
               <div>
                 
-  <div class="section" id="time-series-made-easy-in-python">
+  <section id="time-series-made-easy-in-python">
 <h1>Time Series Made Easy in Python<a class="headerlink" href="#time-series-made-easy-in-python" title="Permalink to this headline">¶</a></h1>
 <a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png" /></a>
 <hr class="docutils" />
 <a class="reference external image-reference" href="https://badge.fury.io/py/u8darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.6+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.6+-blue.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.7+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.7+-blue.svg" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/pypi/dm/u8darts"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/u8darts" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
-<p><strong>darts</strong> is a python library for easy manipulation and forecasting of time series.
-It contains a variety of models, from classics such as ARIMA to neural networks.
+<p><strong>darts</strong> is a Python library for easy manipulation and forecasting of time series.
+It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
 univariate and multivariate time series and models, and the neural networks can be trained
-multiple time series.</p>
-<div class="section" id="documentation">
+on multiple time series.</p>
+<section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples &amp; Tutorials</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Documentation</a></p></li>
 </ul>
-<div class="section" id="high-level-introductions">
+<section id="high-level-introductions">
 <h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878">Introductory Blog Post</a></p></li>
 <li><p><a class="reference external" href="https://www.youtube.com/watch?v=Sx-uI-PypmU&amp;t=8s&amp;ab_channel=Unit8">Introductory Video</a></p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="install">
+</section>
+</section>
+<section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
-<p>We recommend to first setup a clean python environment for your project with at least python 3.6 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
-<p>Once your environment is setup you can install darts using pip:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s1">&#39;u8darts[all]&#39;</span>
+<p>We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
+<p>Once your environment is set up you can install darts using pip:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
 </pre></div>
 </div>
 <p>For more detailed install instructions you can refer to our installation guide at the end of this page.</p>
-</div>
-<div class="section" id="example-usage">
+</section>
+<section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>Create a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object from a Pandas DataFrame, and split it in train/validation series:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -263,8 +264,8 @@ multiple time series.</p>
 <img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
 </div><p>We invite you to go over the example and tutorial notebooks in
 the <a class="reference external" href="https://github.com/unit8co/darts/tree/master/examples">examples</a> directory.</p>
-</div>
-<div class="section" id="features">
+</section>
+<section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
 <p>Currently, the library contains the following features:</p>
 <p><strong>Forecasting Models:</strong></p>
@@ -286,8 +287,8 @@ from R2-scores to Mean Absolute Scaled Error.</p>
 <p><strong>Regressive Models:</strong> Possibility to predict a time series from several other time series
 (e.g., external regressors), using arbitrary regressive models</p>
 <p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p>
-</div>
-<div class="section" id="contribute">
+</section>
+<section id="contribute">
 <h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
 <p>The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on GitHub.</p>
@@ -296,7 +297,7 @@ We welcome pull requests and issues on GitHub.</p>
 <li><p>Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.</p></li>
 <li><p>Fork the repository.</p></li>
 <li><p>Clone the forked repository locally.</p></li>
-<li><p>Create a clean python env and install requirements with pip: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements/dev-all.txt</span></code></p></li>
+<li><p>Create a clean Python env and install requirements with pip: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements/dev-all.txt</span></code></p></li>
 <li><p>Create a new branch:</p>
 <ul class="simple">
 <li><p>Branch off from the <strong>develop</strong> branch.</p></li>
@@ -320,12 +321,12 @@ We welcome pull requests and issues on GitHub.</p>
 <li><p>If your contribution introduces a significant change, add it to <code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code> under the “Unreleased” section.</p></li>
 <li><p>Create a pull request from your new branch to the <strong>develop</strong> branch.</p></li>
 </ol>
-</div>
-<div class="section" id="contact-us">
+</section>
+<section id="contact-us">
 <h2>Contact Us<a class="headerlink" href="#contact-us" title="Permalink to this headline">¶</a></h2>
 <p>If what you want to tell us is not a suitable github issue, feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other inquiries.</p>
-</div>
-<div class="section" id="installation-guide">
+</section>
+<section id="installation-guide">
 <h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
@@ -349,16 +350,16 @@ and <a class="reference external" href="https://pytorch.org/get-started/locally/
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
 </pre></div>
 </div>
-<p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[all]'</span></code>.</p>
+<p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
 <p>As some models have relatively heavy (or non-Python) dependencies,
-we also provide the following alternate lighter install options:</p>
+we also maintain the <code class="docutils literal notranslate"><span class="pre">u8darts</span></code> package, which provides the following alternate lighter install options:</p>
 <ul class="simple">
 <li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts</span></code></p></li>
 <li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[torch]'</span></code></p></li>
 <li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[fbprophet]'</span></code></p></li>
 <li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[pmdarima]'</span></code></p></li>
 </ul>
-<p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use python notebooks with demo examples.
+<p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew docker <span class="o">&amp;&amp;</span> ./gradlew dockerRun
 </pre></div>
@@ -382,8 +383,8 @@ To run the example notebooks without installing our libraries natively on your m
 </pre></div>
 </div>
 <p>After that docs will be available in <code class="docutils literal notranslate"><span class="pre">./docs/build/html</span></code> directory. You can just open <code class="docutils literal notranslate"><span class="pre">./docs/build/html/index.html</span></code> using your favourite browser.</p>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

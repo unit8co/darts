@@ -172,7 +172,8 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
                  <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+                 <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A TimeSeries is an object representing a univariate or multivariate time series.</span>
 
@@ -191,30 +192,45 @@
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values</span>
 <span class="sd">            in case the frequency of `series` cannot be inferred.</span>
+<span class="sd">        dummy_index</span>
+<span class="sd">            Optionally, if no date time index is present, this flag will instruct Darts to build a</span>
+<span class="sd">            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases</span>
+<span class="sd">            where the time index doesn&#39;t matter.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s2">&quot;Data must be provided in form of a pandas.DataFrame instance&quot;</span><span class="p">,</span>
                      <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Time series must not be empty.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">),</span> <span class="s1">&#39;Time series must be indexed with a DatetimeIndex.&#39;</span><span class="p">,</span>
-                     <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s1">&#39;Time series must&#39;</span>
                      <span class="s1">&#39; contain only numerical values.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;Time series must have at least 3 values if the &quot;freq&quot; argument&#39;</span>
                      <span class="s1">&#39; is not passed&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>  <span class="c1"># Sort by time **returns a copy**</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_dummy_index</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dummy_index</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">),</span> <span class="s1">&#39;Time series must be indexed with a DatetimeIndex.&#39;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">),</span> <span class="p">(</span>
+                <span class="s1">&#39;Time series must not be indexed with a DatetimeIndex if dummy_index=True.&#39;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_dummy_index</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">has_dummy_index</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_df_columns</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">freq</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">inferred_freq</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">inferred_freq</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">fill_missing_dates</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_missing_dates</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">raise_if_not</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;Could not infer frequency. Are some dates missing? &#39;</span>
-                                        <span class="s1">&#39;Try specifying `fill_missing_dates=True`.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+                                        <span class="s1">&#39;Try specifying `fill_missing_dates=True` or specify &#39;</span>
+                                        <span class="s1">&#39;the `freq` parameter.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">inferred_freq</span>  <span class="c1"># Infer frequency</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="o">!=</span> <span class="n">freq</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;The inferred frequency does not match the value of the &quot;freq&quot; argument.&#39;</span><span class="p">)</span>
@@ -431,7 +447,9 @@
         <span class="n">gap_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
         <span class="n">gap_df</span><span class="p">[</span><span class="s1">&#39;gap_start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_starts</span>
         <span class="n">gap_df</span><span class="p">[</span><span class="s1">&#39;gap_end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_ends</span>
-        <span class="n">gap_df</span><span class="p">[</span><span class="s1">&#39;gap_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">gap_ends</span> <span class="o">-</span> <span class="n">gap_starts</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">gap_df</span><span class="p">[</span><span class="s1">&#39;gap_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">gap_df</span></div>
 
@@ -459,45 +477,49 @@
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Timestamp must be between </span><span class="si">{}</span><span class="s1"> and </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
                                                                               <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">())),</span> <span class="n">logger</span><span class="p">)</span>
 
-<div class="viewcode-block" id="TimeSeries.split_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_after">[docs]</a>    <span class="k">def</span> <span class="nf">split_after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">]:</span>
+<div class="viewcode-block" id="TimeSeries.split_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_after">[docs]</a>    <span class="k">def</span> <span class="nf">split_after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Splits the TimeSeries in two, around a provided timestamp `ts`.</span>
-
-<span class="sd">        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the</span>
-<span class="sd">        first of the two TimeSeries, and not in the second.</span>
+<span class="sd">        Splits the TimeSeries in two, after a provided `split_point`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        ts</span>
-<span class="sd">            The timestamp that indicates the splitting time.</span>
+<span class="sd">        split_point</span>
+<span class="sd">            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the</span>
+<span class="sd">            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after</span>
+<span class="sd">            which the split is performed. If timestamp, it will be contained in the first TimeSeries, but not</span>
+<span class="sd">            in the second one. The timestamp may not appear in the original TimeSeries index.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Tuple[TimeSeries, TimeSeries]</span>
-<span class="sd">            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.</span>
+<span class="sd">            A tuple of two time series. The first time series contains the first samples up to the `split_point`,</span>
+<span class="sd">            and the second contains the remaining ones.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">split_point</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">split_point</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">else</span> <span class="n">split_point</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_if_not_within</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
         <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">ts</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># closest index before ts (new ts)</span>
         <span class="n">start_second_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>  <span class="c1"># second series does not include ts</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">ts</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">start_second_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span></div>
 
-<div class="viewcode-block" id="TimeSeries.split_before"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_before">[docs]</a>    <span class="k">def</span> <span class="nf">split_before</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">]:</span>
+<div class="viewcode-block" id="TimeSeries.split_before"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_before">[docs]</a>    <span class="k">def</span> <span class="nf">split_before</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Splits a TimeSeries in two, around a provided timestamp `ts`.</span>
-
-<span class="sd">        The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the</span>
-<span class="sd">        second of the two TimeSeries, and not in the first.</span>
+<span class="sd">        Splits a TimeSeries in two, before a provided `split_point`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        ts</span>
-<span class="sd">            The timestamp that indicates the splitting time.</span>
+<span class="sd">        split_point</span>
+<span class="sd">            A timestamp, float or integer. If float, represents the proportion of the dataset to include in the</span>
+<span class="sd">            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before</span>
+<span class="sd">            which the split is performed. If timestamp, it will be contained in the second TimeSeries, but not</span>
+<span class="sd">            in the first one. The timestamp may not appear in the original TimeSeries index.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Tuple[TimeSeries, TimeSeries]</span>
-<span class="sd">            A tuple of two time series. The first time series is before `ts`, and the second one is after `ts`.</span>
+<span class="sd">            A tuple of two time series. The first time series contains the first samples before the `split_point`,</span>
+<span class="sd">            and the second contains the remaining ones.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">split_point</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">split_point</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">else</span> <span class="n">split_point</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_if_not_within</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
         <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">ts</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># closest index after ts (new ts)</span>
         <span class="n">end_first_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="n">ts</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>  <span class="c1"># second series does not include ts</span>
@@ -651,6 +673,59 @@
         <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="TimeSeries.get_timestamp_at_point"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.get_timestamp_at_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_timestamp_at_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts a point into a pandas.Timestamp in the time series</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        point</span>
+<span class="sd">            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">            In case of a `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">            that should lie before the point.</span>
+<span class="sd">            In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
+<span class="sd">            `series`. Will raise a ValueError if not a valid index in `series`</span>
+<span class="sd">            In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp</span>
+<span class="sd">            is present in the series time index, otherwise will raise a ValueError.</span>
+<span class="sd">        series</span>
+<span class="sd">            The time series to index in</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">point</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">point</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s1">&#39;point (float) should be between 0.0 and 1.0.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+            <span class="n">point_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">point</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span> <span class="s2">&quot;point (int) should be a valid index in series&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">point</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">,</span>
+                     <span class="s1">&#39;point (pandas.Timestamp) must be an entry in the time series</span><span class="se">\&#39;</span><span class="s1"> time index&#39;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">point</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;`point` needs to be either `float`, `int` or `pd.Timestamp`&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">timestamp</span></div>
+
+<div class="viewcode-block" id="TimeSeries.get_index_at_point"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.get_index_at_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_index_at_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts a point into the corresponding index in the time series</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        point</span>
+<span class="sd">            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">            In case of a `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">            that should lie before the point.</span>
+<span class="sd">            In case of a `pandas.Timestamp`, will return the index corresponding to the timestamp in the series</span>
+<span class="sd">            if the timestamp is present in the series time index, otherwise will raise a ValueError.</span>
+<span class="sd">            In case of an `int`, the parameter will be returned as is provided that it is a valid index,</span>
+<span class="sd">            otherwise will raise a ValueError.</span>
+<span class="sd">        series</span>
+<span class="sd">            The time series to index in</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="TimeSeries.strip"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.strip">[docs]</a>    <span class="k">def</span> <span class="nf">strip</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries slice of this time series, where NaN-only entries at the beginning and the end of the</span>
@@ -760,10 +835,45 @@
         <span class="n">new_series</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">new_time_index</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span></div>
 
+<div class="viewcode-block" id="TimeSeries.diff"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.diff">[docs]</a>    <span class="k">def</span> <span class="nf">diff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+             <span class="n">periods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+             <span class="n">dropna</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a differenced time series. This is often used to make a time series stationary.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            Optionally, a signed integer indicating the number of differencing steps.</span>
+<span class="sd">        periods</span>
+<span class="sd">            Optionally, periods to shift for calculating difference.</span>
+<span class="sd">        dropna</span>
+<span class="sd">            Optionally, a boolean value indicating whether to drop the missing values created by</span>
+<span class="sd">            the pandas.DataFrame.diff method.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A TimeSeries constructed after differencing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;n&#39; must be a positive integer &gt;= 1.&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;periods&#39; must be an integer.&quot;</span><span class="p">))</span>
+
+        <span class="n">diff_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">periods</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">diff_df</span> <span class="o">=</span> <span class="n">diff_df</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">periods</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dropna</span><span class="p">:</span>
+            <span class="n">diff_df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">diff_df</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="TimeSeries.from_series"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_series">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_series</span><span class="p">(</span><span class="n">pd_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
                     <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                    <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries built from a pandas Series.</span>
 
@@ -776,20 +886,25 @@
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values</span>
 <span class="sd">            in case the frequency of `series` cannot be inferred.</span>
+<span class="sd">        dummy_index</span>
+<span class="sd">            Optionally, if no date time index is present, this flag will instruct Darts to build a</span>
+<span class="sd">            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases</span>
+<span class="sd">            where the time index doesn&#39;t matter.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pd_series</span><span class="p">),</span> <span class="n">freq</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pd_series</span><span class="p">),</span> <span class="n">freq</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">dummy_index</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
                        <span class="n">time_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                       <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                       <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                       <span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries instance built from a selection of columns of a DataFrame.</span>
 <span class="sd">        One column (or the DataFrame index) has to represent the time,</span>
@@ -809,26 +924,31 @@
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values</span>
 <span class="sd">            in case the frequency of `series` cannot be inferred.</span>
+<span class="sd">        dummy_index</span>
+<span class="sd">            Optionally, if no date time index is present, this flag will instruct Darts to build a</span>
+<span class="sd">            dummy time index in order to obtain a valid TimeSeries. This option can be used in cases</span>
+<span class="sd">            where the time index doesn&#39;t matter.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A univariate or multivariate TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">dummy_index</span> <span class="ow">and</span> <span class="n">time_col</span><span class="p">,</span> <span class="s2">&quot;If time_col is given, dummy_index must be false.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">value_cols</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">series_df</span> <span class="o">=</span> <span class="n">df</span>
+            <span class="n">series_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">!=</span> <span class="n">time_col</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value_cols</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="n">value_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">value_cols</span><span class="p">]</span>
-
             <span class="n">series_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">value_cols</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">time_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">series_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">series_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dummy_index</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">time_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">series_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">series_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series_df</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series_df</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">dummy_index</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_times_and_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_times_and_values">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span>
@@ -863,6 +983,28 @@
             <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="p">)</span></div>
 
+    <span class="k">def</span> <span class="nf">_create_dummy_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="s2">&quot;19700101&quot;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;S&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a pd.DatetimeIndex. Used to attach a time index to a data frame.</span>
+
+<span class="sd">        Some longitudinal series might not be measured at certain time stamps but in steps. Others</span>
+<span class="sd">        might not be a time series at all but autocorrelated analysis is still appropriate.</span>
+<span class="sd">        In these instances an artificial time index is created for Darts TimeSeries.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        start</span>
+<span class="sd">            Optionally, the starting time stamp of the dummy index.</span>
+<span class="sd">        freq</span>
+<span class="sd">            Optionally, the frequency of the dummy time index.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DatetimeIndex</span>
+<span class="sd">            A TimeSeries constructed from the input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+
 <div class="viewcode-block" id="TimeSeries.plot"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
              <span class="n">new_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
              <span class="o">*</span><span class="n">args</span><span class="p">,</span>
@@ -889,7 +1031,15 @@
                 <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;figure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
                 <span class="k">if</span> <span class="s1">&#39;label&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                     <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_dummy_index</span><span class="p">:</span>
+                <span class="n">x_ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+                <span class="n">plot_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+                    <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                    <span class="n">index</span><span class="o">=</span><span class="n">x_ticks</span>
+                <span class="p">)</span>
+                <span class="n">plot_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">x_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span><span class="o">.</span><span class="n">name</span>
         <span class="k">if</span> <span class="n">x_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">x_label</span><span class="p">)</span></div>
@@ -1426,7 +1576,7 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="n">new_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">+</span> <span class="n">other</span>
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
@@ -1439,7 +1589,7 @@
         <span class="k">return</span> <span class="bp">self</span> <span class="o">+</span> <span class="n">other</span>
 
     <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="n">new_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">-</span> <span class="n">other</span>
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
@@ -1452,7 +1602,7 @@
         <span class="k">return</span> <span class="n">other</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="n">new_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">*</span> <span class="n">other</span>
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
@@ -1465,7 +1615,7 @@
         <span class="k">return</span> <span class="bp">self</span> <span class="o">*</span> <span class="n">other</span>
 
     <span class="k">def</span> <span class="fm">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="n">raise_log</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">(</span><span class="s1">&#39;Cannot divide by a TimeSeries with a value 0.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
@@ -1476,7 +1626,7 @@
                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)),</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">other</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
                 <span class="n">raise_log</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">(</span><span class="s1">&#39;Cannot divide by 0.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
@@ -1511,7 +1661,7 @@
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_str</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&lt;</span> <span class="n">other</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
@@ -1521,7 +1671,7 @@
         <span class="k">return</span> <span class="n">series</span>  <span class="c1"># TODO should we return only the ndarray, the pd series, or our timeseries?</span>
 
     <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&gt;</span> <span class="n">other</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
@@ -1531,7 +1681,7 @@
         <span class="k">return</span> <span class="n">series</span>
 
     <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&lt;=</span> <span class="n">other</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
@@ -1541,7 +1691,7 @@
         <span class="k">return</span> <span class="n">series</span>
 
     <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&gt;=</span> <span class="n">other</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>

@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Multiple Time Series, Pre-trained Models and Covariates &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -181,7 +182,7 @@
             <a href="#Producing-Forecasts-After-the-End-of-a-Series" class="nav-link">Producing Forecasts After the End of a Series</a><ul class="nav section-nav flex-column">
                 
         <li class="nav-item toc-entry toc-h3">
-            <a href="#Wait...-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??" class="nav-link">Wait… does this mean that milk consumption helps to predict air traffic??</a>
+            <a href="#Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??" class="nav-link">Wait… does this mean that milk consumption helps to predict air traffic??</a>
         </li>
     
         <li class="nav-item toc-entry toc-h3">
@@ -474,7 +475,7 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Multiple-Time-Series,-Pre-trained-Models-and-Covariates">
+<section id="Multiple-Time-Series,-Pre-trained-Models-and-Covariates">
 <h1>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#Multiple-Time-Series,-Pre-trained-Models-and-Covariates" title="Permalink to this headline">¶</a></h1>
 <p>This notebook serves as a tutorial for: * Training a single model on multiple time series * Using a pre-trained model to obtain forecasts for any time series unseen during training * Training and using a model using covariates</p>
 <p>First, some necessary imports:</p>
@@ -499,7 +500,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Read-Data">
+<section id="Read-Data">
 <h2>Read Data<a class="headerlink" href="#Read-Data" title="Permalink to this headline">¶</a></h2>
 <p>Let’s start by reading two time series - one containing the monthly number of air passengers, and another containing the monthly milk production per cow. These time series have not much to do with each other, except that they both have a monthly frequency with a marked yearly periodicity and upward trend, and (completely coincidentaly) they contain values of a comparable order of magnitude.</p>
 <div class="nbinput docutils container">
@@ -526,8 +527,8 @@ div.rendered_html tbody tr:hover {
 <img alt="../_images/examples_02-multi-time-series-and-covariates_3_0.png" src="../_images/examples_02-multi-time-series-and-covariates_3_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Preprocessing">
+</section>
+<section id="Preprocessing">
 <h2>Preprocessing<a class="headerlink" href="#Preprocessing" title="Permalink to this headline">¶</a></h2>
 <p>Usually neural networks tend to work better on normalised/standardised data. Here we’ll use the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> class to normalise both of our time series between 0 and 1:</p>
 <div class="nbinput docutils container">
@@ -552,8 +553,8 @@ div.rendered_html tbody tr:hover {
 <img alt="../_images/examples_02-multi-time-series-and-covariates_5_0.png" src="../_images/examples_02-multi-time-series-and-covariates_5_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Train-/-Validation-split">
+</section>
+<section id="Train-/-Validation-split">
 <h2>Train / Validation split<a class="headerlink" href="#Train-/-Validation-split" title="Permalink to this headline">¶</a></h2>
 <p>Let’s keep the last 36 months of both series as validation:</p>
 <div class="nbinput nblast docutils container">
@@ -566,7 +567,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Global-Forecasting-Models">
+<section id="Global-Forecasting-Models">
 <h3>Global Forecasting Models<a class="headerlink" href="#Global-Forecasting-Models" title="Permalink to this headline">¶</a></h3>
 <p>Darts contains many forecasting models, but not all of them can be trained on several time series. The models that support training on multiple series are called <em>global</em> models. At the time of writing, there are 4 global models: * RNNs * Temporal Convolutional Networks (TCNs) * N-Beats * Transformer model</p>
 <p>In the following, we will distinguish two sorts of time series: * The <strong>target time series</strong> is the time series we are interested to forecast (given its history) * A <strong>covariate time series</strong> is a time series which may help in the forecasting of the target series, but that we are not interested in forecasting. It’s sometimes also called <em>external data</em>.</p>
@@ -576,9 +577,9 @@ div.rendered_html tbody tr:hover {
 <p>The good news is that as a user, we don’t have to worry about the different input/output dimensionalities; these are automatically inferred for us by the model based on the training data. Note that this means that the actual inner neural network model is only really created at training time.</p>
 <p>We’ll still have to specify two important parameters when building our models: * <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>: this is the length of the lookback window of the model; so each output will be computed by the model by reading the previous <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> points. * <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>: this is the length of the outputs (forecasts) produced by the internal model. However, when no covariates are used, the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> method of the “outer” Darts model (e.g., the one of <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>,
 <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, etc) can be called for a longer time horizon. In these cases, if <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called for a horizon longer than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>, the internal model will simply be called repeatedly, feeding on its own previous outputs in an auto-regressive fashion.</p>
-</div>
-</div>
-<div class="section" id="Example-with-One-Series">
+</section>
+</section>
+<section id="Example-with-One-Series">
 <h2>Example with One Series<a class="headerlink" href="#Example-with-One-Series" title="Permalink to this headline">¶</a></h2>
 <p>Let’s look at a first example. We’ll build an N-BEATS model that has a lookback window of 24 points (<code class="docutils literal notranslate"><span class="pre">input_chunk_length=24</span></code>) and predicts the next 12 points (<code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code>). We chose these values so it’ll make our model produce successive predictions for one year at a time, looking at the past two years.</p>
 <div class="nbinput nblast docutils container">
@@ -654,8 +655,8 @@ MAPE = 9.45%
 <img alt="../_images/examples_02-multi-time-series-and-covariates_13_1.png" src="../_images/examples_02-multi-time-series-and-covariates_13_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Training-Process-(behind-the-scenes)">
+</section>
+<section id="Training-Process-(behind-the-scenes)">
 <h2>Training Process (behind the scenes)<a class="headerlink" href="#Training-Process-(behind-the-scenes)" title="Permalink to this headline">¶</a></h2>
 <p>So what happened when we called <code class="docutils literal notranslate"><span class="pre">model_air.fit()</span></code> above?</p>
 <p>In order to train the internal neural network, Darts first makes a dataset of inputs/outputs examples from the provided time series (in this case: <code class="docutils literal notranslate"><span class="pre">series_air_scaled</span></code>). There are several ways this can be done and Darts contains a few different dataset implementations in the <code class="docutils literal notranslate"><span class="pre">darts.utils.data</span></code> package.</p>
@@ -665,14 +666,14 @@ MAPE = 9.45%
 <p>Note that different models are susceptible to use different datasets by default. For instance, <code class="docutils literal notranslate"><span class="pre">darts.utils.data.HorizonBasedDataset</span></code> is inspired by the <a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a> and produces samples that are “close” to the end of the series, possibly even ignoring the beginning of the series.</p>
 <p>If you have the need to control the way training samples are produced from <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances, you can implement your own training dataset by inheriting the abstract <code class="docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> class. Darts datasets are inheriting from Python <code class="docutils literal notranslate"><span class="pre">Sequence</span></code>, which means that you can also implement lazy versions that do not load all data in memory at once. Once you have your own instance of a dataset, you can directly call the <code class="docutils literal notranslate"><span class="pre">fit_from_dataset()</span></code> method, which is supported by all
 global forecasting models.</p>
-<div class="section" id="Training-a-Model-on-Multiple-Time-Series">
+<section id="Training-a-Model-on-Multiple-Time-Series">
 <h3>Training a Model on Multiple Time Series<a class="headerlink" href="#Training-a-Model-on-Multiple-Time-Series" title="Permalink to this headline">¶</a></h3>
 <p>All this machinery can be seamlessly used with multiple time series. Here’s how a <code class="docutils literal notranslate"><span class="pre">SequentialDataset</span></code> with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code> looks for two series of lengths N and M:</p>
 <p><img alt="image1" src="../_images/seq_dataset_multi_ts.png" /></p>
 <p>Note a few things here: * The different series do not need to have the same length, or even to share the same time stamps. * In fact, they don’t even need to have the same frequency. * The total number of samples in the training dataset will be the union of all the training samples contained in each series; so a training epoch will now span all samples from all series.</p>
-</div>
-</div>
-<div class="section" id="Training-on-Both-Air-Traffic-and-Milk-Series">
+</section>
+</section>
+<section id="Training-on-Both-Air-Traffic-and-Milk-Series">
 <h2>Training on Both Air Traffic and Milk Series<a class="headerlink" href="#Training-on-Both-Air-Traffic-and-Milk-Series" title="Permalink to this headline">¶</a></h2>
 <p>Let’s look at another example where we fit another model instance on our two time series (air passengers and milk production). Since using two series of (roughly) the same length (roughly) doubles the training dataset size, we will use half of the number of epochs:</p>
 <div class="nbinput nblast docutils container">
@@ -717,8 +718,8 @@ global forecasting models.</p>
 Training loss: 0.0002
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Producing-Forecasts-After-the-End-of-a-Series">
+</section>
+<section id="Producing-Forecasts-After-the-End-of-a-Series">
 <h2>Producing Forecasts After the End of a Series<a class="headerlink" href="#Producing-Forecasts-After-the-End-of-a-Series" title="Permalink to this headline">¶</a></h2>
 <p>Now, importantly, when computing the forecasts we have to specify which time series we want to forecast the future for.</p>
 <p>We didn’t have this constraint earlier. When fitting models on one series only, the model remembers this series internally, and if <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called without the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument, it returns a forecast for the (unique) training series. This does not work anymore as soon as a model is fit on more than one series - in this case the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument of <code class="docutils literal notranslate"><span class="pre">predict()</span></code> becomes mandatory.</p>
@@ -752,8 +753,8 @@ MAPE = 5.72%
 <img alt="../_images/examples_02-multi-time-series-and-covariates_20_1.png" src="../_images/examples_02-multi-time-series-and-covariates_20_1.png" />
 </div>
 </div>
-<div class="section" id="Wait...-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??">
-<h3>Wait… does this mean that milk consumption helps to predict air traffic??<a class="headerlink" href="#Wait...-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??" title="Permalink to this headline">¶</a></h3>
+<section id="Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??">
+<h3>Wait… does this mean that milk consumption helps to predict air traffic??<a class="headerlink" href="#Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??" title="Permalink to this headline">¶</a></h3>
 <p>Well, in this particular instance with this model, it seems to be the case (at least in terms of MAPE error). This is not so weird if you think about it, though. Air traffic is heavily characterized by the yearly seasonality and upward trend. The milk series exhibits these two traits as well, and in this case it’s probably helping the model to capture them.</p>
 <p>Note that this points towards the possibility of <em>pre-training</em> forecasting models; training models once and for all and later using them to forecast series that are not in the train set. With our toy model we can really forecast the future values of any other series, even series never seen during training. For the sake of example, let’s say we want to forecast the future of some arbitrary sine wave series:</p>
 <div class="nbinput docutils container">
@@ -799,11 +800,11 @@ MAPE = 5.72%
 </div>
 </div>
 <p>The two series returned correspond to the forecasts after then end of <code class="docutils literal notranslate"><span class="pre">train_air</span></code> and <code class="docutils literal notranslate"><span class="pre">train_milk</span></code>, respectively.</p>
-</div>
-<div class="section" id="Covariates-Series">
+</section>
+<section id="Covariates-Series">
 <h3>Covariates Series<a class="headerlink" href="#Covariates-Series" title="Permalink to this headline">¶</a></h3>
 <p>Until now, we have only been playing with models that only use the history of the <em>target</em> series to predict its future. However, as explained above, the global Darts models also support the use of <em>covariates</em> time series. These are time series of “external data”, which we are not necessarily interested in predicting, but which we would still like to feed as input of our models because they can contain valuable information.</p>
-<div class="section" id="Building-Covariates">
+<section id="Building-Covariates">
 <h4>Building Covariates<a class="headerlink" href="#Building-Covariates" title="Permalink to this headline">¶</a></h4>
 <p>Let’s see a simple example with our air and milk series, where we’ll try to use the year and month-of-the-year as covariates:</p>
 <div class="nbinput docutils container">
@@ -860,10 +861,10 @@ MAPE = 5.72%
 </div>
 <p>Good, so for each target series (air and milk), we have built a covariates series having the same time axis and containing the year and the month.</p>
 <p>Note that here the covariates series are <strong>multivariate time series</strong>: they contain two dimensions - one dimension for the year and one for the month.</p>
-</div>
-</div>
-</div>
-<div class="section" id="Training-with-Covariates">
+</section>
+</section>
+</section>
+<section id="Training-with-Covariates">
 <h2>Training with Covariates<a class="headerlink" href="#Training-with-Covariates" title="Permalink to this headline">¶</a></h2>
 <p>Let’s revisit our example again, this time with covariates. We will build an <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> because at the time of writing <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> doesn’t yet support covariates.</p>
 <div class="nbinput nblast docutils container">
@@ -910,8 +911,8 @@ MAPE = 5.72%
 Training loss: 0.0019
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Forecasting-with-Covariates">
+</section>
+<section id="Forecasting-with-Covariates">
 <h2>Forecasting with Covariates<a class="headerlink" href="#Forecasting-with-Covariates" title="Permalink to this headline">¶</a></h2>
 <p>similarly, getting a forecast is now only a matter of specifying the <code class="docutils literal notranslate"><span class="pre">covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function.</p>
 <div class="nbinput docutils container">
@@ -937,8 +938,8 @@ Training loss: 0.0019
 </div>
 </div>
 <p>The main catch above is that we cannot directly call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> larger than the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> we trained our model with. This is because when covariates are used, we cannot use the auto-regressive “trick” where we call the model iteratively on its own output, because in this case we do not have the corresponding covariates.</p>
-</div>
-<div class="section" id="Backtesting-with-Covariates">
+</section>
+<section id="Backtesting-with-Covariates">
 <h2>Backtesting with Covariates<a class="headerlink" href="#Backtesting-with-Covariates" title="Permalink to this headline">¶</a></h2>
 <p>We can still backtest the model using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months, starting at 75% of the air series:</p>
 <div class="nbinput docutils container">
@@ -983,8 +984,8 @@ MAPE (using covariates) = 8.22%
 <img alt="../_images/examples_02-multi-time-series-and-covariates_35_2.png" src="../_images/examples_02-multi-time-series-and-covariates_35_2.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Current-Limitations,-Future-Covariates-and-Other-Conditioning">
+</section>
+<section id="Current-Limitations,-Future-Covariates-and-Other-Conditioning">
 <h2>Current Limitations, Future Covariates and Other Conditioning<a class="headerlink" href="#Current-Limitations,-Future-Covariates-and-Other-Conditioning" title="Permalink to this headline">¶</a></h2>
 <p>At the moment Darts supports covariates that are themselves time series. Furthermore, these time must share the same time axes as the target series. The only real difference is that these covariates series will only be used as inputs of the model and not as outputs.</p>
 <p>However, even though the covariates and targets are required to share their time axis, the covariates can still represent known future values. For instance, if the target is influenced by some external factor (such as, say, the weather) and the weather is known 7 days in advance, then the covariates series can simply be built so that its value at time T represents the “week ahead” forecast for T+7 (this can simply be done by shifting the original series).</p>
@@ -998,8 +999,8 @@ MAPE (using covariates) = 8.22%
 </pre></div>
 </div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>

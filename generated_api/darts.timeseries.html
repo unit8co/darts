@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Timeseries &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
@@ -181,12 +182,12 @@
               
               <div>
                 
-  <span class="target" id="module-darts.timeseries"></span><div class="section" id="timeseries">
+  <span class="target" id="module-darts.timeseries"></span><section id="timeseries">
 <h1>Timeseries<a class="headerlink" href="#timeseries" title="Permalink to this headline">¶</a></h1>
 <p><cite>TimeSeries</cite> is the main class in <cite>darts</cite>. It represents a univariate or multivariate time series.</p>
 <dl class="py class">
 <dt id="darts.timeseries.TimeSeries">
-<em class="property">class </em><code class="sig-prename descclassname">darts.timeseries.</code><code class="sig-name descname">TimeSeries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.timeseries.</code><code class="sig-name descname">TimeSeries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A TimeSeries is an object representing a univariate or multivariate time series.</p>
 <p>TimeSeries are meant to be immutable.</p>
@@ -201,6 +202,9 @@ Furthermore, this argument can be used to override the automatic frequency detec
 index is incomplete.</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values
 in case the frequency of <cite>series</cite> cannot be inferred.</p></li>
+<li><p><strong>dummy_index</strong> – Optionally, if no date time index is present, this flag will instruct Darts to build a
+dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+where the time index doesn’t matter.</p></li>
 </ul>
 </dd>
 </dl>
@@ -314,6 +318,28 @@ Does not update value if already existing indices are provided.</p>
 <dt id="darts.timeseries.TimeSeries.describe">
 <code class="sig-name descname">describe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">percentiles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exclude</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.describe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.describe" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.timeseries.TimeSeries.diff">
+<code class="sig-name descname">diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">periods</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dropna</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a differenced time series. This is often used to make a time series stationary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – Optionally, a signed integer indicating the number of differencing steps.</p></li>
+<li><p><strong>periods</strong> – Optionally, periods to shift for calculating difference.</p></li>
+<li><p><strong>dropna</strong> – Optionally, a boolean value indicating whether to drop the missing values created by
+the pandas.DataFrame.diff method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A TimeSeries constructed after differencing.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.drop_after">
@@ -431,7 +457,7 @@ The timestamp may not be in the TimeSeries. If it is, the timestamp will be drop
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_dataframe">
-<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a TimeSeries instance built from a selection of columns of a DataFrame.
 One column (or the DataFrame index) has to represent the time,
 and a list of columns <cite>value_cols</cite> has to represent the values for this time series.</p>
@@ -445,6 +471,9 @@ and a list of columns <cite>value_cols</cite> has to represent the values for th
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame.</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values
 in case the frequency of <cite>series</cite> cannot be inferred.</p></li>
+<li><p><strong>dummy_index</strong> – Optionally, if no date time index is present, this flag will instruct Darts to build a
+dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+where the time index doesn’t matter.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -476,7 +505,7 @@ into a <cite>TimeSeries</cite> object</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_series">
-<em class="property">static </em><code class="sig-name descname">from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pd_series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pd_series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dummy_index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a TimeSeries built from a pandas Series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -485,6 +514,9 @@ into a <cite>TimeSeries</cite> object</p>
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas Series.</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values
 in case the frequency of <cite>series</cite> cannot be inferred.</p></li>
+<li><p><strong>dummy_index</strong> – Optionally, if no date time index is present, this flag will instruct Darts to build a
+dummy time index in order to obtain a valid TimeSeries. This option can be used in cases
+where the time index doesn’t matter.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -531,6 +563,46 @@ of the gap and the integer length of the gap (in <cite>self.freq()</cite> units)
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.timeseries.TimeSeries.get_index_at_point">
+<code class="sig-name descname">get_index_at_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; int<a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.get_index_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.get_index_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a point into the corresponding index in the time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> – This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
+In case of a <cite>float</cite>, the parameter will be treated as the proportion of the time series
+that should lie before the point.
+In case of a <cite>pandas.Timestamp</cite>, will return the index corresponding to the timestamp in the series
+if the timestamp is present in the series time index, otherwise will raise a ValueError.
+In case of an <cite>int</cite>, the parameter will be returned as is provided that it is a valid index,
+otherwise will raise a ValueError.</p></li>
+<li><p><strong>series</strong> – The time series to index in</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.timeseries.TimeSeries.get_timestamp_at_point">
+<code class="sig-name descname">get_timestamp_at_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; pandas._libs.tslibs.timestamps.Timestamp<a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.get_timestamp_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.get_timestamp_at_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a point into a pandas.Timestamp in the time series</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> – This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
+In case of a <cite>float</cite>, the parameter will be treated as the proportion of the time series
+that should lie before the point.
+In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
+<cite>series</cite>. Will raise a ValueError if not a valid index in <cite>series</cite>
+In case of a <cite>pandas.Timestamp</cite>, point will be returned as is provided that the timestamp
+is present in the series time index, otherwise will raise a ValueError.</p></li>
+<li><p><strong>series</strong> – The time series to index in</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -618,7 +690,7 @@ larger than <cite>max_gap_size</cite>.</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.map">
-<code class="sig-name descname">map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span>numpy.number<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.map" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies the function <cite>fn</cite> elementwise to all values in this TimeSeries, or, to only those
 values in the columns specified by the optional argument <cite>cols</cite>. Returns a new
 TimeSeries instance.</p>
@@ -859,16 +931,18 @@ provided in argument. Note that this method is in general <em>not</em> symmetric
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.split_after">
-<code class="sig-name descname">split_after</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.split_after"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.split_after" title="Permalink to this definition">¶</a></dt>
-<dd><p>Splits the TimeSeries in two, around a provided timestamp <cite>ts</cite>.</p>
-<p>The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-first of the two TimeSeries, and not in the second.</p>
+<code class="sig-name descname">split_after</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.split_after"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.split_after" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits the TimeSeries in two, after a provided <cite>split_point</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ts</strong> – The timestamp that indicates the splitting time.</p>
+<dd class="field-odd"><p><strong>split_point</strong> – A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after
+which the split is performed. If timestamp, it will be contained in the first TimeSeries, but not
+in the second one. The timestamp may not appear in the original TimeSeries index.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple of two time series. The first time series is before <cite>ts</cite>, and the second one is after <cite>ts</cite>.</p>
+<dd class="field-even"><p>A tuple of two time series. The first time series contains the first samples up to the <cite>split_point</cite>,
+and the second contains the remaining ones.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Tuple[<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
@@ -878,16 +952,18 @@ first of the two TimeSeries, and not in the second.</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.split_before">
-<code class="sig-name descname">split_before</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ts</span><span class="p">:</span> <span class="n">pandas._libs.tslibs.timestamps.Timestamp</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.split_before"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.split_before" title="Permalink to this definition">¶</a></dt>
-<dd><p>Splits a TimeSeries in two, around a provided timestamp <cite>ts</cite>.</p>
-<p>The timestamp may not be in the TimeSeries. If it is, the timestamp will be included in the
-second of the two TimeSeries, and not in the first.</p>
+<code class="sig-name descname">split_before</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">split_point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.split_before"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.split_before" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits a TimeSeries in two, before a provided <cite>split_point</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ts</strong> – The timestamp that indicates the splitting time.</p>
+<dd class="field-odd"><p><strong>split_point</strong> – A timestamp, float or integer. If float, represents the proportion of the dataset to include in the
+first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before
+which the split is performed. If timestamp, it will be contained in the second TimeSeries, but not
+in the first one. The timestamp may not appear in the original TimeSeries index.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple of two time series. The first time series is before <cite>ts</cite>, and the second one is after <cite>ts</cite>.</p>
+<dd class="field-even"><p>A tuple of two time series. The first time series contains the first samples before the <cite>split_point</cite>,
+and the second contains the remaining ones.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Tuple[<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
@@ -1066,7 +1142,7 @@ Use <cite>numpy.nan</cite> to ignore a specific index in a series.</p>
 
 </dd></dl>
 
-</div>
+</section>
 
 
               </div>

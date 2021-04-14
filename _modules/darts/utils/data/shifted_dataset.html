@@ -216,6 +216,7 @@
                      <span class="s1">&#39;The provided sequence of target series must have the same length as &#39;</span>
                      <span class="s1">&#39;the provided sequence of covariate series.&#39;</span><span class="p">)</span>
 
+
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">=</span> <span class="n">length</span><span class="p">,</span> <span class="n">shift</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
 
@@ -230,6 +231,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                     <span class="s2">&quot;Every target series needs to be at least `length + shift` long&quot;</span><span class="p">)</span>
+    
         <span class="c1"># determine the index of the time series.</span>
         <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
         <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
