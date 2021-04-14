@@ -127,6 +127,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                                                   verbose=False,
                                                   last_points_only=True)
             self.assertEqual(pred.width, 1)
+            self.assertEqual(pred.end_time(), linear_series.end_time())
 
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
@@ -140,6 +141,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                                                   verbose=False,
                                                   last_points_only=True)
             self.assertEqual(pred.width, 2)
+            self.assertEqual(pred.end_time(), linear_series.end_time())
 
     def test_backtest_regression(self):
         gaussian_series = gt(mean=2, length=50)

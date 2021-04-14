@@ -4,15 +4,16 @@ Auto-ARIMA
 """
 
 from pmdarima import AutoARIMA as PmdAutoARIMA
+from typing import Optional
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
-from ..logging import get_logger
+from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(ForecastingModel):
+class AutoARIMA(ExtendedForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """ Auto-ARIMA
 
@@ -33,23 +34,32 @@ class AutoARIMA(ForecastingModel):
         autoarima_kwargs
             Keyword arguments for the pmdarima.txt AutoARIMA model
         """
-
         super().__init__()
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
+        self.trend = self.model.trend
 
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+        super().fit(series, exog)
         series = self.training_series
-        self.model.fit(series.values())
+        self.model.fit(series.values(),
+                       X=exog.values() if exog else None)
 
-    def predict(self, n):
-        super().predict(n)
-        forecast = self.model.predict(n_periods=n)
+    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+        super().predict(n, exog)
+        forecast = self.model.predict(n_periods=n,
+                                      X=exog.values() if exog else None)
         return self._build_forecast_series(forecast)
 
     @property
     def min_train_series_length(self) -> int:
         return 30
+
+    def _supports_dummy_index(self) -> bool:
+        raise_if(self.trend and self.trend != "c",
+            "'trend' is not None. Dummy indexing is not supported in that case.",
+            logger
+        )
+        return True

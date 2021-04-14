@@ -450,7 +450,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)
 
         prediction = []  # (length, width)
-        out = self.model(in_sequence)  # (1, output_chunk_length, width)
+        out = self.model(in_sequence)[:, self.first_prediction_index:, :]  # (1, output_chunk_length, width)
         prediction.append(out[0, :, :])
         while sum(map(lambda t: len(t), prediction)) < n:
             roll_size = min(self.output_chunk_length, self.input_chunk_length)
@@ -458,7 +458,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
 
             # take only last part of the output sequence where needed
-            out = self.model(in_sequence)[self.first_prediction_index:]
+            out = self.model(in_sequence)[:, self.first_prediction_index:, :]
 
             prediction.append(out[0, :, :])
 
