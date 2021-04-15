@@ -1,191 +1,150 @@
-"""
-LightGBM
---------
-
-Models for LightGBM (Light Gradient Boosting Machine) [1]_.
-The implementations is wrapped around `lightgbm <https://lightgbm.readthedocs.io/en/latest/index.html>`_.
-
-References
-----------
-.. [1] https://en.wikipedia.org/wiki/LightGBM
-"""
 import numpy as np
 import pandas as pd
 
-from lightgbm import LGBMRegressor
-from typing import Optional, Union
+from ..logging import get_logger
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_if, raise_if_not
-from .forecasting_model import ExtendedForecastingModel
-
+from .base_test_class import DartsBaseTestClass
+from ..models.random_forest import RandomForest
 logger = get_logger(__name__)
 
 
-class LightGBM(ExtendedForecastingModel):
-    def __init__(self,
-                 lags: Union[int, list],
-                 lags_exog: Union[int, list, bool] = True,
-                 num_leaves: Optional[int] = 128,
-                 learning_rate: Optional[float] = 0.1,
-                 n_estimators: Optional[int] = 100,
-                 **kwargs):
-        """ LightGBM
+class RandomForestTestCase(DartsBaseTestClass):
+    __test__ = True
+    data_dict = {"Time": pd.date_range(start="20130501", end="20200301", freq="MS")}
+    data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+    data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
+    data_dict["Exog1"] = np.random.uniform(low=-5, high=-4, size=len(data_dict["Time"]))
+    data_dict["Exog2"] = np.random.uniform(low=0, high=5, size=len(data_dict["Time"]))
 
-        Parameters
-        ----------
-        lags : Union[int, list]
-            Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags.
-        lags_exog : Union[int, list, bool]
-            Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags. If False,
-            the value at time `t` is used which might lead to leakage. If True the same lags as for the
-            target variable are used.
-        num_leaves : int
-            Maximum number of leaves in base learner.
-        learning_rate : float
-            Boosting learning rate.
-        n_estimators : int
-            Number of boosted trees.
-        kwargs
-            Additonal arguments for lightgbm.LGBMRegressor(...).
-        """
-        super().__init__()
-        raise_if(isinstance(lags, int) and (lags < 0), "Lags must be positive integer.")
-        raise_if(isinstance(lags, float), "Lags must be integer, not float.")
+    data = TimeSeries.from_dataframe(df=pd.DataFrame(data_dict), time_col="Time")
 
-        self.lags = lags
-        self.lags_exog = lags_exog
-        self.num_leaves = num_leaves
-        self.learning_rate = learning_rate
-        self.n_estimators = n_estimators
-        self.lgb_kwargs = kwargs
-        self.model = LGBMRegressor(
-            num_leaves=num_leaves, learning_rate=learning_rate,
-            n_estimators=n_estimators, **kwargs
-        )
-        if isinstance(self.lags, int):
-            self.lags = list(range(1, self.lags+1))
+    def test_creation(self):
+        lgbm = RandomForest(lags=5)
+        self.assertEqual(lgbm.lags, [1, 2, 3, 4, 5])
 
-        if self.lags_exog is True:
-            self.lags_exog = self.lags[:]
-        elif self.lags_exog is False:
-            self.lags_exog = [0]
-        elif isinstance(self.lags_exog, int):
-            self.lags_exog = list(range(1, self.lags_exog+1))
-        self.max_lag = int(np.max([np.max(self.lags), np.max(self.lags_exog)]))
+        lgbm = RandomForest(lags=5, lags_exog=3)
+        self.assertEqual(lgbm.lags_exog, [1, 2, 3])
 
-    def __str__(self):
-        return 'LightGBM(lags={}, num_leaves={}, learning_rate={}, n_estimators={})'.format(
-            self.lags, self.num_leaves, self.learning_rate, self.n_estimators
-        )
+        lgbm = RandomForest(lags=5, lags_exog=True)
+        self.assertEqual(lgbm.lags, [1, 2, 3, 4, 5])
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None, **kwargs):
-        super().fit(series, exog)
-        self.target_column = series.pd_dataframe().columns[0]
-        self.exog_columns = exog.pd_dataframe().columns if exog is not None else None
-        self.training_data = self._create_valid_data(series, exog)
-        self.nr_exog = self.training_data.shape[1] - len(self.lags) - 1
+        lgbm = RandomForest(lags=5, lags_exog=False)
+        self.assertEqual(lgbm.lags_exog, [0])
 
-        self.model.fit(
-            X=self.training_data.drop(self.target_column, axis=1),
-            y=self.training_data[self.target_column],
-            **kwargs
-        )
-        if exog is not None:
-            self.prediction_data = series.stack(other=exog)[-self.max_lag:]
-        else:
-            self.prediction_data = series[-self.max_lag:]
+        lgbm = RandomForest(lags=5, lags_exog=[3, 6, 9, 12])
+        self.assertEqual(lgbm.lags_exog, [3, 6, 9, 12])
 
-    def _create_valid_data(self, series: TimeSeries, exog: TimeSeries = None):
-        """ Create dataframe of exogenous and endogenous variables containing lagged values.
+        with self.assertRaises(ValueError):
+            RandomForest(lags=-5)
+        with self.assertRaises(ValueError):
+            RandomForest(lags=3.6)
 
-        Parameters
-        ----------
-        series : TimeSeries
-            Target series.
-        exog : TimeSeries, optional
-            Exogenous variables.
 
-        Returns
-        -------
-        pd.dataframe
-            Data frame with lagged values.
-        """
-        raise_if(series.width > 1,
-            "Series must not be multivariate. Pass exogenous variables to 'exog' parameter.",
-            logger
-        )
-        training_data = self._create_lagged_data(series=series, lags=self.lags, keep_current=True)
-        if exog is not None:
-            for col in exog.pd_dataframe().columns:
-                col_lagged_data = self._create_lagged_data(
-                    series=exog[col], lags=self.lags_exog, keep_current=False
+    def test_create_lagged_data(self):
+        nr_lags = 12
+        lgbm = RandomForest(lags=nr_lags)
+
+        lagged_data = lgbm._create_lagged_data(series=self.data[["Values1"]], lags=lgbm.lags, keep_current=True)
+        self.assertEqual(len(lagged_data), len(self.data)-nr_lags)
+        self.assertEqual(lagged_data.shape[1], nr_lags+1)
+        self.assertTrue(
+            np.all(np.array_equal(
+                lagged_data.iloc[0, :],
+                self.data.pd_dataframe()["Values1"][:nr_lags+1][::-1]
                 )
-                training_data = pd.concat([training_data, col_lagged_data], axis=1)
-        return training_data.dropna()
-
-    def _create_lagged_data(self, series: TimeSeries, lags: list, keep_current: bool):
-        """ Creates a data frame where every lag is a new column.
-
-        After creating this input it can be used in many regression models to make predictions
-        based on previous available values for both the exogenous as well as endogenous variables.
-
-        Parameters
-        ----------
-        series : TimeSeries
-            Time series to be lagged.
-        lags : list
-            List if indexes.
-        keep_current : bool
-            If False, the current value (not-lagged) is dropped.
-
-        Returns
-        -------
-        TYPE
-            Returns a data frame that contains lagged values.
-        """
-        lagged_series = series.pd_dataframe(copy=True)
-        target_name = lagged_series.columns[0]
-        for lag in lags:
-            new_column_name = target_name + "_lag{}".format(lag)
-            lagged_series[new_column_name] = lagged_series[target_name].shift(lag)
-        lagged_series.dropna(inplace=True)
-        if not keep_current:
-            lagged_series.drop(target_name, axis=1, inplace=True)
-        return lagged_series
-
-    def predict(self, n: int, exog: Optional[TimeSeries] = None, **kwargs):
-        super().predict(n, exog)
-        if isinstance(exog, TimeSeries):
-            exog = exog.pd_dataframe()
-
-        prediction_data = self.prediction_data.copy()
-        dummy_row = np.zeros(shape=(1, prediction_data.width))
-        prediction_data = prediction_data.append_values(dummy_row)
-        forecasts = list(range(n))
-
-        for i in range(n):
-            target_data = TimeSeries(prediction_data.pd_dataframe()[[self.target_column]])
-            if self.exog_columns is not None:
-                exog_data = TimeSeries(prediction_data.pd_dataframe()[self.exog_columns])
-            else:
-                exog_data = None
-            forecasting_data = self._create_valid_data(target_data, exog=exog_data).iloc[:, 1:]
-            forecast = self.model.predict(
-                X=forecasting_data,
-                **kwargs
             )
-            prediction_data = prediction_data[1:-1]
-            if self.exog_columns is not None:
-                append_row = [[forecast[0], *exog.iloc[i, :].values.tolist()]]
-                prediction_data = prediction_data.append_values(append_row)
-            else:
-                prediction_data = prediction_data.append_values(forecast)
-            prediction_data = prediction_data.append_values(dummy_row)
-            forecasts[i] = forecast[0]
-        return self._build_forecast_series(forecasts)
+        )
 
-    @property
-    def min_train_series_length(self) -> int:
-        return 30
+        lags = [3, 6, 7]
+        lgbm = RandomForest(lags=lags)
+        lagged_data = lgbm._create_lagged_data(series=self.data[["Values1"]], lags=lgbm.lags, keep_current=True)
+        self.assertEqual(
+            lagged_data.columns.values.tolist(),
+            ['Values1', 'Values1_lag3', 'Values1_lag6', 'Values1_lag7']
+        )
+        self.assertTrue(
+            np.all(np.array_equal(
+                lagged_data.iloc[0, :],
+                self.data.pd_dataframe()["Values1"].iloc[[0, 1, 4, 7]][::-1]
+                )
+            )
+        )
+
+    def test_create_training_data(self):
+        nr_lags = 12
+        lgbm = RandomForest(lags=nr_lags, lags_exog=False)
+        exog = ["Values2", "Exog1", "Exog2"]
+        lagged_data_ex1 = lgbm._create_training_data(
+            series=self.data[["Values1"]],
+            exog=self.data[exog]
+        ).pd_dataframe()
+        self.assertEqual(len(lagged_data_ex1), len(self.data)-nr_lags)
+        self.assertEqual(lagged_data_ex1.shape[1], nr_lags+1+len(exog))
+        self.assertTrue(
+            np.all(np.array_equal(
+                lagged_data_ex1["Values1"].values,
+                self.data.pd_dataframe()["Values1"].values[nr_lags:]
+                )
+            )
+        )
+
+    def test_fit(self):
+        lgb1 = RandomForest(lags=12)
+        lgb1.fit(series=self.data[["Values1"]])
+        self.assertEqual(lgb1.nr_exog, 0)
+
+        lgb2 = RandomForest(lags=12, lags_exog=True)
+        lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
+        self.assertEqual(lgb2.nr_exog, 36)
+
+        lgb2 = RandomForest(lags=12, lags_exog=False)
+        lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
+        self.assertEqual(lgb2.nr_exog, 3)
+
+        lgb2 = RandomForest(lags=12, lags_exog=[1, 4, 6])
+        lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
+        self.assertEqual(lgb2.nr_exog, 9)
+
+    def test_prediction(self):
+        lgb1 = RandomForest(lags=12)
+        lgb1.fit(series=self.data[["Values1"]])
+        pred1 = lgb1.predict(n=12)
+        self.assertEqual(len(pred1), 12)
+
+        exog = self.data.pd_dataframe()[["Values2", "Exog1", "Exog2"]].iloc[:12, :]
+        lgb2 = RandomForest(lags=12)
+        lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
+        pred2 = lgb2.predict(n=12, exog=TimeSeries.from_dataframe(exog))
+        self.assertEqual(len(pred2), 12)
+        pred3 = lgb2.predict(n=12, exog=exog)
+        self.assertEqual(len(pred3), 12)
+
+    def test_performance(self):
+        from darts.metrics import mape
+
+        data = pd.read_csv('examples/ice_cream_heater.csv', delimiter=",")
+        data1 = TimeSeries.from_dataframe(data[["Month", "heater"]], time_col="Month").diff(1)
+        train, test = data1.split_before(pd.Timestamp("20180101"))
+        lgb = RandomForest(lags=12, n_estimators=200)
+        lgb.fit(series=train)
+        pred = lgb.predict(n=len(test))
+        print(mape(pred, test))
+
+        # import matplotlib.pyplot as plt
+        # train["heater"].plot()
+        # test[:-1]["heater"].plot()
+        # pred[1:].plot()
+        # plt.show()
+
+        data2 = TimeSeries.from_dataframe(data, time_col="Month").diff(1)
+        train, test = data2.split_before(pd.Timestamp("20180101"))
+        lgb = RandomForest(lags=12, n_estimators=200)
+        lgb.fit(series=train["heater"], exog=train[["ice cream"]])
+        pred = lgb.predict(n=len(test), exog=test[["ice cream"]])
+        print(mape(pred, test["heater"]))
+
+        # import matplotlib.pyplot as plt
+        # train["heater"].plot()
+        # test[:-1]["heater"].plot()
+        # pred[1:].plot()
+        # plt.show()

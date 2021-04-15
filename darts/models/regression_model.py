@@ -13,17 +13,18 @@ where :math:`t` denotes the time step. Here, the function :math:`f()` is not nec
 import numpy as np
 import pandas as pd
 
-from abc import ABC, abstractmethod
-from typing import List, Iterable, Union, Any, Callable
 
+from .. import metrics
 from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger, raise_log
+from sklearn.linear_model import LinearRegression
+from .forecasting_model import ExtendedForecastingModel
+from typing import List, Iterable, Union, Any, Callable, Optional
+from ..logging import raise_if, raise_if_not, get_logger, raise_log
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks
 )
-from .. import metrics
 
 logger = get_logger(__name__)
 
@@ -31,63 +32,176 @@ logger = get_logger(__name__)
 # TODO: Extend this to a "DynamicRegressiveModel" class, which acts on List[List[TimeSeries]].
 # TODO: The first List[] would contain time-sliding lists of time series, letting the model
 # TODO: be able to learn how to change weights over time. When len() of outer List[] is 0 it's a particular case
-class RegressionModel(ABC):
-    @abstractmethod
-    def __init__(self):
-        """ Regression Model.
+class RegressionModel(ExtendedForecastingModel):
+    def __init__(self,
+                 lags: Union[int, list],
+                 lags_exog: Union[int, list, bool] = True,
+                 model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+        """ Regression Model
 
-            This is the base class for all regression models.
+        Can be used to fit any scikitlearn-like regressor class to predict the target
+        time series with lagged values.
+
+        Parameters
+        ----------
+        lags : Union[int, list]
+            Number of lagged target values used to predict the next time step. If an integer is given
+            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags.
+        lags_exog : Union[int, list, bool]
+            Number of lagged exogenous values used to predict the next time step. If an integer is given
+            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags. If False,
+            the value at time `t` is used which might lead to leakage. If True the same lags as for the
+            target variable are used.
+        model
+            A regression model that implements `fit()` and `predict()` methods.
+            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
+        raise_if(isinstance(lags, int) and (lags < 0), "Lags must be positive integer or list.")
+        raise_if(isinstance(lags, float), "Lags must be integer, not float.")
 
-        # Stores training date information:
-        self.train_features: List[TimeSeries] = None
-        self.train_target: TimeSeries = None
+        if (not callable(getattr(model, "fit", None))):
+            raise_log(Exception('Provided model object must have a fit() method', logger))
+        if (not callable(getattr(model, "predict", None))):
+            raise_log(Exception('Provided model object must have a predict() method', logger))
 
-        # state
+        self.lags = lags
+        self.lags_exog = lags_exog
+
+        self.model = model
+
+        if isinstance(self.lags, int):
+            self.lags = list(range(1, self.lags+1))
+
+        if self.lags_exog is True:
+            self.lags_exog = self.lags[:]
+        elif self.lags_exog is False:
+            self.lags_exog = [0]
+        elif isinstance(self.lags_exog, int):
+            self.lags_exog = list(range(1, self.lags_exog+1))
+
+        self.max_lag = int(np.max([np.max(self.lags), np.max(self.lags_exog)]))
         self._fit_called = False
 
-    @abstractmethod
-    def fit(self, train_features: List[TimeSeries], train_target: TimeSeries) -> None:
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None, **kwargs) -> None:
         """ Fits/trains the model using the provided list of features time series and the target time series.
 
         Parameters
         ----------
-        train_features
-            A list of features time series, all of the same length as the target series
-        train_target
-            A target time series, of the same length as the features series
+        series : TimeSeries
+            TimeSeries object containing the target values.
+        exog : TimeSeries, optional
+            TimeSeries object containing the exogenous values.
         """
+        super().fit(series, exog)
+        self.target_column = series.columns()[0]
+        self.exog_columns = exog.columns().values.tolist() if exog is not None else None
+        self.training_data = self._create_training_data(series, exog)
+        self.train_x =  self.training_data.pd_dataframe().drop(self.target_column, axis=1)
+        self.train_y =  self.training_data.pd_dataframe()[self.target_column]
+        self.nr_exog = self.train_x.shape[1] - len(self.lags)
 
-        raise_if_not(len(train_features) > 0, 'Need at least one feature series', logger)
-        raise_if_not(all([s.has_same_time_as(train_target) for s in train_features]),
-                     'All provided time series must have the same time index', logger)
-        self.train_features = train_features
-        self.train_target = train_target
+        self.model.fit(
+            X=self.train_x,
+            y=self.train_y,
+            **kwargs
+        )
+        if exog is not None:
+            self.prediction_data = series.stack(other=exog)[-self.max_lag:]
+        else:
+            self.prediction_data = series[-self.max_lag:]
+
         self._fit_called = True
 
-    @abstractmethod
-    def predict(self, features: List[TimeSeries]) -> TimeSeries:
-        """ Predicts values of the target time series, given a list of features time series
+    def _create_training_data(self, series: TimeSeries, exog: TimeSeries = None):
+        """ Create dataframe of exogenous and endogenous variables containing lagged values.
 
         Parameters
         ----------
-        features
-            The list of features time series, of the same length
+        series : TimeSeries
+            Target series.
+        exog : TimeSeries, optional
+            Exogenous variables.
 
         Returns
         -------
-        TimeSeries
-            A series containing the predicted targets, of the same length as the features series
+        pd.dataframe
+            Data frame with lagged values.
         """
+        raise_if(series.width > 1,
+            "Series must not be multivariate. Pass exogenous variables to 'exog' parameter.",
+            logger
+        )
+        training_data = self._create_lagged_data(series=series, lags=self.lags, keep_current=True)
+        if exog is not None:
+            for col in exog.pd_dataframe().columns:
+                col_lagged_data = self._create_lagged_data(
+                    series=exog[col], lags=self.lags_exog, keep_current=False
+                )
+                training_data = pd.concat([training_data, col_lagged_data], axis=1)
 
-        if (not self._fit_called):
-            raise_log(Exception('fit() must be called before predict()'), logger)
+        return TimeSeries(training_data.dropna(), freq=series.freq())
 
-        length_ok = len(features) == len(self.train_features)
-        dimensions_ok = all(features[i].width == self.train_features[i].width for i in range(len(features)))
-        raise_if_not(length_ok and dimensions_ok,
-                     'The number and dimensionalities of all given features must correspond to those used for'
-                     ' training.', logger)
+    def _create_lagged_data(self, series: TimeSeries, lags: list, keep_current: bool):
+        """ Creates a data frame where every lag is a new column.
+
+        After creating this input it can be used in many regression models to make predictions
+        based on previous available values for both the exogenous as well as endogenous variables.
+
+        Parameters
+        ----------
+        series : TimeSeries
+            Time series to be lagged.
+        lags : list
+            List if indexes.
+        keep_current : bool
+            If False, the current value (not-lagged) is dropped.
+
+        Returns
+        -------
+        TYPE
+            Returns a data frame that contains lagged values.
+        """
+        lagged_series = series.pd_dataframe(copy=True)
+        target_name = lagged_series.columns[0]
+        for lag in lags:
+            new_column_name = target_name + "_lag{}".format(lag)
+            lagged_series[new_column_name] = lagged_series[target_name].shift(lag)
+        lagged_series.dropna(inplace=True)
+        if not keep_current:
+            lagged_series.drop(target_name, axis=1, inplace=True)
+        return lagged_series
+
+    def predict(self, n: int, exog: Optional[TimeSeries] = None, **kwargs):
+        super().predict(n, exog)
+        if isinstance(exog, TimeSeries):
+            exog = exog.pd_dataframe()
+
+        prediction_data = self.prediction_data.copy()
+        dummy_row = np.zeros(shape=(1, prediction_data.width))
+        prediction_data = prediction_data.append_values(dummy_row)
+        forecasts = list(range(n))
+
+        for i in range(n):
+            target_data = prediction_data[[self.target_column]]
+            if self.exog_columns is not None:
+                exog_data = prediction_data[self.exog_columns]
+            else:
+                exog_data = None
+            forecasting_data = self._create_training_data(target_data, exog=exog_data)
+            forecasting_data = forecasting_data.pd_dataframe().iloc[:, 1:]
+            forecast = self.model.predict(
+                X=forecasting_data,
+                **kwargs
+            )
+            prediction_data = prediction_data[1:-1]
+            if self.exog_columns is not None:
+                append_row = [[forecast[0], *exog.iloc[i, :].values.tolist()]]
+                prediction_data = prediction_data.append_values(append_row)
+            else:
+                prediction_data = prediction_data.append_values(forecast)
+            prediction_data = prediction_data.append_values(dummy_row)
+            forecasts[i] = forecast[0]
+        return self._build_forecast_series(forecasts)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -308,5 +422,8 @@ class RegressionModel(ABC):
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
 
-        train_pred = self.predict(self.train_features)
+        train_pred = self.predict(self.training_data.drop(self.target_column, axis=1))
         return self.train_target - train_pred
+
+    def __str__(self):
+        return model.__str__()
