@@ -5,6 +5,7 @@ from ..logging import get_logger
 from ..timeseries import TimeSeries
 from .base_test_class import DartsBaseTestClass
 from ..models.random_forest import RandomForest
+from ..models.standard_regression_model import StandardRegressionModel
 logger = get_logger(__name__)
 
 
@@ -17,32 +18,33 @@ class RandomForestTestCase(DartsBaseTestClass):
     data_dict["Exog2"] = np.random.uniform(low=0, high=5, size=len(data_dict["Time"]))
 
     data = TimeSeries.from_dataframe(df=pd.DataFrame(data_dict), time_col="Time")
+    model = StandardRegressionModel
 
     def test_creation(self):
-        lgbm = RandomForest(lags=5)
+        lgbm = self.model(lags=5)
         self.assertEqual(lgbm.lags, [1, 2, 3, 4, 5])
 
-        lgbm = RandomForest(lags=5, lags_exog=3)
+        lgbm = self.model(lags=5, lags_exog=3)
         self.assertEqual(lgbm.lags_exog, [1, 2, 3])
 
-        lgbm = RandomForest(lags=5, lags_exog=True)
+        lgbm = self.model(lags=5, lags_exog=True)
         self.assertEqual(lgbm.lags, [1, 2, 3, 4, 5])
 
-        lgbm = RandomForest(lags=5, lags_exog=False)
+        lgbm = self.model(lags=5, lags_exog=False)
         self.assertEqual(lgbm.lags_exog, [0])
 
-        lgbm = RandomForest(lags=5, lags_exog=[3, 6, 9, 12])
+        lgbm = self.model(lags=5, lags_exog=[3, 6, 9, 12])
         self.assertEqual(lgbm.lags_exog, [3, 6, 9, 12])
 
         with self.assertRaises(ValueError):
-            RandomForest(lags=-5)
+            self.model(lags=-5)
         with self.assertRaises(ValueError):
-            RandomForest(lags=3.6)
+            self.model(lags=3.6)
 
 
     def test_create_lagged_data(self):
         nr_lags = 12
-        lgbm = RandomForest(lags=nr_lags)
+        lgbm = self.model(lags=nr_lags)
 
         lagged_data = lgbm._create_lagged_data(series=self.data[["Values1"]], lags=lgbm.lags, keep_current=True)
         self.assertEqual(len(lagged_data), len(self.data)-nr_lags)
@@ -56,7 +58,7 @@ class RandomForestTestCase(DartsBaseTestClass):
         )
 
         lags = [3, 6, 7]
-        lgbm = RandomForest(lags=lags)
+        lgbm = self.model(lags=lags)
         lagged_data = lgbm._create_lagged_data(series=self.data[["Values1"]], lags=lgbm.lags, keep_current=True)
         self.assertEqual(
             lagged_data.columns.values.tolist(),
@@ -72,7 +74,7 @@ class RandomForestTestCase(DartsBaseTestClass):
 
     def test_create_training_data(self):
         nr_lags = 12
-        lgbm = RandomForest(lags=nr_lags, lags_exog=False)
+        lgbm = self.model(lags=nr_lags, lags_exog=False)
         exog = ["Values2", "Exog1", "Exog2"]
         lagged_data_ex1 = lgbm._create_training_data(
             series=self.data[["Values1"]],
@@ -89,30 +91,30 @@ class RandomForestTestCase(DartsBaseTestClass):
         )
 
     def test_fit(self):
-        lgb1 = RandomForest(lags=12)
+        lgb1 = self.model(lags=12)
         lgb1.fit(series=self.data[["Values1"]])
         self.assertEqual(lgb1.nr_exog, 0)
 
-        lgb2 = RandomForest(lags=12, lags_exog=True)
+        lgb2 = self.model(lags=12, lags_exog=True)
         lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
         self.assertEqual(lgb2.nr_exog, 36)
 
-        lgb2 = RandomForest(lags=12, lags_exog=False)
+        lgb2 = self.model(lags=12, lags_exog=False)
         lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
         self.assertEqual(lgb2.nr_exog, 3)
 
-        lgb2 = RandomForest(lags=12, lags_exog=[1, 4, 6])
+        lgb2 = self.model(lags=12, lags_exog=[1, 4, 6])
         lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
         self.assertEqual(lgb2.nr_exog, 9)
 
     def test_prediction(self):
-        lgb1 = RandomForest(lags=12)
+        lgb1 = self.model(lags=12)
         lgb1.fit(series=self.data[["Values1"]])
         pred1 = lgb1.predict(n=12)
         self.assertEqual(len(pred1), 12)
 
         exog = self.data.pd_dataframe()[["Values2", "Exog1", "Exog2"]].iloc[:12, :]
-        lgb2 = RandomForest(lags=12)
+        lgb2 = self.model(lags=12)
         lgb2.fit(series=self.data[["Values1"]], exog=self.data[["Values2", "Exog1", "Exog2"]])
         pred2 = lgb2.predict(n=12, exog=TimeSeries.from_dataframe(exog))
         self.assertEqual(len(pred2), 12)
@@ -125,7 +127,7 @@ class RandomForestTestCase(DartsBaseTestClass):
         data = pd.read_csv('examples/ice_cream_heater.csv', delimiter=",")
         data1 = TimeSeries.from_dataframe(data[["Month", "heater"]], time_col="Month").diff(1)
         train, test = data1.split_before(pd.Timestamp("20180101"))
-        lgb = RandomForest(lags=12, n_estimators=200)
+        lgb = self.model(lags=12)
         lgb.fit(series=train)
         pred = lgb.predict(n=len(test))
         print(mape(pred, test))
@@ -138,7 +140,7 @@ class RandomForestTestCase(DartsBaseTestClass):
 
         data2 = TimeSeries.from_dataframe(data, time_col="Month").diff(1)
         train, test = data2.split_before(pd.Timestamp("20180101"))
-        lgb = RandomForest(lags=12, n_estimators=200)
+        lgb = self.model(lags=12)
         lgb.fit(series=train["heater"], exog=train[["ice cream"]])
         pred = lgb.predict(n=len(test), exog=test[["ice cream"]])
         print(mape(pred, test["heater"]))

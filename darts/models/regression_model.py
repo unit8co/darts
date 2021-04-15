@@ -39,7 +39,7 @@ class RegressionModel(ExtendedForecastingModel):
                  model=LinearRegression(n_jobs=-1, fit_intercept=False)):
         """ Regression Model
 
-        Can be used to fit any scikitlearn-like regressor class to predict the target
+        Can be used to fit any scikit-learn-like regressor class to predict the target
         time series with lagged values.
 
         Parameters
@@ -93,9 +93,15 @@ class RegressionModel(ExtendedForecastingModel):
             TimeSeries object containing the exogenous values.
         """
         super().fit(series, exog)
+
+        if exog is not None:
+            print(series.stack(exog))
+        else:
+            print(series)
         self.target_column = series.columns()[0]
         self.exog_columns = exog.columns().values.tolist() if exog is not None else None
         self.training_data = self._create_training_data(series, exog)
+        print(self.training_data)
         self.train_x =  self.training_data.pd_dataframe().drop(self.target_column, axis=1)
         self.train_y =  self.training_data.pd_dataframe()[self.target_column]
         self.nr_exog = self.train_x.shape[1] - len(self.lags)
@@ -422,8 +428,8 @@ class RegressionModel(ExtendedForecastingModel):
         if (not self._fit_called):
             raise_log(Exception('fit() must be called before predict()'), logger)
 
-        train_pred = self.predict(self.training_data.drop(self.target_column, axis=1))
-        return self.train_target - train_pred
+        train_pred = self.predict(self.train_x)
+        return self.train_y - train_pred
 
     def __str__(self):
         return model.__str__()
