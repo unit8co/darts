@@ -251,13 +251,13 @@ class ForecastingModel(ABC):
                 train_cov = covariates.drop_after(pred_time)
 
             if retrain:
-                if covariates and 'covariates' in fit_signature.parameters:
-                    self.fit(series=train, covariates=train_cov)
+                if covariates:
+                    self.fit(series=train, exog=train_cov)
                 else:
                     self.fit(series=train)
 
-            if covariates and 'covariates' in predict_signature.parameters:
-                forecast = self.predict(n=forecast_horizon, series=train, covariates=train_cov)
+            if covariates:
+                forecast = self.predict(n=forecast_horizon, series=train, exog=train_cov)
             else:
                 if 'series' in predict_signature.parameters:
                     forecast = self.predict(n=forecast_horizon, series=train)

@@ -23,8 +23,8 @@ logger = get_logger(__name__)
 
 class RandomForest(RegressionModel):
     def __init__(self,
-                 lags: Union[int, list],
-                 lags_exog: Union[int, list, bool] = True,
+                 lags: Union[int, list] = None,
+                 lags_exog: Union[int, list, bool] = None,
                  n_estimators: Optional[int] = 100,
                  max_depth: Optional[int] = None,
                  **kwargs):
@@ -60,7 +60,7 @@ class RandomForest(RegressionModel):
         )
 
     def __str__(self):
-        return 'LightGBM(lags={}, lags_exog={}, n_estimators={}, max_depth={})'.format(
+        return 'RandomForest(lags={}, lags_exog={}, n_estimators={}, max_depth={})'.format(
             self.lags, self.lags_exog, self.n_estimators, self.max_depth
         )
 

@@ -16,8 +16,8 @@ logger = get_logger(__name__)
 class StandardRegressionModel(RegressionModel):
 
     def __init__(self,
-                 lags: Union[int, list],
-                 lags_exog: Union[int, list, bool] = True,
+                 lags: Union[int, list] = None,
+                 lags_exog: Union[int, list, bool] = None,
                  **kwargs):
         """
         Simple wrapper for the linear regression model in scikit-learn, LinearRegression().
