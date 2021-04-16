@@ -209,7 +209,6 @@ class ForecastingModel(ABC):
             By default, a single TimeSeries instance created from the last point of each individual forecast.
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
-
         if covariates:
             raise_if_not(series.has_same_time_as(covariates),
                          'The provided series and covariates must have the same time index.')
@@ -268,7 +267,8 @@ class ForecastingModel(ABC):
                     if 'series' in predict_signature.parameters:
                         forecast = self.predict(n=forecast_horizon, series=train, exog=train_cov)
                     else:
-                        train_cov = train_cov[-forecast_horizon:]
+                        start = train.end_time() + train.freq()
+                        train_cov = covariates[start:start+(forecast_horizon-1)*train.freq()]
                         forecast = self.predict(n=forecast_horizon, exog=train_cov)
             else:
                 if 'series' in predict_signature.parameters:
@@ -372,9 +372,13 @@ class ForecastingModel(ABC):
                                               verbose)
 
         if last_points_only:
-            return metric(series, forecasts)
+            return metric(series[start:][forecast_horizon-1:], forecasts)
 
-        errors = [metric(series, forecast) for forecast in forecasts]
+        for forecast in forecasts:
+            start = forecast.start_time()
+            freq = forecast.freq()
+            series_snippet = series[start:start+(forecast_horizon-1)*freq]
+            errors = metric(series_snippet, forecast)
 
         if reduction is None:
             return errors

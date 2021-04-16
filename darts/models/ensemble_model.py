@@ -45,14 +45,14 @@ class EnsembleModel(ForecastingModel):
     def predict(self, n: int) -> TimeSeries:
         super().predict(n)
 
-        predictions = []
-        for model in self.models:
-            predictions.append(model.predict(n))
+        predictions = self.models[0].predict(n)
+        for model in self.models[1:]:
+            predictions = predictions.stack(model.predict(n))
 
         return self.ensemble(predictions)
 
     @abstractmethod
-    def ensemble(self, predictions: List[TimeSeries]) -> TimeSeries:
+    def ensemble(self, predictions: TimeSeries) -> TimeSeries:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
 

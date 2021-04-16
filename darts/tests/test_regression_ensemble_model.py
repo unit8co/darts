@@ -29,7 +29,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     def test_accepts_different_regression_models(self):
-        regr1 = StandardRegressionModel()
+        regr1 = StandardRegressionModel(lags_exog=[0])
         regr2 = RandomForestRegressor()
 
         model0 = RegressionEnsembleModel(self.get_models(), 10)
@@ -38,15 +38,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         models = [model0, model1, model2]
         for model in models:
-            model.fit(self.combined)
+            model.fit(series=self.combined)
             model.predict(10)
 
     def test_train_n_points(self):
-        regr = StandardRegressionModel(train_n_points=5)
-
-        # ambiguous values
-        with self.assertRaises(ValueError):
-            ensemble = RegressionEnsembleModel(self.get_models(), 10, regr)
+        regr = StandardRegressionModel(lags_exog=[0])
 
         # same values
         ensemble = RegressionEnsembleModel(self.get_models(), 5, regr)

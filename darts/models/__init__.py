@@ -37,6 +37,7 @@ except ModuleNotFoundError:
 # Regression
 from .standard_regression_model import StandardRegressionModel
 from .random_forest import RandomForest
+from .regression_model import RegressionModel
 
 # Ensembling
 from .ensemble_model import EnsembleModel

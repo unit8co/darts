@@ -46,7 +46,7 @@ except ImportError:
 
 try:
     from ..models import AutoARIMA
-    models.append((AutoARIMA(), 13.7))
+    models.append((AutoARIMA(), 30.5))
     extended_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:

@@ -127,6 +127,10 @@ class RegressionModel(ExtendedForecastingModel):
         )
         self.target_column = series.columns()[0]
         self.exog_columns = exog.columns().values.tolist() if exog is not None else None
+        if self.exog_columns is not None:
+            if str(self.target_column) in self.exog_columns:
+                series = TimeSeries(series.pd_dataframe().rename({self.target_column: "Target"}))
+                self.target_column = series.columns()[0]
         self.training_data = self._create_training_data(series, exog)
         self.train_x =  self.training_data.pd_dataframe().drop(self.target_column, axis=1)
         self.train_y =  self.training_data.pd_dataframe()[self.target_column]
@@ -137,7 +141,9 @@ class RegressionModel(ExtendedForecastingModel):
             y=self.train_y,
             **kwargs
         )
-        if exog is not None:
+        if self.max_lag == 0:
+            self.prediction_data = pd.DataFrame(columns=series.stack(other=exog).columns())
+        elif exog is not None:
             self.prediction_data = series.stack(other=exog)[-self.max_lag:]
         else:
             self.prediction_data = series[-self.max_lag:]
@@ -209,19 +215,33 @@ class RegressionModel(ExtendedForecastingModel):
 
     def predict(self, n: int, exog: Optional[TimeSeries] = None, **kwargs):
         super().predict(n, exog)
+
+        if self.max_lag != 0:
+            prediction_data = self.prediction_data.copy()
+            dummy_row = np.zeros(shape=(1, prediction_data.width))
+            prediction_data = prediction_data.append_values(dummy_row)
+
+        if exog is not None:
+            raise_if_not(exog.start_time() == self.training_series.end_time()+self.training_series.freq(),
+                "`exog` first date must be equal to self.training_series.end_time()+1*freq. " +
+                "Given: {}. Needed: {}.".format(exog.start_time(), self.training_series.end_time()+self.training_series.freq())
+            )
         if isinstance(exog, TimeSeries):
             exog = exog.pd_dataframe()
 
-        prediction_data = self.prediction_data.copy()
-        dummy_row = np.zeros(shape=(1, prediction_data.width))
-        prediction_data = prediction_data.append_values(dummy_row)
         forecasts = list(range(n))
-
         for i in range(n):
             if self.lags_exog is not None and 0 in self.lags_exog:
-                prediction_data = prediction_data[:-1]
-                append_row = [[0, *exog.iloc[i, :].values.tolist()]]
-                prediction_data = prediction_data.append_values(append_row)
+                if self.max_lag == 0:
+                    append_row = [[0, *exog.iloc[i, :].values.tolist()]]
+                    prediction_data = pd.DataFrame(
+                        append_row, columns=self.prediction_data.columns, index=[exog.index[i]]
+                    )
+                    prediction_data = TimeSeries(prediction_data, freq=self.training_series.freq())
+                else:
+                    prediction_data = prediction_data[:-1]
+                    append_row = [[0, *exog.iloc[i, :].values.tolist()]]
+                    prediction_data = prediction_data.append_values(append_row)
             target_data = prediction_data[[self.target_column]]
             if self.exog_columns is not None:
                 exog_data = prediction_data[self.exog_columns]
@@ -233,13 +253,14 @@ class RegressionModel(ExtendedForecastingModel):
                 X=forecasting_data,
                 **kwargs
             )
-            prediction_data = prediction_data[:-1]
-            if self.exog_columns is not None:
-                append_row = [[forecast[0], *exog.iloc[i, :].values.tolist()]]
-                prediction_data = prediction_data.append_values(append_row)
-            else:
-                prediction_data = prediction_data.append_values(forecast)
-            prediction_data = prediction_data.append_values(dummy_row)[1:]
+            if self.max_lag > 0:
+                prediction_data = prediction_data[:-1]
+                if self.exog_columns is not None:
+                    append_row = [[forecast[0], *exog.iloc[i, :].values.tolist()]]
+                    prediction_data = prediction_data.append_values(append_row)
+                else:
+                    prediction_data = prediction_data.append_values(forecast)
+                prediction_data = prediction_data.append_values(dummy_row)[1:]
             forecasts[i] = forecast[0]
         return self._build_forecast_series(forecasts)
 

@@ -96,6 +96,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 model(lags_exog=0)
 
     def test_models_runnability(self):
+        train_x, test_x = self.ts_exog1.split_before(0.7)
+        train_y, test_y = self.ts_sum1.split_before(0.7)
         for model in self.models:
             model_instance = model(lags=4)
             model_instance.fit(series=self.ts_sum1)
@@ -103,8 +105,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertTrue(len(prediction) == 20)
 
             model_instance = model(lags=4, lags_exog=2)
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
-            prediction = model_instance.predict(n=10, exog=self.ts_exog1[:10])
+            model_instance.fit(series=train_y, exog=train_x)
+            prediction = model_instance.predict(n=10, exog=test_x[:10])
             self.assertTrue(len(prediction) == 10)
 
             with self.assertRaises(ValueError):
