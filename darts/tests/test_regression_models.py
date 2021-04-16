@@ -164,18 +164,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
 
     def test_historical_forecast(self):
-        # model = self.models[0](lags=5)
-        # result = model.historical_forecasts(
-        #     series=self.ts_sum1[:100],
-        #     covariates=None,
-        #     start=0.5,
-        #     forecast_horizon=1,
-        #     stride=1,
-        #     retrain=True,
-        #     overlap_end=False,
-        #     last_points_only=True,
-        #     verbose=False)
-        # self.assertEqual(len(result), 51)
+        model = self.models[0](lags=5)
+        result = model.historical_forecasts(
+            series=self.ts_sum1[:100],
+            covariates=None,
+            start=0.5,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False)
+        self.assertEqual(len(result), 51)
 
         model = self.models[0](lags=5, lags_exog=True)
         result = model.historical_forecasts(
