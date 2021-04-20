@@ -36,7 +36,7 @@ class RegressionModel(ExtendedForecastingModel):
     def __init__(self,
                  lags: Union[int, list] = None,
                  lags_exog: Union[int, list, bool] = None,
-                 model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+                 model=None):
         """ Regression Model
 
         Can be used to fit any scikit-learn-like regressor class to predict the target
@@ -73,6 +73,9 @@ class RegressionModel(ExtendedForecastingModel):
             raise_log(Exception('Provided model object must have a fit() method', logger))
         if (not callable(getattr(model, "predict", None))):
             raise_log(Exception('Provided model object must have a predict() method', logger))
+
+        if model is None:
+            model = LinearRegression(n_jobs=-1, fit_intercept=False)
 
         self.lags = lags
         if isinstance(self.lags, int):
