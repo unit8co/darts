@@ -531,14 +531,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch in iterator:
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
-                out = self.model(batch)  # (batch_size, output_chunk_length, width)
+                out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
                 batch_prediction.append(out)
                 while sum(map(lambda t: t.shape[1], batch_prediction)) < n:
                     roll_size = min(self.output_chunk_length, self.input_chunk_length)
                     batch = torch.roll(batch, -roll_size, 1)
-                    # updating the dimension regarding the target series (not updating covariates)
-                    target_series_width = out.size()[2]
-                    batch[:, -roll_size:, :target_series_width] = out[:, :roll_size, :]
+                    batch[:, -roll_size:, :] = out[:, :roll_size, :]
                     # take only last part of the output sequence where needed
                     out = self.model(batch)[:, self.first_prediction_index:, :]
                     batch_prediction.append(out)

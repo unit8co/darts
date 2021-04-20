@@ -283,7 +283,7 @@ class TCNModel(TorchForecastingModel):
         return ShiftedDataset(target_series=target,
                               covariates=covariates,
                               length=self.input_chunk_length,
-                              shift=1)
+                              shift=self.output_chunk_length)
 
     @property
     def first_prediction_index(self) -> int:

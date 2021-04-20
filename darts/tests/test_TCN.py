@@ -1,5 +1,6 @@
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
+from ..metrics import mae
 from ..logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,6 +41,16 @@ if TORCH_AVAILABLE:
             # test short predict
             pred3 = model2.predict(n=1)
             self.assertEqual(len(pred3), 1)
+
+        def test_performance(self):
+            # test TCN performance on dummy time series
+            ts = tg.sine_timeseries(length=100) + tg.linear_timeseries(length=100, end_value=2)
+            train, test = ts[:90], ts[90:]
+            model = TCNModel(input_chunk_length=12, output_chunk_length=10, n_epochs=300, random_state=0)
+            model.fit(train)
+            pred = model.predict(n=10)
+
+            self.assertTrue(mae(pred, test) < 0.3)
 
         def test_coverage(self):
             torch.manual_seed(0)

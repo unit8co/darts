@@ -4,7 +4,40 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.6.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.7.0...develop)
+
+
+## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.6.0...0.7.0)
+### For users of the library:
+
+**Added:**
+- `darts` Pypi package. It is now possible to `pip install darts`. The older name `u8darts` is still maintained
+and provides the different flavours for lighter installs.
+- New forecasting model available: VARIMA (Vector Autoregressive moving average).
+- Support for exogeneous variables in ARIMA, AutoARIMA and VARIMA (optional `exog` parameter in `fit()` and `predict()` 
+methods).
+- New argument `dummy_index` for `TimeSeries` creation. If a series is just composed of a sequence of numbers
+without timestamps, setting this flag will allow to create a `TimeSeries` which uses a "dummy time index" behind the 
+scenes. This simplifies the creation of `TimeSeries` in such cases, and makes it possible to use all forecasting models,
+except those that explicitly rely on dates.
+- New method `TimeSeries.diff()` returning differenced `TimeSeries`.
+- Added an example of `RegressionEnsembleModel` in intro notebook.
+
+**Changed:**
+- Improved N-BEATS example notebook.
+- Methods `TimeSeries.split_before()` and `split_after()` now also accept integer or float arguments (in addition to
+timestamp) for the breaking point (e.g. specify 0.8 in order to obtain a 80%/20% split).
+- Argument `value_cols` no longer has to be provided if not necessary when creating a `TimeSeries` from a `DataFrame`.
+- Update of dependency requirements to more recent versions.
+
+**Fixed:**
+- Fix issue with MAX_TORCH_SEED_VALUE on 32-bit architectures (https://github.com/unit8co/darts/issues/235).
+- Corrected a bug in TCN inference, which should improve accuracy.
+- Fix historical forecasts not returning last point.
+- Fixed bug when calling the `TimeSeries.gaps()` function for non-regular time frequencies.
+- Many small bug fixes.
 
 
 ## [0.6.0](https://github.com/unit8co/darts/tree/0.6.0) (2021-02-02)
@@ -30,9 +63,9 @@ several time series.
 https://github.com/unit8co/darts/blob/master/examples/02-multi-time-series-and-covariates.ipynb
 
 **Changed:**
-&#x1F534; removed the arguments `training_series` and `target_series` in `ForecastingModel`s. Please consult
+- &#x1F534; removed the arguments `training_series` and `target_series` in `ForecastingModel`s. Please consult
 the API documentation of forecasting models to see the new signatures.
-&#x1F534; removed `UnivariateForecastingModel` and `MultivariateForecastingModel` base classes. This distinction does
+- &#x1F534; removed `UnivariateForecastingModel` and `MultivariateForecastingModel` base classes. This distinction does
 not exist anymore. Instead, now some models are "global" (can be trained on multiple series) or "local" (they cannot).
 All implementations of `GlobalForecastingModel`s support multivariate time series out of the box, except N-BEATS.
 - Improved the documentation and README.
