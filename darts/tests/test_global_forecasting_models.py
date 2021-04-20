@@ -121,3 +121,15 @@ if TORCH_AVAILABLE:
 
             with self.assertRaises(ValueError):
                 model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
+
+        def test_same_result_with_different_n_jobs(self):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                multiple_ts = [self.ts_pass_train] * 10
+
+                model.fit(multiple_ts)
+
+                pred1 = model.predict(n=36, series=multiple_ts, n_jobs=1)
+                pred2 = model.predict(n=36, series=multiple_ts, n_jobs=-1)  # assuming > 1 core available in the machine
+
+                self.assertEqual(pred1, pred2, 'Model {} produces different predictions with different number of jobs')

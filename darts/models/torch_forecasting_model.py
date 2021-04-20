@@ -423,7 +423,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              ) -> Sequence[TimeSeries]:
 
         """
-        Predicts values for a certain number of time steps after the end of the specified ``series``.
+        Predicts values for a certain number of time steps after the end of the series appearing in the specified
+        ``input_series_dataset``.
 
         If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
         auto-regressive way, by iteratively feeding the last ``output_chunk_length`` forecast points as
@@ -506,7 +507,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # postprocessing
 
         predictions_array = predictions_tensor.cpu().detach().numpy()
-        ts_forecasts = []
 
         iterator = _build_tqdm_iterator(zip(predictions_array, input_series_dataset),
                                         total=len(input_series_dataset),
@@ -539,9 +539,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     # updating the dimension regarding the target series (not updating covariates)
                     target_series_width = out.size()[2]
                     batch[:, -roll_size:, :target_series_width] = out[:, :roll_size, :]
-
                     # take only last part of the output sequence where needed
-                    out = self.model(batch)[self.first_prediction_index:]
+                    out = self.model(batch)[:, self.first_prediction_index:, :]
                     batch_prediction.append(out)
 
                 batch_prediction = torch.cat(batch_prediction, dim=1)
