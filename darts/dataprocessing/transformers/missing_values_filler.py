@@ -31,6 +31,10 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
             If set to 'auto', will auto-fill missing values using the `pandas.Dataframe.interpolate()` method.
         name
             A specific name for the transformer
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+        verbose
+            Optionally, whether to print progress
         """
         raise_if_not(isinstance(fill, str) or isinstance(fill, float),
                      "`fill` should either be a string or a float",
@@ -49,14 +53,16 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
                   **interpolate_kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         super().transform(data)
 
-        def map_ts(ts):
-            return fill_missing_values(data, self._fill, **interpolate_kwargs)
-
-        iterator = _build_tqdm_iterator(data, verbose=self._verbose)
-
-        transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
         if isinstance(data, TimeSeries):
-            return transformed_data[0]
+            return fill_missing_values(data, self._fill, **interpolate_kwargs)
         else:
+            def map_ts(ts):
+                return fill_missing_values(ts, self._fill, **interpolate_kwargs)
+
+            iterator = _build_tqdm_iterator(data,
+                                            verbose=self._verbose,
+                                            desc="Applying missing value filler")
+
+            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
+
             return transformed_data

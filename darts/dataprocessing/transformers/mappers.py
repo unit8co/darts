@@ -34,6 +34,8 @@ class Mapper(BaseDataTransformer[TimeSeries]):
             A specific name for the transformer
         n_jobs
             The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+        verbose
+            Optionally, whether to print progress
         """
         super().__init__(name)
         self._fn = fn
@@ -46,16 +48,18 @@ class Mapper(BaseDataTransformer[TimeSeries]):
                   **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         super().transform(data)
 
-        def map_ts(ts):
-            return ts.map(self._fn)
-
-        iterator = _build_tqdm_iterator(data, verbose=self._verbose)
-        
-        transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
         if isinstance(data, TimeSeries):
-            return transformed_data[0]
+            return data.map(self._fn)
         else:
+            def map_ts(ts):
+                return ts.map(self._fn)
+
+            iterator = _build_tqdm_iterator(data,
+                                            verbose=self._verbose,
+                                            desc="Applying mapper {}".format(self.name))
+
+            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
+
             return transformed_data
 
 
@@ -80,6 +84,10 @@ class InvertibleMapper(InvertibleDataTransformer[TimeSeries]):
             `inverse_fn` should be such that `inverse_fn(fn(x)) == x`
         name
             A specific name for the transformer
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+        verbose
+            Optionally, whether to print progress
         """
         super().__init__(name)
         self._fn = fn
@@ -89,35 +97,40 @@ class InvertibleMapper(InvertibleDataTransformer[TimeSeries]):
 
     def transform(self,
                   data: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+                  *args,
+                  **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         super().transform(data)
 
-        def map_ts(ts):
-            return ts.map(self._fn)
-
-        iterator = _build_tqdm_iterator(data, verbose=self._verbose)
-
-        transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
         if isinstance(data, TimeSeries):
-            return transformed_data[0]
+            return data.map(self._fn)
         else:
+            def map_ts(series):
+                return series.map(self._fn)
+
+            iterator = _build_tqdm_iterator(data,
+                                            verbose=self._verbose,
+                                            desc="{}: tranform".format(self.name))
+
+            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
+
             return transformed_data
 
     def inverse_transform(self,
                           data: Union[TimeSeries, Sequence[TimeSeries]],
-                          args,
+                          *args,
                           **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         super().inverse_transform(data, *args, *kwargs)
 
-        def reverse_map_ts(ts):
-            return ts.map(self._inverse_fn)
-
-        iterator = _build_tqdm_iterator(data, verbose=self._verbose)
-
-        transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(reverse_map_ts)(ts) for ts in iterator)
-
         if isinstance(data, TimeSeries):
-            return transformed_data[0]
+            return data.map(self._inverse_fn)
         else:
+            def inverse_map_ts(ts):
+                return ts.map(self._inverse_fn)
+
+            iterator = _build_tqdm_iterator(data,
+                                            verbose=self._verbose,
+                                            desc="{}: inverse".format(self.name))
+
+            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(inverse_map_ts)(ts) for ts in iterator)
+
             return transformed_data

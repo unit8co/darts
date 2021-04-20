@@ -39,14 +39,14 @@ class Pipeline:
 
         self._invertible = all((isinstance(t, InvertibleDataTransformer) for t in self._transformers))
 
-    def fit(self, data: TimeSeries):
+    def fit(self, data: Union[TimeSeries, Sequence[TimeSeries]]):
         """
         Fit all fittable transformers in pipeline.
 
         Parameters
         ----------
         data
-            TimeSeries to fit on.
+            (List of) TimeSeries to fit on.
         """
 
         # Find the last fittable transformer index
@@ -63,7 +63,7 @@ class Pipeline:
             if idx < last_fittable_idx:
                 data = transformer.transform(data)
 
-    def fit_transform(self, data: TimeSeries) -> TimeSeries:
+    def fit_transform(self, data: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline first fit the data if transformer is fittable then transform data using
         fitted transformer. The transformed data is then passed to next transformer.
@@ -71,11 +71,11 @@ class Pipeline:
         Parameters
         ----------
         data
-            TimeSeries to fit and transform on.
+            (List of) TimeSeries to fit and transform on.
 
         Returns
         -------
-        TimeSeries
+        Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
         for transformer in self._transformers:
@@ -85,25 +85,27 @@ class Pipeline:
             data = transformer.transform(data)
         return data
 
-    def transform(self, data: TimeSeries) -> TimeSeries:
+    def transform(self, data: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
 
         Parameters
         ----------
         data
-            TimeSeries to be transformed.
+            (List of) TimeSeries to be transformed.
 
         Returns
         -------
-        TimeSeries
+        Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
         for transformer in self._transformers:
             data = transformer.transform(data)
         return data
 
-    def inverse_transform(self, data: TimeSeries) -> TimeSeries:
+    def inverse_transform(self,
+                          data: Union[TimeSeries, Sequence[TimeSeries]],
+                          partial: bool = False) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
         transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
@@ -112,18 +114,27 @@ class Pipeline:
         Parameters
         ----------
         data
-            TimeSeries to be inverse transformed.
+            (List of) TimeSeries to be inverse transformed.
+        partial
+            If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling the
+            inverse transformation only on the InvertibleDataTransformer
 
         Returns
         -------
-        TimeSeries
+        Union[TimeSeries, Sequence[TimeSeries]]
             Inverse transformed data.
         """
-        raise_if_not(self._invertible, "Not all transformers in the pipeline can perform inverse_transform", logger)
+        if not partial:
+            raise_if_not(self._invertible, "Not all transformers in the pipeline can perform inverse_transform", logger)
 
-        for transformer in reversed(self._transformers):
-            data = transformer.inverse_transform(data)
-        return data
+            for transformer in reversed(self._transformers):
+                data = transformer.inverse_transform(data)
+            return data
+        else:
+            for transformer in reversed(self._transformers):
+                if isinstance(transformer, InvertibleDataTransformer):
+                    data = transformer.inverse_transform(data)
+            return data
 
     def invertible(self) -> bool:
         """

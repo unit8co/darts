@@ -5,6 +5,7 @@ from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer, FittableDataTransformer, InvertibleDataTransformer
+from darts.dataprocessing.transformers import InvertibleMapper, Mapper
 
 
 class PipelineTestCase(unittest.TestCase):
@@ -213,3 +214,47 @@ class PipelineTestCase(unittest.TestCase):
         # when & then
         with self.assertRaises(ValueError, msg="Key must be int, str or slice"):
             p[bad_key]
+
+    def test_multi_ts(self):
+
+        series1 = constant_timeseries(0., 3)
+        series2 = constant_timeseries(1., 3)
+
+        data = [series1, series2]
+
+        mapper1 = InvertibleMapper(fn=lambda x: x + 10, inverse_fn=lambda x: x - 10)
+        mapper2 = InvertibleMapper(fn=lambda x: x * 10, inverse_fn=lambda x: x / 10)
+
+        transformers = [mapper1, mapper2]
+        p = Pipeline(transformers)
+
+        # when
+        transformed = p.transform(data)
+        back = p.inverse_transform(transformed)
+
+        # then
+        self.assertEqual(data, back)
+
+    def test_pipeline_partial_inverse(self):
+        series = constant_timeseries(0., 3)
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2)
+
+        series_plus_ten = mapper.transform(series)
+
+        pipeline = Pipeline([mapper, mapper_inv])
+
+        transformed = pipeline.transform(series)
+
+        # should fail, since partial is False by default
+        with self.assertRaises(ValueError):
+            pipeline.inverse_transform(transformed)
+
+        back = pipeline.inverse_transform(transformed, partial=True)
+
+        # while the +/- 2 is inverted, the +10 operation is not
+        self.assertEqual(series_plus_ten, back)
