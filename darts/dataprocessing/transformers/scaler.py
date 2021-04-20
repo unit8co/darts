@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
     def __init__(self,
-                 scaler=MinMaxScaler(feature_range=(0, 1)),
+                 scaler=None,
                  name="Scaler",
                  n_jobs: int = 1,
                  verbose: bool = False):
@@ -41,6 +41,9 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
             Optionally, whether to print progress
         """
         super().__init__(name)
+
+        if scaler is None:
+            scaler = MinMaxScaler(feature_range=(0, 1))
 
         if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
                 or not callable(getattr(scaler, "inverse_transform", None))): # noqa W503
@@ -83,9 +86,8 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
 
             iterator = _build_tqdm_iterator(series, verbose=self._verbose, desc="Fitting {}".format(self.name))
 
-            self.transformer_instances = Parallel(n_jobs=self._n_jobs, prefer="threads")(delayed(train_new_scaler)
-                                                                                         (series)
-                                                                                         for series in iterator)
+            self.transformer_instances = Parallel(n_jobs=self._n_jobs)(delayed(train_new_scaler)(series)
+                                                                       for series in iterator)
 
         return self
 

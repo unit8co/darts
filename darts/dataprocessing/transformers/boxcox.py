@@ -62,7 +62,7 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         Parameters
         ----------
         data
-            The time series to fit on
+            The (sequence of) time series to fit on
         optim_method
             Specifies which method to use to find an optimal value for the lmbda parameter.
             Either 'mle' or 'pearsonr'.
@@ -109,9 +109,9 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
                                                 verbose=self._verbose,
                                                 desc="Fitting BoxCox")
 
-                self._lmbda = Parallel(n_jobs=self._n_jobs, prefer="threads")(delayed(_fit_single_series)
-                                                                              (ts, self._lmbda_original)
-                                                                              for ts in iterator)
+                self._lmbda = Parallel(n_jobs=self._n_jobs)(delayed(_fit_single_series)
+                                                            (ts, self._lmbda_original)
+                                                            for ts in iterator)
 
         return self
 
@@ -137,9 +137,8 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
                                             desc="Transforming BoxCox",
                                             total=len(data))
 
-            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(_transform_single_series)(ts,
-                                                                                                                 lmbda)
-                                                                               for ts, lmbda in iterator)
+            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(_transform_single_series)(ts, lmbda)
+                                                             for ts, lmbda in iterator)
             return transformed_data
 
     def inverse_transform(self,
@@ -164,6 +163,6 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
                                             desc="Inverse BoxCox",
                                             total=len(data))
 
-            inverse_data = Parallel(n_jobs=self._n_jobs, prefer="threads")(delayed(_inverse_single_series)(ts, lmbda)
-                                                                           for ts, lmbda in iterator)
+            inverse_data = Parallel(n_jobs=self._n_jobs)(delayed(_inverse_single_series)(ts, lmbda)
+                                                         for ts, lmbda in iterator)
             return inverse_data

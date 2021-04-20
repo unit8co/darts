@@ -23,7 +23,7 @@ class Mapper(BaseDataTransformer[TimeSeries]):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function to a time series (similar to calling `series.map()`)
+        Data transformer to apply a function to a (sequence of) time series (similar to calling `series.map()`)
 
         Parameters
         ----------

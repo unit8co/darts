@@ -109,15 +109,16 @@ class Pipeline:
         """
         For each data transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
         transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
-        invertible.
+        invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the 
+        InvertibleDataTransformer in the pipeline.
 
         Parameters
         ----------
         data
             (List of) TimeSeries to be inverse transformed.
         partial
-            If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling the
-            inverse transformation only on the InvertibleDataTransformer
+            If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling
+            the inverse transformation only on the InvertibleDataTransformer
 
         Returns
         -------

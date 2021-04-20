@@ -22,7 +22,7 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to fill missing values from time series
+        Data transformer to fill missing values from a (sequence of) time series
 
         Parameters
         ----------
