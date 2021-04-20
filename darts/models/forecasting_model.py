@@ -21,15 +21,15 @@ from inspect import signature
 import numpy as np
 import pandas as pd
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
-from ..utils import (
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log, raise_if_not
+from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     get_timestamp_at_point,
     _historical_forecasts_general_checks
 )
-from .. import metrics
+from darts import metrics
 
 logger = get_logger(__name__)
 
