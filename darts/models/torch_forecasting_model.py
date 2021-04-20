@@ -370,6 +370,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
 
+        If some time series in the ``series`` argument have more time steps than the model was trained with,
+        only the last ``input_chunk_length`` time steps will be considered.
+
         Parameters
         ----------
         n
@@ -432,9 +435,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
 
-        If your ``input_series_dataset`` has more timesteps that the model was trained with
-        (``len(input_series_dataset) > input_chunk_length``), it will be trimmed to ``input_chunk_length`` truncating
-        the front of timeseries.
+        If some series in the ``input_series_dataset`` have more time steps than the model was trained with,
+        only the last ``input_chunk_length`` time steps will be considered.
 
         Parameters
         ----------
