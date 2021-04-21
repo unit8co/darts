@@ -504,31 +504,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=False,
                                  drop_last=False)
 
-        predictions_tensor = self._produce_prediction(pred_loader, n, verbose=verbose)
+        predictions = self._produce_prediction(pred_loader,
+                                               n,
+                                               input_series=input_series_dataset,
+                                               verbose=verbose,
+                                               n_jobs=n_jobs)
 
-        # postprocessing
-
-        predictions_array = predictions_tensor.cpu().detach().numpy()
-
-        iterator = _build_tqdm_iterator(zip(predictions_array, input_series_dataset),
-                                        total=len(input_series_dataset),
-                                        verbose=verbose,
-                                        desc="TS creation")
-
-        # parallelizing the time series creation
-        ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
-                                               for prediction, input_series in iterator)
-
-        return ts_forecasts
+        return predictions
 
     def _produce_prediction(self,
                             in_dataset: torch.utils.data.DataLoader,
                             n: int,
-                            verbose: bool = False) -> torch.Tensor:
+                            input_series: TimeSeriesInferenceDataset,
+                            n_jobs: int,
+                            verbose: bool = False) -> Sequence[TimeSeries]:
 
         prediction = []
 
-        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose, desc="Batch prediction")
+        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose)
 
         with torch.no_grad():
             for batch in iterator:
@@ -544,9 +537,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     batch_prediction.append(out)
 
                 batch_prediction = torch.cat(batch_prediction, dim=1)
-                prediction.append(batch_prediction[:, :n, :])  # prediction[:n]
+                batch_prediction = batch_prediction[:, :n, :]
+                batch_prediction = batch_prediction.cpu().detach().numpy()
+                
+                ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
+                                                       for prediction, input_series in zip(batch_prediction,
+                                                                                           input_series))
+                
+                prediction.extend(ts_forecasts)
 
-            return torch.cat(prediction)
+            return prediction
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
