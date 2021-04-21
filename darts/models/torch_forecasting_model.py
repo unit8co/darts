@@ -503,25 +503,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  num_workers=0,
                                  pin_memory=False,
                                  drop_last=False)
+        predictions = []
 
-        predictions = self._produce_prediction(pred_loader,
-                                               n,
-                                               input_series=input_series_dataset,
-                                               verbose=verbose,
-                                               n_jobs=n_jobs)
-
-        return predictions
-
-    def _produce_prediction(self,
-                            in_dataset: torch.utils.data.DataLoader,
-                            n: int,
-                            input_series: TimeSeriesInferenceDataset,
-                            n_jobs: int,
-                            verbose: bool = False) -> Sequence[TimeSeries]:
-
-        prediction = []
-
-        iterator = _build_tqdm_iterator(in_dataset, verbose=verbose)
+        iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
 
         with torch.no_grad():
             for batch in iterator:
@@ -542,11 +526,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 
                 ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
                                                        for prediction, input_series in zip(batch_prediction,
-                                                                                           input_series))
+                                                                                           input_series_dataset))
                 
-                prediction.extend(ts_forecasts)
+                predictions.extend(ts_forecasts)
 
-            return prediction
+        return predictions
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
