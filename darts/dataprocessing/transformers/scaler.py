@@ -80,9 +80,9 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
 
             iterator = _build_tqdm_iterator(series, verbose=self._verbose, desc="Fitting {}".format(self.name))
 
-            self.transformer_instances = Parallel(n_jobs=self._n_jobs, prefer="threads")(delayed(train_new_scaler)
-                                                                                         (series)
-                                                                                         for series in iterator)
+            self.transformer_instances = Parallel(n_jobs=self._n_jobs)(delayed(train_new_scaler)
+                                                                       (series)
+                                                                       for series in iterator)
 
         return self
 
@@ -105,7 +105,7 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
             A new time series, transformed with this (fitted) scaler.
         """
         super().transform(series, *args, **kwargs)
-        
+
         def _transform_series(series, transformer):
             return TimeSeries.from_times_and_values(series.time_index(),
                                                     transformer.transform(series.values().
@@ -157,8 +157,8 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
                                             total=len(series),
                                             desc="Reverse applying {}".format(self.name))
 
-            transformed_series = Parallel(n_jobs=self._n_jobs, prefer="threads")(delayed(_inverse_transform_series)
-                                                                                 (series, transformer)
-                                                                                 for series, transformer in iterator)
+            transformed_series = Parallel(n_jobs=self._n_jobs)(delayed(_inverse_transform_series)
+                                                               (series, transformer)
+                                                               for series, transformer in iterator)
             return transformed_series
 

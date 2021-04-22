@@ -54,7 +54,7 @@ class Mapper(BaseDataTransformer[TimeSeries]):
 
             iterator = _build_tqdm_iterator(data,
                                             verbose=self._verbose,
-                                            desc="Applying mapper {}".format(self.name))
+                                            desc="Applying {}".format(self.name))
 
             transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
 

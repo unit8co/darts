@@ -31,7 +31,7 @@ class BaseDataTransformer(Generic[T], ABC):
         """
         self._name = name
         self._verbose = verbose
-        self._n_jobs = 1
+        self._n_jobs = n_jobs
 
     def set_verbose(self, value: bool):
         """
