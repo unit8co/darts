@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 from math import log
+from copy import deepcopy
 
 from darts.dataprocessing.transformers import BoxCox, Mapper
 from darts.utils.timeseries_generation import sine_timeseries, linear_timeseries
@@ -70,3 +71,19 @@ class BoxCoxTestCase(unittest.TestCase):
         back = box_cox.inverse_transform(transformed)
         pd.testing.assert_frame_equal(self.multi_series._df, back[0]._df, check_exact=False)
         pd.testing.assert_frame_equal(self.multi_series._df, back[1]._df, check_exact=False)
+
+    def test_boxcox_multiple_calls_to_fit(self):
+        """
+        This test checks whether calling the scaler twice is calculating new lambdas insted of
+        keeping the old ones
+        """
+        box_cox = BoxCox()
+
+        box_cox.fit(self.sine_series)
+        lambda1 = deepcopy(box_cox._lmbda).tolist()
+
+        box_cox.fit(self.lin_series)
+        lambda2 = deepcopy(box_cox._lmbda).tolist()
+        
+        self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")
+

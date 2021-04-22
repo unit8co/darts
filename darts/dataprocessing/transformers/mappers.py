@@ -37,10 +37,8 @@ class Mapper(BaseDataTransformer[TimeSeries]):
         verbose
             Optionally, whether to print progress
         """
-        super().__init__(name)
+        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
         self._fn = fn
-        self._n_jobs = n_jobs
-        self._verbose = verbose
 
     def transform(self,
                   data: Union[TimeSeries, Sequence[TimeSeries]],

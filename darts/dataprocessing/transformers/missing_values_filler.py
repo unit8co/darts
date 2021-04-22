@@ -43,10 +43,8 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
                  "invalid string for `fill`: can only be set to 'auto'",
                  logger)
 
-        super().__init__(name)
+        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
         self._fill = fill
-        self._n_jobs = n_jobs
-        self._verbose = verbose
 
     def transform(self,
                   data: Union[TimeSeries, Sequence[TimeSeries]],

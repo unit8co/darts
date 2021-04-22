@@ -15,7 +15,9 @@ logger = get_logger(__name__)
 class Pipeline:
     def __init__(self,
                  transformers: Sequence[BaseDataTransformer[TimeSeries]],
-                 copy: bool = False):
+                 copy: bool = False,
+                 verbose: bool = None,
+                 n_jobs: int = None):
         """
         Pipeline combines multiple data transformers chaining them together.
 
@@ -25,6 +27,13 @@ class Pipeline:
             Sequence of data transformers.
         copy
             If set makes a (deep) copy of each data transformer before adding them to the pipeline
+         n_jobs
+            The number of jobs to run in parallel. `-1` means using all processors. Note: this
+            parameter will overwrite the value set in each single transformer. Leave this parameter set to None
+            for keeping the transformers configurations.
+        verbose
+            Whether to print progress of the operations. Note: this parameter will overwrite the value set
+            in each single transformer. Leave this parameter set to None for keeping the transformers configurations.
         """
         raise_if_not(all((isinstance(t, BaseDataTransformer)) for t in transformers),
                      "transformers should be objects deriving from BaseDataTransformer", logger)
@@ -38,6 +47,14 @@ class Pipeline:
             self._transformers = transformers
 
         self._invertible = all((isinstance(t, InvertibleDataTransformer) for t in self._transformers))
+
+        if verbose is not None:
+            for transformer in self._transformers:
+                transformer.set_verbose(verbose)
+
+        if n_jobs is not None:
+            for transformer in self._transformers:
+                transformer.set_n_jobs(n_jobs)
 
     def fit(self, data: Union[TimeSeries, Sequence[TimeSeries]]):
         """

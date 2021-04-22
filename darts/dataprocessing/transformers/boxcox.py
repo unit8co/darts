@@ -47,9 +47,7 @@ class BoxCox(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         verbose
             Optionally, whether to print progress
         """
-        super().__init__(name)
-        self._n_jobs = n_jobs
-        self._verbose = verbose
+        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
         self._lmbda_original = lmbda  # keep the initial setting, the fitting function should refer to this
         self._lmbda = lmbda
 

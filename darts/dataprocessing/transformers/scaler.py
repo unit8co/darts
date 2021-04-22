@@ -35,13 +35,9 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
             will scale all the values of a time series between 0 and 1.
         name
             A specific name for the scaler
-        n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
-        verbose
-            Optionally, whether to print progress
         """
-        super().__init__(name)
-        
+        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
+
         if scaler is None:
             scaler = MinMaxScaler(feature_range=(0, 1))
 
@@ -54,8 +50,6 @@ class Scaler(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[Time
         self.transformer = scaler
         self.train_series = None
         self.transformer_instances = None
-        self._n_jobs = n_jobs
-        self._verbose = verbose
 
     def _get_new_scaler(self):
         return sklearn.base.clone(self.transformer)

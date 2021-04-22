@@ -15,7 +15,9 @@ T = TypeVar('T')
 
 class FittableDataTransformer(BaseDataTransformer[T]):
     def __init__(self,
-                 name: str = "FittableDataTransformer"):
+                 name: str = "FittableDataTransformer",
+                 n_jobs: int = 1,
+                 verbose: bool = False):
 
         """
         Abstract class for data transformers implementing a fit method. All deriving classes must implement
@@ -23,8 +25,12 @@ class FittableDataTransformer(BaseDataTransformer[T]):
 
         names
             The data transformer's name
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+        verbose
+            Optionally, whether to print operations progress
         """
-        super().__init__(name)
+        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
         self._fit_called = False
 
     @abstractmethod

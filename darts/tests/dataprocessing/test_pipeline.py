@@ -258,3 +258,39 @@ class PipelineTestCase(unittest.TestCase):
 
         # while the +/- 2 is inverted, the +10 operation is not
         self.assertEqual(series_plus_ten, back)
+
+    def test_pipeline_verbose(self):
+        """
+        Checks if the verbose param applied to the pipeline is changing the verbosity level in the 
+        contained transformers.
+        """
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten, verbose=True)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True)
+
+        verbose_value = False
+        pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
+
+        for transformer in pipeline:
+            self.assertEqual(transformer._verbose, verbose_value)
+
+    def test_pipeline_n_jobs(self):
+        """
+        Checks if the n_jobs param applied to the pipeline is changing the verbosity level in the
+        contained transformers.
+        """
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten, n_jobs=1)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2)
+
+        n_jobs_value = -1
+        pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)
+
+        for transformer in pipeline:
+            self.assertEqual(transformer._n_jobs, n_jobs_value)
