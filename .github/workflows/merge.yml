@@ -5,6 +5,8 @@ on:
     branches:
       - develop
       - master
+        # TODO: remove that when tested
+      - fix/failing-gradle-download
 
 jobs:
   tests:
@@ -24,18 +26,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "3. Setup pip"
+        # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "3. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: $USER_HOME/.gradle/wrapper/dists
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('') }}
+
+      - name: "4. Setup pip"
         run: |
           ./gradlew setupPip
 
-      - name: "4. Attach cache for pip"
+      - name: "5. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
           key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
 
-      - name: "5. Tests"
+      - name: "6. Tests"
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
