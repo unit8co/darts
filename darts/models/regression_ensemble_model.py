@@ -20,7 +20,7 @@ class RegressionEnsembleModel(EnsembleModel):
     def __init__(self,
                  forecasting_models: List[ForecastingModel],
                  regression_train_n_points: int,
-                 regression_model=LinearRegression(n_jobs=-1, fit_intercept=False)):
+                 regression_model=None):
         """
         Class for ensemble models using a regression model for ensembling individual models' predictions
         The provided regression model must implement fit() and predict() methods
@@ -37,6 +37,8 @@ class RegressionEnsembleModel(EnsembleModel):
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
         super().__init__(forecasting_models)
+        if regression_model is None:
+            regression_model = LinearRegression(n_jobs=-1, fit_intercept=False)
 
         if not isinstance(regression_model, (StandardRegressionModel, RandomForest)):
             regression_model = RegressionModel(lags_exog=[0], model=regression_model)
