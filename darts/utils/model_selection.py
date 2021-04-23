@@ -39,6 +39,8 @@ def train_test_split(
     """
 
     # TODO: support splitting covatiates at the same time
+    if not data:
+        raise AttributeError('The `data` parameter cannot be empty list.')
 
     if axis == 0:
 
@@ -59,21 +61,19 @@ def train_test_split(
 
         for ts in data:
             ts_length = len(ts)
+            train_end_index = ts_length - horizon
 
             if 0 < test_size < 1:
-                train_end_index = int((ts_length - horizon) * (1 - test_size))
-            else:
-                train_end_index = ts_length - horizon - test_size
-
+                test_size = int((ts_length - horizon) * (test_size))
+                print('test_size: ', test_size)
             if train_end_index < n:
                 raise AttributeError("Test size is too small: training timeseries is of 0 size")
 
-            test_start_index = train_end_index - n
-
+            test_start_index = ts_length - horizon - n - test_size - 1
             train_set.append(ts[:train_end_index])
             test_set.append(ts[test_start_index:])
 
         return train_set, test_set
 
     else:
-        raise AttributeError()
+        raise AttributeError('Wrong value for `axis` parameter. Can be either 0 or 1')
