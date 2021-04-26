@@ -38,8 +38,8 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     # test 4
     def test_horiz_number_of_samples_too_small(self):
-        with self.assertRaises(UserWarning):
-            train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=10, test_size=8)
+        with self.assertWarns(UserWarning, msg="Training timeseries is of 0 size"):
+            train_test_split(make_dataset(1, 10), axis=1, n=4, horizon=7, test_size=1)
 
     # test 5
     def test_sunny_day_horiz_split(self):
@@ -82,8 +82,12 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         )
 
     def test_negative_test_start_index(self):
-        with self.assertRaises(UserWarning):
+        with self.assertWarns(UserWarning, msg="Not enough timesteps to create testset"):
             train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=8, test_size=1)
+
+    def test_horiz_split_horizon_equal_to_ts_length(self):
+        with self.assertWarns(UserWarning, msg="Not enough timesteps to create testset"):
+            train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=10, test_size=1)
 
     # def test_single_timeseries(self):
     #     train_test_split(constant_timeseries(123, 10), axis=1, horizon=2, n=3, test_size=2)

@@ -1,3 +1,4 @@
+from warnings import warn
 from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
@@ -12,6 +13,9 @@ def train_test_split(
 
     """
     Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
+
+    When splitting across the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
+    the timeseries in sequence is too small, all samples will go to the test set and the warning will be issued.
 
     Parameters
     ----------
@@ -65,17 +69,18 @@ def train_test_split(
 
             if 0 < test_size < 1:
                 test_size = int((ts_length - horizon) * (test_size))
-
+            print(train_end_index)
             if train_end_index < n:
-                raise UserWarning("Training timeseries is of 0 size")
+                warn("Training timeseries is of 0 size")
+            else:
+                train_set.append(ts[:train_end_index])
 
             test_start_index = ts_length - horizon - n - test_size - 1
 
             if test_start_index < 0:
                 test_start_index = 0
-                raise UserWarning("Not enough timesteps to create testset")
+                warn("Not enough timesteps to create testset")
 
-            train_set.append(ts[:train_end_index])
             test_set.append(ts[test_start_index:])
 
         return train_set, test_set
