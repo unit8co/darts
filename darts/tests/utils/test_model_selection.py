@@ -101,3 +101,38 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             "Wrong shapes: training set shape: {}; test set shape {}".format(
                 len(train_set), len(test_set))
         )
+
+    def test_multi_timeseries_variable_ts_length_sunny_day(self):
+        data = [
+            constant_timeseries(123, 10),
+            constant_timeseries(123, 100),
+            constant_timeseries(123, 1000)
+        ]
+        train_set, test_set = train_test_split(data, axis=1, test_size=2, n=1, horizon=2)
+        train_lengths = [len(ts) for ts in train_set]
+        test_lengths = [len(ts) for ts in test_set]
+
+        self.assertTrue(
+            train_lengths == [8, 98, 998] and test_lengths == [6, 6, 6],
+            "Wrong shapes: training set shape: {}; test set shape {}".format(
+                train_lengths, test_lengths)
+        )
+
+    def test_multi_timeseries_variable_ts_length_one_ts_too_small(self):
+        data = [
+            constant_timeseries(123, 10),
+            constant_timeseries(123, 100),
+            constant_timeseries(123, 1000)
+        ]
+        with self.assertWarns((UserWarning, UserWarning),
+                              msg=("Training timeseries is of 0 size", "Not enough timesteps to create testset")):
+            train_set, test_set = train_test_split(data, axis=1, test_size=2, n=1, horizon=20)
+
+        train_lengths = [len(ts) for ts in train_set]
+        test_lengths = [len(ts) for ts in test_set]
+
+        self.assertTrue(
+            train_lengths == [80, 980] and test_lengths == [24, 24],
+            "Wrong shapes: training set shape: {}; test set shape {}".format(
+                train_lengths, test_lengths)
+        )

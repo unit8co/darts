@@ -95,8 +95,8 @@ def train_test_split(
             if test_start_index < 0:
                 test_start_index = 0
                 warn("Not enough timesteps to create testset")
-
-            test_set.append(ts[test_start_index:])
+            else:
+                test_set.append(ts[test_start_index:])
 
         if single_timeseries:
             return train_set[0], test_set[0]
