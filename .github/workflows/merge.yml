@@ -30,7 +30,7 @@ jobs:
       - name: "3. Cache gradle distribution"
         uses: actions/cache@v2
         with:
-          path: $USER_HOME/.gradle/wrapper/dists
+          path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: "4. Setup pip"
@@ -66,7 +66,7 @@ jobs:
       - name: "3. Cache gradle distribution"
         uses: actions/cache@v2
         with:
-          path: $USER_HOME/.gradle/wrapper/dists
+          path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: "4. Run examples ${{matrix.example-name}}"
@@ -93,7 +93,7 @@ jobs:
       - name: "4. Cache gradle distribution"
         uses: actions/cache@v2
         with:
-          path: $USER_HOME/.gradle/wrapper/dists
+          path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
       - name: "5. Setup pip"
