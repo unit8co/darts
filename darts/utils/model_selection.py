@@ -15,7 +15,10 @@ def train_test_split(
     """
     Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
 
-    When splitting across the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
+    If the input type is single TimeSeries, then only splitting over time axis is available, thus ``n`` and ``horizon``
+    have to be provided.
+
+    When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
     the timeseries in sequence is too small, all samples will go to the test set and the warning will be issued.
 
     Parameters
@@ -28,7 +31,7 @@ def train_test_split(
         it is treated as a absolute number of samples from each timeseries that will be in the test set. [default = 0.25]
 
     axis
-        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if axis = 1,
+        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if ``axis = 1``,
         timeseries are split along time axis (columns). [default: 0]
 
     n
@@ -50,6 +53,13 @@ def train_test_split(
     # TODO: support splitting covatiates at the same time
     if not data:
         raise AttributeError('The `data` parameter cannot be empty list.')
+
+    if not isinstance(data, Sequence):
+        axis = 1
+        data = [data] # convert to sequence for unified processing later
+        single_timeseries = True
+    else:
+        single_timeseries = False
 
     if axis == 0:
 
@@ -74,7 +84,7 @@ def train_test_split(
 
             if 0 < test_size < 1:
                 test_size = int((ts_length - horizon) * (test_size))
-            print(train_end_index)
+
             if train_end_index < n:
                 warn("Training timeseries is of 0 size")
             else:
@@ -88,7 +98,10 @@ def train_test_split(
 
             test_set.append(ts[test_start_index:])
 
-        return train_set, test_set
+        if single_timeseries:
+            return train_set[0], test_set[0]
+        else:
+            return train_set, test_set
 
     else:
         raise AttributeError('Wrong value for `axis` parameter. Can be either 0 or 1')

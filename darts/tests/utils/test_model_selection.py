@@ -89,5 +89,15 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         with self.assertWarns(UserWarning, msg="Not enough timesteps to create testset"):
             train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=10, test_size=1)
 
-    # def test_single_timeseries(self):
-    #     train_test_split(constant_timeseries(123, 10), axis=1, horizon=2, n=3, test_size=2)
+    def test_single_timeseries_no_horizon_no_n(self):
+        with self.assertRaises(AttributeError):
+            train_test_split(constant_timeseries(123, 10), test_size=2)
+
+    def test_single_timeseries_sunny_day(self):
+        train_set, test_set = train_test_split(constant_timeseries(123, 10), test_size=2, n=1, horizon=2)
+
+        self.assertTrue(
+            len(train_set) == 8 and len(test_set) == 6,
+            "Wrong shapes: training set shape: {}; test set shape {}".format(
+                len(train_set), len(test_set))
+        )
