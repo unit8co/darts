@@ -9,6 +9,7 @@ def train_test_split(
         axis: Optional[int] = 0,
         n: Optional[int] = 0,
         horizon: Optional[int] = 0,
+        sequence_impl: Sequence = list
         ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
 
     """
@@ -28,13 +29,17 @@ def train_test_split(
 
     axis
         Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if axis = 1,
-        timeseries are split along time axis (columns).
+        timeseries are split along time axis (columns). [default: 0]
 
     n
-        size of the input
+        size of the input [default: 0]
 
     horizon
-        forecast horizon
+        forecast horizon [default: 0]
+
+    sequence_impl
+        user can provide own sequence implementation. By default list() is used which may be memory inefficient for very
+        large datasets [default: list()]
 
     Returns
     -------
@@ -60,8 +65,8 @@ def train_test_split(
         if horizon == 0 or n == 0:
             raise AttributeError("You need to provide non-zero `horizon` and `n` parameters when axis=1")
 
-        train_set = []
-        test_set = []
+        train_set = sequence_impl()
+        test_set = sequence_impl()
 
         for ts in data:
             ts_length = len(ts)
