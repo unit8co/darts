@@ -66,7 +66,7 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     return list(map(lambda s: s.slice(last_first, first_last), series))
 
 
-def _build_tqdm_iterator(iterable, verbose):
+def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
 
@@ -74,6 +74,8 @@ def _build_tqdm_iterator(iterable, verbose):
     ----------
     iterable
     verbose
+    total
+        Length of the iterator, helps in cases where tqdm is not detecting the total length.
 
     Returns
     -------
@@ -94,9 +96,10 @@ def _build_tqdm_iterator(iterable, verbose):
 
     if verbose:
         if _isnotebook():
-            iterator = tqdm_notebook(iterable)
+            iterator = tqdm_notebook(iterable, **kwargs)
         else:
-            iterator = tqdm(iterable)
+            iterator = tqdm(iterable, **kwargs)
+
     else:
         iterator = iterable
     return iterator
