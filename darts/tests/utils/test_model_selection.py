@@ -38,8 +38,8 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     # test 4
     def test_horiz_number_of_samples_too_small(self):
-        with self.assertRaises(AttributeError):
-            train_test_split(make_dataset(1, 10))
+        with self.assertRaises(UserWarning):
+            train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=10, test_size=8)
 
     # test 5
     def test_sunny_day_horiz_split(self):
@@ -51,10 +51,6 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         )
 
     # test 6
-    def test_timeseries_too_short_vertical_split(self):
-        self.assertTrue(False)
-
-    # test 7
     def test_sunny_day_vertical_split(self):
         train_set, test_set = train_test_split(make_dataset(2, 250), axis=1, n=70, horizon=50)
 
@@ -65,12 +61,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
                 len(train_set), len(train_set[0]), len(test_set), len(test_set[0]))
         )
 
-    # test 8
-    def test_training_set_insufficient_size(self):
-        with self.assertRaises(AttributeError):
-            pass
-
-    # test 9
+    # test 7
     def test_test_split_absolute_number_horiz(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=0, test_size=2)
 
@@ -79,7 +70,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             verify_shape(test_set, 2, 10)
         )
 
-    # test 10
+    # test 8
     def test_test_split_absolute_number_vertical(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=1, test_size=2, n=1, horizon=2)
 
@@ -89,3 +80,10 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             "Wrong shapes: training set shape: ({}, {}); test set shape ({}, {})".format(
                 len(train_set), len(train_set[0]), len(test_set), len(test_set[0]))
         )
+
+    def test_negative_test_start_index(self):
+        with self.assertRaises(UserWarning):
+            train_test_split(make_dataset(1, 10), axis=1, n=2, horizon=8, test_size=1)
+
+    # def test_single_timeseries(self):
+    #     train_test_split(constant_timeseries(123, 10), axis=1, horizon=2, n=3, test_size=2)

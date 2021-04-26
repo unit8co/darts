@@ -1,14 +1,14 @@
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
 
 def train_test_split(
-        data: Sequence[TimeSeries],
+        data: Union[TimeSeries, Sequence[TimeSeries]],
         test_size: Optional[Union[float, int]] = 0.25,
         axis: Optional[int] = 0,
         n: Optional[int] = 0,
         horizon: Optional[int] = 0,
-        ) -> Sequence[Sequence[TimeSeries]]:
+        ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
 
     """
     Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
@@ -34,7 +34,7 @@ def train_test_split(
 
     Returns
     -------
-    Sequence[TimeSeries], Sequence[TimeSeries]
+    tuple of two Sequence[TimeSeries], or tuple of two Timeseries
         Training and test datasets tuple.
     """
 
@@ -65,11 +65,16 @@ def train_test_split(
 
             if 0 < test_size < 1:
                 test_size = int((ts_length - horizon) * (test_size))
-                print('test_size: ', test_size)
+
             if train_end_index < n:
-                raise AttributeError("Test size is too small: training timeseries is of 0 size")
+                raise UserWarning("Training timeseries is of 0 size")
 
             test_start_index = ts_length - horizon - n - test_size - 1
+
+            if test_start_index < 0:
+                test_start_index = 0
+                raise UserWarning("Not enough timesteps to create testset")
+
             train_set.append(ts[:train_end_index])
             test_set.append(ts[test_start_index:])
 
