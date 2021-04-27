@@ -70,6 +70,8 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     ----------
     iterable
     verbose
+    total
+        Length of the iterator, helps in cases where tqdm is not detecting the total length.
 
     Returns
     -------
