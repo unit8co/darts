@@ -7,7 +7,7 @@ def train_test_split(
         data: Union[TimeSeries, Sequence[TimeSeries]],
         test_size: Optional[Union[float, int]] = 0.25,
         axis: Optional[int] = 0,
-        n: Optional[int] = 0,
+        input_size: Optional[int] = 0,
         horizon: Optional[int] = 0,
         sequence_impl: Sequence = list
         ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
@@ -34,7 +34,7 @@ def train_test_split(
         Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if ``axis = 1``,
         timeseries are split along time axis (columns). [default: 0]
 
-    n
+    input_size
         size of the input [default: 0]
 
     horizon
@@ -72,7 +72,7 @@ def train_test_split(
 
     elif axis == 1:
 
-        if horizon == 0 or n == 0:
+        if horizon == 0 or input_size == 0:
             raise AttributeError("You need to provide non-zero `horizon` and `n` parameters when axis=1")
 
         train_set = sequence_impl()
@@ -85,12 +85,12 @@ def train_test_split(
             if 0 < test_size < 1:
                 test_size = int((ts_length - horizon) * (test_size))
 
-            if train_end_index < n:
+            if train_end_index < input_size:
                 warn("Training timeseries is of 0 size")
             else:
                 train_set.append(ts[:train_end_index])
 
-            test_start_index = ts_length - horizon - n - test_size - 1
+            test_start_index = ts_length - horizon - input_size - test_size - 1
 
             if test_start_index < 0:
                 test_start_index = 0
