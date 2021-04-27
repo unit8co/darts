@@ -9,7 +9,7 @@ def train_test_split(
         axis: Optional[int] = 0,
         input_size: Optional[int] = 0,
         horizon: Optional[int] = 0,
-        sequence_impl: Sequence = list
+        vertical_split_type: Optional[str] = 'simple'
         ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
 
     """
@@ -32,7 +32,8 @@ def train_test_split(
 
     axis
         Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if ``axis = 1``,
-        timeseries are split along time axis (columns). [default: 0]
+        timeseries are split along time axis (columns). Note that for single timeseries the default option is 1 (0 makes
+        no sense). [default: 0 for sequence of timeseries, 1 for timeseries]
 
     input_size
         size of the input [default: 0]
@@ -40,9 +41,11 @@ def train_test_split(
     horizon
         forecast horizon [default: 0]
 
-    sequence_impl
-        user can provide own sequence implementation. By default list() is used which may be memory inefficient for very
-        large datasets [default: list()]
+    vertical_split_type
+        can be either ``simple``, where the exact number from test size will be deducted from timeseries for test set and
+        remaining will go to training set; or ``model-aware``, where you have to provide ``input_size`` and ``horizon``
+        as well. Note, that second option is more efficient timestep-wise, since training and test sets will be
+        partially overlapping. [default: ``simple``]
 
     Returns
     -------
@@ -52,7 +55,7 @@ def train_test_split(
 
     # TODO: support splitting covatiates at the same time
     if not data:
-        raise AttributeError('The `data` parameter cannot be empty list.')
+        raise AttributeError('The `data` parameter cannot be empty.')
 
     if not isinstance(data, Sequence):
         axis = 1
@@ -72,31 +75,50 @@ def train_test_split(
 
     elif axis == 1:
 
-        if horizon == 0 or input_size == 0:
-            raise AttributeError("You need to provide non-zero `horizon` and `n` parameters when axis=1")
+        train_set = list()
+        test_set = list()
 
-        train_set = sequence_impl()
-        test_set = sequence_impl()
+        if vertical_split_type == 'simple':
 
-        for ts in data:
-            ts_length = len(ts)
-            train_end_index = ts_length - horizon
+            for ts in data:
+                ts_length = len(ts)
 
-            if 0 < test_size < 1:
-                test_size = int((ts_length - horizon) * (test_size))
+                if 0 < test_size < 1:
+                    test_size = int(ts_length * test_size)
 
-            if train_end_index < input_size:
-                warn("Training timeseries is of 0 size")
-            else:
+                test_start_index = ts_length - test_size
+                train_end_index =  test_start_index
+
                 train_set.append(ts[:train_end_index])
-
-            test_start_index = ts_length - horizon - input_size - test_size - 1
-
-            if test_start_index < 0:
-                test_start_index = 0
-                warn("Not enough timesteps to create testset")
-            else:
                 test_set.append(ts[test_start_index:])
+
+        elif vertical_split_type == 'model-aware':
+
+            if horizon == 0 or input_size == 0:
+                raise AttributeError("You need to provide non-zero `horizon` and `n` parameters when axis=1")
+
+            for ts in data:
+                ts_length = len(ts)
+                train_end_index = ts_length - horizon
+
+                if 0 < test_size < 1:
+                    test_size = int((ts_length - horizon) * (test_size))
+
+                if train_end_index < input_size:
+                    warn("Training timeseries is of 0 size")
+                else:
+                    train_set.append(ts[:train_end_index])
+
+                test_start_index = ts_length - horizon - input_size - test_size - 1
+
+                if test_start_index < 0:
+                    test_start_index = 0
+                    warn("Not enough timesteps to create testset")
+                else:
+                    test_set.append(ts[test_start_index:])
+
+        else:
+            raise AttributeError('`vertical_split_type` can be eiter `simple` or `model-aware`.')
 
         if single_timeseries:
             return train_set[0], test_set[0]
