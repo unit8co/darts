@@ -17,7 +17,7 @@ from darts.models import (
     FFT,
     ExponentialSmoothing,
     NaiveSeasonal,
-    StandardRegressionModel,
+    LinearRegressionModel,
     NaiveDrift,
     RandomForest,
 )
@@ -158,9 +158,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
 
         # univariate feature test
-        score = StandardRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
+        score = LinearRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
             series=target, covariates=features, start=pd.Timestamp('20000201'),
-            forecast_horizon=3, metric=r2_score
+            forecast_horizon=3, metric=r2_score, last_points_only=True
         )
         self.assertGreater(score, 0.95)
 

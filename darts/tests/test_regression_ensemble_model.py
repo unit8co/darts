@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestRegressor
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal
-from ..models import StandardRegressionModel
+from ..models import LinearRegressionModel
 from ..models import RegressionEnsembleModel
 from ..logging import get_logger
 
@@ -29,7 +29,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     def test_accepts_different_regression_models(self):
-        regr1 = StandardRegressionModel(lags_exog=[0])
+        regr1 = LinearRegressionModel(lags_exog=[0])
         regr2 = RandomForestRegressor()
 
         model0 = RegressionEnsembleModel(self.get_models(), 10)
@@ -42,7 +42,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.predict(10)
 
     def test_train_n_points(self):
-        regr = StandardRegressionModel(lags_exog=[0])
+        regr = LinearRegressionModel(lags_exog=[0])
 
         # same values
         ensemble = RegressionEnsembleModel(self.get_models(), 5, regr)

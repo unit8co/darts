@@ -4,7 +4,7 @@ import pandas as pd
 from .. import TimeSeries
 from ..metrics import rmse
 from ..models import RandomForest
-from ..models import StandardRegressionModel
+from ..models import LinearRegressionModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 
@@ -54,7 +54,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     # default regression models
     models = [
         RandomForest,
-        StandardRegressionModel,
+        LinearRegressionModel,
     ]
     lags = 4
     lags_exog = [3, 4, 5]

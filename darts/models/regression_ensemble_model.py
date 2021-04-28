@@ -9,7 +9,7 @@ from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting_model import ForecastingModel
 from darts.models import (
-    EnsembleModel, StandardRegressionModel, RegressionModel,
+    EnsembleModel, LinearRegressionModel, RegressionModel,
     RandomForest
 )
 
@@ -40,7 +40,7 @@ class RegressionEnsembleModel(EnsembleModel):
         if regression_model is None:
             regression_model = LinearRegression(n_jobs=-1, fit_intercept=False)
 
-        if not isinstance(regression_model, (StandardRegressionModel, RandomForest)):
+        if not isinstance(regression_model, (LinearRegressionModel, RandomForest)):
             regression_model = RegressionModel(lags_exog=[0], model=regression_model)
 
         raise_if(regression_model.lags is not None and regression_model.lags_exog != [0], (

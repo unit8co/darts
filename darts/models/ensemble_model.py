@@ -46,8 +46,9 @@ class EnsembleModel(ForecastingModel):
         super().predict(n)
 
         predictions = self.models[0].predict(n)
-        for model in self.models[1:]:
-            predictions = predictions.stack(model.predict(n))
+        if len(self.models) > 1:
+            for model in self.models[1:]:
+                predictions = predictions.stack(model.predict(n))
 
         return self.ensemble(predictions)
 
