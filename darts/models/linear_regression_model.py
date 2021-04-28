@@ -13,7 +13,7 @@ from sklearn.linear_model import LinearRegression
 logger = get_logger(__name__)
 
 
-class StandardRegressionModel(RegressionModel):
+class LinearRegressionModel(RegressionModel):
 
     def __init__(self,
                  lags: Union[int, list] = None,
@@ -26,12 +26,15 @@ class StandardRegressionModel(RegressionModel):
         ----------
         lags : Union[int, list]
             Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags.
+            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
         lags_exog : Union[int, list, bool]
             Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags. If False,
-            the value at time `t` is used which might lead to leakage. If True the same lags as for the
-            target variable are used.
+            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
+            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
+            at the current time `t`. This might lead to leakage if for predictions the values of the exogenous
+            variables at time `t` are not known.
+        **kwargs
+            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.
         """
         self.kwargs = kwargs
         super().__init__(

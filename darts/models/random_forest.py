@@ -34,16 +34,19 @@ class RandomForest(RegressionModel):
         ----------
         lags : Union[int, list]
             Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags.
+            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
         lags_exog : Union[int, list, bool]
             Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags. If False,
-            the value at time `t` is used which might lead to leakage. If True the same lags as for the
-            target variable are used.
+            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
+            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
+            at the current time `t`. This might lead to leakage if for **predictions** the values of the exogenous
+            variables at time `t` are not known.
         n_estimators : int
-            Number of boosted trees.
-        kwargs
-            Additonal arguments for sklearn.ensemble.RandomForest(...).
+            The number of trees in the forest.
+        max_depth : int
+            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+        **kwargs
+            Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth

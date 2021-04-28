@@ -258,18 +258,20 @@ class ForecastingModel(ABC):
                     self.fit(series=train)
 
             if covariates:
-                if "covariates" in predict_signature.parameters:
-                    if 'series' in predict_signature.parameters:
-                        forecast = self.predict(n=forecast_horizon, series=train, covariates=train_cov)
-                    else:
-                        forecast = self.predict(n=forecast_horizon, covariates=train_cov)
+                if 'covariates' in predict_signature.parameters:
+                    covar_argument = {"covariates": train_cov}
+                elif 'exog' in predict_signature.parameters:
+                    covar_argument = {"exog": train_cov}
                 else:
-                    if 'series' in predict_signature.parameters:
-                        forecast = self.predict(n=forecast_horizon, series=train, exog=train_cov)
-                    else:
+                    raise ValueError("`covariates` is not None but model does not support `exog` or `covariates`.")
+
+                if 'series' in predict_signature.parameters:
+                    forecast = self.predict(n=forecast_horizon, series=train, **covar_argument)
+                else:
+                    if 'exog' in covar_argument: # Used for objects of type `RegressionModel`
                         start = train.end_time() + train.freq()
-                        train_cov = covariates[start:start+(forecast_horizon-1)*train.freq()]
-                        forecast = self.predict(n=forecast_horizon, exog=train_cov)
+                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq()]
+                    forecast = self.predict(n=forecast_horizon, **covar_argument)
             else:
                 if 'series' in predict_signature.parameters:
                     forecast = self.predict(n=forecast_horizon, series=train)
