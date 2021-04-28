@@ -30,10 +30,16 @@ class SplitTimeSeriesSequence(Sequence):
 
         self.test_size = test_size
         self.axis = axis
+
+        if axis == 1 and vertical_split_type == 'model-aware' and (horizon == 0 or input_size == 0):
+                raise AttributeError("You need to provide non-zero `horizon` and `n` parameters when axis=1")
+
         self.input_size = input_size
         self.horizon = horizon
 
         if vertical_split_type not in ['simple', 'model-aware']:
+            raise AttributeError('`vertical_split_type` can be eiter `simple` or `model-aware`.')
+        else:
             self.vertical_split_type = vertical_split_type
 
     def _get_horizontal_split_index(self):
@@ -41,6 +47,36 @@ class SplitTimeSeriesSequence(Sequence):
             return int(len(self.data) * (1 - self.test_size))
         else:
             return self.test_size  # TODO: len(self.data) - self.test_size
+
+    def _get_vertical_split_indices(self, ts_length):
+
+        if self.vertical_split_type == 'simple':
+            if 0 < self.test_size < 1:
+                test_size = int(ts_length * self.test_size)
+            else:
+                test_size = self.test_size
+
+            test_start_index = ts_length - test_size
+            train_end_index =  test_start_index
+
+        else: # model-aware split
+            train_end_index = ts_length - self.horizon
+
+            if 0 < self.test_size < 1:
+                test_size = int((ts_length - self.horizon) * (self.test_size))
+            else:
+                test_size = self.test_size
+
+            if train_end_index < self.input_size:
+                warn("Training timeseries is of 0 size")
+
+            test_start_index = ts_length - self.horizon - self.input_size - test_size - 1
+
+            if test_start_index < 0:
+                test_start_index = 0
+                warn("Not enough timesteps to create testset")
+
+        return train_end_index, test_start_index
 
     def __getitem__(self, i: int) -> TimeSeries:
         if self.axis == 0:
@@ -54,10 +90,11 @@ class SplitTimeSeriesSequence(Sequence):
                     raise IndexError('Exceeded the size of the sequence.')
                 return self.data[split_index + i]
         else: # axis == 1
+            train_end_index, test_start_index = self._get_vertical_split_indices(len(self.data[i]))
             if self.type == 'train':
-                return None # TODO
+                return self.data[i][:train_end_index]
             else:
-                return None # TODO
+                return self.data[i][test_start_index:]
 
     def __len__(self):
         if self.axis == 0:
