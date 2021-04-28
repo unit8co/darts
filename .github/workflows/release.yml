@@ -97,12 +97,19 @@ jobs:
           DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
+        # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "4. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
       #check build.gradle file for explanation of next steps
-      - name: "4. Publish image with tag corresponding to current version"
+      - name: "5. Publish image with tag corresponding to current version"
         run: |
           ./gradlew dockerPushVersion -P version=${{ steps.bump_dry.outputs.tag }}
 
-      - name: "5. Publish image with tag 'latest' if not hotfix"
+      - name: "6. Publish image with tag 'latest' if not hotfix"
         if: ${{ !contains(github.event.head_commit.message, '#hotfix') }}
         run: |
           ./gradlew dockerPushLatest
@@ -124,11 +131,18 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
 
-      - name: "4. Setup pip"
+        # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "4. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "5. Setup pip"
         run: |
           ./gradlew setupPip
 
-      - name: "5. Attach cache for pip"
+      - name: "6. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
@@ -137,11 +151,11 @@ jobs:
           restore-keys: |
             release-${{ runner.os }}-pip-
 
-      - name: "6. Build docs"
+      - name: "7. Build docs"
         run: |
           ./gradlew buildDocs
 
-      - name: "7. Publish documentation to gh-pages"
+      - name: "8. Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self
