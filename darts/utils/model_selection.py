@@ -19,14 +19,7 @@ class SplitTimeSeriesSequence(Sequence):
 
         if not data:
             raise AttributeError('The `data` parameter cannot be empty.')
-
-        if not isinstance(data, Sequence):
-            axis = 1
-            self.data = [data]  # convert to sequence for unified processing later
-            self.single_timeseries = True
-        else:
-            self.data = data
-            self.single_timeseries = False
+        self.data = data
 
         self.test_size = test_size
         self.axis = axis
@@ -108,8 +101,24 @@ class SplitTimeSeriesSequence(Sequence):
 
     @classmethod
     def make_splitter(cls, data, test_size, axis, input_size, horizon, vertical_split_type):
-        return (cls(type='train', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon, vertical_split_type=vertical_split_type),
-                cls(type='test', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon, vertical_split_type=vertical_split_type))
+
+        if not isinstance(data, Sequence):
+            axis = 1
+            data = [data]  # convert to sequence for unified processing later
+            single_timeseries = True
+        else:
+            single_timeseries = False
+
+        train_set = cls(type='train', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon,
+                        vertical_split_type=vertical_split_type)
+
+        test_set = cls(type='test', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon,
+                       vertical_split_type=vertical_split_type)
+
+        if single_timeseries:
+            return train_set[0], test_set[0]
+        else:
+            return train_set, test_set
 
 
 def train_test_split(
