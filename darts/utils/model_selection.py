@@ -3,7 +3,90 @@ from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
 
+class SplitTimeSeriesSequence(Sequence):
+    def __init__(self,
+                 type: str,
+                 data: Union[TimeSeries, Sequence[TimeSeries]],
+                 test_size: Optional[Union[float, int]] = 0.25,
+                 axis: Optional[int] = 0,
+                 input_size: Optional[int] = 0,
+                 horizon: Optional[int] = 0,
+                 vertical_split_type: Optional[str] = 'simple'):
+
+        if type not in ['train', 'test']:
+            raise AttributeError('Value for type parameter should be either `train` or `test`')
+        self.type = type
+
+        if not data:
+            raise AttributeError('The `data` parameter cannot be empty.')
+
+        if not isinstance(data, Sequence):
+            axis = 1
+            self.data = [data]  # convert to sequence for unified processing later
+            self.single_timeseries = True
+        else:
+            self.data = data
+            self.single_timeseries = False
+
+        self.test_size = test_size
+        self.axis = axis
+        self.input_size = input_size
+        self.horizon = horizon
+
+        if vertical_split_type not in ['simple', 'model-aware']:
+            self.vertical_split_type = vertical_split_type
+
+    def _get_horizontal_split_index(self):
+        if 0 < self.test_size < 1:
+            return int(len(self.data) * (1 - self.test_size))
+        else:
+            return self.test_size  # TODO: len(self.data) - self.test_size
+
+    def __getitem__(self, i: int) -> TimeSeries:
+        if self.axis == 0:
+            split_index = self._get_horizontal_split_index()
+            if self.type == 'train':
+                if i >= split_index: #
+                    raise IndexError('Exceeded the size of the sequence.')
+                return self.data[i]
+            else:
+                if i + split_index > len(self.data):
+                    raise IndexError('Exceeded the size of the sequence.')
+                return self.data[split_index + i]
+        else: # axis == 1
+            if self.type == 'train':
+                return None # TODO
+            else:
+                return None # TODO
+
+    def __len__(self):
+        if self.axis == 0:
+            split_index = self._get_horizontal_split_index()
+            if self.type == 'train':
+                return split_index
+            else:
+                return len(self.data) - split_index
+        else:
+            return len(self.data)
+
+    @classmethod
+    def make_splitter(cls, data, test_size, axis, input_size, horizon, vertical_split_type):
+        return (cls(type='train', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon, vertical_split_type=vertical_split_type),
+                cls(type='test', data=data, test_size=test_size, axis=axis, input_size=input_size, horizon=horizon, vertical_split_type=vertical_split_type))
+
+
 def train_test_split(
+        data: Union[TimeSeries, Sequence[TimeSeries]],
+        test_size: Optional[Union[float, int]] = 0.25,
+        axis: Optional[int] = 0,
+        input_size: Optional[int] = 0,
+        horizon: Optional[int] = 0,
+        vertical_split_type: Optional[str] = 'simple'
+        ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
+
+    return SplitTimeSeriesSequence.make_splitter(data, test_size, axis, input_size, horizon, vertical_split_type)
+
+def train_test_split_2(
         data: Union[TimeSeries, Sequence[TimeSeries]],
         test_size: Optional[Union[float, int]] = 0.25,
         axis: Optional[int] = 0,

@@ -44,12 +44,38 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     # test 5
     def test_sunny_day_horiz_split(self):
-        train_set, test_set = train_test_split(make_dataset(4, 10))
+        train_set, test_set = train_test_split(make_dataset(8, 10))
 
         self.assertTrue(
-            verify_shape(train_set, 3, 10) and
-            verify_shape(test_set, 1, 10)
+            verify_shape(train_set, 6, 10) and
+            verify_shape(test_set, 2, 10),
+            "Wrong shapes: training set shape: ({}, {}); test set shape ({}, {})".format(
+                len(train_set), len(train_set[0]), len(test_set), len(test_set[0]))
         )
+
+    # test 5a
+    def test_sunny_day_horiz_split_overindexing_train_set(self):
+        train_set, test_set = train_test_split(make_dataset(8, 10))
+
+        with self.assertRaises(IndexError):
+            train_set[6]
+
+    def test_sunny_day_horiz_split_last_index_train_set(self):
+        train_set, test_set = train_test_split(make_dataset(8, 10))
+        # no IndexError is thrown
+        train_set[5]
+
+    # test 5a
+    def test_sunny_day_horiz_split_overindexing_test_set(self):
+        train_set, test_set = train_test_split(make_dataset(8, 10))
+
+        with self.assertRaises(IndexError):
+            test_set[2]
+
+    def test_sunny_day_horiz_split_last_index_test_set(self):
+        train_set, test_set = train_test_split(make_dataset(8, 10))
+        # no IndexError is thrown
+        train_set[1]
 
     # test 6
     def test_sunny_day_vertical_split(self):
