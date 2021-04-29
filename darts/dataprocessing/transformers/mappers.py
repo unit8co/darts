@@ -31,10 +31,10 @@ class Mapper(BaseDataTransformer):
             Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
         name
             A specific name for the transformer
-         n_jobs
+        n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
@@ -71,7 +71,7 @@ class InvertibleMapper(InvertibleDataTransformer):
         n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress

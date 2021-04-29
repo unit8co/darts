@@ -27,7 +27,7 @@ class Pipeline:
             Sequence of data transformers.
         copy
             If set makes a (deep) copy of each data transformer before adding them to the pipeline
-         n_jobs
+        n_jobs
             The number of jobs to run in parallel. `-1` means using all processors. Note: this
             parameter will overwrite the value set in each single transformer. Leave this parameter set to None
             for keeping the transformers configurations.
@@ -63,7 +63,7 @@ class Pipeline:
         Parameters
         ----------
         data
-            (List of) TimeSeries to fit on.
+            (Sequence of) TimeSeries to fit on.
         """
 
         # Find the last fittable transformer index
@@ -82,13 +82,13 @@ class Pipeline:
 
     def fit_transform(self, data: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
-        For each data transformer in pipeline first fit the data if transformer is fittable then transform data using
-        fitted transformer. The transformed data is then passed to next transformer.
+        For each data transformer in the pipeline, first fit the data if transformer is fittable then transform data
+        using fitted transformer. The transformed data is then passed to next transformer.
 
         Parameters
         ----------
         data
-            (List of) TimeSeries to fit and transform on.
+            (Sequence of) TimeSeries to fit and transform on.
 
         Returns
         -------
@@ -109,7 +109,7 @@ class Pipeline:
         Parameters
         ----------
         data
-            (List of) TimeSeries to be transformed.
+            (Sequence of) TimeSeries to be transformed.
 
         Returns
         -------
@@ -124,15 +124,15 @@ class Pipeline:
                           data: Union[TimeSeries, Sequence[TimeSeries]],
                           partial: bool = False) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
-        For each data transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
-        transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
-        invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the
+        For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
+        the next transformer. Transformers are traversed in reverse order. Raises value error if not all of the
+        transformers are invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the
         InvertibleDataTransformer in the pipeline.
 
         Parameters
         ----------
         data
-            (List of) TimeSeries to be inverse transformed.
+            (Sequence of) TimeSeries to be inverse transformed.
         partial
             If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling
             `inverse_transform()` only on the `InvertibleDataTransformer`'s

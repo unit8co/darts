@@ -3,7 +3,7 @@ Fittable Data Transformer
 -------------------------
 """
 from darts import TimeSeries
-from typing import Union, Sequence, Callable, Iterator, Tuple
+from typing import Union, Sequence, Callable, Iterator, Tuple, List
 from darts.logging import get_logger
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils import _parallel_apply, _build_tqdm_iterator
@@ -31,23 +31,23 @@ class FittableDataTransformer(BaseDataTransformer):
             Function that will be applied to each TimeSeries object once the `transform()` function is called. The
             function must take as first argument a TimeSeries object, and return the transformed TimeSeries object.
             Additional parameters can be added if necessary, but in this case, the `_transform_iterator()` should be
-            redefined accordingly, to yeild the necessary arguments to this function (See `_transform_iterator()` for
+            redefined accordingly, to yield the necessary arguments to this function (See `_transform_iterator()` for
             further details)
         ts_fit (Callable)
             Function that will be applied to each TimeSeries object once the `fit()` function is called.
             The function must take as first argument a TimeSeries object, and return an object containing information
-            reagrding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
+            regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
             be stored in self._fitted_params, which can be later used during the transformation step.
 
             Additional parameters can be added if necessary, but in this case, the `_fit_iterator()`
-            should be redefined accordingly, to yeild the necessary arguments to this function (See
+            should be redefined accordingly, to yield the necessary arguments to this function (See
             `_inverse_transform_iterator()` for further details)
         name
             The data transformer's name
         n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
@@ -61,7 +61,7 @@ class FittableDataTransformer(BaseDataTransformer):
         self.fitted_params = None  # stores the fitted parameters/objects
         self._ts_fit = ts_fit
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
+    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
         """
         Returns an `Iterator` object with tuples of inputs for each single call to `ts_fit()`.
         Additional `args` and `kwargs` from `fit()` (that don't change across the calls to `ts_fit()`)
@@ -149,13 +149,13 @@ class FittableDataTransformer(BaseDataTransformer):
     def fit_transform(self,
                       series: Union[TimeSeries, Sequence[TimeSeries]],
                       *args,
-                      **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+                      **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Fit the transformer with the (Sequence of) TimeSeries and returns the transformed input
 
         Parameters
         ----------
-       series
+        series
             TimeSeries or Sequence of TimeSeries to transform.
         args
             Additional positional arguments for the `ts_transform()` method
@@ -164,7 +164,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        T
+        Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
         return self.fit(series).transform(series, *args, **kwargs)

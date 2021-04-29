@@ -43,16 +43,19 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         optim_method
             Specifies which method to use to find an optimal value for the lmbda parameter.
             Either 'mle' or 'pearsonr'. Ignored if lmbda != None.
-         n_jobs
+        n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
         """
 
-        def _boxcox_ts_fit(series: TimeSeries, lmbda, *args, **kwargs):
+        def _boxcox_ts_fit(series: TimeSeries,
+                           lmbda: Optional[Union[float, Sequence[float]]],
+                           *args,
+                           **kwargs):
             if lmbda is None:
                 # Compute optimal lmbda for each dimension of the time series
                 lmbda = series._df.apply(boxcox_normmax, method=optim_method, *args, **kwargs)
@@ -66,8 +69,10 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
             return lmbda
 
-        def _boxcox_ts_transform(series: TimeSeries, lmbda, *args,
-                                 **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        def _boxcox_ts_transform(series: TimeSeries,
+                                 lmbda: float,
+                                 *args,
+                                 **kwargs) -> TimeSeries:
 
             def _boxcox_wrapper(col):
                 idx = series._df.columns.get_loc(col.name)  # get index from col name
@@ -75,8 +80,10 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
             return TimeSeries.from_dataframe(series._df.apply(_boxcox_wrapper, *args, **kwargs))
 
-        def _boxcox_ts_inverse_transform(series: TimeSeries, lmbda, *args,
-                                         **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        def _boxcox_ts_inverse_transform(series: TimeSeries,
+                                         lmbda: float,
+                                         *args,
+                                         **kwargs) -> TimeSeries:
 
             def _inv_boxcox_wrapper(col):
                 idx = series._df.columns.get_loc(col.name)  # get index from col name
@@ -98,7 +105,9 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         self._lmbda = lmbda
         self._optim_method = optim_method
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
+    def _fit_iterator(self, series: Sequence[TimeSeries]) \
+            -> Iterator[Tuple[TimeSeries, Optional[Union[Sequence[float], float]]]]:
+
         if isinstance(self._lmbda, Sequence) and isinstance(self._lmbda[0], Sequence):
             # CASE 0: Sequence[Sequence[float]]
             raise_if(len(self._lmbda) != len(series),
@@ -107,12 +116,12 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
                      logger)
             return zip(series, self._lmbda)
         else:
-            # CASE 1: Sequence[flaot], float, None. Replicating the same value for each TS
+            # CASE 1: Sequence[float], float, None. Replicating the same value for each TS
             lmbda_gen = (self._lmbda for _ in range(len(series)))
             return zip(series, lmbda_gen)
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]):
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
         return zip(series, self._fitted_params)
 
-    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]):
+    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
         return zip(series, self._fitted_params)

@@ -2,7 +2,7 @@
 Base Data Transformer
 ---------------------
 """
-from typing import Sequence, Union, Iterator, Callable, Tuple
+from typing import Sequence, Union, Iterator, Callable, Tuple, List
 from darts.logging import raise_if_not
 from darts.utils import _parallel_apply, _build_tqdm_iterator
 from darts import TimeSeries
@@ -16,29 +16,29 @@ class BaseDataTransformer():
                  verbose: bool = False,
                  **kwargs):
         """
-        Base class for data transformers. The class offers the method `transform`, for applying a tranformation
-        to a TimeSeries or Sequence of TimeSeries. The trasformation function must be passed during the
+        Base class for data transformers. The class offers the method `transform`, for applying a transformation
+        to a TimeSeries or Sequence of TimeSeries. The transformation function must be passed during the
         transformer's initialization. This class takes care of parallelizing the transformation of multiple
         TimeSeries when possible.
 
         Data transformers requiring to be fit first before calling `transform()` should derive
         from `FittableDataTransformer` instead.
-        Data transformers which are invertible should derive from ´InvertibleDataTransformer´ instead.
+        Data transformers that are invertible should derive from ´InvertibleDataTransformer´ instead.
 
         Parameters
         ----------
         ts_transform (Callable)
-            Function that will be applied to each TimeSeries object once the `transform()` function is called. The
+            The function that will be applied to each TimeSeries object once the `transform()` function is called. The
             function must take as first argument a TimeSeries object, and return the transformed TimeSeries object.
             Additional parameters can be added if necessary, but in this case, the `_transform_iterator()` should be
-            redefined accordingly, to yeild the necessary arguments to this function (See `_transform_iterator()` for
+            redefined accordingly, to yield the necessary arguments to this function (See `_transform_iterator()` for
             further details)
         name
             The data transformer's name
         n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
@@ -52,7 +52,7 @@ class BaseDataTransformer():
 
     def set_verbose(self, value: bool):
         """
-        Setter for the verbosity status. True for enabling the datailed report about scaler's operation progress, False
+        Setter for the verbosity status. True for enabling the detailed report about scaler's operation progress, False
         for no additional information
 
         Parameters
@@ -74,7 +74,7 @@ class BaseDataTransformer():
         raise_if_not(isinstance(value, int), "n_jobs must be an integer")
         self._n_jobs = value
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
         """
         Returns an `Iterator` object with tuples of inputs for each single call to `ts_transform()`.
         Additional `args` and `kwargs` from `transform()` (that don't change across the calls to `ts_transform()`)
@@ -112,7 +112,7 @@ class BaseDataTransformer():
 
     def transform(self,
                   series: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Transform the data. In case a Sequence is passed as input data, this function takes care of
         parallelising the transformation of multiple series in the sequence at the same time.

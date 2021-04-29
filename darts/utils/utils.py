@@ -6,7 +6,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
-from typing import List, Callable, TypeVar
+from typing import List, Callable, TypeVar, Iterator
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
@@ -209,7 +209,7 @@ def _historical_forecasts_general_checks(series, kwargs):
                      '`overlap_end` set to `False`.', logger)
 
 
-def _parallel_apply(iterator, fn, n_jobs: int = 1, fn_args=None, fn_kwargs=None):
+def _parallel_apply(iterator: Iterator, fn: Callable, n_jobs: int = 1, fn_args=None, fn_kwargs=None) -> List:
     returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs)
                                             for sample in iterator)
     return returned_data

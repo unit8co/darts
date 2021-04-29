@@ -2,9 +2,7 @@
 Scaler
 ------
 """
-from typing import Sequence
-import sklearn.base
-
+from typing import Sequence, Iterator, Any, Tuple
 from darts.dataprocessing.transformers import InvertibleDataTransformer, FittableDataTransformer
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -33,10 +31,10 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             will scale all the values of a time series between 0 and 1.
         name
             A specific name for the scaler
-         n_jobs
+        n_jobs
             The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
             Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
@@ -54,7 +52,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
                                                                                   reshape((-1, series.width))),
                                                     series.freq())
 
-        def _scaler_ts_fit(series: TimeSeries, transformer, *args, **kwargs):
+        def _scaler_ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
             # fit_parameter will receive the transformer object instance
             scaler = transformer.fit(series.values().reshape((-1, series.width)))
             return scaler
@@ -78,16 +76,16 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         self.transformer = scaler
         self.transformer_instances = None
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]):
+    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument
         new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
         return zip(series, new_scaler_gen)
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]):
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # since '_ts_fit()' returns the scaler objects, the 'fit()' call will save transformers instance into
         # self._fitted_params
         return zip(series, self._fitted_params)
 
-    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]):
+    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # the same self._fitted_params will be used also for the 'ts_inverse_transform()'
         return zip(series, self._fitted_params)
