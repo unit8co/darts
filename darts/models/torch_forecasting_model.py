@@ -9,6 +9,7 @@ import os
 import re
 from glob import glob
 import shutil
+from joblib import Parallel, delayed
 from typing import Optional, Dict, Tuple, Union, Sequence
 from abc import ABC, abstractmethod
 import torch
@@ -354,7 +355,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                batch_size: Optional[int] = None,
+                verbose: bool = False,
+                n_jobs=1
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -365,6 +369,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         inputs to the model until a forecast of length `n` is obtained. This is at the moment only
         supported when covariates are not used, as this functionality requires future covariates,
         which are not supported yet.
+
+        If some time series in the ``series`` argument have more time steps than the model was trained with,
+        only the last ``input_chunk_length`` time steps will be considered.
 
         Parameters
         ----------
@@ -377,6 +384,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates
             Optionally, the covariates series needed as inputs for the model. They must match the covariates used
             for training.
+        batch_size
+            Size of batches during prediction. Defaults to the models `batch_size` value.
+        verbose
+            Optionally, whether to print progress.
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
 
         Returns
         -------
@@ -401,70 +414,123 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         dataset = SimpleInferenceDataset(series, covariates)
-        predictions = self.predict_from_dataset(n, dataset)
+        predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
                              n: int,
-                             input_series_dataset: TimeSeriesInferenceDataset
+                             input_series_dataset: TimeSeriesInferenceDataset,
+                             batch_size: Optional[int] = None,
+                             verbose: bool = False,
+                             n_jobs=1,
                              ) -> Sequence[TimeSeries]:
+
+        """
+        Predicts values for a certain number of time steps after the end of the series appearing in the specified
+        ``input_series_dataset``.
+
+        If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
+        auto-regressive way, by iteratively feeding the last ``output_chunk_length`` forecast points as
+        inputs to the model until a forecast of length ``n`` is obtained. This is at the moment only
+        supported when covariates are not used, as this functionality requires future covariates,
+        which are not supported yet.
+
+        If some series in the ``input_series_dataset`` have more time steps than the model was trained with,
+        only the last ``input_chunk_length`` time steps will be considered.
+
+        Parameters
+        ----------
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        input_series_dataset
+            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            future is to be predicted. If specified, the method returns the forecasts of these
+            series. Otherwise, the method returns the forecast of the (single) training series.
+        batch_size
+            Size of batches during prediction. Defaults to the models `batch_size` value.
+        verbose
+            Shows the progress bar for batch predicition. Off by default.
+        n_jobs
+            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
+
+        Returns
+        -------
+        Sequence[TimeSeries]
+            Returns one or more forecasts for time series.
+        """
         self.model.eval()
+
+        # preprocessing
+        raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
+                     'Only TimeSeriesInferenceDataset is accepted as input type')
 
         # check that the input sizes match
         sample = input_series_dataset[0]
+
         in_dim = sum(map(lambda ts: (ts.width if ts is not None else 0), sample))
         raise_if_not(in_dim == self.input_dim,
-                     'The dimensionality of the series provided for prediction does not match the dimensionality'
+                     'The dimensionality of the series provided for prediction does not match the dimensionality '
                      'of the series this model has been trained on. Provided input dim = {}, '
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
-        # TODO use a torch Dataset and DataLoader for parallel loading and batching
-        # TODO also currently we assume all forecasts fit in memory
-        ts_forecasts = []
+        # TODO currently we assume all forecasts fit in memory
+        in_tsr_arr = []
         for target_series, covariate_series in input_series_dataset:
             raise_if_not(len(target_series) >= self.input_chunk_length,
-                         'All input series must have length >= `input_chunk_length` ({}).'.format(self.input_chunk_length))
+                         'All input series must have length >= `input_chunk_length` ({}).'.format(
+                self.input_chunk_length))
 
             # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
             # TODO: e.g. by taking their latest common timestamp.
 
-            in_tsr = target_series.values(copy=False)[-self.input_chunk_length:]
-            in_tsr = torch.from_numpy(in_tsr).float().to(self.device)
+            in_tsr_sample = target_series.values(copy=False)[-self.input_chunk_length:]
+            in_tsr_sample = torch.from_numpy(in_tsr_sample).float().to(self.device)
             if covariate_series is not None:
                 in_cov_tsr = covariate_series.values(copy=False)[-self.input_chunk_length:]
                 in_cov_tsr = torch.from_numpy(in_cov_tsr).float().to(self.device)
-                in_tsr = torch.cat([in_tsr, in_cov_tsr], dim=1)
-            in_tsr = in_tsr.view(1, self.input_chunk_length, -1)
+                in_tsr_sample = torch.cat([in_tsr_sample, in_cov_tsr], dim=1)
+            in_tsr_sample = in_tsr_sample.view(1, self.input_chunk_length, -1)
 
-            out_sequence = self._produce_prediction(in_tsr, n)
+            in_tsr_arr.append(in_tsr_sample)
 
-            # translate to numpy
-            out_sequence = out_sequence.cpu().detach().numpy()
-            ts_forecasts.append(self._build_forecast_series(out_sequence.reshape(n, -1),
-                                                            input_series=target_series))
-        return ts_forecasts
+        # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 1 + # of covariates)]
+        in_tsr = torch.cat(in_tsr_arr, dim=0)
 
-    def _produce_prediction(self, in_sequence: torch.Tensor, n: int) -> torch.Tensor:
-        # produces output tensor for one time series
-        # TODO: make it work for batches
-        # TODO: make it work for RNNs in non- seq2seq fashion (one input at a time keeping state)
+        # prediction
+        pred_loader = DataLoader(in_tsr,
+                                 batch_size=batch_size or self.batch_size,
+                                 shuffle=False,
+                                 num_workers=0,
+                                 pin_memory=False,
+                                 drop_last=False)
+        predictions = []
 
-        prediction = []  # (length, width)
-        out = self.model(in_sequence)[:, self.first_prediction_index:, :]  # (1, output_chunk_length, width)
-        prediction.append(out[0, :, :])
-        while sum(map(lambda t: len(t), prediction)) < n:
-            roll_size = min(self.output_chunk_length, self.input_chunk_length)
-            in_sequence = torch.roll(in_sequence, -roll_size, 1)
-            in_sequence[:, -roll_size:, :] = out[:, :roll_size, :]
+        iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
 
-            # take only last part of the output sequence where needed
-            out = self.model(in_sequence)[:, self.first_prediction_index:, :]
+        with torch.no_grad():
+            for batch in iterator:
+                batch_prediction = []  # (num_batches, n % output_chunk_length)
+                out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
+                batch_prediction.append(out)
+                while sum(map(lambda t: t.shape[1], batch_prediction)) < n:
+                    roll_size = min(self.output_chunk_length, self.input_chunk_length)
+                    batch = torch.roll(batch, -roll_size, 1)
+                    batch[:, -roll_size:, :] = out[:, :roll_size, :]
+                    # take only last part of the output sequence where needed
+                    out = self.model(batch)[:, self.first_prediction_index:, :]
+                    batch_prediction.append(out)
 
-            prediction.append(out[0, :, :])
+                batch_prediction = torch.cat(batch_prediction, dim=1)
+                batch_prediction = batch_prediction[:, :n, :]
+                batch_prediction = batch_prediction.cpu().detach().numpy()
+                
+                ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
+                                                       for prediction, input_series in zip(batch_prediction,
+                                                                                           input_series_dataset))
+                
+                predictions.extend(ts_forecasts)
 
-        prediction = torch.cat(prediction)
-        prediction = prediction[:n, :]  # prediction[:n]
-        return prediction
+        return predictions
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
