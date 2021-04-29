@@ -43,14 +43,14 @@ class SplitTimeSeriesSequence(Sequence):
 
     def _get_vertical_split_indices(self, ts_length):
 
-        if self.vertical_split_type == 'simple':
+        if self.vertical_split_type == 'simple': # TODO test this path eg. test size too big exceeding the ts size
             if 0 < self.test_size < 1:
                 test_size = int(ts_length * self.test_size)
             else:
                 test_size = self.test_size
 
             test_start_index = ts_length - test_size
-            train_end_index =  test_start_index
+            train_end_index = test_start_index
 
         else: # model-aware split
             train_end_index = ts_length - self.horizon
@@ -59,6 +59,9 @@ class SplitTimeSeriesSequence(Sequence):
                 test_size = int((ts_length - self.horizon) * (self.test_size))
             else:
                 test_size = self.test_size
+
+            if train_end_index < 0:
+                train_end_index = 0
 
             if train_end_index < self.input_size:
                 warn("Training timeseries is of 0 size")
@@ -87,6 +90,7 @@ class SplitTimeSeriesSequence(Sequence):
             if self.type == 'train':
                 return self.data[i][:train_end_index]
             else:
+                print(test_start_index)
                 return self.data[i][test_start_index:]
 
     def __len__(self):
