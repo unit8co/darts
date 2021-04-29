@@ -1,4 +1,3 @@
-from warnings import warn
 from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
@@ -105,7 +104,15 @@ class SplitTimeSeriesSequence(Sequence):
             return len(self.data)
 
     @classmethod
-    def make_splitter(cls, data, test_size, axis, input_size, horizon, vertical_split_type, lazy):
+    def make_splitter(cls,
+                      data: Union[TimeSeries, Sequence[TimeSeries]],
+                      test_size: Optional[Union[float, int]] = 0.25,
+                      axis: Optional[int] = 0,
+                      input_size: Optional[int] = 0,
+                      horizon: Optional[int] = 0,
+                      vertical_split_type: Optional[str] = 'simple',
+                      lazy: bool = False
+                      ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
 
         if not isinstance(data, Sequence):
             axis = 1
@@ -137,7 +144,7 @@ def train_test_split(
         horizon: Optional[int] = 0,
         vertical_split_type: Optional[str] = 'simple',
         lazy: bool = False
-        ) -> Union[Tuple[TimeSeries], Tuple[Sequence[TimeSeries]]]:
+        ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
     """
         Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
 
@@ -175,14 +182,13 @@ def train_test_split(
 
         lazy
             by default, train and test datasets are returned as a sequences of timeseries. However this may be memory
-            inefficient if dataset is large. Warning: turning ``lazy`` on disables some sanity checks for the datasets that
-            may result in exceptions during sample generation.
+            inefficient if dataset is large. Warning: turning ``lazy`` on disables some sanity checks for the datasets
+            that may result in exceptions during sample generation. [default: False]
 
         Returns
         -------
         tuple of two Sequence[TimeSeries], or tuple of two Timeseries
             Training and test datasets tuple.
         """
-
 
     return SplitTimeSeriesSequence.make_splitter(data, test_size, axis, input_size, horizon, vertical_split_type, lazy)
