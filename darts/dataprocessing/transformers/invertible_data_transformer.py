@@ -2,8 +2,7 @@
 Invertible Data Transformer
 ---------------------------
 """
-from typing import Union, Sequence, Callable
-from abc import abstractmethod
+from typing import Union, Sequence, Callable, Iterator, Tuple
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
@@ -24,25 +23,76 @@ class InvertibleDataTransformer(BaseDataTransformer):
                  **kwargs):
 
         """
-        Abstract class for data transformers implementing a fit method. All deriving classes must implement
-        `transform()` and `inverse_transform()`.
+        Base class for invertible transformers offering both `transform()` and `inverse_transform()` methods.
+        The inverse trasformation function must be passed during the transformer's initialization. This class
+        takes care of parallelizing the transformation of multiple TimeSeries when possible.
 
         Parameters
         ----------
-        names
+        ts_transform (Callable)
+            Function that will be applied to each TimeSeries object once the `transform()` function is called. The
+            function must take as first argument a TimeSeries object, and return the transformed TimeSeries object.
+            Additional parameters can be added if necessary, but in this case, the `_transform_iterator()` should be
+            redefined accordingly, to yeild the necessary arguments to this function (See `_transform_iterator()` for
+            further details)
+        ts_inverse_transform (Callable)
+            Function that will be applied to each TimeSeries object once the `inverse_transform()` function is called.
+            The function must take as first argument a TimeSeries object, and return the transformed TimeSeries object.
+            Additional parameters can be added if necessary, but in this case, the `_inverse_transform_iterator()`
+            should be redefined accordingly, to yeild the necessary arguments to this function (See
+            `_inverse_transform_iterator()` for further details)
+        name
             The data transformer's name
         n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
+            Defaults to `1` (sequential). `-1` means using all the available processors.
+            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            required amount of time.
         verbose
             Optionally, whether to print operations progress
         """
         super().__init__(ts_transform=ts_transform, name=name, n_jobs=n_jobs, verbose=verbose, **kwargs)
         self._ts_inverse_transform = ts_inverse_transform
 
-    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]):
+    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
         """
-        Returns a generator for the input passed to the ts_inverse_transform function. This function could be
-        redefined in case more data must be fed into the ts_inverse_transform function.
+        Returns an `Iterator` object with tuples of inputs for each single call to `ts_inverse_transform()`.
+        Additional `args` and `kwargs` from `inverse_transform()` (that don't change across the calls to
+        `ts_inverse_transform()`) are already forwarded, and thus don't need to be included in this generator.
+
+        The basic implementation of this method returns `zip(series)`, that is, a generator of single-valued tuples,
+        each containing one TimeSeries object.
+
+        Parameters
+        ----------
+        series (Sequence[TimeSeries])
+            Sequence of TimeSeries received in input.
+
+        Returns
+        -------
+        (Iterator[Tuple])
+            An iterator containing tuples of inputs for the `ts_inverse_transform()` method.
+
+        Examples
+        ________
+
+        def my_ts_transform(series: TimeSeries, n: int) -> TimeSeries:
+            return series + n
+
+        def my_ts_inverse_transform(series: TimeSeries, n: int) -> TimeSeries:
+            return series - n
+
+
+        class IncreasingAdder(InvertibleDataTransformer):
+            def __init__(self):
+                super().__init__(ts_transform=my_ts_transform,
+                                 ts_inverse_transform=my_ts_inverse_transform)
+
+            def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
+                return zip(series, (i for i in range(len(series))))
+
+            def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
+                return zip(series, (i for i in range(len(series))))
         """
         return zip(series)
 
@@ -51,16 +101,17 @@ class InvertibleDataTransformer(BaseDataTransformer):
                           *args,
                           **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
-        Perform inverse transformation of the data. Not implemented in base class.
+        Inverse-transform the data. In case a Sequence is passed as input data, this function takes care of
+        parallelising the transformation of multiple series in the sequence at the same time.
 
         Parameters
         ----------
         series
-            Object which will be inverse transformed.
+            TimeSeries or Sequence of TimeSeries which will be inversed-transformed.
         args
-            Additional positional arguments for the `inverse_transform()` method
+            Additional positional arguments for the `ts_inverse_transform()` method
         kwargs
-            Additional keyword arguments for the `inverse_transform()` method
+            Additional keyword arguments for the `ts_inverse_transform()` method
 
         Returns
         -------

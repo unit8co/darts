@@ -5,7 +5,7 @@ Mappers
 import numpy as np
 import pandas as pd
 
-from typing import Callable, Union, Sequence, Iterator
+from typing import Callable, Union
 
 from darts.timeseries import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer
@@ -22,7 +22,7 @@ class Mapper(BaseDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function to a (sequence of) time series (similar to calling `series.map()`)
+        Data transformer to apply a function to a (sequence of) TimeSeries (similar to calling `series.map()`)
 
         Parameters
         ----------
@@ -31,19 +31,19 @@ class Mapper(BaseDataTransformer):
             Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
         name
             A specific name for the transformer
-        n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+         n_jobs
+            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
+            Defaults to `1` (sequential). `-1` means using all the available processors.
+            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            required amount of time.
         verbose
-            Optionally, whether to print progress
+            Optionally, whether to print operations progress
         """
 
-        def mapper_ts_transform(series: TimeSeries) -> TimeSeries:
+        def _mapper_ts_transform(series: TimeSeries) -> TimeSeries:
             return series.map(fn)
 
-        super().__init__(ts_transform=mapper_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
-
-    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator:
-        return zip(series)
+        super().__init__(ts_transform=_mapper_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
 
 
 class InvertibleMapper(InvertibleDataTransformer):
@@ -54,7 +54,8 @@ class InvertibleMapper(InvertibleDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function and its inverse to a time series (similar to calling `series.map()`)
+        Data transformer to apply a function and its inverse to a (sequence of) TimeSeries (similar to calling
+        `series.map()`)
 
         Parameters
         ----------
@@ -68,19 +69,22 @@ class InvertibleMapper(InvertibleDataTransformer):
         name
             A specific name for the transformer
         n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
+            Defaults to `1` (sequential). `-1` means using all the available processors.
+            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            required amount of time.
         verbose
-            Optionally, whether to print progress
+            Optionally, whether to print operations progress
         """
 
-        def mapper_ts_transform(series: TimeSeries) -> TimeSeries:
+        def _mapper_ts_transform(series: TimeSeries) -> TimeSeries:
             return series.map(fn)
 
-        def mapper_ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+        def _mapper_ts_inverse_transform(series: TimeSeries) -> TimeSeries:
             return series.map(inverse_fn)
 
-        super().__init__(ts_transform=mapper_ts_transform,
-                         ts_inverse_transform=mapper_ts_inverse_transform,
+        super().__init__(ts_transform=_mapper_ts_transform,
+                         ts_inverse_transform=_mapper_ts_inverse_transform,
                          name=name,
                          n_jobs=n_jobs,
                          verbose=verbose)

@@ -2,11 +2,10 @@
 Missing Values Filler
 ---------------------
 """
-from typing import Union, Sequence, Iterator
+from typing import Union
+from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.missing_values import fill_missing_values
-
-from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
 
 logger = get_logger(__name__)
@@ -19,7 +18,7 @@ class MissingValuesFiller(BaseDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to fill missing values from a (sequence of) time series
+        Data transformer to fill missing values from a (sequence of) TimeSeries
 
         Parameters
         ----------
@@ -29,9 +28,12 @@ class MissingValuesFiller(BaseDataTransformer):
         name
             A specific name for the transformer
         n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors
+            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
+            Defaults to `1` (sequential). `-1` means using all the available processors.
+            Note: for small amount of data, the parallelization overhead could end up increasing the total
+            required amount of time.
         verbose
-            Optionally, whether to print progress
+            Optionally, whether to print operations progress
         """
         raise_if_not(isinstance(fill, str) or isinstance(fill, float),
                      "`fill` should either be a string or a float",
@@ -40,8 +42,7 @@ class MissingValuesFiller(BaseDataTransformer):
                  "invalid string for `fill`: can only be set to 'auto'",
                  logger)
 
-        def mvf_ts_transform(series, **kwargs):
-            return fill_missing_values(series, self._fill, **kwargs)
+        def _mvf_ts_transform(series: TimeSeries, **kwargs) -> TimeSeries:
+            return fill_missing_values(series, fill, **kwargs)
 
-        super().__init__(ts_transform=mvf_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
-        self._fill = fill
+        super().__init__(ts_transform=_mvf_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
