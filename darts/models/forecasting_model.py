@@ -374,14 +374,9 @@ class ForecastingModel(ABC):
                                               verbose)
 
         if last_points_only:
-            return metric(series[start:][forecast_horizon-1:], forecasts)
+            return metric(series, forecasts)
 
-        for forecast in forecasts:
-            start = forecast.start_time()
-            freq = forecast.freq()
-            series_snippet = series[start:start+(forecast_horizon-1)*freq]
-            errors = metric(series_snippet, forecast)
-
+        errors = [metric(series, forecast) for forecast in forecasts]
         if reduction is None:
             return errors
 
