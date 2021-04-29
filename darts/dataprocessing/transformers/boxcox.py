@@ -109,7 +109,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         else:
             # CASE 1: Sequence[flaot], float, None. Replicating the same value for each TS
             lmbda_gen = (self._lmbda for _ in range(len(series)))
-            return zip(series, lmbda_gen))
+            return zip(series, lmbda_gen)
 
     def _transform_iterator(self, series: Sequence[TimeSeries]):
         return zip(series, self._fitted_params)
