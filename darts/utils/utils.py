@@ -6,7 +6,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
-from typing import List, Callable, TypeVar, Union
+from typing import List, Callable, TypeVar
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
@@ -14,6 +14,7 @@ from functools import wraps
 from types import SimpleNamespace
 from inspect import signature, Parameter, getcallargs
 from enum import Enum
+from joblib import Parallel, delayed
 
 logger = get_logger(__name__)
 
@@ -204,3 +205,9 @@ def _historical_forecasts_general_checks(series, kwargs):
         raise_if_not(start + series.freq() * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
                      '`overlap_end` set to `False`.', logger)
+
+
+def _parallel_apply(iterator, fn, n_jobs: int = 1, fn_args=None, fn_kwargs=None):
+    returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs)
+                                            for sample in iterator)
+    return returned_data

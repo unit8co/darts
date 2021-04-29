@@ -17,23 +17,25 @@ class BoxCoxTestCase(unittest.TestCase):
         boxcox = BoxCox(lmbda=0.3)
 
         boxcox.fit(self.multi_series)
-        self.assertEqual(boxcox._lmbda, [0.3, 0.3])
+        self.assertEqual(boxcox._fitted_params, [[0.3, 0.3]])
 
         boxcox = BoxCox(lmbda=[0.3, 0.4])
         boxcox.fit(self.multi_series)
-        self.assertEqual(boxcox._lmbda, [0.3, 0.4])
+        self.assertEqual(boxcox._fitted_params, [[0.3, 0.4]])
 
         with self.assertRaises(ValueError):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
             boxcox.fit(self.multi_series)
 
-        boxcox = BoxCox()
-        boxcox.fit(self.multi_series, optim_method='mle')
-        lmbda1 = boxcox._lmbda
-        boxcox.fit(self.multi_series, optim_method='pearsonr')
-        lmbda2 = boxcox._lmbda
+        boxcox = BoxCox(optim_method='mle')
+        boxcox.fit(self.multi_series)
+        lmbda1 = boxcox._fitted_params[0].tolist()
 
-        self.assertNotEqual(lmbda1.array, lmbda2.array)
+        boxcox = BoxCox(optim_method='pearsonr')
+        boxcox.fit(self.multi_series)
+        lmbda2 = boxcox._fitted_params[0].tolist()
+
+        self.assertNotEqual(lmbda1, lmbda2)
 
     def test_boxcox_transform(self):
         log_mapper = Mapper(lambda x: log(x))
@@ -80,10 +82,9 @@ class BoxCoxTestCase(unittest.TestCase):
         box_cox = BoxCox()
 
         box_cox.fit(self.sine_series)
-        lambda1 = deepcopy(box_cox._lmbda).tolist()
+        lambda1 = deepcopy(box_cox._fitted_params)[0].tolist()
 
         box_cox.fit(self.lin_series)
-        lambda2 = deepcopy(box_cox._lmbda).tolist()
-        
-        self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")
+        lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
+        self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")

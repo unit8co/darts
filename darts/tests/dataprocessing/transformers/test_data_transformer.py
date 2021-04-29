@@ -48,7 +48,7 @@ class DataTransformerTestCase(unittest.TestCase):
 
         series_array_tr1 = transformer1.fit_transform(series_array)
         series_array_tr2 = transformer2.fit_transform(series_array)
-        
+
         for index in range(len(series_array)):
             self.assertAlmostEqual(min(series_array_tr1[index].values().flatten()), 0.)
             self.assertAlmostEqual(max(series_array_tr1[index].values().flatten()), 2.)

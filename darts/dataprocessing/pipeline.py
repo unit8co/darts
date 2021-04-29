@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 class Pipeline:
     def __init__(self,
-                 transformers: Sequence[BaseDataTransformer[TimeSeries]],
+                 transformers: Sequence[BaseDataTransformer],
                  copy: bool = False,
                  verbose: bool = None,
                  n_jobs: int = None):
@@ -126,7 +126,7 @@ class Pipeline:
         """
         For each data transformer in pipeline inverse_transform data. Then inverse transformed data is passed to next
         transformer. Transformers are traversed in reverse order. Raises value error if not all of the transformers are
-        invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the 
+        invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the
         InvertibleDataTransformer in the pipeline.
 
         Parameters
@@ -135,7 +135,7 @@ class Pipeline:
             (List of) TimeSeries to be inverse transformed.
         partial
             If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling
-            the inverse transformation only on the InvertibleDataTransformer
+            `inverse_transform()` only on the `InvertibleDataTransformer`'s
 
         Returns
         -------
@@ -189,7 +189,7 @@ class Pipeline:
             transformers = self._transformers[key]
         return Pipeline(transformers, copy=True)
 
-    def __iter__(self) -> Iterator[BaseDataTransformer[TimeSeries]]:
+    def __iter__(self) -> Iterator[BaseDataTransformer]:
         """
         Returns
         -------

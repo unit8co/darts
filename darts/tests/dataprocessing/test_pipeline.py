@@ -15,21 +15,36 @@ class PipelineTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class DataTransformerMock1(BaseDataTransformer[TimeSeries]):
+    class DataTransformerMock1(BaseDataTransformer):
         def __init__(self):
-            super().__init__()
+            def mock_ts_transform(data: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return data.append_values(constant_timeseries(1, 3).values())
+
+            super().__init__(ts_transform=mock_ts_transform)
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
+        def transform(self, data, *args, **kwargs) -> TimeSeries:
             self.transform_called = True
-            return data.append_values(constant_timeseries(1, 3).values())
+            return super().transform(data, *args, **kwargs)
 
-    class DataTransformerMock2(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
+    class DataTransformerMock2(FittableDataTransformer, InvertibleDataTransformer):
         def __init__(self):
-            super().__init__()
+
+            def mock_ts_fit(series: TimeSeries, *args, **kwargs):
+                pass
+
+            def mock_ts_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return series.append_values(constant_timeseries(2, 3).values())
+
+            def mock_ts_inverse_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return series
+
+            super().__init__(ts_transform=mock_ts_transform,
+                             ts_inverse_transform=mock_ts_inverse_transform,
+                             ts_fit=mock_ts_fit)
+
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
@@ -39,43 +54,43 @@ class PipelineTestCase(unittest.TestCase):
             self.fit_called = True
             return self
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
+        def transform(self, data, *args, **kwargs):
             self.transform_called = True
             self.args = args
             self.kwargs = kwargs
-            return data.append_values(constant_timeseries(2, 3).values())
+            return super().transform(data, *args, **kwargs)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
+        def inverse_transform(self, data, *args, **kwargs) -> TimeSeries:
             self.inverse_transform_called = True
             self.args = args
             self.kwargs = kwargs
-            return data
+            return super().inverse_transform(data, *args, **kwargs)
 
-    class PlusTenTransformer(InvertibleDataTransformer[TimeSeries]):
+    class PlusTenTransformer(InvertibleDataTransformer):
         def __init__(self, name="+10 transformer"):
-            super().__init__(name=name)
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
-            return data.map(lambda x: x + 10)
+            def mock_ts_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return series.map(lambda x: x + 10)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
-            return data.map(lambda x: x - 10)
+            def mock_ts_inverse_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return series.map(lambda x: x - 10)
 
-    class TimesTwoTransformer(InvertibleDataTransformer[TimeSeries]):
+            super().__init__(ts_transform=mock_ts_transform,
+                             ts_inverse_transform=mock_ts_inverse_transform,
+                             name=name)
+
+    class TimesTwoTransformer(InvertibleDataTransformer):
         def __init__(self):
-            super().__init__(name="*2 transformer")
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
-            return data.map(lambda x: x * 2)
+            def mock_ts_transform(data: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return data.map(lambda x: x * 2)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
-            return data.map(lambda x: x / 2)
+            def mock_ts_inverse_transform(data: TimeSeries, *args, **kwargs) -> TimeSeries:
+                return data.map(lambda x: x / 2)
+
+            super().__init__(name="*2 transformer",
+                             ts_transform=mock_ts_transform,
+                             ts_inverse_transform=mock_ts_inverse_transform)
 
     def test_transform(self):
         # given

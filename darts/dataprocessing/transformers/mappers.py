@@ -4,19 +4,18 @@ Mappers
 """
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
 
-from typing import Callable, Union, Sequence
+from typing import Callable, Union, Sequence, Iterator
 
 from darts.timeseries import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer
 from darts.logging import get_logger
-from darts.utils import _build_tqdm_iterator
+
 
 logger = get_logger(__name__)
 
 
-class Mapper(BaseDataTransformer[TimeSeries]):
+class Mapper(BaseDataTransformer):
     def __init__(self,
                  fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
                  name: str = "Mapper",
@@ -37,31 +36,17 @@ class Mapper(BaseDataTransformer[TimeSeries]):
         verbose
             Optionally, whether to print progress
         """
-        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
-        self._fn = fn
 
-    def transform(self,
-                  data: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args,
-                  **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        super().transform(data)
+        def mapper_ts_transform(series: TimeSeries) -> TimeSeries:
+            return series.map(fn)
 
-        if isinstance(data, TimeSeries):
-            return data.map(self._fn)
-        else:
-            def map_ts(ts):
-                return ts.map(self._fn)
+        super().__init__(ts_transform=mapper_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
 
-            iterator = _build_tqdm_iterator(data,
-                                            verbose=self._verbose,
-                                            desc="Applying {}".format(self.name))
-
-            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
-            return transformed_data
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator:
+        return zip(series)
 
 
-class InvertibleMapper(InvertibleDataTransformer[TimeSeries]):
+class InvertibleMapper(InvertibleDataTransformer):
     def __init__(self,
                  fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
                  inverse_fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
@@ -87,48 +72,15 @@ class InvertibleMapper(InvertibleDataTransformer[TimeSeries]):
         verbose
             Optionally, whether to print progress
         """
-        super().__init__(name)
-        self._fn = fn
-        self._inverse_fn = inverse_fn
-        self._n_jobs = n_jobs
-        self._verbose = verbose
 
-    def transform(self,
-                  data: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args,
-                  **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        super().transform(data)
+        def mapper_ts_transform(series: TimeSeries) -> TimeSeries:
+            return series.map(fn)
 
-        if isinstance(data, TimeSeries):
-            return data.map(self._fn)
-        else:
-            def map_ts(series):
-                return series.map(self._fn)
+        def mapper_ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+            return series.map(inverse_fn)
 
-            iterator = _build_tqdm_iterator(data,
-                                            verbose=self._verbose,
-                                            desc="{}: tranform".format(self.name))
-
-            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
-            return transformed_data
-
-    def inverse_transform(self,
-                          data: Union[TimeSeries, Sequence[TimeSeries]],
-                          *args,
-                          **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        super().inverse_transform(data, *args, *kwargs)
-
-        if isinstance(data, TimeSeries):
-            return data.map(self._inverse_fn)
-        else:
-            def inverse_map_ts(ts):
-                return ts.map(self._inverse_fn)
-
-            iterator = _build_tqdm_iterator(data,
-                                            verbose=self._verbose,
-                                            desc="{}: inverse".format(self.name))
-
-            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(inverse_map_ts)(ts) for ts in iterator)
-
-            return transformed_data
+        super().__init__(ts_transform=mapper_ts_transform,
+                         ts_inverse_transform=mapper_ts_inverse_transform,
+                         name=name,
+                         n_jobs=n_jobs,
+                         verbose=verbose)

@@ -2,20 +2,17 @@
 Missing Values Filler
 ---------------------
 """
-from typing import Union, Sequence
-from joblib import Parallel, delayed
-
+from typing import Union, Sequence, Iterator
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.missing_values import fill_missing_values
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.utils import _build_tqdm_iterator
 
 logger = get_logger(__name__)
 
 
-class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
+class MissingValuesFiller(BaseDataTransformer):
     def __init__(self,
                  fill: Union[str, float] = 'auto',
                  name: str = "MissingValuesFiller",
@@ -43,24 +40,8 @@ class MissingValuesFiller(BaseDataTransformer[TimeSeries]):
                  "invalid string for `fill`: can only be set to 'auto'",
                  logger)
 
-        super().__init__(name, n_jobs=n_jobs, verbose=verbose)
+        def mvf_ts_transform(series, **kwargs):
+            return fill_missing_values(series, self._fill, **kwargs)
+
+        super().__init__(ts_transform=mvf_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
         self._fill = fill
-
-    def transform(self,
-                  data: Union[TimeSeries, Sequence[TimeSeries]],
-                  **interpolate_kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        super().transform(data)
-
-        if isinstance(data, TimeSeries):
-            return fill_missing_values(data, self._fill, **interpolate_kwargs)
-        else:
-            def map_ts(ts):
-                return fill_missing_values(ts, self._fill, **interpolate_kwargs)
-
-            iterator = _build_tqdm_iterator(data,
-                                            verbose=self._verbose,
-                                            desc="Applying missing value filler")
-
-            transformed_data = Parallel(n_jobs=self._n_jobs)(delayed(map_ts)(ts) for ts in iterator)
-
-            return transformed_data
