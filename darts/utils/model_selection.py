@@ -39,11 +39,11 @@ class SplitTimeSeriesSequence(Sequence):
         if 0 < self.test_size < 1:
             return int(len(self.data) * (1 - self.test_size))
         else:
-            return self.test_size  # TODO: len(self.data) - self.test_size
+            return len(self.data) - self.test_size
 
     def _get_vertical_split_indices(self, ts_length):
 
-        if self.vertical_split_type == 'simple': # TODO test this path eg. test size too big exceeding the ts size
+        if self.vertical_split_type == 'simple':
             if 0 < self.test_size < 1:
                 test_size = int(ts_length * self.test_size)
             else:
@@ -51,6 +51,9 @@ class SplitTimeSeriesSequence(Sequence):
 
             test_start_index = ts_length - test_size
             train_end_index = test_start_index
+
+            if test_start_index < 0:
+                raise AttributeError("`test_size` is bigger then timeseries length")
 
         else: # model-aware split
             train_end_index = ts_length - self.horizon
@@ -186,7 +189,6 @@ def train_test_split_2(
         Training and test datasets tuple.
     """
 
-    # TODO: support splitting covatiates at the same time
     if not data:
         raise AttributeError('The `data` parameter cannot be empty.')
 
