@@ -40,11 +40,9 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     # test 4
     def test_horiz_number_of_samples_too_small(self):
-        train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=4, horizon=7, test_size=1,
-                                               vertical_split_type='model-aware')
-        with self.assertWarns(UserWarning, msg="Training timeseries is of 0 size"):
-            # since dataset is lazy loading, only accessing bad element will trigger the warning
-            train_set[0]
+        with self.assertRaises(AttributeError, msg="Training timeseries is of 0 size"):
+            train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=4, horizon=7, test_size=1,
+                                                   vertical_split_type='model-aware')
 
     # test 5
     def test_sunny_day_horiz_split(self):
@@ -68,18 +66,18 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         )
 
     def test_horiz_split_overindexing_train_set(self):
-        train_set, test_set = train_test_split(make_dataset(8, 10))
+        train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
         with self.assertRaises(IndexError):
             train_set[6]
 
     def test_horiz_split_last_index_train_set(self):
-        train_set, test_set = train_test_split(make_dataset(8, 10))
+        train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
         # no IndexError is thrown
         train_set[5]
 
     def test_horiz_split_overindexing_test_set(self):
-        train_set, test_set = train_test_split(make_dataset(8, 10))
+        train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
         with self.assertRaises(IndexError):
             test_set[2]
@@ -87,7 +85,6 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_last_index_test_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10))
         # no IndexError is thrown
-        train_set[1]
 
     # test 6
     def test_sunny_day_vertical_split(self):
@@ -123,16 +120,14 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         )
 
     def test_negative_test_start_index(self):
-        train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=8, test_size=1,
-                                               vertical_split_type='model-aware')
-        with self.assertWarns(UserWarning, msg="Not enough timesteps to create testset"):
-            test_set[0] # since dataset is lazy loading, only accessing bad element will trigger the warning
+        with self.assertRaises(AttributeError, msg="Not enough timesteps to create testset"):
+            train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=8, test_size=1,
+                                                   vertical_split_type='model-aware')
 
     def test_horiz_split_horizon_equal_to_ts_length(self):
-        train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=10, test_size=1,
-                                               vertical_split_type='model-aware')
-        with self.assertWarns(UserWarning, msg="Not enough timesteps to create testset"):
-            test_set[0]  # since dataset is lazy loading, only accessing bad element will trigger the warning
+        with self.assertRaises(AttributeError, msg="Not enough timesteps to create testset"):
+            train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=10, test_size=1,
+                                                   vertical_split_type='model-aware')
 
     def test_single_timeseries_no_horizon_no_n(self):
         with self.assertRaises(AttributeError):
@@ -173,23 +168,11 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             constant_timeseries(123, 100),
             constant_timeseries(123, 1000)
         ]
-        train_set, test_set = train_test_split(data, axis=1, test_size=2, input_size=1, horizon=20,
-                                               vertical_split_type='model-aware')
 
-        with self.assertWarns((UserWarning, UserWarning),
-                              msg=("Training timeseries is of 0 size", "Not enough timesteps to create testset")):
-            # since dataset is lazy loading, only accessing bad element will trigger the warning
-            train_set[0]
-            test_set[0]
-
-        train_lengths = [len(ts) for ts in train_set]
-        test_lengths = [len(ts) for ts in test_set]
-
-        self.assertTrue(
-            train_lengths == [1, 80, 980] and test_lengths == [21, 24, 24],
-            "Wrong shapes: training set shape: {}; test set shape {}".format(
-                train_lengths, test_lengths)
-        )
+        with self.assertRaises(AttributeError,
+                              msg="Not enough timesteps to create testset"):
+            train_set, test_set = train_test_split(data, axis=1, test_size=2, input_size=1, horizon=20,
+                                                   vertical_split_type='model-aware')
 
     def test_simple_vertical_split_sunny_day(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
@@ -224,5 +207,3 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         with self.assertRaises(AttributeError, msg="`test_size` is bigger then timeseries length"):
             train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
                                                    vertical_split_type='simple', test_size=11)
-
-            train_set[0]
