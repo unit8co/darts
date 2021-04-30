@@ -2,7 +2,7 @@
 Missing Values Filler
 ---------------------
 """
-from typing import Union
+from typing import Union, Sequence, List
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.missing_values import fill_missing_values
@@ -28,9 +28,9 @@ class MissingValuesFiller(BaseDataTransformer):
         name
             A specific name for the transformer
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
-            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
-            Setting the parameter to `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
@@ -43,7 +43,15 @@ class MissingValuesFiller(BaseDataTransformer):
                  "invalid string for `fill`: can only be set to 'auto'",
                  logger)
 
-        def _mvf_ts_transform(series: TimeSeries, **kwargs) -> TimeSeries:
-            return fill_missing_values(series, fill, **kwargs)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        self._fill = fill
 
-        super().__init__(ts_transform=_mvf_ts_transform, name=name, n_jobs=n_jobs, verbose=verbose)
+    @staticmethod
+    def ts_transform(series: TimeSeries, fill: Union[str, float], **kwargs) -> TimeSeries:
+        return fill_missing_values(series, fill, **kwargs)
+
+    def transform(self,
+                  series: Union[TimeSeries, Sequence[TimeSeries]],
+                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
+        # adding the fill param
+        return super().transform(series, self._fill, *args, **kwargs)

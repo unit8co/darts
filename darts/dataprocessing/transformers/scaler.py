@@ -32,38 +32,16 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         name
             A specific name for the scaler
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
-            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
-            Setting the parameter to `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
         """
 
-        def _scaler_ts_transform(series: TimeSeries, transformer) -> TimeSeries:
-            return TimeSeries.from_times_and_values(series.time_index(),
-                                                    transformer.transform(series.values().
-                                                                          reshape((-1, series.width))),
-                                                    series.freq())
-
-        def _scaler_ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
-            return TimeSeries.from_times_and_values(series.time_index(),
-                                                    transformer.inverse_transform(series.values().
-                                                                                  reshape((-1, series.width))),
-                                                    series.freq())
-
-        def _scaler_ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
-            # fit_parameter will receive the transformer object instance
-            scaler = transformer.fit(series.values().reshape((-1, series.width)))
-            return scaler
-
-        super().__init__(ts_transform=_scaler_ts_transform,
-                         ts_inverse_transform=_scaler_ts_inverse_transform,
-                         ts_fit=_scaler_ts_fit,
-                         name=name,
-                         n_jobs=n_jobs,
-                         verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
         if scaler is None:
             scaler = MinMaxScaler(feature_range=(0, 1))
@@ -76,6 +54,26 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
         self.transformer = scaler
         self.transformer_instances = None
+
+    @staticmethod
+    def ts_transform(series: TimeSeries, transformer) -> TimeSeries:
+        return TimeSeries.from_times_and_values(series.time_index(),
+                                                transformer.transform(series.values().
+                                                                      reshape((-1, series.width))),
+                                                series.freq())
+
+    @staticmethod
+    def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
+        return TimeSeries.from_times_and_values(series.time_index(),
+                                                transformer.inverse_transform(series.values().
+                                                                              reshape((-1, series.width))),
+                                                series.freq())
+
+    @staticmethod
+    def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
+        # fit_parameter will receive the transformer object instance
+        scaler = transformer.fit(series.values().reshape((-1, series.width)))
+        return scaler
 
     def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument

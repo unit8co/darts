@@ -44,8 +44,8 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             Specifies which method to use to find an optimal value for the lmbda parameter.
             Either 'mle' or 'pearsonr'. Ignored if lmbda != None.
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
-            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is passed
+            as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1` (sequential).
             Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
@@ -53,49 +53,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             Optionally, whether to print operations progress
         """
 
-        def _boxcox_ts_fit(series: TimeSeries,
-                           lmbda: Optional[Union[float, Sequence[float]]],
-                           *args,
-                           **kwargs):
-            if lmbda is None:
-                # Compute optimal lmbda for each dimension of the time series
-                lmbda = series._df.apply(boxcox_normmax, method=optim_method, *args, **kwargs)
-            elif isinstance(lmbda, Sequence):
-                raise_if(len(lmbda) != series.width,
-                         "lmbda should have one value per dimension (ie. column or variable) of the time series",
-                         logger)
-            else:
-                # Replicate lmbda to match dimensions of the time series
-                lmbda = [lmbda] * series.width
-
-            return lmbda
-
-        def _boxcox_ts_transform(series: TimeSeries,
-                                 lmbda: float,
-                                 *args,
-                                 **kwargs) -> TimeSeries:
-
-            def _boxcox_wrapper(col):
-                idx = series._df.columns.get_loc(col.name)  # get index from col name
-                return boxcox(col, lmbda[idx])
-
-            return TimeSeries.from_dataframe(series._df.apply(_boxcox_wrapper, *args, **kwargs))
-
-        def _boxcox_ts_inverse_transform(series: TimeSeries,
-                                         lmbda: float,
-                                         *args,
-                                         **kwargs) -> TimeSeries:
-
-            def _inv_boxcox_wrapper(col):
-                idx = series._df.columns.get_loc(col.name)  # get index from col name
-                return inv_boxcox(col, lmbda[idx])
-
-            return TimeSeries.from_dataframe(series._df.apply(_inv_boxcox_wrapper, *args, **kwargs))
-
-        super().__init__(ts_transform=_boxcox_ts_transform,
-                         ts_inverse_transform=_boxcox_ts_inverse_transform,
-                         ts_fit=_boxcox_ts_fit,
-                         name=name,
+        super().__init__(name=name,
                          n_jobs=n_jobs,
                          verbose=verbose)
 
@@ -106,8 +64,8 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         self._lmbda = lmbda
         self._optim_method = optim_method
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]) \
-            -> Iterator[Tuple[TimeSeries, Optional[Union[Sequence[float], float]]]]:
+    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries,
+                                                                            Optional[Union[Sequence[float], float]]]]:
 
         if isinstance(self._lmbda, Sequence) and isinstance(self._lmbda[0], Sequence):
             # CASE 0: Sequence[Sequence[float]]
@@ -126,3 +84,43 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
         return zip(series, self._fitted_params)
+
+    @staticmethod
+    def ts_fit(series: TimeSeries,
+               lmbda: Optional[Union[float, Sequence[float]]],
+               method):
+
+        if lmbda is None:
+            # Compute optimal lmbda for each dimension of the time series
+            lmbda = series._df.apply(boxcox_normmax, method=method)
+        elif isinstance(lmbda, Sequence):
+            raise_if(len(lmbda) != series.width,
+                     "lmbda should have one value per dimension (ie. column or variable) of the time series",
+                     logger)
+        else:
+            # Replicate lmbda to match dimensions of the time series
+            lmbda = [lmbda] * series.width
+
+        return lmbda
+
+    @staticmethod
+    def ts_transform(series: TimeSeries, lmbda: float) -> TimeSeries:
+
+        def _boxcox_wrapper(col):
+            idx = series._df.columns.get_loc(col.name)  # get index from col name
+            return boxcox(col, lmbda[idx])
+
+        return TimeSeries.from_dataframe(series._df.apply(_boxcox_wrapper))
+
+    @staticmethod
+    def ts_inverse_transform(series: TimeSeries, lmbda: float) -> TimeSeries:
+
+        def _inv_boxcox_wrapper(col):
+            idx = series._df.columns.get_loc(col.name)  # get index from col name
+            return inv_boxcox(col, lmbda[idx])
+
+        return TimeSeries.from_dataframe(series._df.apply(_inv_boxcox_wrapper))
+
+    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> 'FittableDataTransformer':
+        # adding lmbda and optim_method params
+        return super().fit(series, method=self._optim_method)
