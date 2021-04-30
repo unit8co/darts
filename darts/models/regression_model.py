@@ -15,6 +15,7 @@ import pandas as pd
 
 
 from .. import metrics
+from inspect import signature
 from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from .forecasting_model import ExtendedForecastingModel
@@ -140,11 +141,18 @@ class RegressionModel(ExtendedForecastingModel):
         training_y = series[training_x.time_index()]
 
         # Fit model
-        self.model.fit(
-            training_x.pd_dataframe(),
-            training_y.pd_dataframe().values.ravel(),
-            **kwargs
-        )
+        if "series" in signature(self.model.fit).parameters:
+            self.model.fit(
+                training_y,
+                training_x,
+                **kwargs
+            )
+        else:
+            self.model.fit(
+                training_x.pd_dataframe(),
+                training_y.pd_dataframe().values.ravel(),
+                **kwargs
+            )
         if self.max_lag == 0:
             self.prediction_data = pd.DataFrame(columns=series.stack(other=exog).columns())
         elif exog is not None:
@@ -270,7 +278,12 @@ class RegressionModel(ExtendedForecastingModel):
             target_data = prediction_data[[self.target_column]]
             exog_data = prediction_data[self.exog_columns] if self.exog_columns is not None else None
             forecasting_data = self._create_training_data(series=target_data, exog=exog_data).pd_dataframe()
-            forecast = self.model.predict(forecasting_data, **kwargs)
+            if "series" in signature(self.model.fit).parameters:
+                forecasting_data = TimeSeries(forecasting_data, freq=self.training_series.freq())
+                forecast = self.model.predict(n=len(forecasting_data), exog=forecasting_data, **kwargs)
+                forecast = forecast.pd_dataframe().values
+            else:
+                forecast = self.model.predict(forecasting_data, **kwargs)
             forecast = forecast[0] if isinstance(forecast[0], np.ndarray) else forecast
 
             # Prepare prediction data

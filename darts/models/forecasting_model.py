@@ -705,6 +705,7 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
             raise_if_not(series.has_same_time_as(exog),
                          'The target series and the exogenous variables series must have the same time index.')
             self._expect_exog = True
+            self._fit_called = True
             self.training_series = series
 
     @abstractmethod
