@@ -13,7 +13,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 variables and lagged values of the target.
 
 **Changed**
-- `RegressionModel` is now a user exposed class. It acts as a wrapper around any regression model with a `fit()` and `predict`
+- `RegressionModel` is now a user exposed class. It acts as a wrapper around any regression model with a `fit()` and `predict()`
 method. It enables the flexible usage of lagged values of the target variable as well as lagged values of multiple exogenous
 variables. Allowed values for the `lags` argument are positive integers or a list of positive integers indicating which lags
 should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable. `lags=[1, 4, 8, 12]` translates to training with the previous value, the value at lag 4, lag 8 and lag 12.

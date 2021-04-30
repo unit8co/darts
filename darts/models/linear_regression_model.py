@@ -40,10 +40,8 @@ class LinearRegressionModel(RegressionModel):
         super().__init__(
             lags=lags,
             lags_exog=lags_exog,
-            model=LinearRegression(n_jobs=-1, fit_intercept=False, **kwargs)
+            model=LinearRegression(**kwargs)
         )
 
     def __str__(self):
-        return 'LinearRegression(lags={}, lags_exog={})'.format(
-            self.lags, self.lags_exog
-        )
+        return 'LinearRegression(lags={}, lags_exog={})'.format(self.lags, self.lags_exog)

@@ -55,7 +55,7 @@ class RegressionModel(ExtendedForecastingModel):
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
         raise_if((lags is None) and (lags_exog is None),
-            "At least one of 'lags' or 'lags_exog' must be not None."
+            "At least one of `lags` or `lags_exog` must be not None."
         )
         raise_if_not(isinstance(lags, (int, list)) or lags is None,
             "`lags` must be of type int or list."

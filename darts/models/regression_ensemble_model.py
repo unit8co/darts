@@ -22,9 +22,12 @@ class RegressionEnsembleModel(EnsembleModel):
                  regression_train_n_points: int,
                  regression_model=None):
         """
-        Class for ensemble models using a regression model for ensembling individual models' predictions
+        Class for ensemble models using a regression model for ensembling individual models' predictions.
         The provided regression model must implement fit() and predict() methods
-        (e.g. scikit-learn regression models)
+        (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to
+        best ensemble the individual forecasting models' forecasts. It is not the same usage of regression
+        as in `RegressionModel`, where the regression model is used to produce forecasts based on the
+        lagged series.
 
         Parameters
         ----------
