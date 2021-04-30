@@ -22,7 +22,7 @@ class Mapper(BaseDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function to a (sequence of) TimeSeries (similar to calling `series.map()`)
+        Data transformer to apply a function to a (Sequence of) TimeSeries (similar to calling `series.map()`)
 
         Parameters
         ----------
@@ -32,8 +32,9 @@ class Mapper(BaseDataTransformer):
         name
             A specific name for the transformer
         n_jobs
-            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
-            Defaults to `1` (sequential). `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
+            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
@@ -69,9 +70,10 @@ class InvertibleMapper(InvertibleDataTransformer):
         name
             A specific name for the transformer
         n_jobs
-            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
-            Defaults to `1` (sequential). `-1` means using all the available processors.
-            Note: for small amount of data, the parallelisation overhead could end up increasing the total
+            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
+            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            Setting the parameter to `-1` means using all the available processors.
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress

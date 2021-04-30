@@ -8,7 +8,7 @@ from darts.utils import _parallel_apply, _build_tqdm_iterator
 from darts import TimeSeries
 
 
-class BaseDataTransformer():
+class BaseDataTransformer:
     def __init__(self,
                  ts_transform: Callable,
                  name: str = "BaseDataTransformer",
@@ -36,8 +36,9 @@ class BaseDataTransformer():
         name
             The data transformer's name
         n_jobs
-            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
-            Defaults to `1` (sequential). `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
+            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
@@ -80,7 +81,7 @@ class BaseDataTransformer():
         Additional `args` and `kwargs` from `transform()` (that don't change across the calls to `ts_transform()`)
         are already forwarded, and thus don't need to be included in this generator.
 
-        The basic implementation of this method returns `zip(series)`, that is, a generator of single-valued tuples,
+        The basic implementation of this method returns `zip(series)`, i.e., a generator of single-valued tuples,
         each containing one TimeSeries object.
 
         Parameters
@@ -90,7 +91,7 @@ class BaseDataTransformer():
 
         Returns
         -------
-        (Iterator[Tuple])
+        Iterator[Tuple[TimeSeries]]
             An iterator containing tuples of inputs for the `ts_transform()` method.
 
         Examples
@@ -128,7 +129,7 @@ class BaseDataTransformer():
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        Union[TimeSeries, List[TimeSeries]]
             Transformed data.
         """
 

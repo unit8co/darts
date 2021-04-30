@@ -24,8 +24,8 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         """
         Base class for invertible transformers offering both `transform()` and `inverse_transform()` methods.
-        The inverse transformation function must be passed during the transformer's initialization. This class
-        takes care of parallelizing the transformation of multiple TimeSeries when possible.
+        Both transformation and inverse transformation functions must be passed during the transformer's initialization.
+        This class takes care of parallelizing the transformation on multiple TimeSeries when possible.
 
         Parameters
         ----------
@@ -44,8 +44,9 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name
             The data transformer's name
         n_jobs
-            The number of jobs to run in parallel (in case the transformer is handling a Sequence[TimeSeries]).
-            Defaults to `1` (sequential). `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
+            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
@@ -60,7 +61,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         Additional `args` and `kwargs` from `inverse_transform()` (that don't change across the calls to
         `ts_inverse_transform()`) are already forwarded, and thus don't need to be included in this generator.
 
-        The basic implementation of this method returns `zip(series)`, that is, a generator of single-valued tuples,
+        The basic implementation of this method returns `zip(series)`, i.e., a generator of single-valued tuples,
         each containing one TimeSeries object.
 
         Parameters
@@ -70,7 +71,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        (Iterator[Tuple])
+        Iterator[Tuple[TimeSeries]]
             An iterator containing tuples of inputs for the `ts_inverse_transform()` method.
 
         Examples
@@ -115,7 +116,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         Returns
         -------
-        Union[TimeSeries, Sequence[TimeSeries]]
+        Union[TimeSeries, List[TimeSeries]]
             Inverse transformed data.
         """
         if hasattr(self, "_fit_called"):

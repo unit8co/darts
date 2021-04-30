@@ -28,9 +28,13 @@ class Pipeline:
         copy
             If set makes a (deep) copy of each data transformer before adding them to the pipeline
         n_jobs
-            The number of jobs to run in parallel. `-1` means using all processors. Note: this
-            parameter will overwrite the value set in each single transformer. Leave this parameter set to None
-            for keeping the transformers configurations.
+            The number of jobs to run in parallel. Parallel jobs are created only when a Sequence[TimeSeries] is passed
+            as input to a method, parallelising operations regarding different TimeSeries. Defaults to `1` (sequential).
+            Setting the parameter to `-1` means using all the available processors.
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+            required amount of time.
+            Note: this parameter will overwrite the value set in each single transformer. Leave this parameter set to None
+            for keeping the original transformers' configurations.
         verbose
             Whether to print progress of the operations. Note: this parameter will overwrite the value set
             in each single transformer. Leave this parameter set to None for keeping the transformers configurations.
@@ -134,8 +138,8 @@ class Pipeline:
         data
             (Sequence of) TimeSeries to be inverse transformed.
         partial
-            If set to True, the inverse transformation is applied even if the pipeline is not fully invertible, calling
-            `inverse_transform()` only on the `InvertibleDataTransformer`'s
+            If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible, calling
+            `inverse_transform()` only on the `InvertibleDataTransformer`s
 
         Returns
         -------
