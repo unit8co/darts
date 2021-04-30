@@ -1,6 +1,3 @@
-import logging
-import shutil
-
 import pandas as pd
 import numpy as np
 
@@ -78,7 +75,7 @@ if TORCH_AVAILABLE:
                 pred = model.predict(n=36, series=self.ts_pass_train)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
-                                                                    'series). Error = {}'.format(model_cls, mape_err))
+                                'series). Error = {}'.format(model_cls, mape_err))
 
                 # check prediction for several time series
                 pred_list = model.predict(n=36, series=[self.ts_pass_train, self.ts_pass_train_1])
@@ -113,3 +110,26 @@ if TORCH_AVAILABLE:
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
+
+        def test_predict_from_dataset_unsupported_input(self):
+            # an exception should be thrown if an unsupported type is passed
+            unsupported_type = 'unsupported_type'
+            # just need to test this with one model
+            model_cls, kwargs, err = models_cls_kwargs_errs[0]
+            model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+            model.fit([self.ts_pass_train, self.ts_pass_train_1])
+
+            with self.assertRaises(ValueError):
+                model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
+
+        def test_same_result_with_different_n_jobs(self):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                multiple_ts = [self.ts_pass_train] * 10
+
+                model.fit(multiple_ts)
+
+                pred1 = model.predict(n=36, series=multiple_ts, n_jobs=1)
+                pred2 = model.predict(n=36, series=multiple_ts, n_jobs=-1)  # assuming > 1 core available in the machine
+
+                self.assertEqual(pred1, pred2, 'Model {} produces different predictions with different number of jobs')
