@@ -73,7 +73,7 @@ class RegressionModel(ExtendedForecastingModel):
             raise_log(Exception('Provided model object must have a predict() method', logger))
 
         if model is None:
-            model = LinearRegression(n_jobs=-1, fit_intercept=False)
+            model = LinearRegression()
 
         self.lags = lags
         if isinstance(self.lags, int):
