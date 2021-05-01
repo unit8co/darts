@@ -59,8 +59,8 @@ class MetricsTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(metric(series11, series22, **kwargs), metric(self.series1 + 1, self.series2, **kwargs))
         self.assertAlmostEqual(metric(series11, series33, **kwargs), metric(self.series1 + 1, self.series3, **kwargs))
         self.assertAlmostEqual(metric(series22, series33, **kwargs), metric(self.series2, self.series3, **kwargs))
-        self.assertAlmostEqual(metric(series22, series33, reduction=(lambda x: x[0]), **kwargs),
-                               metric(self.series2, self.series3, reduction=(lambda x: x[0]), **kwargs))
+        self.assertAlmostEqual(metric(series22, series33, intra_reduction=(lambda x: x[0]), **kwargs),
+                               metric(self.series2, self.series3, intra_reduction=(lambda x: x[0]), **kwargs))
 
     def helper_test_nan(self, metric):
         # univariate
@@ -101,7 +101,7 @@ class MetricsTestCase(DartsBaseTestClass):
         self.helper_test_multivariate_duplication_equality(metrics.rmse)
 
         self.assertAlmostEqual(metrics.rmse(self.series1.append(self.series2b), self.series2.append(self.series1b)),
-                               metrics.mse(self.series12, self.series21, reduction=(lambda x: np.sqrt(np.mean(x)))))
+                               metrics.mse(self.series12, self.series21, intra_reduction=(lambda x: np.sqrt(np.mean(x)))))
         self.helper_test_nan(metrics.rmse)
 
     def test_rmsle(self):
@@ -138,9 +138,9 @@ class MetricsTestCase(DartsBaseTestClass):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
         self.assertEqual(metrics.r2_score(series11, series00, np.mean), 0)
-        self.assertEqual(metrics.r2_score(series11, series00, reduction=np.mean), 0)
-        self.assertEqual(metrics.r2_score(series11, series2=series00, reduction=np.mean), 0)
-        self.assertEqual(metrics.r2_score(series00, series1=series11, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, series00, intra_reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, series2=series00, intra_reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series00, series1=series11, intra_reduction=np.mean), 0)
         self.assertEqual(metrics.r2_score(np.mean, series2=series00, series1=series11), 0)
         self.assertEqual(metrics.r2_score(series00, np.mean, series1=series11), 0)
         self.assertEqual(metrics.r2_score(series11, np.mean, series2=series00), 0)
