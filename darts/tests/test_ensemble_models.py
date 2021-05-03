@@ -36,7 +36,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         theta.fit(self.series1 + self.series2)
         forecast_mean = 0.5 * naive.predict(5) + 0.5 * theta.predict(5)
 
-        self.assertTrue(np.array_equal(forecast_naive_ensemble.values, forecast_mean.values))
+        self.assertTrue(np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values()))
 
 
 if __name__ == '__main__':

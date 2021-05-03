@@ -32,7 +32,7 @@ models = [
     (FFT(trend='poly'), 11.4),
     (NaiveSeasonal(), 32.4),
     (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.0),
+    (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
 ]
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -51,7 +51,7 @@ except ImportError:
 
 try:
     from ..models import AutoARIMA
-    models.append((AutoARIMA(), 30.5))
+    models.append((AutoARIMA(), 12.2))
     extended_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:
@@ -123,9 +123,14 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
             # Test models runnability
             model.fit(self.ts_gaussian, exog=self.ts_gaussian)
+
             prediction = model.predict(
                 self.forecasting_horizon,
-                exog=tg.gaussian_timeseries(length=self.forecasting_horizon))
+                exog=tg.gaussian_timeseries(
+                    length=self.forecasting_horizon,
+                    start_ts=self.ts_gaussian.end_time()+self.ts_gaussian.freq()
+                    )
+                )
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
             # Test mismatch in length between exogenous variables and forecasting horizon

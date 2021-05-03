@@ -13,13 +13,11 @@ where :math:`t` denotes the time step. Here, the function :math:`f()` is not nec
 import numpy as np
 import pandas as pd
 
-
-from .. import metrics
 from inspect import signature
+from typing import Union, Optional
 from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from .forecasting_model import ExtendedForecastingModel
-from typing import List, Iterable, Union, Any, Callable, Optional
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
 from ..utils import (
     _build_tqdm_iterator,
@@ -38,7 +36,7 @@ class RegressionModel(ExtendedForecastingModel):
         """ Regression Model
 
         Can be used to fit any scikit-learn-like regressor class to predict the target
-        time series with lagged values.
+        time series from lagged values.
 
         Parameters
         ----------
@@ -68,13 +66,13 @@ class RegressionModel(ExtendedForecastingModel):
             "`lags_exog` must not be True if `lags` is None."
         )
 
+        if model is None:
+            model = LinearRegression()
+
         if (not callable(getattr(model, "fit", None))):
             raise_log(Exception('Provided model object must have a fit() method', logger))
         if (not callable(getattr(model, "predict", None))):
             raise_log(Exception('Provided model object must have a predict() method', logger))
-
-        if model is None:
-            model = LinearRegression()
 
         self.lags = lags
         if isinstance(self.lags, int):
@@ -89,7 +87,7 @@ class RegressionModel(ExtendedForecastingModel):
         self.lags_exog = lags_exog
         if self.lags_exog is True:
             self.lags_exog = self.lags[:]
-        elif self.lags_exog is False:
+        elif self.lags_exog is False or self.lags_exog==0:
             self.lags_exog = [0]
         elif isinstance(self.lags_exog, int):
             raise_if_not(self.lags_exog > 0, "`lags_exog` must be strictly positive. Given: {}.".format(self.lags_exog))
@@ -143,8 +141,8 @@ class RegressionModel(ExtendedForecastingModel):
         # Fit model
         if "series" in signature(self.model.fit).parameters:
             self.model.fit(
-                training_y,
-                training_x,
+                series=training_y,
+                exog=training_x,
                 **kwargs
             )
         else:
@@ -175,7 +173,7 @@ class RegressionModel(ExtendedForecastingModel):
         Returns
         -------
         TimeSeries
-            Data frame with lagged values.
+            TimeSeries with lagged values of target and exogenous variables.
         """
         raise_if(series.width > 1,
             "Series must not be multivariate. Pass exogenous variables to 'exog' parameter.",
@@ -194,8 +192,8 @@ class RegressionModel(ExtendedForecastingModel):
                 )
                 training_data_list.append(lagged_data)
 
-        training_data = pd.concat(training_data_list, axis=1)
-        return TimeSeries(training_data.dropna(), freq=series.freq())
+        training_data = pd.concat(training_data_list, axis=1)[self.max_lag:]
+        return TimeSeries(training_data, freq=series.freq())
 
     def _create_lagged_data(self, series: TimeSeries, lags: list):
         """ Creates a data frame where every lag is a new column.
@@ -220,7 +218,6 @@ class RegressionModel(ExtendedForecastingModel):
         for lag in lags:
             new_column_name = target_name + "_lag{}".format(lag)
             lagged_series[new_column_name] = lagged_series[target_name].shift(lag)
-        lagged_series.dropna(inplace=True)
         lagged_series.drop(target_name, axis=1, inplace=True)
         return lagged_series
 
@@ -250,14 +247,14 @@ class RegressionModel(ExtendedForecastingModel):
             dummy_row = np.zeros(shape=(1, prediction_data.width))
             prediction_data = prediction_data.append_values(dummy_row)
 
-        if exog is not None:
+        if exog is not None and self.lags_exog != [0]:
             required_start = self.training_series.end_time()+self.training_series.freq()
             raise_if_not(exog.start_time() == required_start,
                 "`exog` first date must be equal to self.training_series.end_time()+1*freq. " +
                 "Given: {}. Needed: {}.".format(exog.start_time(), required_start)
             )
         if isinstance(exog, TimeSeries):
-            exog = exog.pd_dataframe()
+            exog = exog.pd_dataframe(copy=False)
 
         forecasts = list(range(n))
         for i in range(n):

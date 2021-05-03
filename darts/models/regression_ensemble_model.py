@@ -2,7 +2,6 @@
 Regression ensemble model
 -------------------------
 """
-from sklearn.linear_model import LinearRegression
 from typing import Optional, List
 
 from darts.timeseries import TimeSeries
@@ -37,15 +36,13 @@ class RegressionEnsembleModel(EnsembleModel):
             The number of points to use to train the regression model
         regression_model
             Any regression model with predict() and fit() methods (e.g. from scikit-learn)
-            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
+            Default: `darts.model.LinearRegressionModel(fit_intercept=False)`
         """
         super().__init__(forecasting_models)
         if regression_model is None:
-            regression_model = LinearRegression(n_jobs=-1, fit_intercept=False)
+            regression_model = LinearRegressionModel(lags_exog=0, fit_intercept=False)
 
-        if not isinstance(regression_model, (LinearRegressionModel, RandomForest)):
-            regression_model = RegressionModel(lags_exog=[0], model=regression_model)
-
+        regression_model = RegressionModel(lags_exog=0, model=regression_model)
         raise_if(regression_model.lags is not None and regression_model.lags_exog != [0], (
             "`lags` of regression model must be `None` and `lags_exog` must be [0]. Given: {} and {}"
             .format(regression_model.lags, regression_model.lags_exog)

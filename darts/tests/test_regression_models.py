@@ -3,10 +3,12 @@ import pandas as pd
 
 from .. import TimeSeries
 from ..metrics import rmse
-from ..models import RandomForest
-from ..models import LinearRegressionModel
+from ..models import RegressionModel, RandomForest, LinearRegressionModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
+from sklearn.linear_model import LinearRegression
+from sklearn.experimental import enable_hist_gradient_boosting # enable import of HistGradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 
 
 def train_test_split(features, target, split_ts):
@@ -55,6 +57,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     models = [
         RandomForest,
         LinearRegressionModel,
+        RegressionModel
     ]
     lags = 4
     lags_exog = [3, 4, 5]
@@ -76,6 +79,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance = model(lags=5, lags_exog=[3, 6, 9, 12])
             self.assertEqual(model_instance.lags_exog, [3, 6, 9, 12])
 
+            model_instance = model(lags=None, lags_exog=0)
+            self.assertEqual(model_instance.lags_exog, [0])
+
             with self.assertRaises(ValueError):
                 model()
             with self.assertRaises(ValueError):
@@ -92,8 +98,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 model(lags=None, lags_exog=True)
             with self.assertRaises(ValueError):
                 model(lags=0)
-            with self.assertRaises(ValueError):
-                model(lags_exog=0)
 
     def test_models_runnability(self):
         train_x, test_x = self.ts_exog1.split_before(0.7)
@@ -116,6 +120,23 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_exog=3)
                 model_instance.fit(series=self.ts_sum1)
+
+    def test_create_training_data(self):
+        lags = 12
+        model = RegressionModel(lags=lags)
+        training_data = model._create_training_data(series=self.ts_sum1)
+        self.assertEqual(len(training_data), len(self.ts_sum1)-lags)
+        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
+
+        nan_series = self.ts_sum1.pd_dataframe()
+        nan_series.iloc[[0, 2, 8, 32, 497, 499], :] = np.nan
+        nan_series = TimeSeries(nan_series)
+        training_data = model._create_training_data(series=nan_series)
+        self.assertEqual(len(training_data), len(nan_series)-lags)
+        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
+
 
     def test_fit(self):
         for model in self.models:
@@ -140,6 +161,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
             self.assertEqual(model_instance.nr_exog, 6)
 
+
     def helper_test_models_accuracy(self, series, exog, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
         train_f, train_t, test_f, test_t = train_test_split(exog, series, pd.Timestamp('20010101'))
@@ -158,12 +180,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising(self):
         # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
+        nan_series = self.ts_sum1.pd_dataframe()
+        nan_series.iloc[[1, 2, 6, 9, 32, 42, 101, 488, 491, 499], :] = np.nan
+        nan_series = TimeSeries(nan_series)
+        self.helper_test_models_accuracy(nan_series, self.ts_exog1, 1.5)
         self.helper_test_models_accuracy(self.ts_sum1, self.ts_exog1, 1.5)
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_exog2, 18)
-
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_exog2, 19)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
@@ -191,3 +216,21 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             last_points_only=True,
             verbose=False)
         self.assertEqual(len(result), 51)
+
+    def test_regression_model(self):
+        lags = 12
+        models = [
+            RegressionModel(lags=lags),
+            RegressionModel(lags=lags, model=LinearRegression()),
+            RegressionModel(lags=lags, model=RandomForestRegressor()),
+            RegressionModel(lags=lags, model=HistGradientBoostingRegressor()),
+            RegressionModel(lags=lags, model=LinearRegressionModel(lags_exog=0)),
+            RegressionModel(lags=lags, model=RandomForest(lags_exog=0)),
+        ]
+
+        for model in models:
+            model.fit(series=self.ts_sum1)
+            prediction = model.predict(n=10)
+            self.assertEqual(model.nr_exog, 0)
+            self.assertEqual(len(model.prediction_data), lags)
+            self.assertEqual(len(model.prediction_data.columns()), 1)
