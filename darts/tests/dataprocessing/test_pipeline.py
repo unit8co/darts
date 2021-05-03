@@ -5,6 +5,7 @@ from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer, FittableDataTransformer, InvertibleDataTransformer
+from darts.dataprocessing.transformers import InvertibleMapper, Mapper
 
 
 class PipelineTestCase(unittest.TestCase):
@@ -14,66 +15,80 @@ class PipelineTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class DataTransformerMock1(BaseDataTransformer[TimeSeries]):
+    class DataTransformerMock1(BaseDataTransformer):
         def __init__(self):
             super().__init__()
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
-            self.transform_called = True
+        @staticmethod
+        def ts_transform(data: TimeSeries) -> TimeSeries:
             return data.append_values(constant_timeseries(1, 3).values())
 
-    class DataTransformerMock2(FittableDataTransformer[TimeSeries], InvertibleDataTransformer[TimeSeries]):
+        def transform(self, data, *args, **kwargs) -> TimeSeries:
+            self.transform_called = True
+            return super().transform(data, *args, **kwargs)
+
+    class DataTransformerMock2(FittableDataTransformer, InvertibleDataTransformer):
         def __init__(self):
             super().__init__()
+
             self.transform_called = False
             self.inverse_transform_called = False
             self.fit_called = False
+
+        @staticmethod
+        def ts_fit(series: TimeSeries):
+            pass
+
+        @staticmethod
+        def ts_transform(series: TimeSeries) -> TimeSeries:
+            return series.append_values(constant_timeseries(2, 3).values())
+
+        @staticmethod
+        def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+            return series
 
         def fit(self, data):
             super().fit(data)
             self.fit_called = True
             return self
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
+        def transform(self, data, *args, **kwargs):
             self.transform_called = True
             self.args = args
             self.kwargs = kwargs
-            return data.append_values(constant_timeseries(2, 3).values())
+            return super().transform(data, *args, **kwargs)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
+        def inverse_transform(self, data, *args, **kwargs) -> TimeSeries:
             self.inverse_transform_called = True
             self.args = args
             self.kwargs = kwargs
-            return data
+            return super().inverse_transform(data, *args, **kwargs)
 
-    class PlusTenTransformer(InvertibleDataTransformer[TimeSeries]):
+    class PlusTenTransformer(InvertibleDataTransformer):
         def __init__(self, name="+10 transformer"):
             super().__init__(name=name)
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
-            return data.map(lambda x: x + 10)
+        @staticmethod
+        def ts_transform(series: TimeSeries) -> TimeSeries:
+            return series.map(lambda x: x + 10)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
-            return data.map(lambda x: x - 10)
+        @staticmethod
+        def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+            return series.map(lambda x: x - 10)
 
-    class TimesTwoTransformer(InvertibleDataTransformer[TimeSeries]):
+    class TimesTwoTransformer(InvertibleDataTransformer):
         def __init__(self):
             super().__init__(name="*2 transformer")
 
-        def transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().transform(data, *args, **kwargs)
+        @staticmethod
+        def ts_transform(data: TimeSeries) -> TimeSeries:
             return data.map(lambda x: x * 2)
 
-        def inverse_transform(self, data: TimeSeries, *args, **kwargs) -> TimeSeries:
-            super().inverse_transform(data, *args, **kwargs)
+        @staticmethod
+        def ts_inverse_transform(data: TimeSeries) -> TimeSeries:
             return data.map(lambda x: x / 2)
 
     def test_transform(self):
@@ -213,3 +228,83 @@ class PipelineTestCase(unittest.TestCase):
         # when & then
         with self.assertRaises(ValueError, msg="Key must be int, str or slice"):
             p[bad_key]
+
+    def test_multi_ts(self):
+
+        series1 = constant_timeseries(0., 3)
+        series2 = constant_timeseries(1., 3)
+
+        data = [series1, series2]
+
+        mapper1 = InvertibleMapper(fn=lambda x: x + 10, inverse_fn=lambda x: x - 10)
+        mapper2 = InvertibleMapper(fn=lambda x: x * 10, inverse_fn=lambda x: x / 10)
+
+        transformers = [mapper1, mapper2]
+        p = Pipeline(transformers)
+
+        # when
+        transformed = p.transform(data)
+        back = p.inverse_transform(transformed)
+
+        # then
+        self.assertEqual(data, back)
+
+    def test_pipeline_partial_inverse(self):
+        series = constant_timeseries(0., 3)
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2)
+
+        series_plus_ten = mapper.transform(series)
+
+        pipeline = Pipeline([mapper, mapper_inv])
+
+        transformed = pipeline.transform(series)
+
+        # should fail, since partial is False by default
+        with self.assertRaises(ValueError):
+            pipeline.inverse_transform(transformed)
+
+        back = pipeline.inverse_transform(transformed, partial=True)
+
+        # while the +/- 2 is inverted, the +10 operation is not
+        self.assertEqual(series_plus_ten, back)
+
+    def test_pipeline_verbose(self):
+        """
+        Checks if the verbose param applied to the pipeline is changing the verbosity level in the 
+        contained transformers.
+        """
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten, verbose=True)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True)
+
+        verbose_value = False
+        pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
+
+        for transformer in pipeline:
+            self.assertEqual(transformer._verbose, verbose_value)
+
+    def test_pipeline_n_jobs(self):
+        """
+        Checks if the n_jobs param applied to the pipeline is changing the verbosity level in the
+        contained transformers.
+        """
+
+        def plus_ten(x):
+            return x + 10
+
+        mapper = Mapper(fn=plus_ten, n_jobs=1)
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2)
+
+        n_jobs_value = -1
+        pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)
+
+        for transformer in pipeline:
+            self.assertEqual(transformer._n_jobs, n_jobs_value)

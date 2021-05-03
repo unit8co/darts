@@ -73,6 +73,9 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     verbose
     total
         Length of the iterator, helps in cases where tqdm is not detecting the total length.
+    total
+        Length of the iterator, helps in cases where tqdm is not detecting the total length.
+
     Returns
     -------
     """
@@ -211,6 +214,7 @@ def _historical_forecasts_general_checks(series, kwargs):
 def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs) -> List:
     """
     Utility function that parallelise the execution of a function over an Iterator
+
     Parameters
     ----------
     iterator (Iterator[Tuple])
@@ -227,6 +231,7 @@ def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_arg
         Additional arguments for each `fn()` call
     fn_kwargs
         Additional keyword arguments for each `fn()` call
+
     """
 
     returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs)
