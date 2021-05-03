@@ -39,3 +39,27 @@ class DataTransformerTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(series1_recovered.values().flatten(), self.series1.values().flatten())
         self.assertEqual(series1_recovered.width, self.series1.width)
         self.assertEqual(series3_recovered, series1_recovered[:1])
+
+    def test_multi_ts_scaling(self):
+        transformer1 = Scaler(MinMaxScaler(feature_range=(0, 2)))
+        transformer2 = Scaler(StandardScaler())
+
+        series_array = [self.series1, self.series2]
+
+        series_array_tr1 = transformer1.fit_transform(series_array)
+        series_array_tr2 = transformer2.fit_transform(series_array)
+
+        for index in range(len(series_array)):
+            self.assertAlmostEqual(min(series_array_tr1[index].values().flatten()), 0.)
+            self.assertAlmostEqual(max(series_array_tr1[index].values().flatten()), 2.)
+            self.assertAlmostEqual(np.mean(series_array_tr2[index].values().flatten()), 0.)
+            self.assertAlmostEqual(np.std(series_array_tr2[index].values().flatten()), 1.)
+
+        series_array_rec1 = transformer1.inverse_transform(series_array_tr1)
+        series_array_rec2 = transformer2.inverse_transform(series_array_tr2)
+
+        for index in range(len(series_array)):
+            np.testing.assert_almost_equal(series_array_rec1[index].values().flatten(),
+                                           series_array[index].values().flatten())
+            np.testing.assert_almost_equal(series_array_rec2[index].values().flatten(),
+                                           series_array[index].values().flatten())
