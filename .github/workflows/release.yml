@@ -104,6 +104,12 @@ jobs:
           path: ~/.gradle/wrapper/dists
           key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
+      - name: "4.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
       #check build.gradle file for explanation of next steps
       - name: "5. Publish image with tag corresponding to current version"
         run: |
@@ -137,6 +143,12 @@ jobs:
         with:
           path: ~/.gradle/wrapper/dists
           key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "4.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
 
       - name: "5. Setup pip"
         run: |

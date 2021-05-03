@@ -33,6 +33,12 @@ jobs:
           path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
+      - name: "3.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
       - name: "4. Setup pip"
         run: |
           ./gradlew setupPip
@@ -69,6 +75,12 @@ jobs:
           path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
+      - name: "3.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
       - name: "4. Run examples ${{matrix.example-name}}"
         run: |
           ./gradlew checkExample -PexampleName=${{matrix.example-name}}
@@ -95,6 +107,12 @@ jobs:
         with:
           path: ~/.gradle/wrapper/dists
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "4.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
 
       - name: "5. Setup pip"
         run: |
