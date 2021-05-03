@@ -25,10 +25,12 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         Parameters
         ----------
         scaler
-            The scaler to transform the data.
-            It must provide the `fit()`, `transform()` and `inverse_transform()` methods.
-            Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this
-            will scale all the values of a time series between 0 and 1.
+            The scaler to transform the data with. It must provide `fit()`, `transform()` and `inverse_transform()`
+            methods.
+            Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this will scale all the values
+            of a time series between 0 and 1.
+            In case the `Scaler` is applied to multiple `TimeSeries` objects, a deep-copy of the chosen scaler
+            will be instantiated, fitted, and stored, for each `TimeSeries`.
         name
             A specific name for the scaler
         n_jobs

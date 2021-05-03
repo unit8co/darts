@@ -53,30 +53,23 @@ class BoxCoxTestCase(unittest.TestCase):
         pd.testing.assert_frame_equal(self.multi_series._df, back._df, check_exact=False)
 
     def test_boxcox_multi_ts(self):
-        # with full lambdas values
-        box_cox = BoxCox(lmbda=[[0.2, 0.4], [0.3, 0.6]])
-        transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
-        back = box_cox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[0]._df, check_exact=False)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[1]._df, check_exact=False)
 
-        # single lambda
-        box_cox = BoxCox(lmbda=0.4)
-        transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
-        back = box_cox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[0]._df, check_exact=False)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[1]._df, check_exact=False)
+        test_cases = [
+            ([[0.2, 0.4], [0.3, 0.6]]),  # full lambda
+            (0.4),  # single value
+            None  # None
+        ]
 
-        # lambda = None
-        box_cox = BoxCox()
-        transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
-        back = box_cox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[0]._df, check_exact=False)
-        pd.testing.assert_frame_equal(self.multi_series._df, back[1]._df, check_exact=False)
+        for lmbda in test_cases:
+            box_cox = BoxCox(lmbda=lmbda)
+            transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
+            back = box_cox.inverse_transform(transformed)
+            pd.testing.assert_frame_equal(self.multi_series._df, back[0]._df, check_exact=False)
+            pd.testing.assert_frame_equal(self.multi_series._df, back[1]._df, check_exact=False)
 
     def test_boxcox_multiple_calls_to_fit(self):
         """
-        This test checks whether calling the scaler twice is calculating new lambdas insted of
+        This test checks whether calling the scaler twice is calculating new lambdas instead of
         keeping the old ones
         """
         box_cox = BoxCox()

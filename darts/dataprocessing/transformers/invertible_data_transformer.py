@@ -24,6 +24,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
         `ts_transform()` and `ts_inverse_transform()`. This class takes care of parallelizing the transformation
         on multiple `TimeSeries` when possible.
 
+        Note: the `ts_transform()` and `ts_inverse_transform()` methods are designed to be static methods instead of
+        instance methods to allow an efficient parallelisation also when the scaler instance is storing a non-negligible
+        amount of data. Using instance methods would imply copying the instance's data through multiple processes, which
+        can easily introduce a bottleneck and nullify parallelisation benefits.
+
         Parameters
         ----------
         name
@@ -51,14 +56,16 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         This method is not implemented in the base class and must be implemented in the deriving classes.
 
+        Note: this method is designed to be a static method instead of instance methods to allow an efficient
+        parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+        methods would imply copying the instance's data through multiple processes, which can easily introduce a
+        bottleneck and nullify parallelisation benefits.
+
         Parameters
         ----------
         series (TimeSeries)
             TimeSeries which will be transformed.
-        args
-            Additional positional arguments for the `ts_inverse_transform` method
-        kwargs
-            Additional keyword arguments for the `ts_inverse_transform` method
+
         """
         pass
 
@@ -90,11 +97,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
                                  ts_inverse_transform=my_ts_inverse_transform)
 
             @staticmethod
-            def my_ts_transform(series: TimeSeries, n: int) -> TimeSeries:
+            def ts_transform(series: TimeSeries, n: int) -> TimeSeries:
                 return series + n
 
             @staticmethod
-            def my_ts_inverse_transform(series: TimeSeries, n: int) -> TimeSeries:
+            def ts_inverse_transform(series: TimeSeries, n: int) -> TimeSeries:
                 return series - n
 
             def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:

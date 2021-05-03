@@ -6,6 +6,7 @@ Box-Cox Transformer
 from typing import Optional, Union, Sequence, Iterator, Tuple
 from scipy.stats import boxcox_normmax, boxcox
 from scipy.special import inv_boxcox
+import pandas as pd
 
 from darts.timeseries import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer, InvertibleDataTransformer
@@ -88,10 +89,11 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     @staticmethod
     def ts_fit(series: TimeSeries,
                lmbda: Optional[Union[float, Sequence[float]]],
-               method):
-
+               method) -> Union[Sequence[float],
+                                pd.core.series.Series]:
         if lmbda is None:
-            # Compute optimal lmbda for each dimension of the time series
+            # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
+            # a pd.core.series.Series, which is not inhering from collections.abs.Sequence
             lmbda = series._df.apply(boxcox_normmax, method=method)
         elif isinstance(lmbda, Sequence):
             raise_if(len(lmbda) != series.width,
@@ -104,7 +106,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         return lmbda
 
     @staticmethod
-    def ts_transform(series: TimeSeries, lmbda: float) -> TimeSeries:
+    def ts_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
 
         def _boxcox_wrapper(col):
             idx = series._df.columns.get_loc(col.name)  # get index from col name
@@ -113,7 +115,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         return TimeSeries.from_dataframe(series._df.apply(_boxcox_wrapper))
 
     @staticmethod
-    def ts_inverse_transform(series: TimeSeries, lmbda: float) -> TimeSeries:
+    def ts_inverse_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
 
         def _inv_boxcox_wrapper(col):
             idx = series._df.columns.get_loc(col.name)  # get index from col name

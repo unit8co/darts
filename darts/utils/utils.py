@@ -6,7 +6,7 @@ import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
-from typing import List, Callable, TypeVar, Iterator
+from typing import List, Callable, TypeVar, Iterator, Tuple
 from IPython import get_ipython
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
@@ -209,7 +209,29 @@ def _historical_forecasts_general_checks(series, kwargs):
                      '`overlap_end` set to `False`.', logger)
 
 
-def _parallel_apply(iterator: Iterator, fn: Callable, n_jobs: int = 1, fn_args=None, fn_kwargs=None) -> List:
+def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs) -> List:
+    """
+    Utility function that parallelise the execution of a function over an Iterator
+
+    Parameters
+    ----------
+    iterator (Iterator[Tuple])
+        Iterator which returns tuples of input value to feed to fn. Constant `args` and `kwargs` should passed through
+        `fn_args` and  `fn_kwargs` respectively.
+    fn (Callable)
+        The function to be parallelized.
+    n_jobs (int)
+        The number of jobs to run in parallel. Defaults to `1` (sequential). Setting the parameter to `-1` means using
+        all the available processors.
+        Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+        required amount of time.
+    fn_args
+        Additional arguments for each `fn()` call
+    fn_kwargs
+        Additional keyword arguments for each `fn()` call
+
+    """
+
     returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs)
                                             for sample in iterator)
     return returned_data

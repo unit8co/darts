@@ -24,6 +24,11 @@ class BaseDataTransformer(ABC):
         from `FittableDataTransformer` instead.
         Data transformers that are invertible should derive from ´InvertibleDataTransformer´ instead.
 
+        Note: the `ts_transform()` method is designed to be a static method instead of a instance method to allow an
+        efficient parallelisation also when the scaler instance is storing a non-negligible amount of data. Using
+        an instance method would imply copying the instance's data through multiple processes, which can easily
+        introduce a bottleneck and nullify parallelisation benefits.
+
         Parameters
         ----------
         name
@@ -60,6 +65,12 @@ class BaseDataTransformer(ABC):
         """
         Sets the number of cores that will be used by the transformer while processing multiple `TimeSeries`. Set to
         `-1` for using all the available cores.
+
+        Parameters
+        ----------
+        value
+            New n_jobs value
+
         """
 
         raise_if_not(isinstance(value, int), "n_jobs must be an integer")
@@ -76,6 +87,11 @@ class BaseDataTransformer(ABC):
         further details).
 
         This method is not implemented in the base class and must be implemented in the deriving classes.
+
+        Note: this method is designed to be a static method instead of instance methods to allow an efficient
+        parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+        methods would imply copying the instance's data through multiple processes, which can easily introduce a
+        bottleneck and nullify parallelisation benefits.
 
         Parameters
         ----------
@@ -111,7 +127,7 @@ class BaseDataTransformer(ABC):
                 super().__init__()
 
             @staticmethod
-            def my_ts_transform(series: TimeSeries, n: int) -> TimeSeries:
+            def ts_transform(series: TimeSeries, n: int) -> TimeSeries:
                 return series + n
 
             def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:

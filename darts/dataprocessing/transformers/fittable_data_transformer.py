@@ -25,6 +25,11 @@ class FittableDataTransformer(BaseDataTransformer):
         transformer's initialization. This class takes care of parallelizing operations involving
         multiple `TimeSeries` when possible.
 
+        Note: the `ts_transform()` and `ts_fit()` methods are designed to be static methods instead of instance
+        methods to allow an efficient parallelisation also when the scaler instance is storing a non-negligible
+        amount of data. Using instance methods would imply copying the instance's data through multiple processes, which
+        can easily introduce a bottleneck and nullify parallelisation benefits.
+
         Parameters
         ----------
         name
@@ -58,14 +63,16 @@ class FittableDataTransformer(BaseDataTransformer):
         should be redefined accordingly, to yield the necessary arguments to this function (See
         `_fit_iterator()` for further details)
 
+        Note: this method is designed to be a static method instead of instance methods to allow an efficient
+        parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+        methods would imply copying the instance's data through multiple processes, which can easily introduce a
+        bottleneck and nullify parallelisation benefits.
+
         Parameters
         ----------
         series (TimeSeries)
             `TimeSeries` against which the scaler will be fit.
-        args
-            Additional positional arguments for the `ts_fit` method
-        kwargs
-            Additional keyword arguments for the `ts_fit` method
+
         """
         pass
 
@@ -96,11 +103,11 @@ class FittableDataTransformer(BaseDataTransformer):
                 super().__init__()
 
             @staticmethod
-            def my_ts_transform(series: TimeSeries, n: int) -> TimeSeries:
+            def ts_transform(series: TimeSeries, n: int) -> TimeSeries:
                 return series + n
 
             @staticmethod
-            def my_ts_fit(series: TimeSeries, m: float) -> TimeSeries:
+            def ts_fit(series: TimeSeries, m: float) -> TimeSeries:
                 return max(series.first_value(), m)
 
             def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, float]]:
@@ -109,7 +116,7 @@ class FittableDataTransformer(BaseDataTransformer):
                 return zip(series, self._fitted_params)
 
             def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
-                # the second generator is setting the m parameter of my_ts_fit() to 0 for each TimeSeries
+                # the second generator is setting the m parameter of ts_fit() to 0 for each TimeSeries
                 return zip(series, (0 for i in range(len(series))))
 
         """
