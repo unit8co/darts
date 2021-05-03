@@ -8,13 +8,13 @@ Some metrics to compare time series.
 import numpy as np
 from typing import Tuple
 from ..timeseries import TimeSeries
+from darts.utils import _parallel_apply, _build_tqdm_iterator
 from ..utils.statistics import check_seasonality
 from ..logging import raise_if_not, get_logger
 from warnings import warn
 from typing import Optional, Callable, Sequence
 from inspect import signature
 from functools import wraps
-from joblib import Parallel, delayed
 
 
 logger = get_logger(__name__)
@@ -22,16 +22,25 @@ logger = get_logger(__name__)
 
 def multi_ts_support(func):
     """
-    This decorator transforms a metric that takes as input two multivariate `TimeSeries` instances into a function
-    that takes two equally sized array of `TimeSeries` instances, computes the pairwise metric for
+    This decorator transforms a metric that takes as input two univariate/multivariate `TimeSeries` instances into a
+    function that takes two equally sized array of `TimeSeries` instances, computes the pairwise metric for
     `TimeSeries` with the same indices, and return a float value that is computer as a function of all the single
     pair metrics using a `inter_reduction` subroutine passed as argument to the metric function.
+
+    If multiple 'TimeSeries' are passed as input, this decorator provide also parallelisation of the metric evaluation
+    regarding different `TimeSeries` (if the `n_jobs` parameter is not set 1).
     """
 
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
         series1 = kwargs['series1'] if 'series1' in kwargs else args[0]
         series2 = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs else args[1]
+
+        n_jobs = kwargs.pop('n_jobs')
+        verbose = kwargs.pop('verbose')
+
+        raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
+        raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
 
         series1 = [series1] if not isinstance(series1, Sequence) else series1
         series2 = [series2] if not isinstance(series2, Sequence) else series2
@@ -42,10 +51,15 @@ def multi_ts_support(func):
         kwargs.pop('series1', 0)
         kwargs.pop('series2', 0)
 
-        iterator = zip(series1, series2)
+        iterator = _build_tqdm_iterator(iterable=zip(series1, series2),
+                                        verbose=verbose,
+                                        total=len(series1))
 
-        value_list = Parallel(n_jobs=-1)(delayed(func)(s1, s2, *args[num_series_in_args:], **kwargs)
-                                         for s1, s2 in iterator)
+        value_list = _parallel_apply(iterator=iterator,
+                                     fn=func,
+                                     n_jobs=n_jobs,
+                                     fn_args=args[num_series_in_args:],
+                                     fn_kwargs=kwargs)
 
         if 'inter_reduction' in kwargs:
             return kwargs['inter_reduction'](value_list)
@@ -64,17 +78,17 @@ def multivariate_support(func):
     """
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs):
-        series1 = kwargs['series1'] if 'series1' in kwargs else args[0]
-        series2 = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs else args[1]
+
+        # we can avoid checks since the input is prepared by the previous decorator
+        series1 = args[0]
+        series2 = args[1]
 
         raise_if_not(series1.width == series2.width, "The two TimeSeries instances must have the same width.", logger)
-        num_series_in_args = int('series1' not in kwargs) + int('series2' not in kwargs)
-        kwargs.pop('series1', 0)
-        kwargs.pop('series2', 0)
+
         value_list = []
         for i in range(series1.width):
             value_list.append(func(series1.univariate_component(i), series2.univariate_component(i),
-                              *args[num_series_in_args:], **kwargs))
+                              *args[2:], **kwargs))  # [2:] since we already know the first two arguments are the series
         if 'intra_reduction' in kwargs:
             return kwargs['intra_reduction'](value_list)
         else:
@@ -108,7 +122,7 @@ def _get_values_or_raise(series_a: TimeSeries,
 def _remove_nan_union(array_a: np.ndarray,
                       array_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Returnes the two inputs arrays where all elements are deleted that have an index that corresponds to
+    Returns the two inputs arrays where all elements are deleted that have an index that corresponds to
     a NaN value in either of the two input arrays.
     """
 
@@ -122,7 +136,9 @@ def mae(series1: TimeSeries,
         series2: TimeSeries,
         intersect: bool = True,
         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        n_jobs: int = 1,
+        verbose: bool = False) -> float:
     """ Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -162,7 +178,9 @@ def mse(series1: TimeSeries,
         series2: TimeSeries,
         intersect: bool = True,
         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        n_jobs: int = 1,
+        verbose: bool = False) -> float:
     """ Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -202,7 +220,9 @@ def rmse(series1: TimeSeries,
          series2: TimeSeries,
          intersect: bool = True,
          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         n_jobs: int = 1,
+         verbose: bool = False) -> float:
     """ Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -239,7 +259,9 @@ def rmsle(series1: TimeSeries,
           series2: TimeSeries,
           intersect: bool = True,
           intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          n_jobs: int = 1,
+          verbose: bool = False) -> float:
     """ Root Mean Squared Log Error (RMSLE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -282,7 +304,9 @@ def coefficient_of_variation(actual_series: TimeSeries,
                              pred_series: TimeSeries,
                              intersect: bool = True,
                              intra_reduction: Callable[[np.ndarray], float] = np.mean,
-                             inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+                             inter_reduction: Callable[[np.ndarray], float] = np.mean,
+                             n_jobs: int = 1,
+                             verbose: bool = False) -> float:
     """ Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -324,7 +348,9 @@ def mape(actual_series: TimeSeries,
          pred_series: TimeSeries,
          intersect: bool = True,
          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         n_jobs: int = 1,
+         verbose: bool = False) -> float:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -374,7 +400,9 @@ def smape(actual_series: TimeSeries,
           pred_series: TimeSeries,
           intersect: bool = True,
           intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          n_jobs: int = 1,
+          verbose: bool = False) -> float:
     """ symmetric Mean Absolute Percentage Error (sMAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -429,7 +457,9 @@ def mase(actual_series: TimeSeries,
          m: Optional[int] = 1,
          intersect: bool = True,
          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         n_jobs: int = 1,
+         verbose: bool = False) -> float:
     """ Mean Absolute Scaled Error (MASE).
 
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -491,7 +521,9 @@ def ope(actual_series: TimeSeries,
         pred_series: TimeSeries,
         intersect: bool = True,
         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        n_jobs: int = 1,
+        verbose: bool = False) -> float:
     """ Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -540,7 +572,9 @@ def marre(actual_series: TimeSeries,
           pred_series: TimeSeries,
           intersect: bool = True,
           intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          n_jobs: int = 1,
+          verbose: bool = False) -> float:
     """ Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -590,7 +624,9 @@ def r2_score(series1: TimeSeries,
              series2: TimeSeries,
              intersect: bool = True,
              intra_reduction: Callable[[np.ndarray], float] = np.mean,
-             inter_reduction: Callable[[np.ndarray], float] = np.mean) -> float:
+             inter_reduction: Callable[[np.ndarray], float] = np.mean,
+             n_jobs: int = 1,
+             verbose: bool = False) -> float:
     """ Coefficient of Determination :math:`R^2`.
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
