@@ -9,7 +9,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 ### For users of the library:
 
 **Added:**
-- `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from exogenous
+- `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from (lagged) exogenous
 variables and lagged values of the target.
 
 **Changed**
@@ -17,7 +17,7 @@ variables and lagged values of the target.
 method. It enables the flexible usage of lagged values of the target variable as well as lagged values of multiple exogenous
 variables. Allowed values for the `lags` argument are positive integers or a list of positive integers indicating which lags
 should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable. `lags=[1, 4, 8, 12]` translates to training with the previous value, the value at lag 4, lag 8 and lag 12.
-- `LinearRegressionModel` implements a linear regression model.
+- `StandardRegressionModel` is now called `LinearRegressionModel`. It implements a linear regression model from `sklearn.linear_model.LinearRegression.
 
 
 ## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
