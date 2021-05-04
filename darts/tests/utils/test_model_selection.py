@@ -25,12 +25,12 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     # test 2
     def test_parameters_for_axis_1_no_n(self):
         with self.assertRaises(AttributeError,
-                               msg="You need to provide non-zero `horizon` and `n` parameters when axis=1"):
+                               msg="You need to provide non-zero `horizon` and `input_size` parameters when axis=1"):
             train_test_split(make_dataset(1, 10), axis=1, horizon=1, vertical_split_type='model-aware')
 
     def test_parameters_for_axis_1_no_horizon(self):
         with self.assertRaises(AttributeError,
-                               msg="You need to provide non-zero `horizon` and `n` parameters when axis=1"):
+                               msg="You need to provide non-zero `horizon` and `input_size` parameters when axis=1"):
             train_test_split(make_dataset(1, 10), axis=1, input_size=1, vertical_split_type='model-aware')
 
     # test 3
