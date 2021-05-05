@@ -1,5 +1,5 @@
 from ..base_test_class import DartsBaseTestClass
-from darts.utils.model_selection import train_test_split
+from darts.utils.model_selection import train_test_split, MODEL_AWARE, SIMPLE
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -15,36 +15,32 @@ def verify_shape(dataset, rows, cols):
 
 
 class ClassTrainTestSplitTestCase(DartsBaseTestClass):
-    # test 1
+
     def test_parameters_for_axis_0(self):
         train_test_split(make_dataset(2, 10), axis=0, test_size=1)
 
         # expecting no exception
         self.assertTrue(True)
 
-    # test 2
     def test_parameters_for_axis_1_no_n(self):
         with self.assertRaises(AttributeError,
                                msg="You need to provide non-zero `horizon` and `input_size` parameters when axis=1"):
-            train_test_split(make_dataset(1, 10), axis=1, horizon=1, vertical_split_type='model-aware')
+            train_test_split(make_dataset(1, 10), axis=1, horizon=1, vertical_split_type=MODEL_AWARE)
 
     def test_parameters_for_axis_1_no_horizon(self):
         with self.assertRaises(AttributeError,
                                msg="You need to provide non-zero `horizon` and `input_size` parameters when axis=1"):
-            train_test_split(make_dataset(1, 10), axis=1, input_size=1, vertical_split_type='model-aware')
+            train_test_split(make_dataset(1, 10), axis=1, input_size=1, vertical_split_type=MODEL_AWARE)
 
-    # test 3
     def test_empty_dataset(self):
         with self.assertRaises(AttributeError):
             train_test_split([])
 
-    # test 4
     def test_horiz_number_of_samples_too_small(self):
         with self.assertRaises(AttributeError, msg="Training timeseries is of 0 size"):
             train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=4, horizon=7, test_size=1,
-                                                   vertical_split_type='model-aware')
+                                                   vertical_split_type=MODEL_AWARE)
 
-    # test 5
     def test_sunny_day_horiz_split(self):
         train_set, test_set = train_test_split(make_dataset(8, 10))
 
@@ -68,7 +64,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_overindexing_train_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError, msg='Exceeded the size of the training sequence.'):
             train_set[6]
 
     def test_horiz_split_last_index_train_set(self):
@@ -79,7 +75,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_overindexing_test_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError, msg='Exceeded the size of the test sequence.'):
             test_set[2]
 
     def test_horiz_split_last_index_test_set(self):
@@ -89,7 +85,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     # test 6
     def test_sunny_day_vertical_split(self):
         train_set, test_set = train_test_split(make_dataset(2, 250), axis=1, input_size=70, horizon=50,
-                                               vertical_split_type='model-aware')
+                                               vertical_split_type=MODEL_AWARE)
 
         self.assertTrue(
             verify_shape(train_set, 2, 200) and
@@ -110,7 +106,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     # test 8
     def test_test_split_absolute_number_vertical(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=1, test_size=2, input_size=1, horizon=2,
-                                               vertical_split_type='model-aware')
+                                               vertical_split_type=MODEL_AWARE)
 
         self.assertTrue(
             verify_shape(train_set, 4, 8) and
@@ -122,21 +118,21 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_negative_test_start_index(self):
         with self.assertRaises(AttributeError, msg="Not enough timesteps to create testset"):
             train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=8, test_size=1,
-                                                   vertical_split_type='model-aware')
+                                                   vertical_split_type=MODEL_AWARE)
 
     def test_horiz_split_horizon_equal_to_ts_length(self):
         with self.assertRaises(AttributeError, msg="Not enough timesteps to create testset"):
             train_set, test_set = train_test_split(make_dataset(1, 10), axis=1, input_size=2, horizon=10, test_size=1,
-                                                   vertical_split_type='model-aware')
+                                                   vertical_split_type=MODEL_AWARE)
 
     def test_single_timeseries_no_horizon_no_n(self):
         with self.assertRaises(AttributeError):
             # even if the default axis is 0, but since it is a single timeseries, default axis is 1
-            train_test_split(constant_timeseries(123, 10), test_size=2, vertical_split_type='model-aware')
+            train_test_split(constant_timeseries(123, 10), test_size=2, vertical_split_type=MODEL_AWARE)
 
     def test_single_timeseries_sunny_day(self):
         train_set, test_set = train_test_split(constant_timeseries(123, 10), test_size=2, input_size=1, horizon=2,
-                                               vertical_split_type = 'model-aware'
+                                               vertical_split_type = MODEL_AWARE
                                                )
 
         self.assertTrue(
@@ -152,7 +148,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
             constant_timeseries(123, 1000)
         ]
         train_set, test_set = train_test_split(data, axis=1, test_size=2, input_size=1, horizon=2,
-                                               vertical_split_type='model-aware')
+                                               vertical_split_type=MODEL_AWARE)
         train_lengths = [len(ts) for ts in train_set]
         test_lengths = [len(ts) for ts in test_set]
 
@@ -172,11 +168,11 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         with self.assertRaises(AttributeError,
                               msg="Not enough timesteps to create testset"):
             train_set, test_set = train_test_split(data, axis=1, test_size=2, input_size=1, horizon=20,
-                                                   vertical_split_type='model-aware')
+                                                   vertical_split_type=MODEL_AWARE)
 
     def test_simple_vertical_split_sunny_day(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
-                                               vertical_split_type='simple', test_size=0.2)
+                                               vertical_split_type=SIMPLE, test_size=0.2)
 
         self.assertTrue(
             verify_shape(train_set, 4, 8) and
@@ -187,7 +183,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_simple_vertical_split_sunny_day_absolute_split(self):
         train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
-                                               vertical_split_type='simple', test_size=2)
+                                               vertical_split_type=SIMPLE, test_size=2)
 
         self.assertTrue(
             verify_shape(train_set, 4, 8) and
@@ -206,4 +202,4 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
         with self.assertRaises(AttributeError, msg="`test_size` is bigger then timeseries length"):
             train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
-                                                   vertical_split_type='simple', test_size=11)
+                                                   vertical_split_type=SIMPLE, test_size=11)

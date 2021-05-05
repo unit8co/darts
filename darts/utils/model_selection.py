@@ -1,6 +1,9 @@
 from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
+MODEL_AWARE = 'model-aware'
+SIMPLE = 'simple'
+
 
 class SplitTimeSeriesSequence(Sequence):
     """
@@ -11,9 +14,9 @@ class SplitTimeSeriesSequence(Sequence):
                  data: Union[TimeSeries, Sequence[TimeSeries]],
                  test_size: Optional[Union[float, int]] = 0.25,
                  axis: Optional[int] = 0,
-                 input_size: Optional[int] = 0,
-                 horizon: Optional[int] = 0,
-                 vertical_split_type: Optional[str] = 'simple'):
+                 input_size: Optional[int] = None,
+                 horizon: Optional[int] = None,
+                 vertical_split_type: Optional[str] = SIMPLE):
 
         if type not in ['train', 'test']:
             raise AttributeError('Value for type parameter should be either `train` or `test`')
@@ -24,11 +27,11 @@ class SplitTimeSeriesSequence(Sequence):
         if axis not in [0, 1]:
             raise AttributeError('The `axis` parameter should be either 0 or 1.')
 
-        if axis == 1 and vertical_split_type == 'model-aware' and (horizon == 0 or input_size == 0):
-                raise AttributeError("You need to provide non-zero `horizon` and `input_size` parameters when axis=1")
-
-        if vertical_split_type not in ['simple', 'model-aware']:
+        if vertical_split_type not in [SIMPLE, MODEL_AWARE]:
             raise AttributeError('`vertical_split_type` can be eiter `simple` or `model-aware`.')
+
+        if axis == 1 and vertical_split_type == MODEL_AWARE and (horizon == 0 or input_size == 0):
+                raise AttributeError("You need to provide non-zero `horizon` and `input_size` parameters when axis=1")
 
         self.type = type
         self.data = data
@@ -37,16 +40,20 @@ class SplitTimeSeriesSequence(Sequence):
         self.input_size = input_size
         self.horizon = horizon
         self.vertical_split_type = vertical_split_type
+        self._horizontal_split_index = None
 
     def _get_horizontal_split_index(self):
-        if 0 < self.test_size < 1:
-            return int(len(self.data) * (1 - self.test_size))
-        else:
-            return len(self.data) - self.test_size
+        if not self._horizontal_split_index:
+            if 0 < self.test_size < 1:
+                self._horizontal_split_index = int(len(self.data) * (1 - self.test_size))
+            else:
+                self._horizontal_split_index = len(self.data) - self.test_size
+
+        return self._horizontal_split_index
 
     def _get_vertical_split_indices(self, ts_length):
 
-        if self.vertical_split_type == 'simple':
+        if self.vertical_split_type == SIMPLE:
             if 0 < self.test_size < 1:
                 test_size = int(ts_length * self.test_size)
             else:
@@ -62,7 +69,7 @@ class SplitTimeSeriesSequence(Sequence):
             train_end_index = ts_length - self.horizon
 
             if 0 < self.test_size < 1:
-                test_size = int((ts_length - self.horizon) * (self.test_size))
+                test_size = int((ts_length - self.horizon) * self.test_size)
             else:
                 test_size = self.test_size
 
@@ -114,7 +121,7 @@ class SplitTimeSeriesSequence(Sequence):
                       axis: Optional[int] = 0,
                       input_size: Optional[int] = 0,
                       horizon: Optional[int] = 0,
-                      vertical_split_type: Optional[str] = 'simple',
+                      vertical_split_type: Optional[str] = SIMPLE,
                       lazy: bool = False
                       ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
 
@@ -146,7 +153,7 @@ def train_test_split(
         axis: Optional[int] = 0,
         input_size: Optional[int] = 0,
         horizon: Optional[int] = 0,
-        vertical_split_type: Optional[str] = 'simple',
+        vertical_split_type: Optional[str] = SIMPLE,
         lazy: bool = False
         ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
     """
@@ -157,6 +164,18 @@ def train_test_split(
 
     When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
     the timeseries in sequence is too small, all samples will go to the test set and the warning will be issued.
+
+
+    Time axis split with ``model-aware`` split type enabled tries to reclaim as much datapoints for training as
+    possible by partially overlapping test set with training set. This is possible because only forecasted part of
+    test set cannot be used for training. The formula to calculate last available timestep for training set is
+    following:
+
+        train end index = timeseries length - horizon
+
+    And the formula to calculate the first timestep of test dataset is following:
+
+        test start index = timeseries length - horizon - input_size - test_size - 1
 
     Parameters
     ----------
@@ -173,10 +192,10 @@ def train_test_split(
         no sense). [default: 0 for sequence of timeseries, 1 for timeseries]
 
     input_size
-        size of the input [default: 0]
+        size of the input. Only valid with ``vertical_split_type == 'model-aware'``. [default: None]
 
     horizon
-        forecast horizon [default: 0]
+        forecast horizon. Only valid with ``vertical_split_type == 'model-aware'``. [default: None]
 
     vertical_split_type
         can be either ``simple``, where the exact number from test size will be deducted from timeseries for test set and
