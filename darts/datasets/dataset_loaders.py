@@ -44,8 +44,16 @@ class DatasetLoader(ABC):
         """
         Load the dataset in memory, as a TimeSeries.
         Downloads the dataset if it is not present already
-        :raise DatasetLoadingException
-        :return: A TimeSeries object that contains the dataset
+
+        Raises
+        -------
+        DatasetLoadingException
+            If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)
+
+        Returns
+        -------
+        time_series: TimeSeries
+            A TimeSeries object that contains the dataset
         """
         if not self._is_already_downloaded():
             self._download_dataset()
@@ -55,8 +63,14 @@ class DatasetLoader(ABC):
     def _check_dataset_integrity_or_raise(self):
         """
         Ensures that the dataset exists and its MD5 checksum matches the expected hash.
-        :raise DatasetLoadingException if checks fail
-        :return: Nothing
+
+        Raises
+        -------
+        DatasetLoadingException
+            if checks fail
+
+        Returns
+        -------
         """
         if not self._is_already_downloaded():
             raise DatasetLoadingException(f"Checking md5 checksum of a absent file: {self._get_path_dataset()}")
@@ -70,8 +84,14 @@ class DatasetLoader(ABC):
     def _download_dataset(self):
         """
         Downloads the dataset in the root_path directory
-        :raise DatasetLoadingException if downloading or writing the file to disk fails
-        :return: Nothing
+
+        Raises
+        -------
+        DatasetLoadingException
+            if downloading or writing the file to disk fails
+
+        Returns
+        -------
         """
         os.makedirs(self._root_path, exist_ok=True)
         try:
@@ -86,7 +106,18 @@ class DatasetLoader(ABC):
         """
         Given a Path to the file and a DataLoaderMetadata object, return a TimeSeries
         One can assume that the file exists and its MD5 checksum has been verified before this function is called
-        :return: a TimeSeries object
+
+        Parameters
+        ----------
+        path_to_file: Path
+            A Path object where the dataset is located
+        metadata: Metadata
+            The dataset's metadata
+
+        Returns
+        -------
+        time_series: TimeSeries
+            a TimeSeries object that contains the whole dataset
         """
         pass
 
