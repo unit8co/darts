@@ -32,21 +32,49 @@ class MappersTestCase(unittest.TestCase):
     lin_series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
     zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
     tens = constant_timeseries(value=10.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+    twenties = constant_timeseries(value=20.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
 
     def test_mapper(self):
-        transformed = self.plus_ten.transform(self.zeroes)
-        self.assertEqual(transformed, self.tens)
+
+        test_cases = [
+            (self.zeroes, self.tens),
+            ([self.zeroes, self.tens], [self.tens, self.twenties])
+        ]
+
+        for to_transform, expected_output in test_cases:
+            transformed = self.plus_ten.transform(to_transform)
+            self.assertEqual(transformed, expected_output)
 
     def test_invertible_mapper(self):
-        transformed = self.plus_ten_invertible.transform(self.lin_series)
-        back = self.plus_ten_invertible.inverse_transform(transformed)
-        self.assertEqual(back, self.lin_series)
+        test_cases = [
+            (self.zeroes),
+            ([self.zeroes, self.tens])
+        ]
+
+        for data in test_cases:
+            transformed = self.plus_ten_invertible.transform(data)
+            back = self.plus_ten_invertible.inverse_transform(transformed)
+            self.assertEqual(back, data)
 
     def test_mapper_with_timestamp(self):
-        transformed = self.subtract_month.transform(self.lin_series)
-        self.assertEqual(transformed, self.zeroes)
+
+        test_cases = [
+            (self.lin_series, self.zeroes),
+            ([self.lin_series, self.lin_series], [self.zeroes, self.zeroes])
+        ]
+
+        for to_transform, expected_output in test_cases:
+            transformed = self.subtract_month.transform(to_transform)
+            self.assertEqual(transformed, expected_output)
 
     def test_invertible_mapper_with_timestamp(self):
-        transformed = self.subtract_month_invertible.transform(self.lin_series)
-        back = self.subtract_month_invertible.inverse_transform(transformed)
-        self.assertEqual(back, self.lin_series)
+
+        test_cases = [
+            (self.lin_series),
+            ([self.lin_series, self.lin_series])
+        ]
+
+        for data in test_cases:
+            transformed = self.subtract_month_invertible.transform(data)
+            back = self.subtract_month_invertible.inverse_transform(transformed)
+            self.assertEqual(back, data)
