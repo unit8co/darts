@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 class RegressionModel(ExtendedForecastingModel):
     def __init__(self,
                  lags: Union[int, list] = None,
-                 lags_exog: Union[int, list, bool] = None,
+                 lags_exog: Union[int, list] = None,
                  model=None):
         """ Regression Model
 
@@ -43,12 +43,11 @@ class RegressionModel(ExtendedForecastingModel):
         lags : Union[int, list]
             Number of lagged target values used to predict the next time step. If an integer is given
             the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
+            The integers must be strictly positive (>0).
         lags_exog : Union[int, list, bool]
             Number of lagged exogenous values used to predict the next time step. If an integer is given
             the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
-            at the current time `t`. This might lead to leakage if for predictions the values of the exogenous
-            variables at time `t` are not known.
+            The integers must be positive (>=0).
         model
             A regression model that implements `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
@@ -57,13 +56,10 @@ class RegressionModel(ExtendedForecastingModel):
             "At least one of `lags` or `lags_exog` must be not None."
         )
         raise_if_not(isinstance(lags, (int, list)) or lags is None,
-            "`lags` must be of type int or list."
+            "`lags` must be of type int or list. Given: {}.".format(type(lags))
         )
-        raise_if_not(isinstance(lags_exog, (int, list, bool)) or lags_exog is None,
-            "`lags_exog` must be of type int, list or bool."
-        )
-        raise_if(lags is None and lags_exog is True,
-            "`lags_exog` must not be True if `lags` is None."
+        raise_if_not(isinstance(lags_exog, (int, list)) or lags_exog is None,
+            "`lags_exog` must be of type int or list. Given: {}.".format(type(lags_exog))
         )
 
         if model is None:
@@ -85,12 +81,10 @@ class RegressionModel(ExtendedForecastingModel):
                 )
 
         self.lags_exog = lags_exog
-        if self.lags_exog is True:
-            self.lags_exog = self.lags[:]
-        elif self.lags_exog is False or self.lags_exog==0:
+        if self.lags_exog==0:
             self.lags_exog = [0]
         elif isinstance(self.lags_exog, int):
-            raise_if_not(self.lags_exog > 0, "`lags_exog` must be strictly positive. Given: {}.".format(self.lags_exog))
+            raise_if_not(self.lags_exog > 0, "`lags_exog` must be positive. Given: {}.".format(self.lags_exog))
             self.lags_exog = list(range(1, self.lags_exog+1))
         elif isinstance(self.lags_exog, list):
             for lag in self.lags_exog:
