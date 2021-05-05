@@ -11,34 +11,32 @@ from ..timeseries import TimeSeries
 
 
 @dataclass
-class DatasetMetadata:
+class DatasetLoaderMetadata:
     # name of the dataset
     name: str
     # uri of the dataset, expects a publicly available CSV file
     uri: str
     # md5 hash of the file to be downloaded
     hash: str
-    # The two next fields are used when parsing the CSV file
-    # TODO: rename those fields
+    # used to parse CSV file
     header_time: str
-    header_value: str
 
 
 class DatasetLoadingException(BaseException):
     pass
 
 
-class Dataset:
+class DatasetLoader:
     """
-    Class that downloads datasets and caches them locally.
-    Assumes that a CSV file can be downloaded (i.e. publicly available via an URI)
+    Class that downloads a dataset and caches it locally.
+    Assumes that the file can be downloaded (i.e. publicly available via an URI)
     """
-    _DEFAULT_DIRECTORY = Path('.darts/datasets/')
+    _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path('.darts/datasets/')))
 
-    def __init__(self, metadata: DatasetMetadata, root_path: Path = None, post_processing_function: Callable = None):
-        self._metadata: DatasetMetadata = metadata
+    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None, post_processing_function: Callable = None):
+        self._metadata: DatasetLoaderMetadata = metadata
         if root_path is None:
-            self._root_path: Path = Path(os.path.join(Path.home(), Dataset._DEFAULT_DIRECTORY))
+            self._root_path: Path = DatasetLoader._DEFAULT_DIRECTORY
         else:
             self._root_path: Path = root_path
         self._post_processing_function: Optional[Callable] = post_processing_function
@@ -91,7 +89,7 @@ class Dataset:
         :return: A TimeSeries object containing the dataset
         """
         df = pd.read_csv(self._get_path_dataset())
-        return TimeSeries.from_dataframe(df, self._metadata.header_time, self._metadata.header_value)
+        return TimeSeries.from_dataframe(df, self._metadata.header_time)
 
     def _get_path_dataset(self):
         return os.path.join(self._root_path, f"{self._metadata.name}.csv")
