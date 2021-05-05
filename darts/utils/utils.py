@@ -73,8 +73,6 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     verbose
     total
         Length of the iterator, helps in cases where tqdm is not detecting the total length.
-    total
-        Length of the iterator, helps in cases where tqdm is not detecting the total length.
 
     Returns
     -------
