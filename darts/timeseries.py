@@ -147,6 +147,9 @@ class TimeSeries:
         else:
             return self._df
 
+    def columns(self):
+        return self.pd_dataframe().columns
+
     def start_time(self) -> pd.Timestamp:
         """
         Returns
@@ -977,7 +980,7 @@ class TimeSeries:
             raise_if_not(index[-1] == index[0] + self.freq(),
                          'Appended index must have the same frequency as the current one.', logger)
         values = values[new_indices]
-        new_series = pd.DataFrame(values, index=index)
+        new_series = pd.DataFrame(values, columns=self.pd_dataframe().columns, index=index)
         new_series.columns = self._clean_df_columns(new_series.columns)
         series = self._df.append(new_series)
 
