@@ -62,7 +62,9 @@ class RegressionModel(ExtendedForecastingModel):
         raise_if_not(isinstance(lags_exog, (int, list)) or lags_exog is None,
             "`lags_exog` must be of type int or list. Given: {}.".format(type(lags_exog))
         )
-
+        raise_if(isinstance(lags, bool) or isinstance(lags_exog, bool),
+            "`lags` and `lags_exog` must be of type int or list, not bool."
+        )
         if model is None:
             model = LinearRegression()
 
@@ -82,7 +84,7 @@ class RegressionModel(ExtendedForecastingModel):
                 )
 
         self.lags_exog = lags_exog
-        if self.lags_exog==0:
+        if self.lags_exog == 0:
             self.lags_exog = [0]
         elif isinstance(self.lags_exog, int):
             raise_if_not(self.lags_exog > 0, "`lags_exog` must be positive. Given: {}.".format(self.lags_exog))
