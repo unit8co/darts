@@ -21,21 +21,21 @@ logger = get_logger(__name__)
 
 """
 Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
-the `actual_series` and `pred_series` parameters, and not having other `Sequence` as args (since these decorators)
-don't “unpack“ parameters different from `actual_series` and `pred_series. In those cases, the new metric must take
+the `actual_series` and `pred_series` parameters, and not having other `Sequence` as args (since these decorators
+don't “unpack“ parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 """
 
 
 def multi_ts_support(func):
     """
-    This decorator adapts the metrics that took as input two univariate/multivariate `TimeSeries` instances, adding
-    support for equally-sized array of `TimeSeries` instances. The decorator computes the pairwise metric for
-    `TimeSeries` with the same indices, and returns a float value that is computed as a function of all the single
-    pair metrics using a `inter_reduction` subroutine passed as argument to the metric function.
+    This decorator further adapts the metrics that took as input two univariate/multivariate `TimeSeries` instances,
+    adding support for equally-sized array of `TimeSeries` instances. The decorator computes the pairwise metric for
+    `TimeSeries` with the same indices, and returns a float value that is computed as a function of all the
+    pairwise metrics using a `inter_reduction` subroutine passed as argument to the metric function.
 
-    If a 'Sequence[TimeSeries]' is passed as input, this decorator provide also parallelisation of the metric evaluation
-    regarding different `TimeSeries` (if the `n_jobs` parameter is not set 1).
+    If a 'Sequence[TimeSeries]' is passed as input, this decorator provides also parallelisation of the metric
+    evaluation regarding different `TimeSeries` (if the `n_jobs` parameter is not set 1).
     """
 
     @wraps(func)
@@ -87,8 +87,7 @@ def multivariate_support(func):
     """
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs):
-
-        # we can avoid checks about args and kwargs since the input is passed by the previous decorator
+        # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
         actual_series = args[0]
         pred_series = args[1]
 
@@ -116,6 +115,8 @@ def _get_values_or_raise(series_a: TimeSeries,
 
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
+
+    raise_if_not(isinstance(intersect, bool), "The intersect parameter must be a bool")
 
     series_a_common = series_a.slice_intersect(series_b) if intersect else series_a
     series_b_common = series_b.slice_intersect(series_a) if intersect else series_b
@@ -560,9 +561,9 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     def _multivariate_mase(actual_series: TimeSeries,
                            pred_series: TimeSeries,
                            insample: Union[TimeSeries, Sequence[TimeSeries]],
-                           m: Optional[int] = 1,
-                           intersect: bool = True,
-                           intra_reduction: Callable[[np.ndarray], float] = np.mean):
+                           m: int,
+                           intersect: bool,
+                           intra_reduction: Callable[[np.ndarray], float]):
 
         raise_if_not(actual_series.width == pred_series.width,
                      "The two TimeSeries instances must have the same width.", logger)
@@ -573,7 +574,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
         value_list = []
         for i in range(actual_series.width):
-            # old implementation of mase on univate
+            # old implementation of mase on univate TimeSeries
             if m is None:
                 test_season, m = check_seasonality(insample)
                 if not test_season:
@@ -609,7 +610,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         raise_if_not(isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
                      "Expecting insample to be a Sequence[TimeSeries]")
         raise_if_not(len(pred_series) == len(actual_series) and len(pred_series) == len(insample),
-                     "The two TimeSeries arrays must have the same length.", logger)
+                     "The TimeSeries arrays must have the same length.", logger)
 
         raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
         raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
@@ -624,9 +625,9 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                      fn_args=dict(),
                                      fn_kwargs={
                                          "m": m,
-                                         "intersect": intersect
+                                         "intersect": intersect,
+                                         "intra_reduction": intra_reduction
                                      })
-
         return inter_reduction(value_list)
     else:
         raise_log(ValueError("Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."))
