@@ -1,12 +1,16 @@
 import os
 
 from darts import TimeSeries
-from darts.datasets import DatasetLoader, DatasetLoaderMetadata
 from darts.datasets import AirPassengers
-from darts.datasets.dataset_loaders import DatasetLoadingException
+from darts.datasets.dataset_loaders import (
+    DatasetLoadingException,
+    DatasetLoaderCSV,
+    DatasetLoaderMetadata,
+    DatasetLoader
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 
-wrong_hash_dataset = DatasetLoader(
+wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "wrong_hash",
         uri="https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv",
@@ -15,7 +19,7 @@ wrong_hash_dataset = DatasetLoader(
     )
 )
 
-wrong_url_dataset = DatasetLoader(
+wrong_url_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "wrong_url",
         uri="https://AirPassengers.csv",
