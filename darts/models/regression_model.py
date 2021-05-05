@@ -49,7 +49,8 @@ class RegressionModel(ExtendedForecastingModel):
             the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
             The integers must be positive (>=0).
         model
-            A regression model that implements `fit()` and `predict()` methods.
+            Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `exog`) with
+            `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
         raise_if((lags is None) and (lags_exog is None),

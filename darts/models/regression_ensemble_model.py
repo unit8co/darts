@@ -35,7 +35,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_n_points
             The number of points to use to train the regression model
         regression_model
-            Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `exog`).
+            Any regression model with predict() and fit() methods (e.g. from scikit-learn)
             Default: `darts.model.LinearRegressionModel(fit_intercept=False)`
         """
         super().__init__(forecasting_models)
