@@ -14,9 +14,10 @@
 * Coding style: better write clear code than fancy code. Follow PEP-8. Use type hints.
 * Write good docstrings for public classes and methods.
 * Always unit test everything.
-* These principles should prevail even if:
-    * They mean more code has to be written inside the library.
-    * They decrease the raw performance / computational speed.
+
+#### These principles should prevail even if:
+* They mean more code has to be written inside the library.
+* They decrease the raw performance / computational speed.
 
 
 
