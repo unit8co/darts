@@ -5,9 +5,6 @@
 * Focus on simplicity and clarity for end users.
 * Pay attention to designing the best possible API, simple by default, but offering control when needed.
 * Make it hard for users to make mistakes (e.g., future data leakage).
-* These principles should prevail even if
-    * They mean more code has to be written inside the library.
-    * They decrease the raw performance / computational speed.
 * `TimeSeries` is the main data type used to interface with Darts because:
     * We do not want users to have to worry about the specifics of Numpy, Torch etc 
     (users shouldn’t have to know what’s used behind the scenes if they don’t want to).
@@ -17,6 +14,10 @@
 * Coding style: better write clear code than fancy code. Follow PEP-8. Use type hints.
 * Write good docstrings for public classes and methods.
 * Always unit test everything.
+* These principles should prevail even if:
+    * They mean more code has to be written inside the library.
+    * They decrease the raw performance / computational speed.
+
 
 
 ## Technical Procedure
