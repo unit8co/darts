@@ -35,9 +35,7 @@ except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
 
 # Regression
-from .linear_regression_model import LinearRegressionModel
-from .random_forest import RandomForest
-from .regression_model import RegressionModel
+from .standard_regression_model import StandardRegressionModel
 
 # Ensembling
 from .ensemble_model import EnsembleModel

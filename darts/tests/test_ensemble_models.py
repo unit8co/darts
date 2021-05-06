@@ -1,5 +1,3 @@
-import numpy as np
-
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
@@ -35,8 +33,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         naive.fit(self.series1 + self.series2)
         theta.fit(self.series1 + self.series2)
         forecast_mean = 0.5 * naive.predict(5) + 0.5 * theta.predict(5)
-
-        self.assertTrue(np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values()))
+        self.assertEqual(forecast_naive_ensemble, forecast_mean)
 
 
 if __name__ == '__main__':

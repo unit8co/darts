@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import random
 
-from darts import TimeSeries
 from darts.metrics import mape, r2_score
 from darts.utils.timeseries_generation import (
     linear_timeseries as lt,
@@ -17,9 +16,8 @@ from darts.models import (
     FFT,
     ExponentialSmoothing,
     NaiveSeasonal,
-    LinearRegressionModel,
+    StandardRegressionModel,
     NaiveDrift,
-    RandomForest,
 )
 
 from .base_test_class import DartsBaseTestClass
@@ -148,60 +146,57 @@ class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_regression(self):
         gaussian_series = gt(mean=2, length=50)
         sine_series = st(length=50)
-        features = gaussian_series.stack(sine_series)
-        features_multivariate = (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
-        target = sine_series
-
-        features = TimeSeries(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
-        features_multivariate = TimeSeries(features_multivariate.pd_dataframe().rename(
-            {"0": "Value0", "1": "Value1", "2": "Value2"}, axis=1)
-        )
+        features = [gaussian_series + sine_series, gaussian_series]
+        features_multivariate = [(gaussian_series + sine_series).stack(gaussian_series), gaussian_series]
+        target = st(length=50)
 
         # univariate feature test
-        score = LinearRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
-            series=target, covariates=features, start=pd.Timestamp('20000201'),
-            forecast_horizon=3, metric=r2_score, last_points_only=True
-        )
-        self.assertGreater(score, 0.95)
+        score = StandardRegressionModel(15).backtest(features, target, pd.Timestamp('20000201'), 3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # Using an int or float value for start
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
-            series=target, covariates=features, start=30,
-            forecast_horizon=3, metric=r2_score
-        )
-        self.assertGreater(score, 0.95)
+        score = StandardRegressionModel(15).backtest(features, target, start=30, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
-            series=target, covariates=features, start=0.5,
-            forecast_horizon=3, metric=r2_score
-        )
-        self.assertGreater(score, 0.95)
+        score = StandardRegressionModel(15).backtest(features, target, start=0.5, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # Using a too small start value
         with self.assertRaises(ValueError):
-            RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
+            StandardRegressionModel(15).backtest(features, target, start=0, forecast_horizon=3)
 
         with self.assertRaises(ValueError):
-            RandomForest(lags=12).backtest(series=target, start=0.01, forecast_horizon=3)
+            StandardRegressionModel(15).backtest(features, target, start=0.01, forecast_horizon=3)
 
-        # Using RandomForest's start default value
-        score = RandomForest(lags=12).backtest(series=target, forecast_horizon=3, metric=r2_score)
-        self.assertGreater(score, 0.95)
+        # Using StandardRegressionModel's start default value
+        score = StandardRegressionModel(15).backtest(features, target, forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
 
         # multivariate feature test
-        score = RandomForest(lags=12, lags_exog=[0, 1]).backtest(
-            series=target, covariates=features_multivariate,
-            start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score
-        )
-        self.assertGreater(score, 0.95)
+        score = StandardRegressionModel(15).backtest(features_multivariate,
+                                                     target,
+                                                     pd.Timestamp('20000201'),
+                                                     forecast_horizon=3,
+                                                     metric=r2_score)
+        self.assertEqual(score, 1.0)
 
-        # multivariate with stride
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
-            series=target, covariates=features_multivariate,
-            start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score,
-            last_points_only=True, stride=3
-        )
-        self.assertGreater(score, 0.95)
+        # multivariate target
+        score = StandardRegressionModel(15).backtest(features_multivariate,
+                                                     target.stack(target),
+                                                     pd.Timestamp('20000201'),
+                                                     forecast_horizon=3,
+                                                     metric=r2_score)
+        self.assertEqual(score, 1.0)
+
+        # multivariate target with stride
+        hist = StandardRegressionModel(15).historical_forecasts(features_multivariate,
+                                                                target.stack(target),
+                                                                pd.Timestamp('20000201'),
+                                                                forecast_horizon=3,
+                                                                stride=3,
+                                                                last_points_only=True)
+        self.assertEqual(r2_score(target.stack(target), hist), 1.0)
+        self.assertEqual((hist.time_index()[1] - hist.time_index()[0]).days, 3)
 
     def test_gridsearch(self):
 

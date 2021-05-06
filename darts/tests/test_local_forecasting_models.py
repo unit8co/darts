@@ -7,10 +7,7 @@ from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
-from ..models import (
-    NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT, VARIMA,
-    RandomForest, LinearRegressionModel
-)
+from ..models import NaiveSeasonal, ExponentialSmoothing, ARIMA, Theta, FourTheta, FFT, VARIMA
 from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
 
@@ -31,8 +28,6 @@ models = [
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend='poly'), 11.4),
     (NaiveSeasonal(), 32.4),
-    (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
 ]
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -40,7 +35,7 @@ multivariate_models = [
     (VARIMA(1, 1, 1), 57.0),
 ]
 
-extended_models = [ARIMA(), LinearRegressionModel(lags=4, lags_exog=2), RandomForest(lags=4, lags_exog=2)]
+extended_models = [ARIMA()]
 
 
 try:
@@ -51,7 +46,7 @@ except ImportError:
 
 try:
     from ..models import AutoARIMA
-    models.append((AutoARIMA(), 12.2))
+    models.append((AutoARIMA(), 13.7))
     extended_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:
@@ -97,7 +92,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}. "
+            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
                             "with a MAPE of {}".format(str(model), max_mape, current_mape))
 
     def test_multivariate_models_performance(self):
@@ -106,7 +101,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
             current_mape = mape(prediction, self.ts_ice_heater_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}. "
+            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}."
                             "with a MAPE of {}".format(str(model), max_mape, current_mape))
 
     def test_multivariate_input(self):
@@ -123,14 +118,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
             # Test models runnability
             model.fit(self.ts_gaussian, exog=self.ts_gaussian)
-
             prediction = model.predict(
                 self.forecasting_horizon,
-                exog=tg.gaussian_timeseries(
-                    length=self.forecasting_horizon,
-                    start_ts=self.ts_gaussian.end_time()+self.ts_gaussian.freq()
-                    )
-                )
+                exog=tg.gaussian_timeseries(length=self.forecasting_horizon))
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
             # Test mismatch in length between exogenous variables and forecasting horizon
