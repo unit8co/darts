@@ -24,18 +24,31 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "3. Setup pip"
+        # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "3. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "3.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
+      - name: "4. Setup pip"
         run: |
           ./gradlew setupPip
 
-      - name: "4. Attach cache for pip"
+      - name: "5. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
           key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
 
-      - name: "5. Tests"
+      - name: "6. Tests"
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
@@ -53,7 +66,20 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: "3. Run examples ${{matrix.example-name}}"
+      # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "3. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "3.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
+      - name: "4. Run examples ${{matrix.example-name}}"
         run: |
           ./gradlew checkExample -PexampleName=${{matrix.example-name}}
 
@@ -73,17 +99,30 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
 
-      - name: "4. Setup pip"
+      # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "4. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "4.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+
+      - name: "5. Setup pip"
         run: |
           ./gradlew setupPip
 
-      - name: "5. Attach cache for pip"
+      - name: "6. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
           key: release-${{ runner.os }}-3.8-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
 
-      - name: "6. Build docs"
+      - name: "7. Build docs"
         run: |
           ./gradlew buildDocs
