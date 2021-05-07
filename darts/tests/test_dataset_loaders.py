@@ -1,7 +1,10 @@
 import os
 
 from darts import TimeSeries
-from darts.datasets import AirPassengers
+from darts.datasets import (
+    AirPassengersDataset, EnergyDataset, IceCreamHeaterDataset,
+    MonthlyMilkDataset, TemperatureDataset
+)
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
     DatasetLoaderCSV,
@@ -10,12 +13,15 @@ from darts.datasets.dataset_loaders import (
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 
+datasets = [AirPassengersDataset, IceCreamHeaterDataset, MonthlyMilkDataset]
+
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "wrong_hash",
         uri="https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv",
         hash="will fail",
         header_time="Month",
+        format_time="%Y-%m"
     )
 )
 
@@ -25,8 +31,10 @@ wrong_url_dataset = DatasetLoaderCSV(
         uri="https://AirPassengers.csv",
         hash="167ffa96204a2b47339c21eea25baf32",
         header_time="Month",
+        format_time="%Y-%m"
     )
 )
+
 
 
 class DatasetLoaderTestCase(DartsBaseTestClass):
@@ -38,7 +46,8 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
 
     def test_ok_dataset(self):
-        ts: TimeSeries = AirPassengers.load()
+        for dataset in datasets:
+            ts: TimeSeries = dataset.load()
         self.assertGreaterEqual(ts.width, 1)
 
     def test_hash(self):

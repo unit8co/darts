@@ -20,6 +20,9 @@ class DatasetLoaderMetadata:
     hash: str
     # used to parse the dataset file
     header_time: str
+    # used to convert the string date to pd.Datetime
+    # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+    format_time: str = None
 
 
 class DatasetLoadingException(BaseException):
@@ -127,6 +130,12 @@ class DatasetLoader(ABC):
     def _is_already_downloaded(self) -> bool:
         return os.path.isfile(self._get_path_dataset())
 
+    def _format_time_column(self, df):
+        df[self._metadata.header_time] = pd.to_datetime(
+            df[self._metadata.header_time], format=self._metadata.format_time, errors="raise"
+        )
+        return df
+
 
 class DatasetLoaderCSV(DatasetLoader):
     def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None):
@@ -134,4 +143,5 @@ class DatasetLoaderCSV(DatasetLoader):
 
     def _load_from_disk(self, path_to_file: Path, metadata: DatasetLoaderMetadata) -> TimeSeries:
         df = pd.read_csv(path_to_file)
+        df = self._format_time_column(df)
         return TimeSeries.from_dataframe(df, metadata.header_time)
