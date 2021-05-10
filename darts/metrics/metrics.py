@@ -30,7 +30,7 @@ care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own
 def multi_ts_support(func):
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate `TimeSeries` instances,
-    adding support for equally-sized array of `TimeSeries` instances. The decorator computes the pairwise metric for
+    adding support for equally-sized sequences of `TimeSeries` instances. The decorator computes the pairwise metric for
     `TimeSeries` with the same indices, and returns a float value that is computed as a function of all the
     pairwise metrics using a `inter_reduction` subroutine passed as argument to the metric function.
 
@@ -44,8 +44,8 @@ def multi_ts_support(func):
         pred_series = kwargs['pred_series'] if 'pred_series' in kwargs else args[0] if 'actual_series' in kwargs \
             else args[1]
 
-        n_jobs = kwargs.pop('n_jobs', 1)
-        verbose = kwargs.pop('verbose', False)
+        n_jobs = kwargs.pop('n_jobs', signature(func).parameters['n_jobs'].default)
+        verbose = kwargs.pop('verbose', signature(func).parameters['verbose'].default)
 
         raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
         raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
@@ -54,7 +54,7 @@ def multi_ts_support(func):
         pred_series = [pred_series] if not isinstance(pred_series, Sequence) else pred_series
 
         raise_if_not(len(actual_series) == len(pred_series),
-                     "The two TimeSeries arrays must have the same length.", logger)
+                     "The two TimeSeries sequences must have the same length.", logger)
 
         num_series_in_args = int('actual_series' not in kwargs) + int('pred_series' not in kwargs)
         kwargs.pop('actual_series', 0)
@@ -70,6 +70,9 @@ def multi_ts_support(func):
                                      fn_args=args[num_series_in_args:],
                                      fn_kwargs=kwargs)
 
+        if len(value_list) == 1:
+            value_list = value_list[0]
+
         if 'inter_reduction' in kwargs:
             return kwargs['inter_reduction'](value_list)
         else:
@@ -83,7 +86,7 @@ def multivariate_support(func):
     This decorator transforms a metric function that takes as input two univariate TimeSeries instances
     into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
     metrics for components with the same indices, and returns a float value that is computed as a function of all the
-    univariate metrics using a `intra_reduction` subroutine passed as argument to the metric function.
+    univariate metrics using a `reduction` subroutine passed as argument to the metric function.
     """
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs):
@@ -98,10 +101,10 @@ def multivariate_support(func):
         for i in range(actual_series.width):
             value_list.append(func(actual_series.univariate_component(i), pred_series.univariate_component(i),
                               *args[2:], **kwargs))  # [2:] since we already know the first two arguments are the series
-        if 'intra_reduction' in kwargs:
-            return kwargs['intra_reduction'](value_list)
+        if 'reduction' in kwargs:
+            return kwargs['reduction'](value_list)
         else:
-            return signature(func).parameters['intra_reduction'].default(value_list)
+            return signature(func).parameters['reduction'].default(value_list)
     return wrapper_multivariate_support
 
 
@@ -146,10 +149,11 @@ def _remove_nan_union(array_a: np.ndarray,
 def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
-        intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        *,
+        reduction: Callable[[np.ndarray], float] = np.mean,
+        inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
         n_jobs: int = 1,
-        verbose: bool = False) -> float:
+        verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Mean Absolute Error (MAE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -165,7 +169,7 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -194,10 +198,11 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
-        intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        *,
+        reduction: Callable[[np.ndarray], float] = np.mean,
+        inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
         n_jobs: int = 1,
-        verbose: bool = False) -> float:
+        verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Mean Squared Error (MSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -213,7 +218,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -242,10 +247,11 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          pred_series: Union[TimeSeries, Sequence[TimeSeries]],
          intersect: bool = True,
-         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         *,
+         reduction: Callable[[np.ndarray], float] = np.mean,
+         inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
          n_jobs: int = 1,
-         verbose: bool = False) -> float:
+         verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Root Mean Squared Error (RMSE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -261,7 +267,7 @@ def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -287,10 +293,11 @@ def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
-          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          *,
+          reduction: Callable[[np.ndarray], float] = np.mean,
+          inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
           n_jobs: int = 1,
-          verbose: bool = False) -> float:
+          verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Root Mean Squared Log Error (RMSLE).
 
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
@@ -308,7 +315,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -338,10 +345,11 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
                              intersect: bool = True,
-                             intra_reduction: Callable[[np.ndarray], float] = np.mean,
-                             inter_reduction: Callable[[np.ndarray], float] = np.mean,
+                             *,
+                             reduction: Callable[[np.ndarray], float] = np.mean,
+                             inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
                              n_jobs: int = 1,
-                             verbose: bool = False) -> float:
+                             verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Coefficient of Variation (percentage).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`,
@@ -361,7 +369,7 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -388,10 +396,11 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
 def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          pred_series: Union[TimeSeries, Sequence[TimeSeries]],
          intersect: bool = True,
-         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         *,
+         reduction: Callable[[np.ndarray], float] = np.mean,
+         inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
          n_jobs: int = 1,
-         verbose: bool = False) -> float:
+         verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Mean Absolute Percentage Error (MAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -411,7 +420,7 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -446,10 +455,11 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
-          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          *,
+          reduction: Callable[[np.ndarray], float] = np.mean,
+          inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
           n_jobs: int = 1,
-          verbose: bool = False) -> float:
+          verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ symmetric Mean Absolute Percentage Error (sMAPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -471,7 +481,7 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -508,10 +518,11 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          insample: Union[TimeSeries, Sequence[TimeSeries]],
          m: Optional[int] = 1,
          intersect: bool = True,
-         intra_reduction: Callable[[np.ndarray], float] = np.mean,
-         inter_reduction: Callable[[np.ndarray], float] = np.mean,
+         *,
+         reduction: Callable[[np.ndarray], float] = np.mean,
+         inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
          n_jobs: int = 1,
-         verbose: bool = False) -> float:
+         verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Mean Absolute Scaled Error (MASE).
 
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
@@ -534,7 +545,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -563,7 +574,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                            insample: Union[TimeSeries, Sequence[TimeSeries]],
                            m: int,
                            intersect: bool,
-                           intra_reduction: Callable[[np.ndarray], float]):
+                           reduction: Callable[[np.ndarray], float]):
 
         raise_if_not(actual_series.width == pred_series.width,
                      "The two TimeSeries instances must have the same width.", logger)
@@ -574,7 +585,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
         value_list = []
         for i in range(actual_series.width):
-            # old implementation of mase on univate TimeSeries
+            # old implementation of mase on univariate TimeSeries
             if m is None:
                 test_season, m = check_seasonality(insample)
                 if not test_season:
@@ -591,7 +602,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
             raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
             value_list.append(np.mean(errors / scale))
 
-        return intra_reduction(value_list)
+        return reduction(value_list)
 
     if isinstance(actual_series, TimeSeries):
         raise_if_not(isinstance(pred_series, TimeSeries), "Expecting pred_series to be TimeSeries")
@@ -601,7 +612,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                   insample=insample,
                                   m=m,
                                   intersect=intersect,
-                                  intra_reduction=intra_reduction)
+                                  reduction=reduction)
 
     elif isinstance(actual_series, Sequence) and isinstance(actual_series[0], TimeSeries):
 
@@ -610,7 +621,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         raise_if_not(isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
                      "Expecting insample to be a Sequence[TimeSeries]")
         raise_if_not(len(pred_series) == len(actual_series) and len(pred_series) == len(insample),
-                     "The TimeSeries arrays must have the same length.", logger)
+                     "The TimeSeries sequences must have the same length.", logger)
 
         raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
         raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
@@ -626,7 +637,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                      fn_kwargs={
                                          "m": m,
                                          "intersect": intersect,
-                                         "intra_reduction": intra_reduction
+                                         "reduction": reduction
                                      })
         return inter_reduction(value_list)
     else:
@@ -638,10 +649,11 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
-        intra_reduction: Callable[[np.ndarray], float] = np.mean,
-        inter_reduction: Callable[[np.ndarray], float] = np.mean,
+        *,
+        reduction: Callable[[np.ndarray], float] = np.mean,
+        inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
         n_jobs: int = 1,
-        verbose: bool = False) -> float:
+        verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Overall Percentage Error (OPE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -659,7 +671,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -695,10 +707,11 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
-          intra_reduction: Callable[[np.ndarray], float] = np.mean,
-          inter_reduction: Callable[[np.ndarray], float] = np.mean,
+          *,
+          reduction: Callable[[np.ndarray], float] = np.mean,
+          inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
           n_jobs: int = 1,
-          verbose: bool = False) -> float:
+          verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Mean Absolute Ranged Relative Error (MARRE).
 
     Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
@@ -716,7 +729,7 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
+    reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
@@ -753,10 +766,11 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
              intersect: bool = True,
-             intra_reduction: Callable[[np.ndarray], float] = np.mean,
-             inter_reduction: Callable[[np.ndarray], float] = np.mean,
+             *,
+             reduction: Callable[[np.ndarray], float] = np.mean,
+             inter_reduction: Callable[[np.ndarray], Union[float, np.array]] = lambda x: x,
              n_jobs: int = 1,
-             verbose: bool = False) -> float:
+             verbose: bool = False) -> Union[float, Union[Sequence[float], np.array]]:
     """ Coefficient of Determination :math:`R^2`.
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
@@ -773,9 +787,9 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    intra_reduction
-        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-        the metrics of different components in case of multivariate TimeSeries instances.
+    reduction
+        Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate the
+        metrics of different components in case of multivariate TimeSeries instances.
     inter_reduction
         Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
         the metrics of different series in case the metric is evaluated on a 'Sequence[TimeSeries]'

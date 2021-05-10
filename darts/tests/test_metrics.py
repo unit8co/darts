@@ -68,8 +68,8 @@ class MetricsTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(metric(s1, s2, **kwargs),
                                    metric(s11, s22, **kwargs))
             # custom intra
-            self.assertAlmostEqual(metric(s1, s2, **kwargs, intra_reduction=(lambda x: x[0])),
-                                   metric(s11, s22, **kwargs, intra_reduction=(lambda x: x[0])))
+            self.assertAlmostEqual(metric(s1, s2, **kwargs, reduction=(lambda x: x[0])),
+                                   metric(s11, s22, **kwargs, reduction=(lambda x: x[0])))
 
     def helper_test_multiple_ts_duplication_equality(self, metric, **kwargs):
 
@@ -83,11 +83,11 @@ class MetricsTestCase(DartsBaseTestClass):
             s11 = [s1.stack(s1)] * 2
             s22 = [s2.stack(s2)] * 2
             # default intra and inter
-            self.assertAlmostEqual(metric(s1, s2, **kwargs),
+            self.assertAlmostEqual([metric(s1, s2, **kwargs)] * 2,
                                    metric(s11, s22, **kwargs))
             # custom intra and inter
-            self.assertAlmostEqual(metric(s1, s2, **kwargs, intra_reduction=np.mean, inter_reduction=np.max),
-                                   metric(s11, s22, **kwargs, intra_reduction=np.mean, inter_reduction=np.max))
+            self.assertAlmostEqual(metric(s1, s2, **kwargs, reduction=np.mean, inter_reduction=np.max),
+                                   metric(s11, s22, **kwargs, reduction=np.mean, inter_reduction=np.max))
 
     def helper_test_nan(self, metric):
         # univariate
@@ -134,7 +134,7 @@ class MetricsTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(metrics.rmse(self.series1.append(self.series2b), self.series2.append(self.series1b)),
                                metrics.mse(self.series12,
                                            self.series21,
-                                           intra_reduction=(lambda x: np.sqrt(np.mean(x)))))
+                                           reduction=(lambda x: np.sqrt(np.mean(x)))))
         self.helper_test_nan(metrics.rmse)
 
     def test_rmsle(self):
@@ -170,18 +170,18 @@ class MetricsTestCase(DartsBaseTestClass):
 
             # multivariate, series as args
             self.assertAlmostEqual(metrics.mase(s1.stack(s1), s2.stack(s2), insample.stack(insample),
-                                                intra_reduction=(lambda x: x[0])),
+                                                reduction=(lambda x: x[0])),
                                    metrics.mase(s1, s2, insample))
             # multi-ts, series as kwargs
             self.assertAlmostEqual(metrics.mase(actual_series=[s1] * 2, pred_series=[s2] * 2, insample=[insample] * 2,
-                                                intra_reduction=(lambda x: x[0]), inter_reduction=(lambda x: x[0])),
+                                                reduction=(lambda x: x[0]), inter_reduction=(lambda x: x[0])),
                                    metrics.mase(s1, s2, insample))
             # checking with n_jobs and verbose
             self.assertAlmostEqual(metrics.mase([s1] * 5, pred_series=[s2] * 5, insample=[insample] * 5,
-                                                intra_reduction=(lambda x: x[0]),
+                                                reduction=(lambda x: x[0]),
                                                 inter_reduction=(lambda x: x[0])),
                                    metrics.mase([s1] * 5, [s2] * 5, insample=[insample] * 5,
-                                                intra_reduction=(lambda x: x[0]), inter_reduction=(lambda x: x[0]),
+                                                reduction=(lambda x: x[0]), inter_reduction=(lambda x: x[0]),
                                                 n_jobs=-1, verbose=True))
         # checking with m=None
         self.assertAlmostEqual(metrics.mase(self.series2, self.series2, self.series_train_not_periodic, m=None),
@@ -212,33 +212,35 @@ class MetricsTestCase(DartsBaseTestClass):
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
-        self.assertEqual(metrics.r2_score(series11, series00, True, np.mean), 0)
-        self.assertEqual(metrics.r2_score(series11, series00, intra_reduction=np.mean), 0)
-        self.assertEqual(metrics.r2_score(series11, pred_series=series00, intra_reduction=np.mean), 0)
-        self.assertEqual(metrics.r2_score(series00, actual_series=series11, intra_reduction=np.mean), 0)
-        self.assertEqual(metrics.r2_score(True, np.mean, pred_series=series00, actual_series=series11), 0)
-        self.assertEqual(metrics.r2_score(series00, True, np.mean, actual_series=series11), 0)
-        self.assertEqual(metrics.r2_score(series11, True, np.mean, pred_series=series00), 0)
+        self.assertEqual(metrics.r2_score(series11, series00, True, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, pred_series=series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series00, actual_series=series11, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(True, reduction=np.mean, pred_series=series00, actual_series=series11), 0)
+        self.assertEqual(metrics.r2_score(series00, True, reduction=np.mean, actual_series=series11), 0)
+        self.assertEqual(metrics.r2_score(series11, True, reduction=np.mean, pred_series=series00), 0)
 
     def test_multiple_ts(self):
-
+        
+        dim = 2
+        
         # simple test
         multi_ts_1 = [self.series1 + 1, self.series1 + 1]
         multi_ts_2 = [self.series1 + 2, self.series1 + 1]
-        self.assertEqual(metrics.rmse(multi_ts_1, multi_ts_2, intra_reduction=np.mean, inter_reduction=np.mean), 0.5)
+        self.assertEqual(metrics.rmse(multi_ts_1, multi_ts_2, reduction=np.mean, inter_reduction=np.mean), 0.5)
 
         # checking univariate, multivariate and multi-ts gives same metrics with same values
         series11 = self.series1.stack(self.series1) + 1
         series22 = self.series2.stack(self.series2)
-        multi_1 = [series11] * 2
-        multi_2 = [series22] * 2
+        multi_1 = [series11] * dim
+        multi_2 = [series22] * dim
 
         test_metric = [metrics.r2_score, metrics.rmse, metrics.mape, metrics.smape, metrics.mae,
                        metrics.coefficient_of_variation, metrics.ope, metrics.marre, metrics.mse, metrics.rmsle]
 
         for metric in test_metric:
             self.assertEqual(metric(self.series1 + 1, self.series2), metric(series11, series22))
-            self.assertEqual(metric(series11, series22), metric(multi_1, multi_2))
+            self.assertEqual([metric(series11, series22)] * 2, metric(multi_1, multi_2))
 
         # trying different functions
         shifted_1 = self.series1 + 1
@@ -246,13 +248,13 @@ class MetricsTestCase(DartsBaseTestClass):
         shifted_3 = self.series1 + 3
 
         self.assertEqual(metrics.rmse([shifted_1, shifted_1], [shifted_2, shifted_3],
-                                      intra_reduction=np.mean, inter_reduction=np.max),
+                                      reduction=np.mean, inter_reduction=np.max),
                          metrics.rmse(shifted_1, shifted_3))
 
         # checking if the result is the same with different n_jobs and verbose True
         self.assertEqual(metrics.rmse([shifted_1, shifted_1], [shifted_2, shifted_3],
-                                      intra_reduction=np.mean, inter_reduction=np.max),
+                                      reduction=np.mean, inter_reduction=np.max),
                          metrics.rmse([shifted_1, shifted_1], [shifted_2, shifted_3],
-                                      intra_reduction=np.mean, inter_reduction=np.max,
+                                      reduction=np.mean, inter_reduction=np.max,
                                       n_jobs=-1,
                                       verbose=True))
