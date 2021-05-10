@@ -1,5 +1,6 @@
 import shutil
 import logging
+import numpy as np
 
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
@@ -45,8 +46,16 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred3), 1)
 
         def test_multivariate(self):
-            series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100))
-            model = NBEATSModel(input_chunk_length=1, output_chunk_length=1,
-                                n_epochs=10, num_stacks=1, num_blocks=1, layer_widths=20)
-            with self.assertRaises(ValueError):
-                model.fit(series_multivariate)
+
+            # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
+            series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100, start_value = 0, end_value=0.5))
+            model = NBEATSModel(input_chunk_length=1, output_chunk_length=1, n_epochs=20)
+
+            model.fit(series_multivariate)
+            res = model.predict(n=2).values()
+            # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
+            # We just test if the given result is not too far in average.
+            self.assertTrue(abs(np.average(res-np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.02))
+
+            # with self.assertRaises(ValueError):
+            #     model.fit(series_multivariate)
