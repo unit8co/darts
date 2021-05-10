@@ -3,7 +3,8 @@ import os
 from darts import TimeSeries
 from darts.datasets import (
     AirPassengersDataset, EnergyDataset, IceCreamHeaterDataset,
-    MonthlyMilkDataset, TemperatureDataset
+    MonthlyMilkDataset, TemperatureDataset, USGasolineDataset,
+    WoolyDataset, AusBeerDataset
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
@@ -13,7 +14,11 @@ from darts.datasets.dataset_loaders import (
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 
-datasets = [AirPassengersDataset, IceCreamHeaterDataset, MonthlyMilkDataset]
+datasets = [
+    AirPassengersDataset, IceCreamHeaterDataset,
+    MonthlyMilkDataset, USGasolineDataset,
+    WoolyDataset, AusBeerDataset
+]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
