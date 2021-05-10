@@ -2,9 +2,10 @@ import os
 
 from darts import TimeSeries
 from darts.datasets import (
-    AirPassengersDataset, EnergyDataset, IceCreamHeaterDataset,
-    MonthlyMilkDataset, TemperatureDataset, USGasolineDataset,
-    WoolyDataset, AusBeerDataset
+    AirPassengersDataset, AusBeerDataset, #EnergyDataset,
+    HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
+    SunspotsDataset, TaylorDataset, TemperatureDataset,
+    USGasolineDataset, WineDataset, WoolyDataset
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
@@ -15,9 +16,17 @@ from darts.datasets.dataset_loaders import (
 from darts.tests.base_test_class import DartsBaseTestClass
 
 datasets = [
-    AirPassengersDataset, IceCreamHeaterDataset,
-    MonthlyMilkDataset, USGasolineDataset,
-    WoolyDataset, AusBeerDataset
+    AirPassengersDataset, AusBeerDataset,
+    HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
+    SunspotsDataset, TaylorDataset, TemperatureDataset,
+    USGasolineDataset, WineDataset, WoolyDataset
+]
+
+width_datasets = [
+    1, 1,
+    1, 2, 1,
+    1, 1, 1,
+    1, 1, 1
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(
@@ -41,7 +50,6 @@ wrong_url_dataset = DatasetLoaderCSV(
 )
 
 
-
 class DatasetLoaderTestCase(DartsBaseTestClass):
     def tearDown(self):
         # we need to remove the cached datasets between each test
@@ -51,9 +59,9 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
 
     def test_ok_dataset(self):
-        for dataset in datasets:
+        for width, dataset in zip(width_datasets, datasets):
             ts: TimeSeries = dataset.load()
-        self.assertGreaterEqual(ts.width, 1)
+            self.assertEqual(ts.width, width)
 
     def test_hash(self):
         with self.assertRaises(DatasetLoadingException):
