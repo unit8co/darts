@@ -34,6 +34,16 @@ EnergyDataset = DatasetLoaderCSV(
     )
 )
 
+GasRateCO2Dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "gasrate_co2.csv",
+        uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/gasrate_co2.csv",
+        hash="1f2232c83660033c4af71c7f3b6c0c1a",
+        header_time=None,
+        format_time=None
+    )
+)
+
 HeartRateDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "heart_rate.csv",

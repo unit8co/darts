@@ -5,7 +5,8 @@ from darts.datasets import (
     AirPassengersDataset, AusBeerDataset, EnergyDataset,
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
-    USGasolineDataset, WineDataset, WoolyDataset
+    USGasolineDataset, WineDataset, WoolyDataset,
+    GasRateCO2Dataset
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
@@ -19,11 +20,12 @@ datasets = [
     AirPassengersDataset, AusBeerDataset, EnergyDataset,
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
-    USGasolineDataset, WineDataset, WoolyDataset
+    USGasolineDataset, WineDataset, WoolyDataset,
+    GasRateCO2Dataset
 ]
 
 width_datasets = [
-    1, 1, 28,
+    1, 1, 29,
     1, 2, 1,
     1, 1, 1,
     1, 1, 1
