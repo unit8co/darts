@@ -2,8 +2,8 @@ from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
 """
     Overall usage of this package:
-    from darts.datasets import AirPassengers
-    ts: TimeSeries = AirPassengers.load()
+    from darts.datasets import AirPassengersDataset
+    ts: TimeSeries = AirPassengersDataset.load()
 """
 AirPassengersDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
@@ -25,15 +25,15 @@ AusBeerDataset = DatasetLoaderCSV(
 )
 
 ### Fails due to summer- winter time duplicates
-# EnergyDataset = DatasetLoaderCSV(
-#     metadata=DatasetLoaderMetadata(
-#         "energy.csv",
-#         uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/energy_dataset.csv",
-#         hash="63afe36eed077c06fe342a7274d0e2e3",
-#         header_time="time",
-#         format_time="%Y-%m-%d %H:%M:%S"
-#     )
-# )
+EnergyDataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "energy.csv",
+        uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/energy_dataset.csv",
+        hash="63afe36eed077c06fe342a7274d0e2e3",
+        header_time="time",
+        format_time="%Y-%m-%d %H:%M:%S"
+    )
+)
 
 HeartRateDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
@@ -85,12 +85,11 @@ TaylorDataset = DatasetLoaderCSV(
     )
 )
 
-### Fails because some values start with "?"
 TemperatureDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "temperatures.csv",
         uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/temps.csv",
-        hash="bd3831f19147b09c41243eae8c3cd172",
+        hash="ce5b5e4929793ec8b6a54711110acebf",
         header_time="Date",
         format_time="%m/%d/%Y"
     )

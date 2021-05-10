@@ -2,7 +2,7 @@ import os
 
 from darts import TimeSeries
 from darts.datasets import (
-    AirPassengersDataset, AusBeerDataset, #EnergyDataset,
+    AirPassengersDataset, AusBeerDataset, EnergyDataset,
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
     USGasolineDataset, WineDataset, WoolyDataset
@@ -16,14 +16,14 @@ from darts.datasets.dataset_loaders import (
 from darts.tests.base_test_class import DartsBaseTestClass
 
 datasets = [
-    AirPassengersDataset, AusBeerDataset,
+    AirPassengersDataset, AusBeerDataset, EnergyDataset,
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
     USGasolineDataset, WineDataset, WoolyDataset
 ]
 
 width_datasets = [
-    1, 1,
+    1, 1, 28,
     1, 2, 1,
     1, 1, 1,
     1, 1, 1
@@ -32,7 +32,7 @@ width_datasets = [
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "wrong_hash",
-        uri="https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv",
+        uri="https://raw.githubusercontent.com/unit8co/darts/master/datasets/data/AirPassengers.csv",
         hash="will fail",
         header_time="Month",
         format_time="%Y-%m"
