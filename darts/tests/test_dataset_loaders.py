@@ -6,7 +6,7 @@ from darts.datasets import (
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
     USGasolineDataset, WineDataset, WoolyDataset,
-    GasRateCO2Dataset
+    GasRateCO2Dataset, MonthlyMilkIncompleteDataset
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
