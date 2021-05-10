@@ -21,7 +21,7 @@ datasets = [
     HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
     SunspotsDataset, TaylorDataset, TemperatureDataset,
     USGasolineDataset, WineDataset, WoolyDataset,
-    GasRateCO2Dataset
+    GasRateCO2Dataset, MonthlyMilkIncompleteDataset
 ]
 
 width_datasets = [
@@ -29,7 +29,7 @@ width_datasets = [
     1, 2, 1,
     1, 1, 1,
     1, 1, 1,
-    2
+    2, 1
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(
