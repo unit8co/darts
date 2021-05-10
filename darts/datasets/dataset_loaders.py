@@ -131,13 +131,9 @@ class DatasetLoader(ABC):
         return os.path.isfile(self._get_path_dataset())
 
     def _format_time_column(self, df):
-        if self._metadata.name == "energy.csv":
-            df[self._metadata.header_time] = pd.to_datetime(df[self._metadata.header_time], utc=True)
-            df[self._metadata.header_time]= df[self._metadata.header_time].dt.tz_localize(None)
-        else:
-            df[self._metadata.header_time] = pd.to_datetime(
-                df[self._metadata.header_time], format=self._metadata.format_time, errors="raise"
-            )
+        df[self._metadata.header_time] = pd.to_datetime(
+            df[self._metadata.header_time], format=self._metadata.format_time, errors="raise"
+        )
         return df
 
 

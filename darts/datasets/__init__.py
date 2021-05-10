@@ -24,12 +24,11 @@ AusBeerDataset = DatasetLoaderCSV(
     )
 )
 
-### Fails due to summer- winter time duplicates
 EnergyDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "energy.csv",
         uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/energy_dataset.csv",
-        hash="63afe36eed077c06fe342a7274d0e2e3",
+        hash="a772a9d714a8c3def41002226bf80fc8",
         header_time="time",
         format_time="%Y-%m-%d %H:%M:%S"
     )
