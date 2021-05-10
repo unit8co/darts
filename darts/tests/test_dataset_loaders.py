@@ -25,10 +25,11 @@ datasets = [
 ]
 
 width_datasets = [
-    1, 1, 29,
+    1, 1, 28,
     1, 2, 1,
     1, 1, 1,
-    1, 1, 1
+    1, 1, 1,
+    2
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(
