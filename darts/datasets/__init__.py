@@ -28,7 +28,7 @@ EnergyDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "energy.csv",
         uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/energy_dataset.csv",
-        hash="a772a9d714a8c3def41002226bf80fc8",
+        hash="f564ef18e01574734a0fa20806d1c7ee",
         header_time="time",
         format_time="%Y-%m-%d %H:%M:%S"
     )
@@ -38,7 +38,7 @@ GasRateCO2Dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "gasrate_co2.csv",
         uri="https://raw.githubusercontent.com/unit8co/darts/feat/datasets/darts/datasets/data/gasrate_co2.csv",
-        hash="1f2232c83660033c4af71c7f3b6c0c1a",
+        hash="77bf383715a9cf81459f81fe17baf3b0",
         header_time=None,
         format_time=None
     )
