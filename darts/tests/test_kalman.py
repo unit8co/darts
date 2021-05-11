@@ -23,8 +23,7 @@ class KalmanTestCase(DartsBaseTestClass):
 
         df = pd.DataFrame(data=testing_signal_with_noise, columns = ['signal'])
         testing_signal_with_noise_ts = TimeSeries.from_dataframe(df, value_cols=['signal'])
-        kf.fit(testing_signal_with_noise_ts)
-        prediction = kf.smooth().univariate_values()
+        prediction = kf.filter(testing_signal_with_noise_ts).univariate_values()
         
         noise_distance = testing_signal_with_noise - testing_signal
         prediction_distance = prediction - testing_signal

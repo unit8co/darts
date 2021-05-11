@@ -6,11 +6,11 @@ from abc import ABC
 from typing import Optional
 from filterpy.kalman import KalmanFilter
 
-from .smoothing_model import SmoothingModel
+from .filtering_model import FilteringModel
 from ..timeseries import TimeSeries
 
 
-class Kalman(SmoothingModel, ABC):
+class Kalman(FilteringModel, ABC):
 
     def __init__(
             self, 
@@ -27,16 +27,18 @@ class Kalman(SmoothingModel, ABC):
         This model doesn't predict the future values, instead it predicts 
         more precise values compared to noise interfered data
         
+        See further parameter explanation at filterpy.kalman.KalmanFilter
+        
         Parameters
         ----------
         dim_x : int
             Size of the Kalman state vector
-        dim_y : int
+        dim_z : int
             Size of the measurement vector
         x : numpy array
-            filter state estimate
+            Initial filter state estimate
         F : numpy array
-            state transistion matrix
+            Initial state transistion matrix
         H : numpy array
             measurement function
         P : numpy array
@@ -44,30 +46,42 @@ class Kalman(SmoothingModel, ABC):
         Q : float
             Process uncertainty/noise multiplicator
         kf : KalmanFilter
-            Instance of Kalman Filter (for advanced configuration)
+            Instance of Kalman Filter (for real-life configuration,
+            do not rely on the default configuration)
         """
         super().__init__()
         if kf is None:
             self.dim_x = dim_x
-            self.dim_z = dim_z
-            self.kf = KalmanFilter(dim_x=dim_x, dim_z=dim_z)
-            self.kf.F = F
-            self.kf.H = H
-            self.kf.x = x
-            self.kf.P *= 1000.
-            self.kf.Q[-1,-1] *= Q
-            self.kf.Q[4:,4:] *= Q
-            self.kf.R = 50
+            self.F = F
+            self.H = H
+            self.x = x
+            self.P = 1000.
+            self.Q = Q
+            self.R = 50
+            self.kf = None
         else:
             self.kf = kf
 
     def __str__(self):
         return 'KALMAN({},{},{})'.format(self.dim_x, self.dim_z, self.kf.x)
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
 
-    def smooth(self):
+    def filter(self, series: TimeSeries):
+
+        if self.kf is None:
+            # default Kalman configuration
+            dim_z = series.width
+            self.kf = KalmanFilter(dim_x=self.dim_x, dim_z=dim_z)
+            self.kf.F = self.F
+            self.kf.H = self.H
+            self.kf.x = self.x
+            self.kf.P *= self.P
+            self.kf.Q[-1,-1] *= self.Q
+            self.kf.Q[4:,4:] *= self.Q
+            self.kf.R = 50
+
+
+        super().filter(series)
         return self.training_series.map(self._kalman_iteration)
 
     def _kalman_iteration(self, observation):
