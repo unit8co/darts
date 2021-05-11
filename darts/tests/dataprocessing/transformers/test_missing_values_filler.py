@@ -27,17 +27,14 @@ class MissingValuesFillerTestCase(unittest.TestCase):
     def test_fill_const_series_with_const_value(self):
         const_transformer = MissingValuesFiller(fill=2.0)
         transformed = const_transformer.transform(self.const_series_with_holes)
-
         self.assertEqual(self.const_series, transformed)
 
     def test_fill_const_series_with_auto_value(self):
         auto_transformer = MissingValuesFiller()
         transformed = auto_transformer.transform(self.const_series_with_holes)
-
         self.assertEqual(self.const_series, transformed)
 
     def test_fill_lin_series_with_auto_value(self):
         auto_transformer = MissingValuesFiller()
         transformed = auto_transformer.transform(self.lin_series_with_holes)
-
         self.assertEqual(self.lin_series, transformed)
