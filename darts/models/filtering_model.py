@@ -8,7 +8,7 @@ Using the current value and historic values as follows:
 
 .. math:: y_{t+1} = f(y_{t+1}, st(y_t), st(y_{t-1}), ..., st(y_1)),
 
-where :math:`y_t` represents the time series' smoothed value(s) at time :math:`t`.
+where :math:`y_t` represents the time series' filtered value(s) at time :math:`t`.
       :math:`st` represents the state function of a past measurement.
 
 The main function is `filter()` - learns the function `f()`, over the history of
