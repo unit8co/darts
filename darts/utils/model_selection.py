@@ -67,21 +67,21 @@ class SplitTimeSeriesSequence(Sequence):
 
         else: # model-aware split
 
-        # an example on how these are calculated:
-        # test_size = 4
-        # input_size = 5 (1)
-        # horizon = 3 (+)
-        # len(data) = 16 (*)
+            # an example on how these are calculated:
+            # test_size = 4
+            # input_size = 5 (1)
+            # horizon = 3 (+)
+            # len(data) = 16 (*)
 
-        # 0         5       9           15 <- index
-        # * * * * * * * * * * * * * * * *
-        #                 - - - - - + + +   < test sample 1
-        #               - - - - - + + +     < test sample 2
-        #             - - - - - + + +       < test sample 3
-        #           - - - - - + + +         < test sample 4
-        #           ^       ^
-        #           |       train_end_index = 9
-        #           test_start_index = 5
+            # 0         5       9           15 <- index
+            # * * * * * * * * * * * * * * * *
+            #                 - - - - - + + +   < test sample 1
+            #               - - - - - + + +     < test sample 2
+            #             - - - - - + + +       < test sample 3
+            #           - - - - - + + +         < test sample 4
+            #           ^       ^
+            #           |       train_end_index = 9
+            #           test_start_index = 5
 
             if 0 < self.test_size < 1:
                 test_size = int((ts_length - self.horizon) * self.test_size)
@@ -93,7 +93,7 @@ class SplitTimeSeriesSequence(Sequence):
             if train_end_index < 0:
                 train_end_index = 0
 
-            if train_end_index < self.input_size:
+            if train_end_index < self.input_size + self.horizon:
                 raise AttributeError("Training timeseries is of 0 size")
 
             test_start_index = ts_length - self.horizon - self.input_size - test_size + 1

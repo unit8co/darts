@@ -203,3 +203,9 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         with self.assertRaises(AttributeError, msg="`test_size` is bigger then timeseries length"):
             train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
                                                    vertical_split_type=SIMPLE, test_size=11)
+
+    def test_model_aware_vertical_split_empty_training_set(self):
+
+        with self.assertRaises(AttributeError, msg="Training timeseries is of 0 size"):
+            train_set, test_set = train_test_split(make_dataset(4, 10), axis=1,
+                                                   vertical_split_type=MODEL_AWARE, test_size=5, horizon=3, input_size=2)
