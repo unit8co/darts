@@ -43,10 +43,18 @@ Create a `TimeSeries` object from a Pandas DataFrame, and split it in train/vali
 
 ```python
 import pandas as pd
-from darts.datasets import AirPassengersDataset
-
-df = AirPassengersDataset.load()
+from darts import TimeSeries
+df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+train, val = series.split_after(pd.Timestamp('19580101'))
+```
+
+Or you could go for our dataset loaders!
+
+```python
+from darts.datasets import AirPassengersDataset
+series = AirPassengersDataset.load()
+
 train, val = series.split_after(pd.Timestamp('19580101'))
 ```
 
