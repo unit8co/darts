@@ -6,7 +6,7 @@ from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
     ts: TimeSeries = AirPassengersDataset.load()
 """
 
-_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/feat/datasets"
+_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/feat/datasets/datasets"
 
 AirPassengersDataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
