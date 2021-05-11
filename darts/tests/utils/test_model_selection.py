@@ -88,7 +88,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
                                                vertical_split_type=MODEL_AWARE)
 
         self.assertTrue(
-            verify_shape(train_set, 2, 200) and
+            verify_shape(train_set, 2, 151) and
             verify_shape(test_set, 2, 171),
             "Wrong shapes: training set shape: ({}, {}); test set shape ({}, {})".format(
                 len(train_set), len(train_set[0]), len(test_set), len(test_set[0]))
@@ -109,7 +109,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
                                                vertical_split_type=MODEL_AWARE)
 
         self.assertTrue(
-            verify_shape(train_set, 4, 8) and
+            verify_shape(train_set, 4, 7) and
             verify_shape(test_set, 4, 6),
             "Wrong shapes: training set shape: ({}, {}); test set shape ({}, {})".format(
                 len(train_set), len(train_set[0]), len(test_set), len(test_set[0]))
@@ -136,7 +136,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
                                                )
 
         self.assertTrue(
-            len(train_set) == 8 and len(test_set) == 6,
+            len(train_set) == 7 and len(test_set) == 6,
             "Wrong shapes: training set shape: {}; test set shape {}".format(
                 len(train_set), len(test_set))
         )
@@ -153,7 +153,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         test_lengths = [len(ts) for ts in test_set]
 
         self.assertTrue(
-            train_lengths == [8, 98, 998] and test_lengths == [6, 6, 6],
+            train_lengths == [7, 97, 997] and test_lengths == [6, 6, 6],
             "Wrong shapes: training set shape: {}; test set shape {}".format(
                 train_lengths, test_lengths)
         )

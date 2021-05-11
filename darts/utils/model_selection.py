@@ -11,7 +11,7 @@ class SplitTimeSeriesSequence(Sequence):
     """
     def __init__(self,
                  type: str,
-                 data: Union[TimeSeries, Sequence[TimeSeries]],
+                 data: Sequence[TimeSeries],
                  test_size: Optional[Union[float, int]] = 0.25,
                  axis: Optional[int] = 0,
                  input_size: Optional[int] = None,
@@ -66,12 +66,12 @@ class SplitTimeSeriesSequence(Sequence):
                 raise AttributeError("`test_size` is bigger then timeseries length")
 
         else: # model-aware split
-            train_end_index = ts_length - self.horizon
-
             if 0 < self.test_size < 1:
                 test_size = int((ts_length - self.horizon) * self.test_size)
             else:
                 test_size = self.test_size
+
+            train_end_index = ts_length - self.horizon - test_size + 1
 
             if train_end_index < 0:
                 train_end_index = 0
@@ -159,11 +159,11 @@ def train_test_split(
     """
     Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
 
-    If the input type is single TimeSeries, then only splitting over time axis is available, thus ``n`` and ``horizon``
-    have to be provided.
+    If the input type is single TimeSeries, then only splitting over time axis is available, thus ``input_size`` and
+    ``horizon`` have to be provided.
 
     When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
-    the timeseries in sequence is too small, all samples will go to the test set and the warning will be issued.
+    the timeseries in sequence is too small, all samples will go to the test set and the exception will be raised.
 
 
     Time axis split with ``model-aware`` split type enabled tries to reclaim as much datapoints for training as
