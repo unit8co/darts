@@ -111,25 +111,8 @@ from R2-scores to Mean Absolute Scaled Error.
 The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on GitHub.
 
-Before working on a contribution (a new feature or a fix) make sure you can't find anything related in [issues](https://github.com/unit8co/darts/issues). If there is no on-going effort on what you plan to do then we recommend to do the following:
+Before working on a contribution (a new feature or a fix), [**check our contribution guidelines**](CONTRIBUTE.md).
 
-1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
-2. Fork the repository.
-3. Clone the forked repository locally.
-4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Create a new branch:
-    * Branch off from the **develop** branch.
-    * Prefix the branch with the type of update you are making:
-        * `feature/`
-        * `fix/`
-        * `refactor/`
-        * …
-    * Work on your update
-6. Check that your code passes all the tests and design new unit tests if needed: `./gradlew unitTest_all`.
-7. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
-8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
-9. Create a pull request from your new branch to the **develop** branch.
 
 ## Contact Us
 

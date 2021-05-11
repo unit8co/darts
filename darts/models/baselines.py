@@ -117,5 +117,5 @@ class NaiveEnsembleModel(EnsembleModel):
         for model in self.models:
             model.fit(self.training_series)
 
-    def ensemble(self, predictions: List[TimeSeries]):
-        return sum(predictions) / len(self.models)
+    def ensemble(self, predictions: TimeSeries):
+        return TimeSeries.from_series(predictions.pd_dataframe().sum(axis=1) / len(self.models))
