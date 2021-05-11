@@ -66,6 +66,23 @@ class SplitTimeSeriesSequence(Sequence):
                 raise AttributeError("`test_size` is bigger then timeseries length")
 
         else: # model-aware split
+
+        # an example on how these are calculated:
+        # test_size = 4
+        # input_size = 5 (1)
+        # horizon = 3 (+)
+        # len(data) = 16 (*)
+
+        # 0         5       9           15 <- index
+        # * * * * * * * * * * * * * * * *
+        #                 - - - - - + + +   < test sample 1
+        #               - - - - - + + +     < test sample 2
+        #             - - - - - + + +       < test sample 3
+        #           - - - - - + + +         < test sample 4
+        #           ^       ^
+        #           |       train_end_index = 9
+        #           test_start_index = 5
+
             if 0 < self.test_size < 1:
                 test_size = int((ts_length - self.horizon) * self.test_size)
             else:
@@ -79,7 +96,7 @@ class SplitTimeSeriesSequence(Sequence):
             if train_end_index < self.input_size:
                 raise AttributeError("Training timeseries is of 0 size")
 
-            test_start_index = ts_length - self.horizon - self.input_size - test_size - 1
+            test_start_index = ts_length - self.horizon - self.input_size - test_size + 1
 
             if test_start_index < 0:
                 raise AttributeError("Not enough timesteps to create testset")
@@ -175,7 +192,7 @@ def train_test_split(
 
     And the formula to calculate the first timestep of test dataset is following:
 
-        test start index = timeseries length - horizon - input_size - test_size - 1
+        test start index = timeseries length - horizon - input_size - test_size + 1
 
     Parameters
     ----------
