@@ -1,12 +1,13 @@
 buildscript {
     repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
         gradlePluginPortal()
     }
 }
 
 plugins {
-    id "com.palantir.docker" version "0.25.0"
-    id "com.palantir.docker-run" version "0.25.0"
+    id "com.palantir.docker" version "0.26.0"
+    id "com.palantir.docker-run" version "0.26.0"
 }
 
 // needed for palantir plugin
