@@ -89,17 +89,15 @@ class SplitTimeSeriesSequence(Sequence):
                 test_size = self.test_size
 
             train_end_index = ts_length - self.horizon - test_size + 1
+            test_start_index = ts_length - self.horizon - self.input_size - test_size + 1
 
             if train_end_index < 0:
                 train_end_index = 0
 
             if train_end_index < self.input_size + self.horizon:
-                raise AttributeError("Training timeseries is of 0 size")
-
-            test_start_index = ts_length - self.horizon - self.input_size - test_size + 1
-
-            if test_start_index < 0:
-                raise AttributeError("Not enough timesteps to create testset")
+                # Note: note that we don't have to check for test_start_index < 0 because train_end_index will always
+                # raise exception first.
+                raise AttributeError("Not enough data to create training and test sets")
 
         return train_end_index, test_start_index
 
