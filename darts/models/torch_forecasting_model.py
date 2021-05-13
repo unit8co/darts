@@ -678,7 +678,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load_from_checkpoint(model_name: str,
-                             work_dir: str = os.getcwd(),
+                             work_dir: str = None,
                              filename: str = None,
                              best: bool = True) -> 'TorchForecastingModel':
         """
@@ -701,6 +701,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         TorchForecastingModel
             The corresponding trained `TorchForecastingModel`.
         """
+
+        if work_dir is None:
+            work_dir = os.getcwd()
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
 
