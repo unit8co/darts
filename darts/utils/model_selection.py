@@ -69,18 +69,18 @@ class SplitTimeSeriesSequence(Sequence):
 
             # an example on how these are calculated:
             # test_size = 4
-            # input_size = 5 (1)
+            # input_size = 5 (-)
             # horizon = 3 (+)
             # len(data) = 16 (*)
 
-            # 0         5       9           15 <- index
+            # 0         5         10          15 <- index
             # * * * * * * * * * * * * * * * *
             #                 - - - - - + + +   < test sample 1
             #               - - - - - + + +     < test sample 2
             #             - - - - - + + +       < test sample 3
             #           - - - - - + + +         < test sample 4
-            #           ^       ^
-            #           |       train_end_index = 9
+            #           ^         ^
+            #           |         train_end_index = 10 (note the [:train_end_index] slice stops at 9)
             #           test_start_index = 5
 
             if 0 < self.test_size < 1:
@@ -111,7 +111,7 @@ class SplitTimeSeriesSequence(Sequence):
                     raise IndexError('Exceeded the size of the training sequence.')
                 return self.data[i]
             else:
-                if i + split_index > len(self.data):
+                if i + split_index >= len(self.data):
                     raise IndexError('Exceeded the size of the test sequence.')
                 return self.data[split_index + i]
         else: # axis == 1
@@ -188,7 +188,7 @@ def train_test_split(
     test set cannot be used for training. The formula to calculate last available timestep for training set is
     following:
 
-        train end index = timeseries length - horizon
+        train end index = ts_length - self.horizon - test_size
 
     And the formula to calculate the first timestep of test dataset is following:
 

@@ -75,7 +75,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_horiz_split_overindexing_test_set(self):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
-        with self.assertRaises(IndexError, msg='Exceeded the size of the test sequence.'):
+        with self.assertRaisesRegex(IndexError, 'Exceeded the size of the test sequence\.'):
             test_set[2]
 
     def test_horiz_split_last_index_test_set(self):
