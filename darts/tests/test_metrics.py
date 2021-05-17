@@ -186,7 +186,7 @@ class MetricsTestCase(DartsBaseTestClass):
         # checking with m=None
         self.assertAlmostEqual(metrics.mase(self.series2, self.series2, self.series_train_not_periodic, m=None),
                                metrics.mase([self.series2] * 2, [self.series2] * 2,
-                                            [self.series_train_not_periodic] * 2, m=None))
+                                            [self.series_train_not_periodic] * 2, m=None, inter_reduction=np.mean))
 
         # fails because of wrong indexes (series1/2 indexes should be the continuation of series3)
         with self.assertRaises(ValueError):
@@ -220,10 +220,14 @@ class MetricsTestCase(DartsBaseTestClass):
         self.assertEqual(metrics.r2_score(series00, True, reduction=np.mean, actual_series=series11), 0)
         self.assertEqual(metrics.r2_score(series11, True, reduction=np.mean, pred_series=series00), 0)
 
+        # should fail if kwargs are passed as args, because of the "*"
+        with self.assertRaises(TypeError):
+            metrics.r2_score(series00, series11, False, np.mean)
+
     def test_multiple_ts(self):
-        
+
         dim = 2
-        
+
         # simple test
         multi_ts_1 = [self.series1 + 1, self.series1 + 1]
         multi_ts_2 = [self.series1 + 2, self.series1 + 1]
