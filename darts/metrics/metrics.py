@@ -842,7 +842,6 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     float
         The Coefficient of Determination :math:`R^2`
     """
-
     y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
     y1, y2 = _remove_nan_union(y1, y2)
     ss_errors = np.sum((y1 - y2) ** 2)
