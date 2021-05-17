@@ -49,13 +49,23 @@ if TORCH_AVAILABLE:
 
             # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
             series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100, start_value = 0, end_value=0.5))
-            model = NBEATSModel(input_chunk_length=1, output_chunk_length=1, n_epochs=20)
+            model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, n_epochs=20)
 
             model.fit(series_multivariate)
             res = model.predict(n=2).values()
+
             # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
             # We just test if the given result is not too far in average.
-            self.assertTrue(abs(np.average(res-np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.02))
+            self.assertTrue(abs(np.average(res-np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03))
 
-            # with self.assertRaises(ValueError):
-            #     model.fit(series_multivariate)
+            # Test Covariates
+            series_covariates = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100, start_value = 0, end_value=0.1))
+            model = NBEATSModel(input_chunk_length=3, output_chunk_length=4, n_epochs=5)
+            model.fit(series_multivariate, covariates=series_covariates)
+
+            res = model.predict(n=3, series=series_multivariate, covariates=series_covariates).values()
+
+            self.assertEqual(len(res), 3)
+            self.assertTrue(abs(np.average(res)) < 5)
+
+
