@@ -3,7 +3,7 @@
 """
 
 from darts import TimeSeries, ModelMode, SeasonalityMode
-from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, StandardRegressionModel
+from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, LinearRegressionModel
 from darts.models.forecasting_model import ForecastingModel
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils.timeseries_generation import constant_timeseries
@@ -181,7 +181,7 @@ if __name__ == "__main__":
             val_predictions = train_pred(id_end=-len(test))
             target_val = train.slice_intersect(val_predictions[0])
 
-            regr_model = StandardRegressionModel(train_n_points=len(test),
+            regr_model = LinearRegressionModel(train_n_points=len(test),
                                                  model=LassoCV(positive=True, fit_intercept=False))
             regr_model.fit(val_predictions, target_val)
 

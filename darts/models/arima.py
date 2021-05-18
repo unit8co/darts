@@ -16,7 +16,6 @@ from typing import Optional, Tuple
 from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
-
 logger = get_logger(__name__)
 
 
