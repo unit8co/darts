@@ -1,4 +1,5 @@
 # docs
+jinja2==2.11.3
 sphinx==3.2.1
 sphinx-automodapi==0.13
 sphinx_autodoc_typehints==1.11.1
