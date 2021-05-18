@@ -15,7 +15,6 @@ class Kalman(FilteringModel, ABC):
     def __init__(
             self, 
             dim_x: int = 1, 
-            dim_z: int = 1, 
             x = np.array([[1.]]),
             F = np.array([[1]]),
             H = np.array([[1]]),
@@ -33,8 +32,6 @@ class Kalman(FilteringModel, ABC):
         ----------
         dim_x : int
             Size of the Kalman state vector
-        dim_z : int
-            Size of the measurement vector
         x : numpy array
             Initial filter state estimate
         F : numpy array
@@ -63,7 +60,7 @@ class Kalman(FilteringModel, ABC):
             self.kf = kf
 
     def __str__(self):
-        return 'KALMAN({},{},{})'.format(self.dim_x, self.dim_z, self.kf.x)
+        return 'KALMAN({},{})'.format(self.dim_x, self.kf.x)
 
 
     def filter(self, series: TimeSeries):
