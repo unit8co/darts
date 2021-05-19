@@ -7,7 +7,7 @@ from ..timeseries import TimeSeries
 
 
 
-class KalmanTestCase(DartsBaseTestClass):
+class KalmanFilterTestCase(DartsBaseTestClass):
 
 
     def test_kalman(self):
@@ -32,4 +32,4 @@ class KalmanTestCase(DartsBaseTestClass):
 
 
 if __name__ == '__main__':
-    KalmanTestCase().test_kalman()
+    KalmanFilterTestCase().test_kalman()
