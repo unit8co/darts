@@ -7,6 +7,7 @@ from ..utils import timeseries_generation as tg
 from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
+from ..datasets import AirPassengersDataset
 
 logger = get_logger(__name__)
 
@@ -38,8 +39,7 @@ if TORCH_AVAILABLE:
         torch.manual_seed(42)
 
         # real timeseries for functionality tests
-        df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
-        ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
+        ts_passengers = AirPassengersDataset.load()
         scaler = Scaler()
         ts_passengers = scaler.fit_transform(ts_passengers)
         ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
