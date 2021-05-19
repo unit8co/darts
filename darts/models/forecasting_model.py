@@ -595,6 +595,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     """
 
     _expect_covariates = False
+    covariate_series = None
 
     @abstractmethod
     def fit(self,
@@ -622,10 +623,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries) and covariates is None:
             super().fit(series)  # handle the single series case
         if covariates is not None:
-            self._expect_covariates = True
-            if isinstance(series, TimeSeries):
-                    self.training_series = series
-                    self._fit_called = True
+            if isinstance(series, TimeSeries) and isinstance(covariates, TimeSeries):
+                self.training_series = series
+                self.covariate_series = covariates
+                self._fit_called = True
+            else:
+                self._expect_covariates = True
 
 
     @abstractmethod

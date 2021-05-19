@@ -406,6 +406,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if series is None:
             series = self.training_series
 
+        if covariates is None and self.covariate_series is not None:
+            covariates = self.covariate_series
+
         called_with_single_series = False
         if isinstance(series, TimeSeries):
             called_with_single_series = True
