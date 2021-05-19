@@ -2,26 +2,11 @@
 Filtering Model Base Class
 --------------------------
 
-A filtering model applies a state dependent function on current value and optionally
-past values and/or their effects on the state
-Using the current value and historic values as follows:
-
-.. math:: y_{t+1} = f(y_{t+1}, st(y_t), st(y_{t-1}), ..., st(y_1)),
-
-where :math:`y_t` represents the time series' filtered value(s) at time :math:`t`.
-      :math:`st` represents the state function of a past measurement.
-
-The main function is `filter()` - learns the function `f()`, over the history of
-one time series. The function `filter()` applies `f()` on one or several time series in order
-to obtain more accurate predictions of the measured values(s)
+Filtering models all have a `filter(series)` function, which
+returns a `TimeSeries` that is a filtered version of `series`.
 """
 
-from typing import Optional
-from itertools import product
 from abc import ABC, abstractmethod
-from inspect import signature
-import numpy as np
-import pandas as pd
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not
@@ -30,10 +15,8 @@ logger = get_logger(__name__)
 
 
 class FilteringModel(ABC):
-
-    """ The base class for filtering models. It defines the *minimal* behavior that all filtering models have to support.
-        The signatures in this base class are for "local" models handling only one series and no covariates.
-        Sub-classes can handle more complex cases.
+    """ The base class for filtering models. It defines the *minimal* behavior that all filtering models
+        have to support. The filtering models are all "local" models; meaning they act on one time series alone.
     """
     @abstractmethod
     def __init__(self):
@@ -41,12 +24,12 @@ class FilteringModel(ABC):
 
     @abstractmethod
     def filter(self,  series: TimeSeries) -> TimeSeries:
-        """ Filters values from train TimeSeries
+        """ Filters a given series
 
         Parameters
         ----------
         series
-            A target time series. The model will be trained to forecast this time series.
+            The series to filter.
 
         Returns
         -------
