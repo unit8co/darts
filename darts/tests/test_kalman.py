@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from .base_test_class import DartsBaseTestClass
-from ..models.kalman import Kalman
+from ..models.kalman_filter import KalmanFilter
 from ..timeseries import TimeSeries
 
 
@@ -11,11 +11,11 @@ class KalmanTestCase(DartsBaseTestClass):
 
 
     def test_kalman(self):
-        """ Kalman test.
+        """ KalmanFilter test.
         Creates an increasing sequence of numbers, adds noise and 
         assumes the kalman filter predicts values closer to real values
         """
-        kf = Kalman()
+        kf = KalmanFilter()
         testing_signal = np.arange(1,5,0.1)
 
         noise = np.random.normal(0, 0.7, testing_signal.shape)
