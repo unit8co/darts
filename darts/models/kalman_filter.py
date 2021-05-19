@@ -4,6 +4,7 @@ from abc import ABC
 
 from typing import Optional
 from filterpy.kalman import KalmanFilter as FpKalmanFilter
+from copy import deepcopy
 
 from .filtering_model import FilteringModel
 from ..timeseries import TimeSeries
@@ -61,8 +62,10 @@ class KalmanFilter(FilteringModel, ABC):
             in the underlying dynamical system.
         kf : filterpy.kalman.KalmanFilter
             Optionally, an instance of `filterpy.kalman.KalmanFilter`.
-            If this is provided, the other parameters are ignored. The various dimensionality in the filter
-            must match those in the `TimeSeries` used when calling `filter()`.
+            If this is provided, the other parameters are ignored. This instance will be copied for every
+            call to `filter()`, so the state is not carried over from one time series to another across several
+            calls to `filter()`.
+            The various dimensionality in the filter must match those in the `TimeSeries` used when calling `filter()`.
         """
         super().__init__()
         if kf is None:
@@ -74,8 +77,10 @@ class KalmanFilter(FilteringModel, ABC):
             self.H = H
             self.F = F if F is not None else np.eye(self.dim_x)
             self.kf = None
+            self.kf_provided = False
         else:
             self.kf = kf
+            self.kf_provided = True
 
     def __str__(self):
         return 'KalmanFilter(dim_x={})'.format(self.dim_x)
@@ -97,7 +102,7 @@ class KalmanFilter(FilteringModel, ABC):
 
         dim_z = series.width
 
-        if self.kf is None:
+        if not self.kf_provided:
             kf = FpKalmanFilter(dim_x=self.dim_x, dim_z=dim_z)
             kf.x = self.x_init
             kf.P = self.P
@@ -105,20 +110,20 @@ class KalmanFilter(FilteringModel, ABC):
             kf.R = self.R if self.R is not None else np.eye(dim_z)
             kf.H = self.H if self.H is not None else np.ones((dim_z, self.dim_x))
             kf.F = self.F
-            self.kf = kf
         else:
             raise_if_not(dim_z == self.kf.dim_z, 'The provided TimeSeries dimensionality does not match '
                                                  'the filter observation dimensionality dim_z.')
+            kf = deepcopy(self.kf)
 
         super().filter(series)
         values = series.values(copy=False)
         filtered_values = np.zeros((len(values), self.dim_x))  # mean values
-        # covariances = ...                               # covariance matrices; TODO
+        # covariances = ...                                    # covariance matrices; TODO
         for i in range(len(values)):
             obs = values[i, :]
-            self.kf.predict()
-            self.kf.update(obs)
-            filtered_values[i, :] = self.kf.x.reshape(self.dim_x,)
-            # covariances[i] = self.kf.P  # covariance matrix estimate for the state TODO
+            kf.predict()
+            kf.update(obs)
+            filtered_values[i, :] = kf.x.reshape(self.dim_x,)
+            # covariances[i] = kf.P  # covariance matrix estimate for the state TODO
 
         return TimeSeries.from_times_and_values(series.time_index(), filtered_values)
