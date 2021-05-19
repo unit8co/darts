@@ -1,8 +1,8 @@
 """
 Filtering Model Base Class
-------------------------------
+--------------------------
 
-A filtering model applies a state dependent function on current value and optionaly 
+A filtering model applies a state dependent function on current value and optionally
 past values and/or their effects on the state
 Using the current value and historic values as follows:
 
@@ -37,9 +37,7 @@ class FilteringModel(ABC):
     """
     @abstractmethod
     def __init__(self):
-        # The series used for filtering the model through the `filter()` function.
-        self.training_series: Optional[TimeSeries] = None
-
+        pass
 
     @abstractmethod
     def filter(self,  series: TimeSeries) -> TimeSeries:
@@ -55,34 +53,31 @@ class FilteringModel(ABC):
         TimeSeries
             A time series containing the filtered values.
         """
-        self.training_series = series
-
+        pass
 
     @property
     def min_train_series_length(self) -> int:
         """
-        Class property defining the minimum required length for the training series.
-        This function/property should be overridden if a value higher than 3 is required.
+        Class property defining the minimum required length for the series.
+        This function/property should be overridden if a value different than 3 is required.
         """
         return 3
 
 
 class MovingAverage(FilteringModel, ABC):
-    
-    """ Moving average class which implements Filtering Model and shows
-    a simple example of a data filtering using moving average.
+    """ Moving average filter, implementing a FilteringModel.
     """
 
     def __init__(self, window):
+        super().__init__()
         self.window = window
 
+    def filter(self, series):
+        values = [.0 for _ in range(self.window)]
 
-    def filter(self):
-        self.values = [.0 for _ in range(self.window)]
-        return self.training_series.map(self._ma_iteration)
+        def _ma_iteration(observation: float) -> float:
+            values.pop(0)
+            values.append(observation)
+            return sum(values) / len(values)
 
-
-    def _ma_iteration(self, observation):
-        self.values.pop(0)
-        self.values.append(observation)
-        return sum(self.values) / len(self.values)
+        return series.map(_ma_iteration)
