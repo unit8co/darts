@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from abc import ABC
 
@@ -11,18 +10,17 @@ from ..timeseries import TimeSeries
 
 
 class Kalman(FilteringModel, ABC):
-
     def __init__(
             self, 
-            dim_x: int = 1, 
-            dim_z: int = 1, 
-            x = np.array([[1.]]),
-            F = np.array([[1]]),
-            H = np.array([[1]]),
-            P = np.array([[1000.,    0.], [   0., 1000.] ]),
-            Q = 0.1,
+            dim_x: int = 1,
+            x: Optional[np.array] = None,
+            P: Optional[np.array] = None,
+            Q: Optional[np.array] = None,
+            R: Optional[np.array] = None,
+            H: Optional[np.array] = None,
+            F: np.array = np.eye(1),
             kf: Optional[KalmanFilter] = None
-        ):
+            ):
         """ Kalman filter model
         This model doesn't predict the future values, instead it predicts 
         more precise values compared to noise interfered data
@@ -52,6 +50,14 @@ class Kalman(FilteringModel, ABC):
         super().__init__()
         if kf is None:
             self.dim_x = dim_x
+
+            self.x = x if x is not None else np.eye(self.dim_x)  # 0 instead?
+            self.P = P if P is not None else 1000. * np.eye(self.dim_x)
+            self.Q = Q if Q is not None else 0.1 * np.eye(self.dim_x)
+            self.R = R  # dimensions to be determined at filter time based on dim_z
+            self.H = H
+            self.F = F if F is not None else np.eye(self.dim_x)  # how's this as a default?
+
             self.F = F
             self.H = H
             self.x = x
@@ -69,6 +75,10 @@ class Kalman(FilteringModel, ABC):
     def filter(self, series: TimeSeries):
 
         if self.kf is None:
+
+
+
+
             # default Kalman configuration
             dim_z = series.width
             self.kf = KalmanFilter(dim_x=self.dim_x, dim_z=dim_z)
