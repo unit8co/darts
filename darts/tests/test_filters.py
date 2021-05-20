@@ -3,6 +3,7 @@ import pandas as pd
 
 from .base_test_class import DartsBaseTestClass
 from ..models.kalman_filter import KalmanFilter
+from ..models.filtering_model import MovingAverage
 from ..timeseries import TimeSeries
 
 

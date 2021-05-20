@@ -9,7 +9,7 @@ returns a `TimeSeries` that is a filtered version of `series`.
 from abc import ABC, abstractmethod
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -51,16 +51,40 @@ class MovingAverage(FilteringModel, ABC):
     """ Moving average filter, implementing a FilteringModel.
     """
 
-    def __init__(self, window):
+    def __init__(self,
+                 window: int,
+                 centered: bool = True):
+        """
+        Parameters
+        ----------
+        window
+            The length of the window over which to average values
+        centered
+            Whether
+        """
         super().__init__()
         self.window = window
+        self.centered = centered
 
     def filter(self, series):
-        values = [.0 for _ in range(self.window)]
+        """
+        Computes a moving average of this series' values and returns a new TimeSeries.
+        The returned series has the same length and time axis as `series`. (Note that this might create border effects).
 
-        def _ma_iteration(observation: float) -> float:
-            values.pop(0)
-            values.append(observation)
-            return sum(values) / len(values)
+        Behind the scenes the moving average is computed using `pandas.DataFrame.rolling()` on the underlying
+        DataFrame.
 
-        return series.map(_ma_iteration)
+        Parameters
+        ----------
+        series
+            The series to average
+
+         Returns
+        -------
+        TimeSeries
+            A time series containing the average values
+        """
+        filtered_df = series.pd_dataframe(copy=False).rolling(window=self.window,
+                                                              min_periods=1,
+                                                              center=self.centered).mean()
+        return TimeSeries(filtered_df, freq=series.freq_str(), dummy_index=series.has_dummy_index)

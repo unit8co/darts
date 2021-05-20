@@ -1190,9 +1190,10 @@ class TimeSeries:
     def map(self,
             fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
-        Applies the function `fn` elementwise to all values in this TimeSeries, or, to only those
-        values in the columns specified by the optional argument `cols`. Returns a new
-        TimeSeries instance.
+        Applies the function `fn` elementwise to all values in this TimeSeries.
+        Returns a new TimeSeries instance.
+
+        TODO: apply to only those values in the columns specified by the optional argument `cols`.
 
         Parameters
         ----------
