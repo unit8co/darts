@@ -126,4 +126,13 @@ class KalmanFilter(FilteringModel, ABC):
             filtered_values[i, :] = kf.x.reshape(self.dim_x,)
             # covariances[i] = kf.P  # covariance matrix estimate for the state TODO
 
+        # TODO: later on for a forecasting model we'll have to do something like
+        """
+        for _ in range(horizon):
+            kf.predict()
+            # forecasts on the observations, obtained from the state
+            preds.append(kf.H.dot(kf.x))
+            preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
+        """
+
         return TimeSeries.from_times_and_values(series.time_index(), filtered_values)
