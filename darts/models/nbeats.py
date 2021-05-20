@@ -320,7 +320,7 @@ class _NBEATSModule(nn.Module):
 
     def forward(self, x):
 
-        # if x1, x2,... y1, y2... two multivariate ts, and a1, a2... one covariate ts
+        # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
         x = torch.reshape(x, (x.shape[0], self.input_chunk_length_multi, 1))
         # squeeze last dimension (because model is univariate)
