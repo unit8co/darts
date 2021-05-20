@@ -60,7 +60,8 @@ class MovingAverage(FilteringModel, ABC):
         window
             The length of the window over which to average values
         centered
-            Whether
+            Set the labels at the center of the window. If not set, the averaged values are lagging after the
+            the original values.
         """
         super().__init__()
         self.window = window
