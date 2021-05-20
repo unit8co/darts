@@ -110,6 +110,17 @@ if TORCH_AVAILABLE:
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
+                
+                # when model is fit using 1 training and 1 covariate series, time series args are optional
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
+                pred1 = model.predict(1)
+                pred2 = model.predict(1, series=self.ts_pass_train)
+                pred3 = model.predict(1, covariates=self.time_covariates_train)
+                pred4 = model.predict(1, covariates=self.time_covariates_train, series=self.ts_pass_train)
+                self.assertEqual(pred1, pred2)
+                self.assertEqual(pred1, pred3)
+                self.assertEqual(pred1, pred4)
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed
