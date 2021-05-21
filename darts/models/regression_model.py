@@ -1,13 +1,13 @@
 """
-Regression Model Base Class
----------------------------
+Regression Model
+----------------
 
-A regression model predicts values for a time series :math:`Y_t` as a function
-of :math:`N` "features" time series :math:`X^i_t`:
+`RegressionModel`s forecast future values of a target series based on lagged values of the target values
+and possibly lags of an exoneous series. They can wrap around any regression model having a `fit()`
+and `predict()` functions (e.g. scikit-learn regression models), and are using
+`sklearn.linear_model.LinearRegression`.
 
-.. math:: Y_t = f(X^1_t, ..., X^N_t),
-
-where :math:`t` denotes the time step. Here, the function :math:`f()` is not necessarily linear.
+Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
 
 import numpy as np
@@ -19,11 +19,6 @@ from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from .forecasting_model import ExtendedForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
-from ..utils import (
-    _build_tqdm_iterator,
-    _with_sanity_checks,
-    _historical_forecasts_general_checks
-)
 
 logger = get_logger(__name__)
 
