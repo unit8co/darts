@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../../..'))
 project = 'darts'
 copyright = '2021, Unit8 SA'
 author = 'Unit8 SA'
-version = '0.7.0'
+version = '0.8.0'
 
 
 # -- General configuration ---------------------------------------------------
