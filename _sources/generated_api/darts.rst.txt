@@ -9,6 +9,7 @@
         :maxdepth: 1
         
         darts.dataprocessing
+        darts.datasets
         darts.metrics
         darts.models
         darts.utils

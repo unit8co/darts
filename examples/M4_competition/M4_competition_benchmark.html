@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Download and create TimeSeries &#8212; darts  documentation</title>
     
@@ -449,7 +449,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">NaiveDrift</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">Prophet</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">Theta</span><span class="p">,</span> <span class="n">FourTheta</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">StandardRegressionModel</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">remove_seasonality</span><span class="p">,</span> <span class="n">extract_trend_and_seasonality</span>
 
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -1164,7 +1164,7 @@ Hourly-test already exists
 
     <span class="n">val_predictions</span> <span class="o">=</span> <span class="n">train_pred</span><span class="p">(</span><span class="n">id_end</span><span class="o">=-</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
 
-    <span class="n">regr_model</span> <span class="o">=</span> <span class="n">StandardRegressionModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">),</span>
+    <span class="n">regr_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">test</span><span class="p">),</span>
                                          <span class="n">model</span><span class="o">=</span><span class="n">LassoCV</span><span class="p">(</span><span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">5000</span><span class="p">))</span>
     <span class="n">target_val</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">val_predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">regr_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">val_predictions</span><span class="p">,</span> <span class="n">target_val</span><span class="p">)</span>

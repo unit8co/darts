@@ -153,21 +153,29 @@
 <span class="sd">-------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">boxcox_normmax</span><span class="p">,</span> <span class="n">boxcox</span>
 <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">inv_boxcox</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span>
 
+
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="BoxCox"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox">[docs]</a><span class="k">class</span> <span class="nc">BoxCox</span><span class="p">(</span><span class="n">FittableDataTransformer</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">InvertibleDataTransformer</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+<div class="viewcode-block" id="BoxCox"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox">[docs]</a><span class="k">class</span> <span class="nc">BoxCox</span><span class="p">(</span><span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;BoxCox&quot;</span><span class="p">):</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;BoxCox&quot;</span><span class="p">,</span>
+                 <span class="n">lmbda</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span>
+                                 <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+                                 <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">optim_method</span><span class="o">=</span><span class="s1">&#39;mle&#39;</span><span class="p">,</span>
+                 <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Box-Cox data transformer.</span>
 <span class="sd">        See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information</span>
@@ -176,73 +184,98 @@
 <span class="sd">        ----------</span>
 <span class="sd">        name</span>
 <span class="sd">            A specific name for the transformer</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span> <span class="o">=</span> <span class="kc">None</span>
-
-<div class="viewcode-block" id="BoxCox.fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-            <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-            <span class="n">lmbda</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">optim_method</span><span class="o">=</span><span class="s1">&#39;mle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BoxCox&#39;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sets the `lmbda` parameter value.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        data</span>
-<span class="sd">            The time series to fit on</span>
 <span class="sd">        lmbda</span>
 <span class="sd">            If None given, will automatically find an optimal value of lmbda (for each dimension</span>
-<span class="sd">            of the time series) using `scipy.stats.boxcox_normmax` with `method=optim_method`</span>
-<span class="sd">            If a single float is given, the same lmbda value will be used for all dimensions of the series.</span>
+<span class="sd">            of the time series, for each time series) using `scipy.stats.boxcox_normmax` with `method=optim_method`</span>
+<span class="sd">            If a single float is given, the same lmbda value will be used for all dimensions of the series, for all</span>
+<span class="sd">            the series.</span>
 <span class="sd">            Also allows to specify a different lmbda value for each dimension of the time series by passing</span>
-<span class="sd">            a sequence of values.</span>
+<span class="sd">            a sequence of values (or a sequence of sequence of values in case of multiple time series).</span>
 <span class="sd">        optim_method</span>
 <span class="sd">            Specifies which method to use to find an optimal value for the lmbda parameter.</span>
-<span class="sd">            Either &#39;mle&#39; or &#39;pearsonr&#39;.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">            Fitted transformer (self)</span>
+<span class="sd">            Either &#39;mle&#39; or &#39;pearsonr&#39;. Ignored if lmbda != None.</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is</span>
+<span class="sd">            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`</span>
+<span class="sd">            (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">            Note: for a small amount of data, the parallelisation overhead could end up increasing the total</span>
+<span class="sd">            required amount of time.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, whether to print operations progress</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                         <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
+                         <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
         <span class="n">raise_if</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optim_method</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">optim_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mle&#39;</span><span class="p">,</span> <span class="s1">&#39;pearsonr&#39;</span><span class="p">],</span>
                  <span class="s2">&quot;optim_method parameter must be either &#39;mle&#39; or &#39;pearsonr&#39;&quot;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span> <span class="o">=</span> <span class="n">lmbda</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optim_method</span> <span class="o">=</span> <span class="n">optim_method</span>
+
+    <span class="k">def</span> <span class="nf">_fit_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span>
+                                                                            <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]]]:</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="c1"># CASE 0: Sequence[Sequence[float]]</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
+                     <span class="s2">&quot;with multiple time series the number of lmbdas sequences must equal the number of time </span><span class="se">\</span>
+<span class="s2">                        series&quot;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># CASE 1: Sequence[float], float, None. Replicating the same value for each TS</span>
+            <span class="n">lmbda_gen</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">lmbda_gen</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_transform_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_inverse_transform_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BoxCox.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+               <span class="n">lmbda</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
+               <span class="n">method</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+                                <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">lmbda</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Compute optimal lmbda for each dimension of the time series</span>
-            <span class="n">lmbda</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">boxcox_normmax</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">optim_method</span><span class="p">)</span>
+            <span class="c1"># Compute optimal lmbda for each dimension of the time series. In this case, the return type is</span>
+            <span class="c1"># a pd.core.series.Series, which is not inhering from collections.abs.Sequence</span>
+            <span class="n">lmbda</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">boxcox_normmax</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lmbda</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
                      <span class="s2">&quot;lmbda should have one value per dimension (ie. column or variable) of the time series&quot;</span><span class="p">,</span>
                      <span class="n">logger</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Replicate lmbda to match dimensions of the time series</span>
-            <span class="n">lmbda</span> <span class="o">=</span> <span class="p">[</span><span class="n">lmbda</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="o">.</span><span class="n">width</span>
+            <span class="n">lmbda</span> <span class="o">=</span> <span class="p">[</span><span class="n">lmbda</span><span class="p">]</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span> <span class="o">=</span> <span class="n">lmbda</span>
+        <span class="k">return</span> <span class="n">lmbda</span></div>
 
-        <span class="k">return</span> <span class="bp">self</span></div>
-
-<div class="viewcode-block" id="BoxCox.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="BoxCox.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">lmbda</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 
         <span class="k">def</span> <span class="nf">_boxcox_wrapper</span><span class="p">(</span><span class="n">col</span><span class="p">):</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># get index from col name</span>
-            <span class="k">return</span> <span class="n">boxcox</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># get index from col name</span>
+            <span class="k">return</span> <span class="n">boxcox</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">lmbda</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_boxcox_wrapper</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_boxcox_wrapper</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="BoxCox.inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">*</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="BoxCox.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">lmbda</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">series</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 
         <span class="k">def</span> <span class="nf">_inv_boxcox_wrapper</span><span class="p">(</span><span class="n">col</span><span class="p">):</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># get index from col name</span>
-            <span class="k">return</span> <span class="n">inv_boxcox</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lmbda</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># get index from col name</span>
+            <span class="k">return</span> <span class="n">inv_boxcox</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">lmbda</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_inv_boxcox_wrapper</span><span class="p">))</span></div></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_inv_boxcox_wrapper</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="BoxCox.fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="s1">&#39;FittableDataTransformer&#39;</span><span class="p">:</span>
+        <span class="c1"># adding lmbda and optim_method params</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_optim_method</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

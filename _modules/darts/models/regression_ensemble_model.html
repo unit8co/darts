@@ -152,13 +152,15 @@
 <span class="sd">Regression ensemble model</span>
 <span class="sd">-------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">EnsembleModel</span><span class="p">,</span> <span class="n">StandardRegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EnsembleModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">RegressionModel</span><span class="p">,</span>
+    <span class="n">RandomForest</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -167,11 +169,14 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
                  <span class="n">regression_train_n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">regression_model</span><span class="o">=</span><span class="n">LinearRegression</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">)):</span>
+                 <span class="n">regression_model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Class for ensemble models using a regression model for ensembling individual models&#39; predictions</span>
+<span class="sd">        Class for ensemble models using a regression model for ensembling individual models&#39; predictions.</span>
 <span class="sd">        The provided regression model must implement fit() and predict() methods</span>
-<span class="sd">        (e.g. scikit-learn regression models)</span>
+<span class="sd">        (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to</span>
+<span class="sd">        best ensemble the individual forecasting models&#39; forecasts. It is not the same usage of regression</span>
+<span class="sd">        as in `RegressionModel`, where the regression model is used to produce forecasts based on the</span>
+<span class="sd">        lagged series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -181,48 +186,43 @@
 <span class="sd">            The number of points to use to train the regression model</span>
 <span class="sd">        regression_model</span>
 <span class="sd">            Any regression model with predict() and fit() methods (e.g. from scikit-learn)</span>
-<span class="sd">            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`</span>
+<span class="sd">            Default: `darts.model.LinearRegressionModel(fit_intercept=False)`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">regression_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="c1"># wrap provided regression_model in a StandardRegressionModel (if not already the case)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regression_model</span><span class="p">,</span> <span class="n">StandardRegressionModel</span><span class="p">):</span>
-            <span class="c1"># raise exception if train_n_points value is ambiguous</span>
-            <span class="n">model_train_n_points</span> <span class="o">=</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span>
-            <span class="n">raise_if</span><span class="p">(</span><span class="n">model_train_n_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">regression_train_n_points</span> <span class="o">!=</span> <span class="n">model_train_n_points</span><span class="p">,</span>
-                     <span class="s2">&quot;Provided StandardRegressionModel.train_n_points parameter doesn&#39;t match specified&quot;</span>
-                     <span class="s2">&quot; regression_train_n_points parameter.&quot;</span><span class="p">,</span>
-                     <span class="n">logger</span><span class="p">)</span>
-
-            <span class="c1"># if it was None, set regression_model.train_n_points to regression_train_n_points</span>
-            <span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span> <span class="o">=</span> <span class="n">regression_train_n_points</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">StandardRegressionModel</span><span class="p">(</span><span class="n">regression_train_n_points</span><span class="p">,</span> <span class="n">regression_model</span><span class="p">)</span>
-
+        <span class="n">regression_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">regression_model</span><span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span>
+            <span class="s2">&quot;`lags` of regression model must be `None` and `lags_exog` must be [0]. Given: </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">&quot;</span>
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="o">=</span> <span class="n">regression_train_n_points</span>
 
 <div class="viewcode-block" id="RegressionEnsembleModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_ensemble_model.html#darts.models.regression_ensemble_model.RegressionEnsembleModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
         <span class="c1"># spare train_n_points points to serve as regression target</span>
-        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,</span>
                  <span class="s2">&quot;regression_train_n_points parameter too big (must be smaller or equal&quot;</span> <span class="o">+</span>
                  <span class="s2">&quot; to the number of points in training_series)&quot;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
-        <span class="n">forecast_training</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[:</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">]</span>
-        <span class="n">regression_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">:]</span>
+        <span class="n">forecast_training</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[:</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">]</span>
+        <span class="n">regression_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">:]</span>
 
         <span class="c1"># fit the forecasting models</span>
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
             <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">forecast_training</span><span class="p">)</span>
 
         <span class="c1"># predict train_n_points points for each model</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
-            <span class="n">predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">))</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">))</span>
 
         <span class="c1"># train the regression model on the individual models&#39; predictions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_features</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">train_target</span><span class="o">=</span><span class="n">regression_target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">regression_target</span><span class="p">,</span> <span class="n">exog</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span>
 
         <span class="c1"># prepare the forecasting models for further predicting by fitting</span>
         <span class="c1"># them with the entire data</span>
@@ -236,8 +236,8 @@
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
             <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_ensemble_model.html#darts.models.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_ensemble_model.html#darts.models.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">exog</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

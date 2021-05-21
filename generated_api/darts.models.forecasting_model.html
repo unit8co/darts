@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Forecasting Model Base Classes &#8212; darts  documentation</title>
     
@@ -42,7 +42,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="N-BEATS" href="darts.models.nbeats.html" />
+    <link rel="next" title="Standard Regression model" href="darts.models.linear_regression_model.html" />
     <link rel="prev" title="Fast Fourier Transform" href="darts.models.fft.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -169,11 +169,19 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.linear_regression_model.html">Standard Regression model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.nbeats.html">N-BEATS</a>
                         </li>
                     
                         <li class="">
                             <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.random_forest.html">Random Forest</a>
                         </li>
                     
                         <li class="">
@@ -186,10 +194,6 @@
                     
                         <li class="">
                             <a href="darts.models.rnn_model.html">Recurrent Neural Networks</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
                         </li>
                     
                         <li class="">
@@ -829,6 +833,11 @@ Set to np.mean by default.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="darts.models.forecasting_model.GlobalForecastingModel.covariate_series">
+<code class="sig-name descname">covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.forecasting_model.GlobalForecastingModel.covariate_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt id="darts.models.forecasting_model.GlobalForecastingModel.fit">
 <em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/forecasting_model.html#GlobalForecastingModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.forecasting_model.GlobalForecastingModel.fit" title="Permalink to this definition">¶</a></dt>
@@ -1044,7 +1053,7 @@ Most commonly, unless otherwise specified, the term “residuals” implies a va
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.models.fft.html" title="previous page">Fast Fourier Transform</a>
-    <a class='right-next' id="next-link" href="darts.models.nbeats.html" title="next page">N-BEATS</a>
+    <a class='right-next' id="next-link" href="darts.models.linear_regression_model.html" title="next page">Standard Regression model</a>
 
               </div>
               

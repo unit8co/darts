@@ -152,23 +152,23 @@
 <span class="sd">Missing Values Filler</span>
 <span class="sd">---------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
-
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
 <span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="MissingValuesFiller"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.missing_values_filler.html#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller">[docs]</a><span class="k">class</span> <span class="nc">MissingValuesFiller</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+<div class="viewcode-block" id="MissingValuesFiller"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.missing_values_filler.html#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller">[docs]</a><span class="k">class</span> <span class="nc">MissingValuesFiller</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">fill</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MissingValuesFiller&quot;</span><span class="p">):</span>
+                 <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MissingValuesFiller&quot;</span><span class="p">,</span>
+                 <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Data transformer to fill missing values from time series</span>
+<span class="sd">        Data transformer to fill missing values from a (sequence of) TimeSeries</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -177,6 +177,14 @@
 <span class="sd">            If set to &#39;auto&#39;, will auto-fill missing values using the `pandas.Dataframe.interpolate()` method.</span>
 <span class="sd">        name</span>
 <span class="sd">            A specific name for the transformer</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is</span>
+<span class="sd">            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`</span>
+<span class="sd">            (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">            Note: for a small amount of data, the parallelisation overhead could end up increasing the total</span>
+<span class="sd">            required amount of time.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, whether to print operations progress</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
                      <span class="s2">&quot;`fill` should either be a string or a float&quot;</span><span class="p">,</span>
@@ -185,12 +193,18 @@
                  <span class="s2">&quot;invalid string for `fill`: can only be set to &#39;auto&#39;&quot;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fill</span> <span class="o">=</span> <span class="n">fill</span>
 
-<div class="viewcode-block" id="MissingValuesFiller.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.missing_values_filler.html#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="MissingValuesFiller.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.missing_values_filler.html#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">fill</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">fill</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MissingValuesFiller.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.missing_values_filler.html#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                  <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                  <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="c1"># adding the fill param</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

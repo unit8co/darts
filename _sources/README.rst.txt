@@ -9,13 +9,13 @@ Time Series Made Easy in Python
 .. image:: https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png
    :target: https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png
    :alt: darts
- 
+
 
 ----
 
 
 .. image:: https://badge.fury.io/py/u8darts.svg
-   :target: https://badge.fury.io/py/u8darts
+   :target: https://badge.fury.io/py/darts
    :alt: PyPI version
 
 
@@ -34,14 +34,19 @@ Time Series Made Easy in Python
    :alt: Docker Image Version (latest by date)
 
 
-.. image:: https://img.shields.io/pypi/dm/u8darts
-   :target: https://img.shields.io/pypi/dm/u8darts
-   :alt: PyPI - Downloads
-
-
 .. image:: https://img.shields.io/github/release-date/unit8co/darts
    :target: https://img.shields.io/github/release-date/unit8co/darts
    :alt: GitHub Release Date
+
+
+.. image:: https://pepy.tech/badge/u8darts
+   :target: https://pepy.tech/project/u8darts
+   :alt: Downloads
+
+
+.. image:: https://pepy.tech/badge/darts
+   :target: https://pepy.tech/project/darts
+   :alt: Downloads
 
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
@@ -89,15 +94,18 @@ Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/va
 
    import pandas as pd
    from darts import TimeSeries
-
    df = pd.read_csv('AirPassengers.csv', delimiter=",")
    series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
    train, val = series.split_after(pd.Timestamp('19580101'))
 
-..
+Or you could go for our dataset loaders!
 
-   The dataset used in this example can be downloaded from this `link <https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv>`_.
+.. code-block:: python
 
+   from darts.datasets import AirPassengersDataset
+   series = AirPassengersDataset.load()
+
+   train, val = series.split_after(pd.Timestamp('19580101'))
 
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
 
@@ -128,13 +136,13 @@ Plot:
    </div>
 
 
-We invite you to go over the example and tutorial notebooks in 
+We invite you to go over the example and tutorial notebooks in
 the `examples <https://github.com/unit8co/darts/tree/master/examples>`_ directory.
 
 Features
 --------
 
-Currently, the library contains the following features: 
+Currently, the library contains the following features:
 
 **Forecasting Models:**
 
@@ -151,12 +159,12 @@ Currently, the library contains the following features:
 
 **Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
 
-**Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
+**Metrics:** A variety of metrics for evaluating time series' goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.
 
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-**Regressive Models:** Possibility to predict a time series from several other time series 
+**Regressive Models:** Possibility to predict a time series from several other time series
 (e.g., external regressors), using arbitrary regressive models
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
@@ -164,35 +172,10 @@ from R2-scores to Mean Absolute Scaled Error.
 Contribute
 ----------
 
-The development is ongoing, and there are many new features that we want to add. 
+The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on GitHub.
 
-Before working on a contribution (a new feature or a fix) make sure you can't find anything related in `issues <https://github.com/unit8co/darts/issues>`_. If there is no on-going effort on what you plan to do then we recommend to do the following:
-
-
-#. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
-#. Fork the repository.
-#. Clone the forked repository locally.
-#. Create a clean Python env and install requirements with pip: ``pip install -r requirements/dev-all.txt``
-#. Create a new branch:
-
-   * Branch off from the **develop** branch.
-   * Prefix the branch with the type of update you are making:
-
-     * ``feature/``
-     * ``fix/``
-     * ``refactor/``
-     * …
-
-   * Work on your update
-
-#. Check that your code passes all the tests and design new unit tests if needed: ``./gradlew unitTest_all``.
-#. Verify your tests coverage by running ``./gradlew coverageTest``
-
-   * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with ``./coverage.sh xml``
-
-#. If your contribution introduces a significant change, add it to ``CHANGELOG.md`` under the "Unreleased" section.
-#. Create a pull request from your new branch to the **develop** branch.
+Before working on a contribution (a new feature or a fix), `\ **check our contribution guidelines** <CONTRIBUTE.md>`_.
 
 Contact Us
 ----------
@@ -208,10 +191,10 @@ Preconditions
 Some of the models depend on ``fbprophet`` and ``torch``\ , which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
-The following steps assume running inside a conda environment. 
+The following steps assume running inside a conda environment.
 If that's not possible, first follow the official instructions to install
 `fbprophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
-and `torch <https://pytorch.org/get-started/locally/>`_\ , then skip to 
+and `torch <https://pytorch.org/get-started/locally/>`_\ , then skip to
 `Install darts <#install-darts>`_
 
 To create a conda environment for Python 3.7
@@ -252,7 +235,7 @@ Install darts
 Install Darts with all available models: ``pip install darts``.
 
 As some models have relatively heavy (or non-Python) dependencies,
-we also maintain the ``u8darts`` package, which provides the following alternate lighter install options: 
+we also maintain the ``u8darts`` package, which provides the following alternate lighter install options:
 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): ``pip install u8darts``

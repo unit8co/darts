@@ -11,6 +11,7 @@
         darts.utils.data
         
         darts.utils.missing_values
+        darts.utils.model_selection
         darts.utils.statistics
         darts.utils.timeseries_generation
         darts.utils.torch

@@ -359,7 +359,6 @@
 <span class="sd">            By default, a single TimeSeries instance created from the last point of each individual forecast.</span>
 <span class="sd">            If `last_points_only` is set to False, a list of the historical forecasts.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="n">covariates</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">covariates</span><span class="p">),</span>
                          <span class="s1">&#39;The provided series and covariates must have the same time index.&#39;</span><span class="p">)</span>
@@ -401,13 +400,28 @@
                 <span class="n">train_cov</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">retrain</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">covariates</span> <span class="ow">and</span> <span class="s1">&#39;covariates&#39;</span> <span class="ow">in</span> <span class="n">fit_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">covariates</span> <span class="ow">and</span> <span class="s2">&quot;covariates&quot;</span> <span class="ow">in</span> <span class="n">fit_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">train_cov</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">covariates</span> <span class="ow">and</span> <span class="s2">&quot;exog&quot;</span> <span class="ow">in</span> <span class="n">fit_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">exog</span><span class="o">=</span><span class="n">train_cov</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">covariates</span> <span class="ow">and</span> <span class="s1">&#39;covariates&#39;</span> <span class="ow">in</span> <span class="n">predict_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
-                <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">train_cov</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">covariates</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;covariates&#39;</span> <span class="ow">in</span> <span class="n">predict_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                    <span class="n">covar_argument</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;covariates&quot;</span><span class="p">:</span> <span class="n">train_cov</span><span class="p">}</span>
+                <span class="k">elif</span> <span class="s1">&#39;exog&#39;</span> <span class="ow">in</span> <span class="n">predict_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                    <span class="n">covar_argument</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;exog&quot;</span><span class="p">:</span> <span class="n">train_cov</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`covariates` is not None but model does not support `exog` or `covariates`.&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="s1">&#39;series&#39;</span> <span class="ow">in</span> <span class="n">predict_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                    <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="o">**</span><span class="n">covar_argument</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s1">&#39;exog&#39;</span> <span class="ow">in</span> <span class="n">covar_argument</span><span class="p">:</span> <span class="c1"># Used for objects of type `RegressionModel`</span>
+                        <span class="n">start</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">train</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>
+                        <span class="n">covar_argument</span><span class="p">[</span><span class="s2">&quot;exog&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">covariates</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span><span class="o">+</span><span class="p">(</span><span class="n">forecast_horizon</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">train</span><span class="o">.</span><span class="n">freq</span><span class="p">()]</span>
+                    <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span> <span class="o">**</span><span class="n">covar_argument</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s1">&#39;series&#39;</span> <span class="ow">in</span> <span class="n">predict_signature</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
                     <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">)</span>
@@ -513,7 +527,6 @@
             <span class="k">return</span> <span class="n">metric</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">forecasts</span><span class="p">)</span>
 
         <span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">metric</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">forecast</span><span class="p">)</span> <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="n">forecasts</span><span class="p">]</span>
-
         <span class="k">if</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">errors</span>
 
@@ -732,6 +745,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">_expect_covariates</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">covariate_series</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="GlobalForecastingModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.forecasting_model.html#darts.models.arima.GlobalForecastingModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -759,7 +773,12 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">and</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>  <span class="c1"># handle the single series case</span>
         <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariates</span> <span class="o">=</span> <span class="kc">True</span></div>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covariate_series</span> <span class="o">=</span> <span class="n">covariates</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariates</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="GlobalForecastingModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.forecasting_model.html#darts.models.arima.GlobalForecastingModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
@@ -842,6 +861,7 @@
             <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">exog</span><span class="p">),</span>
                          <span class="s1">&#39;The target series and the exogenous variables series must have the same time index.&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_expect_exog</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series</span></div>
 
 <div class="viewcode-block" id="ExtendedForecastingModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.forecasting_model.html#darts.models.arima.ExtendedForecastingModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>

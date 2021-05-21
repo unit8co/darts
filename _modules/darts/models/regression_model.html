@@ -163,303 +163,286 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
-
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">ExtendedForecastingModel</span>
+<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
     <span class="n">_with_sanity_checks</span><span class="p">,</span>
     <span class="n">_historical_forecasts_general_checks</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">metrics</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="c1"># TODO: Extend this to a &quot;DynamicRegressiveModel&quot; class, which acts on List[List[TimeSeries]].</span>
-<span class="c1"># TODO: The first List[] would contain time-sliding lists of time series, letting the model</span>
-<span class="c1"># TODO: be able to learn how to change weights over time. When len() of outer List[] is 0 it&#39;s a particular case</span>
-<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionModel</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Regression Model.</span>
+<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionModel</span><span class="p">(</span><span class="n">ExtendedForecastingModel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lags_exog</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Regression Model</span>
 
-<span class="sd">            This is the base class for all regression models.</span>
+<span class="sd">        Can be used to fit any scikit-learn-like regressor class to predict the target</span>
+<span class="sd">        time series from lagged values.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lags : Union[int, list]</span>
+<span class="sd">            Number of lagged target values used to predict the next time step. If an integer is given</span>
+<span class="sd">            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.</span>
+<span class="sd">            The integers must be strictly positive (&gt;0).</span>
+<span class="sd">        lags_exog : Union[int, list, bool]</span>
+<span class="sd">            Number of lagged exogenous values used to predict the next time step. If an integer is given</span>
+<span class="sd">            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.</span>
+<span class="sd">            The integers must be positive (&gt;=0).</span>
+<span class="sd">        model</span>
+<span class="sd">            Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `exog`) with</span>
+<span class="sd">            `fit()` and `predict()` methods.</span>
+<span class="sd">            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if</span><span class="p">((</span><span class="n">lags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="s2">&quot;At least one of `lags` or `lags_exog` must be not None.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">or</span> <span class="n">lags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;`lags` must be of type int or list. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">lags</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_exog</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">or</span> <span class="n">lags_exog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;`lags_exog` must be of type int or list. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">lags_exog</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_exog</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+            <span class="s2">&quot;`lags` and `lags_exog` must be of type int or list, not bool.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
 
-        <span class="c1"># Stores training date information:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">train_features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">train_target</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))):</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Provided model object must have a fit() method&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))):</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Provided model object must have a predict() method&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">))</span>
 
-        <span class="c1"># state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="o">=</span> <span class="n">lags</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;`lags` must be strictly positive. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">:</span>
+                <span class="n">raise_if</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lag</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">lag</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span>
+                    <span class="s2">&quot;Every element of `lags` must be a strictly positive integer. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">))</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">=</span> <span class="n">lags_exog</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;`lags_exog` must be positive. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">:</span>
+                <span class="n">raise_if</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lag</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">lag</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span>
+                    <span class="s2">&quot;Every element of `lags_exog` must be a positive integer. Given: </span><span class="si">{}</span><span class="s2">.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">))</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="RegressionModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">train_target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="RegressionModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">exog</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot; Fits/trains the model using the provided list of features time series and the target time series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        train_features</span>
-<span class="sd">            A list of features time series, all of the same length as the target series</span>
-<span class="sd">        train_target</span>
-<span class="sd">            A target time series, of the same length as the features series</span>
+<span class="sd">        series : TimeSeries</span>
+<span class="sd">            TimeSeries object containing the target values.</span>
+<span class="sd">        exog : TimeSeries, optional</span>
+<span class="sd">            TimeSeries object containing the exogenous values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">exog</span><span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;`exog` not None in `fit()` method call, but `lags_exog` is None in constructor. &quot;</span>
+        <span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">exog</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;`exog` is None in `fit()` method call, but `lags_exog` is not None in constructor. &quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span> <span class="o">=</span> <span class="n">exog</span><span class="o">.</span><span class="n">columns</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">if</span> <span class="n">exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_exog</span> <span class="o">=</span> <span class="n">exog</span><span class="o">.</span><span class="n">width</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)</span> <span class="k">if</span> <span class="n">exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_features</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Need at least one feature series&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">train_target</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">train_features</span><span class="p">]),</span>
-                     <span class="s1">&#39;All provided time series must have the same time index&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">train_features</span> <span class="o">=</span> <span class="n">train_features</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">train_target</span> <span class="o">=</span> <span class="n">train_target</span>
+        <span class="c1"># Rename column if necessary</span>
+        <span class="n">target_column</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">target_column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">target_column</span><span class="p">:</span> <span class="s2">&quot;Target&quot;</span><span class="p">}))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Prepare data</span>
+        <span class="n">training_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_training_data</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span> <span class="n">exog</span><span class="o">=</span><span class="n">exog</span><span class="p">)</span>
+        <span class="n">training_y</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">training_x</span><span class="o">.</span><span class="n">time_index</span><span class="p">()]</span>
+
+        <span class="c1"># Fit model</span>
+        <span class="k">if</span> <span class="s2">&quot;series&quot;</span> <span class="ow">in</span> <span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">training_y</span><span class="p">,</span>
+                <span class="n">exog</span><span class="o">=</span><span class="n">training_x</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                <span class="n">training_x</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(),</span>
+                <span class="n">training_y</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">=</span><span class="n">exog</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="n">exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_data</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">=</span><span class="n">exog</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_data</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span><span class="p">:]</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="RegressionModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Predicts values of the target time series, given a list of features time series</span>
+    <span class="k">def</span> <span class="nf">_create_training_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">exog</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create dataframe of exogenous and endogenous variables containing lagged values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        features</span>
-<span class="sd">            The list of features time series, of the same length</span>
+<span class="sd">        series : TimeSeries</span>
+<span class="sd">            Target series.</span>
+<span class="sd">        exog : TimeSeries, optional</span>
+<span class="sd">            Exogenous variables.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
-<span class="sd">            A series containing the predicted targets, of the same length as the features series</span>
+<span class="sd">            TimeSeries with lagged values of target and exogenous variables.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;Series must not be multivariate. Pass exogenous variables to &#39;exog&#39; parameter.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span>
+        <span class="p">)</span>
+        <span class="n">training_data_list</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;fit() must be called before predict()&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lagged_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagged_data</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">)</span>
+            <span class="n">training_data_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lagged_data</span><span class="p">)</span>
 
-        <span class="n">length_ok</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_features</span><span class="p">)</span>
-        <span class="n">dimensions_ok</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">)))</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">length_ok</span> <span class="ow">and</span> <span class="n">dimensions_ok</span><span class="p">,</span>
-                     <span class="s1">&#39;The number and dimensionalities of all given features must correspond to those used for&#39;</span>
-                     <span class="s1">&#39; training.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">exog</span><span class="o">.</span><span class="n">columns</span><span class="p">()):</span>
+                <span class="n">lagged_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagged_data</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">exog</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">lags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span>
+                <span class="p">)</span>
+                <span class="n">training_data_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lagged_data</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sanity checks for the historical_forecasts function</span>
+        <span class="n">training_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">training_data_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">training_data</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_create_lagged_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">lags</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Creates a data frame where every lag is a new column.</span>
+
+<span class="sd">        After creating this input it can be used in many regression models to make predictions</span>
+<span class="sd">        based on previous available values for both the exogenous as well as endogenous variables.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        args</span>
-<span class="sd">            The args parameter(s) provided to the historical_forecasts function.</span>
-<span class="sd">        kwargs</span>
-<span class="sd">            The kwargs paramter(s) provided to the historical_forecasts function.</span>
-
-<span class="sd">        Raises</span>
-<span class="sd">        ------</span>
-<span class="sd">        ValueError</span>
-<span class="sd">            when a check on the parameter does not pass.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c1"># parse args</span>
-        <span class="n">feature_series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">target_series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]),</span> <span class="s1">&#39;All provided time series must &#39;</span>
-                     <span class="s1">&#39;have the same time index&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-
-        <span class="n">_historical_forecasts_general_checks</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="RegressionModel.historical_forecasts"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel.historical_forecasts">[docs]</a>    <span class="nd">@_with_sanity_checks</span><span class="p">(</span><span class="s2">&quot;_historical_forecasts_sanity_checks&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                             <span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-                             <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                             <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-                             <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                             <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                             <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                             <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                             <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot; Computes the historical forecasts the model would have produced with an expanding training window</span>
-<span class="sd">        and (by default) returns a time series created from the last point of each of these individual forecasts</span>
-
-<span class="sd">        To this end, it repeatedly builds a training set composed of both features and targets,</span>
-<span class="sd">        from `feature_series` and `target_series`, respectively.</span>
-<span class="sd">        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,</span>
-<span class="sd">        and then moves the end of the training set forward by `stride` time steps.</span>
-
-<span class="sd">        By default, this method will return a single time series made up of the last point of each</span>
-<span class="sd">        historical forecast. This time series will thus have a frequency of training_series.freq() * stride</span>
-<span class="sd">        If `last_points_only` is set to False, it will instead return a list of the historical forecasts.</span>
-
-<span class="sd">        This always re-trains the models on the entire available history,</span>
-<span class="sd">        corresponding an expanding window strategy.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        feature_series</span>
-<span class="sd">            An iterable of time series representing the features for the regression model (independent variables)</span>
-<span class="sd">        target_series</span>
-<span class="sd">            The univariate target time series for the regression model (dependent variable)</span>
-<span class="sd">        start</span>
-<span class="sd">            The first prediction time, at which a prediction is computed for a future time</span>
-<span class="sd">        forecast_horizon</span>
-<span class="sd">            The forecast horizon for the point predictions</span>
-<span class="sd">        stride</span>
-<span class="sd">            The number of time steps between two consecutive predictions.</span>
-<span class="sd">        overlap_end</span>
-<span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not</span>
-<span class="sd">        last_points_only</span>
-<span class="sd">            Whether to retain only the last point of each historical forecast.</span>
-<span class="sd">            If set to True, the method returns a single `TimeSeries` of the point forecasts.</span>
-<span class="sd">            Otherwise returns a list of historical `TimeSeries` forecasts.</span>
-<span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress</span>
+<span class="sd">        series : TimeSeries</span>
+<span class="sd">            Time series to be lagged.</span>
+<span class="sd">        lags : list</span>
+<span class="sd">            List if indexes.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        TimeSeries or List[TimeSeries]</span>
-<span class="sd">            By default, a single TimeSeries instance created from the last point of each individual forecast.</span>
-<span class="sd">            If `last_points_only` is set to False, a list of the historical forecasts</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Returns a data frame that contains lagged values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">lagged_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">target_name</span> <span class="o">=</span> <span class="n">lagged_series</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">:</span>
+            <span class="n">new_column_name</span> <span class="o">=</span> <span class="n">target_name</span> <span class="o">+</span> <span class="s2">&quot;_lag</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span>
+            <span class="n">lagged_series</span><span class="p">[</span><span class="n">new_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lagged_series</span><span class="p">[</span><span class="n">target_name</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">lag</span><span class="p">)</span>
+        <span class="n">lagged_series</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lagged_series</span>
 
-        <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">overlap_end</span><span class="p">:</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="n">forecast_horizon</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">()[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+<div class="viewcode-block" id="RegressionModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">exog</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Forecasts values for `n` time steps after the end of the series.</span>
 
-        <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
-        <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">last_valid_pred_time</span><span class="p">:</span>
-            <span class="c1"># compute the next prediction time and add it to pred times</span>
-            <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span> <span class="o">*</span> <span class="n">stride</span><span class="p">)</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n : int</span>
+<span class="sd">            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</span>
+<span class="sd">        exog : Optional[TimeSeries], optional</span>
+<span class="sd">            The time series of exogenous variables which can be fed as input to the model. It must correspond to the</span>
+<span class="sd">            exogenous time series that has been used with the `fit()` method for training. It also must be of length `n`</span>
+<span class="sd">            and start one time step after the end of the training series.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional keyword arguments passed to the `predict` method of the model.</span>
 
-        <span class="c1"># the last prediction time computed might have overshot last_valid_pred_time</span>
-        <span class="k">if</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_valid_pred_time</span><span class="p">:</span>
-            <span class="n">pred_times</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A time series containing the `n` next points after then end of the training series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">exog</span><span class="p">)</span>
 
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">prediction_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">dummy_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">prediction_data</span><span class="o">.</span><span class="n">width</span><span class="p">))</span>
+            <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">dummy_row</span><span class="p">)</span>
 
-        <span class="c1"># Either store the whole forecasts or only the last points of each forecast, depending on last_points_only</span>
-        <span class="n">forecasts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">required_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">exog</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">==</span> <span class="n">required_start</span><span class="p">,</span>
+                <span class="s2">&quot;`exog` first date must be equal to self.training_series.end_time()+1*freq. &quot;</span> <span class="o">+</span>
+                <span class="s2">&quot;Given: </span><span class="si">{}</span><span class="s2">. Needed: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exog</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">required_start</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exog</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="n">exog</span> <span class="o">=</span> <span class="n">exog</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="n">last_points_times</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">last_points_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">forecasts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
 
-        <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-            <span class="c1"># build train/val series</span>
-            <span class="n">train_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
-            <span class="n">train_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
-            <span class="n">val_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">slice_n_points_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">feature_series</span><span class="p">]</span>
+            <span class="c1"># Prepare prediction data if for prediction at time `t` exog at time `t` is used</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="mi">0</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">:</span>
+                <span class="n">append_row</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">*</span><span class="n">exog</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">values</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                        <span class="n">append_row</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_data</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">exog</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                    <span class="p">)</span>
+                    <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">prediction_data</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Remove last dummy row</span>
+                    <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">append_row</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_features</span><span class="p">,</span> <span class="n">train_target</span><span class="p">)</span>
-            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">val_features</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-                <span class="n">last_points_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">last_points_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>
+            <span class="c1"># Make prediction</span>
+            <span class="n">target_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">]]</span>
+            <span class="n">exog_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">forecasting_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_training_data</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">target_data</span><span class="p">,</span> <span class="n">exog</span><span class="o">=</span><span class="n">exog_data</span><span class="p">)</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;series&quot;</span> <span class="ow">in</span> <span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="n">forecasting_data</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">forecasting_data</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">freq</span><span class="p">())</span>
+                <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">forecasting_data</span><span class="p">),</span> <span class="n">exog</span><span class="o">=</span><span class="n">forecasting_data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">forecast</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
+                <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">forecasting_data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="n">forecast</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forecast</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">forecast</span>
 
-        <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">last_points_times</span><span class="p">),</span>
-                                                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">),</span>
-                                                    <span class="n">freq</span><span class="o">=</span><span class="n">target_series</span><span class="o">.</span><span class="n">freq</span><span class="p">()</span> <span class="o">*</span> <span class="n">stride</span><span class="p">)</span>
+            <span class="c1"># Prepare prediction data</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lag</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Remove last dummy row</span>
+                <span class="n">append_row</span> <span class="o">=</span> <span class="p">[[</span><span class="n">forecast</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">*</span><span class="n">exog</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">values</span><span class="p">]]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exog_columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+                <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">append_row</span><span class="p">)</span>
+                <span class="n">prediction_data</span> <span class="o">=</span> <span class="n">prediction_data</span><span class="o">.</span><span class="n">append_values</span><span class="p">(</span><span class="n">dummy_row</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
 
-        <span class="k">return</span> <span class="n">forecasts</span></div>
+            <span class="c1"># Append forecast</span>
+            <span class="n">forecasts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">forecast</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecasts</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="RegressionModel.backtest"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel.backtest">[docs]</a>    <span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">feature_series</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-                 <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                 <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
-                 <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
-                 <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
-                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Computes an error score between the historical forecasts the model would have produced</span>
-<span class="sd">        with an expanding training window over `series` and the actual series.</span>
-
-<span class="sd">        To this end, it repeatedly builds a training set composed of both features and targets,</span>
-<span class="sd">        from `feature_series` and `target_series`, respectively.</span>
-<span class="sd">        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,</span>
-<span class="sd">        and then moves the end of the training set forward by `stride` time steps.</span>
-
-<span class="sd">        By default, this method will use each historical forecast (whole) to compute error scores.</span>
-<span class="sd">        If `last_points_only` is set to True, it will use only the last point of each historical forecast.</span>
-
-<span class="sd">        This always re-trains the models on the entire available history,</span>
-<span class="sd">        corresponding an expanding window strategy.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        feature_series</span>
-<span class="sd">            An iterable of time series representing the features for the regression model (independent variables)</span>
-<span class="sd">        target_series</span>
-<span class="sd">            The univariate target time series for the regression model (dependent variable)</span>
-<span class="sd">        start</span>
-<span class="sd">            The first prediction time, at which a prediction is computed for a future time</span>
-<span class="sd">        forecast_horizon</span>
-<span class="sd">            The forecast horizon for the point predictions</span>
-<span class="sd">        stride</span>
-<span class="sd">            The number of time steps between two consecutive predictions.</span>
-<span class="sd">        overlap_end</span>
-<span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not</span>
-<span class="sd">        last_points_only</span>
-<span class="sd">            Whether to keep the whole historical forecasts or only the last point of each forecast</span>
-<span class="sd">        metric</span>
-<span class="sd">            A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
-<span class="sd">        reduction</span>
-<span class="sd">            A function used to combine the individual error scores obtained when `last_points_only` is set to False.</span>
-<span class="sd">            If explicitely set to `None`, the method will return a list of the individual error scores instead.</span>
-<span class="sd">            Set to np.mean by default.</span>
-<span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        float or List[float]</span>
-<span class="sd">            The error score, or the list of individual error scores if `reduction` is `None`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">forecasts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">feature_series</span><span class="p">,</span>
-                                              <span class="n">target_series</span><span class="p">,</span>
-                                              <span class="n">start</span><span class="p">,</span>
-                                              <span class="n">forecast_horizon</span><span class="p">,</span>
-                                              <span class="n">stride</span><span class="p">,</span>
-                                              <span class="n">overlap_end</span><span class="p">,</span>
-                                              <span class="n">last_points_only</span><span class="p">,</span>
-                                              <span class="n">verbose</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">metric</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">forecasts</span><span class="p">)</span>
-
-        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="n">forecasts</span><span class="p">:</span>
-            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">forecast</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">errors</span>
-
-        <span class="k">return</span> <span class="n">reduction</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="RegressionModel.residuals"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.regression_model.RegressionModel.residuals">[docs]</a>    <span class="k">def</span> <span class="nf">residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Computes the time series of residuals of this model on the training time series</span>
-
-<span class="sd">        The residuals are computed as</span>
-
-<span class="sd">        .. math:: z_t := y_t - \\hat{y}_t,</span>
-
-<span class="sd">        where :math:`y_t` is the actual target time series over the training set,</span>
-<span class="sd">        and :math:`\\hat{y}_t` is the time series of predicted targets, over the training set.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        TimeSeries</span>
-<span class="sd">            The time series containing the residuals</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;fit() must be called before predict()&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
-
-        <span class="n">train_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_features</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_target</span> <span class="o">-</span> <span class="n">train_pred</span></div></div>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
 </pre></div>
 
               </div>

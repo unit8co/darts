@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Mappers &#8212; darts  documentation</title>
     
@@ -198,9 +198,10 @@
 <h1>Mappers<a class="headerlink" href="#mappers" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.mappers.</code><code class="sig-name descname">InvertibleMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.mappers.</code><code class="sig-name descname">InvertibleMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">inverse_fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'InvertibleMapper'</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
-<p>Data transformer to apply a function and its inverse to a time series (similar to calling <cite>series.map()</cite>)</p>
+<p>Data transformer to apply a function and its inverse to a (<cite>Sequence</cite> of) <cite>TimeSeries</cite> (similar to calling
+<cite>series.map()</cite>)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -210,26 +211,33 @@ Or a function which takes a value and its timestamp and returns a value ie. f(ti
 Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
 <cite>inverse_fn</cite> should be such that <cite>inverse_fn(fn(x)) == x</cite></p></li>
 <li><p><strong>name</strong> – A specific name for the transformer</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input to a method, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.inverse_transform">
-<code class="sig-name descname">inverse_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.inverse_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform inverse transformation of the data. Not implemented in base class.</p>
+<code class="sig-name descname">inverse_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.inverse_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse-transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – Object which will be inverse transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>inverse_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>inverse_transform()</cite> method</p></li>
+<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> which will be inverse-transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_inverse_transform()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_inverse_transform()</cite> method</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Inverse transformed data.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>T</p>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -242,23 +250,87 @@ Or a function which takes a value and its timestamp and returns a value ie. f(ti
 </dd></dl>
 
 <dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.set_n_jobs">
+<code class="sig-name descname">set_n_jobs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the number of cores that will be used by the transformer while processing multiple <cite>TimeSeries</cite>. Set to
+<cite>-1</cite> for using all the available cores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> – New n_jobs value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.set_verbose">
+<code class="sig-name descname">set_verbose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setter for the verbosity status. <cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.transform">
-<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform the data.
-Not implemented in base class and has to be implemented by deriving classes.</p>
+<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – Object which will be transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>transform</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>transform</cite> method</p></li>
+<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> which will be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <cite>ts_transform()</cite> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <cite>ts_transform()</cite> method call</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Transformed data.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>T</p>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.ts_inverse_transform">
+<em class="property">static </em><code class="sig-name descname">ts_inverse_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">inverse_fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.ts_inverse_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>inverse_transform()</cite> function is called.
+The function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
+Additional parameters can be added if necessary, but in this case, the <cite>_inverse_transform_iterator()</cite> should be
+redefined accordingly, to yield the necessary arguments to this function (See <cite>_inverse_transform_iterator()</cite>
+for further details)</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – TimeSeries which will be transformed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.InvertibleMapper.ts_transform">
+<em class="property">static </em><code class="sig-name descname">ts_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#InvertibleMapper.ts_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.InvertibleMapper.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>transform()</cite> function is called. The
+function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
+If more parameters are added as input in the derived classes, the <cite>_transform_iterator()</cite> should be
+redefined accordingly, to yield the necessary arguments to this function (See <cite>_transform_iterator()</cite> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> which will be transformed.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -267,15 +339,21 @@ Not implemented in base class and has to be implemented by deriving classes.</p>
 
 <dl class="py class">
 <dt id="darts.dataprocessing.transformers.mappers.Mapper">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.mappers.</code><code class="sig-name descname">Mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#Mapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.transformers.mappers.</code><code class="sig-name descname">Mapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fn</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>numpy.number<span class="p">]</span><span class="p">, </span>numpy.number<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">name</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'Mapper'</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#Mapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
-<p>Data transformer to apply a function to a time series (similar to calling <cite>series.map()</cite>)</p>
+<p>Data transformer to apply a function to a (<cite>Sequence</cite> of) <cite>TimeSeries</cite> (similar to calling <cite>series.map()</cite>)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fn</strong> – Either a function which takes a value and returns a value ie. f(x) = y
 Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y</p></li>
 <li><p><strong>name</strong> – A specific name for the transformer</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input to a method, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 </dl>
@@ -287,23 +365,67 @@ Or a function which takes a value and its timestamp and returns a value ie. f(ti
 </dd></dl>
 
 <dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.Mapper.set_n_jobs">
+<code class="sig-name descname">set_n_jobs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">int</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the number of cores that will be used by the transformer while processing multiple <cite>TimeSeries</cite>. Set to
+<cite>-1</cite> for using all the available cores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> – New n_jobs value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.Mapper.set_verbose">
+<code class="sig-name descname">set_verbose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">bool</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setter for the verbosity status. <cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="darts.dataprocessing.transformers.mappers.Mapper.transform">
-<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#Mapper.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform the data.
-Not implemented in base class and has to be implemented by deriving classes.</p>
+<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#Mapper.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – Object which will be transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>transform</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>transform</cite> method</p></li>
+<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> which will be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <cite>ts_transform()</cite> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <cite>ts_transform()</cite> method call</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Transformed data.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>T</p>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.transformers.mappers.Mapper.ts_transform">
+<em class="property">static </em><code class="sig-name descname">ts_transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">fn</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/mappers.html#Mapper.ts_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.transformers.mappers.Mapper.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>transform()</cite> function is called. The
+function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
+If more parameters are added as input in the derived classes, the <cite>_transform_iterator()</cite> should be
+redefined accordingly, to yield the necessary arguments to this function (See <cite>_transform_iterator()</cite> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> which will be transformed.</p>
 </dd>
 </dl>
 </dd></dl>

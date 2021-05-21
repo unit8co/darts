@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Introduction to darts &#8212; darts  documentation</title>
     
@@ -464,7 +464,7 @@ div.rendered_html tbody tr:hover {
 <p>In this notebook, we will go over the main functionalities of the library: how to build and manipulate time series, train forecasting models, make predictions, evaluate metrics, backtest models and ensemble several models.</p>
 <p>As a toy example, we will use the well known <a class="reference external" href="https://github.com/jbrownlee/Datasets/blob/master/monthly-airline-passengers.csv">monthly airline passengers dataset</a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -475,7 +475,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -500,13 +500,14 @@ div.rendered_html tbody tr:hover {
     <span class="n">ARIMA</span><span class="p">,</span>
     <span class="n">AutoARIMA</span><span class="p">,</span>
     <span class="n">RegressionEnsembleModel</span><span class="p">,</span>
-    <span class="n">StandardRegressionModel</span><span class="p">,</span>
+    <span class="n">RegressionModel</span><span class="p">,</span>
     <span class="n">Theta</span><span class="p">,</span>
     <span class="n">FFT</span>
 <span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">mase</span>
 <span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span><span class="p">,</span> <span class="n">plot_residuals_analysis</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
@@ -518,9 +519,10 @@ div.rendered_html tbody tr:hover {
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
-<div class="output_area stderr docutils container">
+<div class="output_area docutils container">
 <div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
 </pre></div></div>
 </div>
 <section id="Read-data-and-build-a-TimeSeries">
@@ -531,9 +533,7 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;#Passengers&#39;</span><span class="p">])</span>
-
+<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -551,7 +551,7 @@ Importing plotly failed. Interactive plots will not work.
 <p>First, let’s split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a test series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -605,7 +605,7 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_acf</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="o">.</span><span class="mi">05</span><span class="p">)</span>
+<span></span><span class="n">plot_acf</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">.05</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -623,7 +623,7 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">):</span>
-    <span class="n">is_seasonal</span><span class="p">,</span> <span class="n">period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">05</span><span class="p">)</span>
+    <span class="n">is_seasonal</span><span class="p">,</span> <span class="n">period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">.05</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">is_seasonal</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There is seasonality of order </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">period</span><span class="p">))</span>
 </pre></div>
@@ -1010,7 +1010,7 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <p>A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a final forecast.</p>
 <p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1032,54 +1032,41 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eff2b67cc3d44f6e8906cc426eff0ed9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "703714093633418980a798e08fc5e31f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c8791b2e98db4082924398d65f8cbf3d", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d41d877733874cd78d8811da6d97dea1", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ffdf9d4c51664df783d1c83bd179b667", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "10653b3b0e554efda094513f23b3be15", "version_major": 2, "version_minor": 0}</script></div>
 </div>
-<p>Now that we have the historical forecasts <em>that we would have obtained</em> from a couple of models, we can train a <code class="docutils literal notranslate"><span class="pre">StandardRegressionModel</span></code>, in order to learn in a supervised way how to best combine the features time series (our 3 forecasts) into the target series that we are trying to predict.</p>
-<p>By default the <code class="docutils literal notranslate"><span class="pre">StandardRegressionModel</span></code> will fit a linear regression for predicting the target series from some features series. If you want something different than linear regression, <code class="docutils literal notranslate"><span class="pre">StandardRegressionModel</span></code> can wrap around any scikit-learn regression model.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; We build the regression model, and tell it to use the 12 preceding points to fit the regression</span>
+<span></span><span class="n">model_predictions_stacked</span> <span class="o">=</span> <span class="n">model_predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">model_prediction</span> <span class="ow">in</span> <span class="n">model_predictions</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+    <span class="n">model_predictions_stacked</span> <span class="o">=</span> <span class="n">model_predictions_stacked</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">model_prediction</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now that we have the historical forecasts <em>that we would have obtained</em> from a couple of models, we can train a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, in order to learn in a supervised way how to best combine the features time series (our 3 forecasts) into the target series that we are trying to predict.</p>
+<p>By default the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will fit a linear regression for predicting the target series from some features series. If you want something different than linear regression, <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> can wrap around any scikit-learn regression model.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; We build the regression model, and tell it to use the current predictions</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">regr_model</span> <span class="o">=</span> <span class="n">StandardRegressionModel</span><span class="p">(</span><span class="n">train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">regr_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot; Our target series is what we want to predict (the actual data)</span>
 <span class="sd">    It has to have the same time index as the features series:</span>
@@ -1088,33 +1075,27 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 
 <span class="sd">&quot;&quot;&quot; Here we backtest our regression model</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">model_predictions</span><span class="p">,</span> <span class="n">series_target</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series_target</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">model_predictions_stacked</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "acb61513dcb244e28099eb1a55e61c0b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "cbb4e66c8ed24add8958c985bae6b15b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Finally, let’s see how good the regression performs, compared to the original forecasts:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-
 
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
     <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
@@ -1127,7 +1108,6 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
     <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">MAPE: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape_model</span><span class="p">))</span>
     <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
 <span class="n">ensemble_pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Ensemble&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">MAPE, ensemble: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ensemble_pred</span><span class="p">)))</span>
@@ -1135,7 +1115,7 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Regression coefficients for the individual models:&#39;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Learned coefficient for </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Learned coefficient for </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -1147,19 +1127,19 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <div class="highlight"><pre>
 
 Regression coefficients for the individual models:
-Learned coefficient for Naive seasonal model, with K=6: 0.00
-Learned coefficient for Naive seasonal model, with K=12: 1.05
-Learned coefficient for Naive drift model: 0.09
+Learned coefficient for Naive seasonal model, with K=6: -0.01
+Learned coefficient for Naive seasonal model, with K=12: 1.09
+Learned coefficient for Naive drift model: 0.10
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_44_1.png" src="../_images/examples_01-darts-intro_44_1.png" />
+<img alt="../_images/examples_01-darts-intro_45_1.png" src="../_images/examples_01-darts-intro_45_1.png" />
 </div>
 </div>
-<p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 6.18%.</p>
+<p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 6.03%.</p>
 <p>A couple of interesting things to observe: * Note how the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn to ignore the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> (by assigning a coefficient of 0), and learns a coefficient of only 0.09 for the drift model. * Note how the regression (ensemble) forecast starts off 12 months after the
 individual models forecasts – that is because the regression model needs 12 data points to fit the weights coefficients of the linear regression.</p>
 </section>
@@ -1168,7 +1148,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <p>Wouldn’t it be great if there would be a way to get an ensemble prediction in fewer lines of code?</p>
 <p>Actually, there is: using the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>. It is as simple as instantiating the ensemble model, calling the method <code class="docutils literal notranslate"><span class="pre">fit</span></code> on the training set, and then, calling the method <code class="docutils literal notranslate"><span class="pre">predict</span></code> with the number of time steps to forecast:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[82]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1190,13 +1170,13 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_47_0.png" src="../_images/examples_01-darts-intro_47_0.png" />
+<img alt="../_images/examples_01-darts-intro_48_0.png" src="../_images/examples_01-darts-intro_48_0.png" />
 </div>
 </div>
 <p>Quite easy, isn’t it?</p>
 <p>Now, to get a result similar to the one obtained with the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach, just use the <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> method of your ensemble model:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[83]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1215,21 +1195,13 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ad5bc1322c9042adaba704505cfabcd2", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "65a1a208f482432c9b9113ff36694522", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_49_2.png" src="../_images/examples_01-darts-intro_49_2.png" />
+<img alt="../_images/examples_01-darts-intro_50_1.png" src="../_images/examples_01-darts-intro_50_1.png" />
 </div>
 </div>
 <p>Note that the when we use <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>, by default, we are using the <code class="docutils literal notranslate"><span class="pre">LinearRegression</span></code> model from scikit-learn. To change this, you can pass to the <code class="docutils literal notranslate"><span class="pre">regression_model</span></code> argument any regression model with <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and <code class="docutils literal notranslate"><span class="pre">fit()</span></code> methods, for example <code class="docutils literal notranslate"><span class="pre">RidgeCV()</span></code>.</p>

@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Recurrent Neural Networks &#8212; darts  documentation</title>
     
@@ -42,7 +42,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Standard Regression model" href="darts.models.standard_regression_model.html" />
+    <link rel="next" title="Temporal Convolutional Network" href="darts.models.tcn_model.html" />
     <link rel="prev" title="Regression Model Base Class" href="darts.models.regression_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -169,11 +169,19 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.linear_regression_model.html">Standard Regression model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.nbeats.html">N-BEATS</a>
                         </li>
                     
                         <li class="">
                             <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.random_forest.html">Random Forest</a>
                         </li>
                     
                         <li class="">
@@ -186,10 +194,6 @@
                     
                         <li class="active">
                             <a href="">Recurrent Neural Networks</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.models.standard_regression_model.html">Standard Regression model</a>
                         </li>
                     
                         <li class="">
@@ -343,6 +347,11 @@ Set to np.mean by default.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="darts.models.rnn_model.RNNModel.covariate_series">
+<code class="sig-name descname">covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.rnn_model.RNNModel.covariate_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.first_prediction_index">
 <em class="property">property </em><code class="sig-name descname">first_prediction_index</code><a class="headerlink" href="#darts.models.rnn_model.RNNModel.first_prediction_index" title="Permalink to this definition">¶</a></dt>
@@ -489,7 +498,7 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.load_from_checkpoint">
-<em class="property">static </em><code class="sig-name descname">load_from_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">work_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'/home/runner/work/darts/darts/docs'</span></em>, <em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">best</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel">darts.models.torch_forecasting_model.TorchForecastingModel</a><a class="headerlink" href="#darts.models.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">load_from_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">work_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">best</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel">darts.models.torch_forecasting_model.TorchForecastingModel</a><a class="headerlink" href="#darts.models.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the model from the given checkpoint.
 if file is not given, will try to restore the most recent checkpoint.</p>
 <dl class="field-list simple">
@@ -519,7 +528,7 @@ This function/property should be overridden if a value higher than 3 is required
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts values for a certain number of time steps after the end of the training series,
 or after the end of the specified <cite>series</cite>.</p>
 <p>If <cite>n</cite> is larger than the model <cite>output_chunk_length</cite>, the predictions will be computed in an
@@ -527,6 +536,8 @@ auto-regressive way, by iteratively feeding the last <cite>output_chunk_length</
 inputs to the model until a forecast of length <cite>n</cite> is obtained. This is at the moment only
 supported when covariates are not used, as this functionality requires future covariates,
 which are not supported yet.</p>
+<p>If some time series in the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument have more time steps than the model was trained with,
+only the last <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> time steps will be considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -536,6 +547,9 @@ future is to be predicted. If specified, the method returns the forecasts of the
 series. Otherwise, the method returns the forecast of the (single) training series.</p></li>
 <li><p><strong>covariates</strong> – Optionally, the covariates series needed as inputs for the model. They must match the covariates used
 for training.</p></li>
+<li><p><strong>batch_size</strong> – Size of batches during prediction. Defaults to the models <cite>batch_size</cite> value.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print progress.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Defaults to <cite>1</cite>. <cite>-1</cite> means using all processors.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -550,8 +564,36 @@ if <cite>series</cite> is not specified and the model has been trained on a sing
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.predict_from_dataset">
-<code class="sig-name descname">predict_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">input_series_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset</a></span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-name descname">predict_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">input_series_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset</a></span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predicts values for a certain number of time steps after the end of the series appearing in the specified
+<code class="docutils literal notranslate"><span class="pre">input_series_dataset</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">n</span></code> is larger than the model <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>, the predictions will be computed in an
+auto-regressive way, by iteratively feeding the last <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> forecast points as
+inputs to the model until a forecast of length <code class="docutils literal notranslate"><span class="pre">n</span></code> is obtained. This is at the moment only
+supported when covariates are not used, as this functionality requires future covariates,
+which are not supported yet.</p>
+<p>If some series in the <code class="docutils literal notranslate"><span class="pre">input_series_dataset</span></code> have more time steps than the model was trained with,
+only the last <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> time steps will be considered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The number of time steps after the end of the training time series for which to produce predictions</p></li>
+<li><p><strong>input_series_dataset</strong> – Optionally, one or several input <cite>TimeSeries</cite>, representing the history of the target series’ whose
+future is to be predicted. If specified, the method returns the forecasts of these
+series. Otherwise, the method returns the forecast of the (single) training series.</p></li>
+<li><p><strong>batch_size</strong> – Size of batches during prediction. Defaults to the models <cite>batch_size</cite> value.</p></li>
+<li><p><strong>verbose</strong> – Shows the progress bar for batch predicition. Off by default.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Defaults to <cite>1</cite>. <cite>-1</cite> means using all processors.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Returns one or more forecasts for time series.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.residuals">
@@ -599,7 +641,7 @@ Most commonly, unless otherwise specified, the term “residuals” implies a va
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.models.regression_model.html" title="previous page">Regression Model Base Class</a>
-    <a class='right-next' id="next-link" href="darts.models.standard_regression_model.html" title="next page">Standard Regression model</a>
+    <a class='right-next' id="next-link" href="darts.models.tcn_model.html" title="next page">Temporal Convolutional Network</a>
 
               </div>
               

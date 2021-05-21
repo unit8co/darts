@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Metrics &#8212; darts  documentation</title>
     
@@ -195,23 +195,32 @@
 <p>Some metrics to compare time series.</p>
 <dl class="py function">
 <dt id="darts.metrics.metrics.coefficient_of_variation">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">coefficient_of_variation</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#coefficient_of_variation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.coefficient_of_variation" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">coefficient_of_variation</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#coefficient_of_variation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.coefficient_of_variation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coefficient of Variation (percentage).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>,
 it is a percentage value, computed as</p>
 <div class="math notranslate nohighlight">
 \[100 \cdot \text{RMSE}(y_t, \hat{y}_t) / \bar{y_t},\]</div>
-<p>where <span class="math notranslate nohighlight">\(\text{RMSE}()\)</span> denotes the root mean squred error, and
+<p>where <span class="math notranslate nohighlight">\(\text{RMSE}()\)</span> denotes the root mean squared error, and
 <span class="math notranslate nohighlight">\(\bar{y_t}\)</span> is the average of <span class="math notranslate nohighlight">\(y_t\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -223,9 +232,23 @@ the metrics of different components in case of multivariate TimeSeries instances
 </dl>
 </dd></dl>
 
+<dl class="py data">
+<dt id="darts.metrics.metrics.logger">
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger darts.metrics.metrics (INFO)&gt;</em><a class="headerlink" href="#darts.metrics.metrics.logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>for new metrics added to this module to be able to leverage the two decorators, it is required both having
+the <cite>actual_series</cite> and <cite>pred_series</cite> parameters, and not having other <cite>Sequence</cite> as args (since these decorators
+don’t “unpack“ parameters different from <cite>actual_series</cite> and <cite>pred_series</cite>). In those cases, the new metric must take
+care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Note</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt id="darts.metrics.metrics.mae">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mae</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mae"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mae" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mae</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#mae"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mae" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Error (MAE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -233,12 +256,21 @@ the metrics of different components in case of multivariate TimeSeries instances
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -252,7 +284,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#mape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Percentage Error (MAPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -263,12 +295,21 @@ the Mean Absolute Scaled Error (MASE) in these cases.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -285,7 +326,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.marre">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">marre</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#marre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.marre" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">marre</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#marre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.marre" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Ranged Relative Error (MARRE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -295,12 +336,21 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -317,15 +367,15 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mase">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, insample: darts.timeseries.TimeSeries, m: Optional[int] = 1, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mase</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], insample: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], m: Optional[int] = 1, intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Absolute Scaled Error (MASE).</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_scaled_error">Mean absolute scaled error wikipedia page</a>
 for details about the MASE and how it is computed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>insample</strong> – The training series used to forecast <cite>pred_series</cite> .
 This series serves to compute the scale of the error obtained by a naive forecaster on the training data.</p></li>
 <li><p><strong>m</strong> – Optionally, the seasonality to use for differencing.
@@ -334,8 +384,17 @@ If <cite>m=None</cite>, it will be tentatively inferred
 from the auto-correlation function (ACF). It will fall back to a value of 1 if this fails.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -352,7 +411,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.mse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#mse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mse" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">mse</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#mse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.mse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mean Squared Error (MSE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -360,12 +419,21 @@ the metrics of different components in case of multivariate TimeSeries instances
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -375,6 +443,17 @@ the metrics of different components in case of multivariate TimeSeries instances
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.metrics.metrics.multi_ts_support">
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">multi_ts_support</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#multi_ts_support"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.multi_ts_support" title="Permalink to this definition">¶</a></dt>
+<dd><p>This decorator further adapts the metrics that took as input two univariate/multivariate <cite>TimeSeries</cite> instances,
+adding support for equally-sized sequences of <cite>TimeSeries</cite> instances. The decorator computes the pairwise metric for
+<cite>TimeSeries</cite> with the same indices, and returns a float value that is computed as a function of all the
+pairwise metrics using a <cite>inter_reduction</cite> subroutine passed as argument to the metric function.</p>
+<p>If a ‘Sequence[TimeSeries]’ is passed as input, this decorator provides also parallelisation of the metric
+evaluation regarding different <cite>TimeSeries</cite> (if the <cite>n_jobs</cite> parameter is not set 1).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -388,7 +467,7 @@ univariate metrics using a <cite>reduction</cite> subroutine passed as argument 
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.ope">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">ope</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#ope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.ope" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">ope</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#ope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.ope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overall Percentage Error (OPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -398,12 +477,21 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -420,7 +508,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.r2_score">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">r2_score</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">r2_score</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span>.</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Coefficient of determination wikipedia page</a>
 for details about the <span class="math notranslate nohighlight">\(R^2\)</span> score and how it is computed.
@@ -429,12 +517,21 @@ whereas <cite>series2</cite> should correspond to the predicted series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series. This should correspond to the ground truth values.</p></li>
-<li><p><strong>series2</strong> – The second time series. This should correspond to the predicted values.</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -448,7 +545,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.rmse">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Root Mean Squared Error (RMSE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -456,12 +553,21 @@ the metrics of different components in case of multivariate TimeSeries instances
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -475,7 +581,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.rmsle">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmsle</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmsle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmsle</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmsle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Root Mean Squared Log Error (RMSLE).</p>
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
@@ -484,12 +590,21 @@ the metrics of different components in case of multivariate TimeSeries instances
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series1</strong> – The first time series</p></li>
-<li><p><strong>series2</strong> – The second time series</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -503,7 +618,7 @@ the metrics of different components in case of multivariate TimeSeries instances
 
 <dl class="py function">
 <dt id="darts.metrics.metrics.smape">
-<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">smape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: darts.timeseries.TimeSeries, pred_series: darts.timeseries.TimeSeries, intersect: bool = True, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#smape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.smape" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">smape</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#smape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.smape" title="Permalink to this definition">¶</a></dt>
 <dd><p>symmetric Mean Absolute Percentage Error (sMAPE).</p>
 <p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> and a time series of predicted values <span class="math notranslate nohighlight">\(\hat{y}_t\)</span>
 both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a percentage value computed as</p>
@@ -517,12 +632,21 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> – The series of actual values</p></li>
-<li><p><strong>pred_series</strong> – The series of predicted values</p></li>
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
 <li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
 will consider the values only over their common time interval (intersection in time).</p></li>
-<li><p><strong>reduction</strong> – Function taking as input a np.ndarray and returning a scalar value. This function is used to aggregate
-the metrics of different components in case of multivariate TimeSeries instances.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
