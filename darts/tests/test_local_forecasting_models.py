@@ -77,11 +77,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
 
     # real timeseries for functionality tests
-    ts_passengers = AirPassengersDataset.load()
+    ts_passengers = AirPassengersDataset().load()
     ts_pass_train, ts_pass_val = ts_passengers.split_after(pd.Timestamp('19570101'))
 
     # real multivariate timeseries for functionality tests
-    ts_ice_heater = IceCreamHeaterDataset.load()
+    ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
     def test_models_runnability(self):
