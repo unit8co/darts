@@ -209,7 +209,6 @@ class ForecastingModel(ABC):
             By default, a single TimeSeries instance created from the last point of each individual forecast.
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
-
         if covariates:
             raise_if_not(series.has_same_time_as(covariates),
                          'The provided series and covariates must have the same time index.')
@@ -251,13 +250,28 @@ class ForecastingModel(ABC):
                 train_cov = covariates.drop_after(pred_time)
 
             if retrain:
-                if covariates and 'covariates' in fit_signature.parameters:
+                if covariates and "covariates" in fit_signature.parameters:
                     self.fit(series=train, covariates=train_cov)
+                elif covariates and "exog" in fit_signature.parameters:
+                    self.fit(series=train, exog=train_cov)
                 else:
                     self.fit(series=train)
 
-            if covariates and 'covariates' in predict_signature.parameters:
-                forecast = self.predict(n=forecast_horizon, series=train, covariates=train_cov)
+            if covariates:
+                if 'covariates' in predict_signature.parameters:
+                    covar_argument = {"covariates": train_cov}
+                elif 'exog' in predict_signature.parameters:
+                    covar_argument = {"exog": train_cov}
+                else:
+                    raise ValueError("`covariates` is not None but model does not support `exog` or `covariates`.")
+
+                if 'series' in predict_signature.parameters:
+                    forecast = self.predict(n=forecast_horizon, series=train, **covar_argument)
+                else:
+                    if 'exog' in covar_argument: # Used for objects of type `RegressionModel`
+                        start = train.end_time() + train.freq()
+                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq()]
+                    forecast = self.predict(n=forecast_horizon, **covar_argument)
             else:
                 if 'series' in predict_signature.parameters:
                     forecast = self.predict(n=forecast_horizon, series=train)
@@ -363,7 +377,6 @@ class ForecastingModel(ABC):
             return metric(series, forecasts)
 
         errors = [metric(series, forecast) for forecast in forecasts]
-
         if reduction is None:
             return errors
 
@@ -582,6 +595,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     """
 
     _expect_covariates = False
+    covariate_series = None
 
     @abstractmethod
     def fit(self,
@@ -609,7 +623,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries) and covariates is None:
             super().fit(series)  # handle the single series case
         if covariates is not None:
-            self._expect_covariates = True
+            if isinstance(series, TimeSeries) and isinstance(covariates, TimeSeries):
+                self.training_series = series
+                self.covariate_series = covariates
+                self._fit_called = True
+            else:
+                self._expect_covariates = True
 
 
     @abstractmethod
@@ -692,6 +711,7 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
             raise_if_not(series.has_same_time_as(exog),
                          'The target series and the exogenous variables series must have the same time index.')
             self._expect_exog = True
+            self._fit_called = True
             self.training_series = series
 
     @abstractmethod

@@ -1,6 +1,6 @@
 # Time Series Made Easy in Python
 
-![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts") 
+![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts")
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
@@ -44,13 +44,19 @@ Create a `TimeSeries` object from a Pandas DataFrame, and split it in train/vali
 ```python
 import pandas as pd
 from darts import TimeSeries
-
 df = pd.read_csv('AirPassengers.csv', delimiter=",")
 series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
 train, val = series.split_after(pd.Timestamp('19580101'))
 ```
 
->The dataset used in this example can be downloaded from this [link](https://raw.githubusercontent.com/unit8co/darts/master/examples/AirPassengers.csv).
+Or you could go for our dataset loaders!
+
+```python
+from darts.datasets import AirPassengersDataset
+series = AirPassengersDataset.load()
+
+train, val = series.split_after(pd.Timestamp('19580101'))
+```
 
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
 
@@ -76,13 +82,13 @@ plt.xlabel('Year')
 <img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
 </div>
 
-We invite you to go over the example and tutorial notebooks in 
+We invite you to go over the example and tutorial notebooks in
 the [examples](https://github.com/unit8co/darts/tree/master/examples) directory.
 
 
 ## Features
 
-Currently, the library contains the following features: 
+Currently, the library contains the following features:
 
 **Forecasting Models:**
 
@@ -98,40 +104,23 @@ Currently, the library contains the following features:
 
 **Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
 
-**Metrics:** A variety of metrics for evaluating time series' goodness of fit; 
+**Metrics:** A variety of metrics for evaluating time series' goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.
 
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-**Regressive Models:** Possibility to predict a time series from several other time series 
+**Regressive Models:** Possibility to predict a time series from several other time series
 (e.g., external regressors), using arbitrary regressive models
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
 ## Contribute
 
-The development is ongoing, and there are many new features that we want to add. 
+The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on GitHub.
 
-Before working on a contribution (a new feature or a fix) make sure you can't find anything related in [issues](https://github.com/unit8co/darts/issues). If there is no on-going effort on what you plan to do then we recommend to do the following:
+Before working on a contribution (a new feature or a fix), [**check our contribution guidelines**](CONTRIBUTE.md).
 
-1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
-2. Fork the repository.
-3. Clone the forked repository locally.
-4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Create a new branch:
-    * Branch off from the **develop** branch.
-    * Prefix the branch with the type of update you are making:
-        * `feature/`
-        * `fix/`
-        * `refactor/`
-        * …
-    * Work on your update
-6. Check that your code passes all the tests and design new unit tests if needed: `./gradlew unitTest_all`.
-7. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested lines with `./coverage.sh xml`
-8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
-9. Create a pull request from your new branch to the **develop** branch.
 
 ## Contact Us
 
@@ -144,10 +133,10 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 Some of the models depend on `fbprophet` and `torch`, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
-The following steps assume running inside a conda environment. 
+The following steps assume running inside a conda environment.
 If that's not possible, first follow the official instructions to install
 [fbprophet](https://facebook.github.io/prophet/docs/installation.html#python)
-and [torch](https://pytorch.org/get-started/locally/), then skip to 
+and [torch](https://pytorch.org/get-started/locally/), then skip to
 [Install darts](#install-darts)
 
 To create a conda environment for Python 3.7
@@ -173,13 +162,13 @@ Don't forget to activate your virtual environment
 Install Darts with all available models: `pip install darts`.
 
 As some models have relatively heavy (or non-Python) dependencies,
-we also maintain the `u8darts` package, which provides the following alternate lighter install options: 
+we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
 * Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
 * Install core + Facebook Prophet: `pip install 'u8darts[fbprophet]'`
 * Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
-   
+
 ### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.

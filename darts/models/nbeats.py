@@ -225,6 +225,8 @@ class _Stack(nn.Module):
 class _NBEATSModule(nn.Module):
 
     def __init__(self,
+                 input_dim: int,
+                 output_dim: int,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  generic_architecture: bool,
@@ -279,26 +281,48 @@ class _NBEATSModule(nn.Module):
         """
         super(_NBEATSModule, self).__init__()
 
-        self.input_chunk_length = input_chunk_length
-        self.target_length = output_chunk_length
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.input_chunk_length_multi = input_chunk_length*input_dim
+        self.output_chunk_length = output_chunk_length
+        self.target_length = output_chunk_length*input_dim
 
         if generic_architecture:
             self.stacks_list = [
-                _Stack(num_blocks, num_layers, layer_widths[i], expansion_coefficient_dim,
-                       input_chunk_length, output_chunk_length, _GType.GENERIC) for i in range(num_stacks)
+                _Stack(num_blocks,
+                       num_layers,
+                       layer_widths[i],
+                       expansion_coefficient_dim,
+                       self.input_chunk_length_multi,
+                       self.target_length,
+                       _GType.GENERIC)
+                for i in range(num_stacks)
             ]
         else:
             num_stacks = 2
-            trend_stack = _Stack(num_blocks, num_layers, layer_widths[0], trend_polynomial_degree + 1,
-                                 input_chunk_length, output_chunk_length, _GType.TREND)
-            seasonality_stack = _Stack(num_blocks, num_layers, layer_widths[1], -1,
-                                       input_chunk_length, output_chunk_length, _GType.SEASONALITY)
+            trend_stack = _Stack(num_blocks,
+                                 num_layers,
+                                 layer_widths[0],
+                                 trend_polynomial_degree + 1,
+                                 self.input_chunk_length_multi,
+                                 self.target_length,
+                                 _GType.TREND)
+            seasonality_stack = _Stack(num_blocks,
+                                       num_layers,
+                                       layer_widths[1],
+                                       -1,
+                                       self.input_chunk_length_multi,
+                                       self.target_length,
+                                       _GType.SEASONALITY)
             self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
 
     def forward(self, x):
 
+        # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
+        # we reshape into x1, y1, a1, x2, y2, a2... etc
+        x = torch.reshape(x, (x.shape[0], self.input_chunk_length_multi, 1))
         # squeeze last dimension (because model is univariate)
         x = x.squeeze(dim=2)
 
@@ -313,8 +337,13 @@ class _NBEATSModule(nn.Module):
             # set current stack residual as input for next stack
             x = stack_residual
 
-        # unsqueeze last dimension
-        y = y.unsqueeze(dim=2)
+        # in multivariate case, we get a result x1, y1, z1 we want to reshape to original format
+        y = y.reshape(y.shape[0], self.output_chunk_length, self.input_dim)
+
+        # if some covariates, we don't want them for the output to be predicted.
+        # the covariates are by construction added as extra time series on the right side. So we need to get rid of this
+        # right output
+        y = y[:, :, :self.output_dim]
 
         return y
 
@@ -400,17 +429,17 @@ class NBEATSModel(TorchForecastingModel):
             self.layer_widths = [layer_widths] * num_stacks
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
-        raise_if_not(input_dim == 1 and output_dim == 1,
-                     'The N-Beats model currently supports only univariate time series.'
-                     'Currently: input_dim = {} and  output_dim = {}'.format(input_dim, output_dim))
+
         return _NBEATSModule(
-            self.input_chunk_length,
-            self.output_chunk_length,
-            self.generic_architecture,
-            self.num_stacks,
-            self.num_blocks,
-            self.num_layers,
-            self.layer_widths,
-            self.expansion_coefficient_dim,
-            self.trend_polynomial_degree
+            input_dim=input_dim,
+            output_dim=output_dim,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            generic_architecture=self.generic_architecture,
+            num_stacks=self.num_stacks,
+            num_blocks=self.num_blocks,
+            num_layers=self.num_layers,
+            layer_widths=self.layer_widths,
+            expansion_coefficient_dim=self.expansion_coefficient_dim,
+            trend_polynomial_degree=self.trend_polynomial_degree
         )
