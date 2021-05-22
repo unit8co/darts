@@ -2,10 +2,10 @@
 Regression Model
 ----------------
 
-`RegressionModel`s forecast future values of a target series based on lagged values of the target values
+A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
 and possibly lags of an exoneous series. They can wrap around any regression model having a `fit()`
 and `predict()` functions (e.g. scikit-learn regression models), and are using
-`sklearn.linear_model.LinearRegression`.
+`sklearn.linear_model.LinearRegression` by default.
 
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
