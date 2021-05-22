@@ -3,10 +3,9 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Optional, Union, List
+from typing import NewType, Union, List
 from enum import Enum
 import numpy as np
-from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
@@ -366,8 +365,9 @@ class NBEATSModel(TorchForecastingModel):
         This is an implementation of the N-BEATS architecture, as outlined in this paper:
         https://openreview.net/forum?id=r1ecqn4YwB
 
-        This model currently supports only univariate time series (and thus doesn't support using covariates).
-        It can nevertheless be trained on several time series.
+        In addition to the univariate version presented in the paper, our implementation also
+        supports multivariate series (and covariates) by flattening the model inputs to a 1-D series
+        and reshaping the outputs to a tensor of appropriate dimensions.
 
         Parameters
         ----------

@@ -62,7 +62,8 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
 
     def test_ok_dataset(self):
-        for width, dataset in zip(width_datasets, datasets):
+        for width, dataset_cls in zip(width_datasets, datasets):
+            dataset = dataset_cls()
             ts: TimeSeries = dataset.load()
             self.assertEqual(ts.width, width)
 

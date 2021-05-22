@@ -1,8 +1,6 @@
-import pandas as pd
 import numpy as np
 
 from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
 from ..logging import get_logger
@@ -39,7 +37,7 @@ if TORCH_AVAILABLE:
         torch.manual_seed(42)
 
         # real timeseries for functionality tests
-        ts_passengers = AirPassengersDataset.load()
+        ts_passengers = AirPassengersDataset().load()
         scaler = Scaler()
         ts_passengers = scaler.fit_transform(ts_passengers)
         ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]

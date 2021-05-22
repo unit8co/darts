@@ -4,8 +4,19 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.7.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.8.1...develop)
 
+
+## [0.8.1](https://github.com/unit8co/darts/tree/0.8.1) (2021-05-22)
+**Fixed:**
+- Some fixes in the documentation
+
+**Changed:**
+- The way to instantiate Dataset classes; datasets should now be used like this
+```
+from darts.datasets import AirPassengers
+ts: TimeSeries = AirPassengers().load()
+```
 
 ## [0.8.0](https://github.com/unit8co/darts/tree/0.8.0) (2021-05-21)
 
@@ -13,12 +24,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Added:**
 - `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from (lagged) exogenous
 variables and lagged values of the target.
-- `darts.datasets` is a new submodule allowing to easily download, cache and import some commonly used time series. 
-E.g. doing
-```
-from darts.datasets import AirPassengers
-ts: TimeSeries = AirPassengers.load()
-```
+- `darts.datasets` is a new submodule allowing to easily download, cache and import some commonly used time series.
 - Better support for processing sequences of `TimeSeries`. 
   * The Transformers, Pipelines and metrics have been adapted to be used on sequences of `TimeSeries` 
   (rather than isolated series).
