@@ -1,0 +1,433 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.datasets &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../index.html">
+    
+      <img src="../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.datasets</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Datasets</span>
+<span class="sd">--------</span>
+
+<span class="sd">A few popular time series datasets</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Overall usage of this package:</span>
+<span class="sd">    from darts.datasets import AirPassengersDataset</span>
+<span class="sd">    ts: TimeSeries = AirPassengersDataset.load()</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">_DEFAULT_PATH</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/unit8co/darts/develop/datasets&quot;</span>
+
+
+<div class="viewcode-block" id="AirPassengersDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.AirPassengersDataset">[docs]</a><span class="k">class</span> <span class="nc">AirPassengersDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monthly Air Passengers Dataset, from 1949 to 1960.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;air_passengers.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/AirPassengers.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;167ffa96204a2b47339c21eea25baf32&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Month&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AusBeerDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.AusBeerDataset">[docs]</a><span class="k">class</span> <span class="nc">AusBeerDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3.</span>
+
+<span class="sd">    https://rdrr.io/cran/fpp/man/ausbeer.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;ausbeer.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/ausbeer.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;1f4028a570a20939411cc04de7364bbd&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="EnergyDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.EnergyDataset">[docs]</a><span class="k">class</span> <span class="nc">EnergyDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Hourly energy dataset coming from</span>
+<span class="sd">    https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather</span>
+
+<span class="sd">    Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;energy.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/energy_dataset.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;f564ef18e01574734a0fa20806d1c7ee&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="GasRateCO2Dataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.GasRateCO2Dataset">[docs]</a><span class="k">class</span> <span class="nc">GasRateCO2Dataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gas Rate CO2 dataset</span>
+<span class="sd">    Two components, length 296 (dummy time index)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;gasrate_co2.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/gasrate_co2.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;77bf383715a9cf81459f81fe17baf3b0&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="HeartRateDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.HeartRateDataset">[docs]</a><span class="k">class</span> <span class="nc">HeartRateDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The series contains 1800 evenly-spaced measurements of instantaneous heart rate from a single subject.</span>
+<span class="sd">    The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of</span>
+<span class="sd">    each series is exactly 15 minutes.</span>
+
+<span class="sd">    This is the series1 here: http://ecg.mit.edu/time-series/</span>
+<span class="sd">    Using a dummy time index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;heart_rate.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/heart_rate.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;3c4a108e1116867cf056dc5be2c95386&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="IceCreamHeaterDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.IceCreamHeaterDataset">[docs]</a><span class="k">class</span> <span class="nc">IceCreamHeaterDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monthly sales of heaters and ice cream between January 2004 and June 2020.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;ice_cream_heater.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/ice_cream_heater.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;62031c7b5cdc9339fe7cf389173ef1c3&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Month&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MonthlyMilkDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.MonthlyMilkDataset">[docs]</a><span class="k">class</span> <span class="nc">MonthlyMilkDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monthly production of milk (in pounds per cow) between January 1962 and December 1975</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;monthly_milk.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/monthly-milk.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;4784443e696da45d7082e76a67687b93&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Month&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MonthlyMilkIncompleteDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.MonthlyMilkIncompleteDataset">[docs]</a><span class="k">class</span> <span class="nc">MonthlyMilkIncompleteDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monthly production of milk (in pounds per cow) between January 1962 and December 1975.</span>
+<span class="sd">    Has some missing values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;monthly_milk-incomplete.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/monthly-milk-incomplete.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;49b275c7e2f8f28a6a05224be1a049a4&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Month&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SunspotsDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.SunspotsDataset">[docs]</a><span class="k">class</span> <span class="nc">SunspotsDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Monthly Sunspot Numbers, 1749 - 1983</span>
+
+<span class="sd">    Monthly mean relative sunspot numbers from 1749 to 1983.</span>
+<span class="sd">    Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.</span>
+
+<span class="sd">    https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;sunspots.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/monthly-sunspots.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;4d27019c43d9c256d528f1bd6c5f40e0&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Month&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TaylorDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.TaylorDataset">[docs]</a><span class="k">class</span> <span class="nc">TaylorDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.</span>
+<span class="sd">    Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts</span>
+<span class="sd">    (Uses a dummy time index).</span>
+
+<span class="sd">    https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</span>
+
+<span class="sd">    [1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.</span>
+<span class="sd">    Journal of the Operational Research Society, 54, 799-805.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;taylor.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/taylor.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;1ea355c90e8214cb177788a674801a22&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TemperatureDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.TemperatureDataset">[docs]</a><span class="k">class</span> <span class="nc">TemperatureDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Daily temperature in Melbourne between 1981 and 1990</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;temperatures.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/temps.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;ce5b5e4929793ec8b6a54711110acebf&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Date&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%m/</span><span class="si">%d</span><span class="s2">/%Y&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="USGasolineDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.USGasolineDataset">[docs]</a><span class="k">class</span> <span class="nc">USGasolineDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</span>
+
+<span class="sd">    Obtained from:</span>
+<span class="sd">    https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;us_gasoline.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/us_gasoline.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;25d440337a06cbf83423e81d0337a1ce&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Week&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%m/</span><span class="si">%d</span><span class="s2">/%Y&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="WineDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.WineDataset">[docs]</a><span class="k">class</span> <span class="nc">WineDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.</span>
+
+<span class="sd">    https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;wine.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/wineind.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;b68971d7e709ad0b7e6300cab977e3cd&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+        <span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="WoolyDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.WoolyDataset">[docs]</a><span class="k">class</span> <span class="nc">WoolyDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 -- Sep 1994.</span>
+
+<span class="sd">    https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+            <span class="s2">&quot;wooly.csv&quot;</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span><span class="o">+</span><span class="s2">&quot;/woolyrnq.csv&quot;</span><span class="p">,</span>
+            <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;4be8b12314db94c8fd76f5c674454bf0&quot;</span><span class="p">,</span>
+            <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+            <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span>
+        <span class="p">))</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

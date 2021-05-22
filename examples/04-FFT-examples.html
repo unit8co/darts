@@ -493,7 +493,7 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">TemperatureDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">TemperatureDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -819,7 +819,7 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_2</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">ts_2</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19551201&#39;</span><span class="p">))</span>
 <span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -902,7 +902,7 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">ts_3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">ts_3</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">ts_3</span><span class="p">,</span> <span class="s1">&#39;auto&#39;</span><span class="p">)</span>
 <span class="n">ts_3</span> <span class="o">=</span> <span class="n">ts_3</span><span class="p">[</span><span class="s1">&#39;generation nuclear&#39;</span><span class="p">]</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_3</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2017-07-01&#39;</span><span class="p">))</span>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Datasets &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
@@ -42,7 +42,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Metrics" href="darts.metrics.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.datasets.dataset_loaders.html" />
     <link rel="prev" title="Pipeline" href="darts.dataprocessing.pipeline.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -69,7 +69,7 @@
             <a class="nav-link" href="../README.html">Home</a>
         </li>
         
-        <li class="nav-item ">
+        <li class="nav-item active">
             <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
@@ -121,6 +121,44 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="active">
+                    <a href="">Datasets</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
         
         
         
@@ -150,7 +188,386 @@
               
               <div>
                 
-  
+  <span class="target" id="module-darts.datasets"></span><section id="datasets">
+<h1>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h1>
+<p>A few popular time series datasets</p>
+<blockquote>
+<div><div class="toctree-wrapper compound">
+</div>
+</div></blockquote>
+<dl class="py class">
+<dt id="darts.datasets.AirPassengersDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">AirPassengersDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#AirPassengersDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.AirPassengersDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Monthly Air Passengers Dataset, from 1949 to 1960.</p>
+<dl class="py method">
+<dt id="darts.datasets.AirPassengersDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.AirPassengersDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.AusBeerDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">AusBeerDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#AusBeerDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.AusBeerDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3.</p>
+<p><a class="reference external" href="https://rdrr.io/cran/fpp/man/ausbeer.html">https://rdrr.io/cran/fpp/man/ausbeer.html</a></p>
+<dl class="py method">
+<dt id="darts.datasets.AusBeerDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.AusBeerDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.EnergyDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">EnergyDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#EnergyDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.EnergyDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Hourly energy dataset coming from
+<a class="reference external" href="https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather">https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather</a></p>
+<p>Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00</p>
+<dl class="py method">
+<dt id="darts.datasets.EnergyDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.EnergyDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.GasRateCO2Dataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">GasRateCO2Dataset</code><a class="reference internal" href="../_modules/darts/datasets.html#GasRateCO2Dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Gas Rate CO2 dataset
+Two components, length 296 (dummy time index)</p>
+<dl class="py method">
+<dt id="darts.datasets.GasRateCO2Dataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.HeartRateDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">HeartRateDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#HeartRateDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.HeartRateDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>The series contains 1800 evenly-spaced measurements of instantaneous heart rate from a single subject.
+The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
+each series is exactly 15 minutes.</p>
+<p>This is the series1 here: <a class="reference external" href="http://ecg.mit.edu/time-series/">http://ecg.mit.edu/time-series/</a>
+Using a dummy time index.</p>
+<dl class="py method">
+<dt id="darts.datasets.HeartRateDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.HeartRateDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.IceCreamHeaterDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">IceCreamHeaterDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#IceCreamHeaterDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Monthly sales of heaters and ice cream between January 2004 and June 2020.</p>
+<dl class="py method">
+<dt id="darts.datasets.IceCreamHeaterDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.MonthlyMilkDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">MonthlyMilkDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975</p>
+<dl class="py method">
+<dt id="darts.datasets.MonthlyMilkDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.MonthlyMilkIncompleteDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">MonthlyMilkIncompleteDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkIncompleteDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975.
+Has some missing values.</p>
+<dl class="py method">
+<dt id="darts.datasets.MonthlyMilkIncompleteDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.SunspotsDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">SunspotsDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#SunspotsDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.SunspotsDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Monthly Sunspot Numbers, 1749 - 1983</p>
+<p>Monthly mean relative sunspot numbers from 1749 to 1983.
+Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.</p>
+<p><a class="reference external" href="https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots">https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots</a></p>
+<dl class="py method">
+<dt id="darts.datasets.SunspotsDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.SunspotsDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.TaylorDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">TaylorDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
+Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts
+(Uses a dummy time index).</p>
+<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
+<p>[1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
+Journal of the Operational Research Society, 54, 799-805.</p>
+<dl class="py method">
+<dt id="darts.datasets.TaylorDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.TaylorDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.TemperatureDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">TemperatureDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#TemperatureDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.TemperatureDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Daily temperature in Melbourne between 1981 and 1990</p>
+<dl class="py method">
+<dt id="darts.datasets.TemperatureDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.TemperatureDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.USGasolineDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">USGasolineDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</p>
+<p>Obtained from:
+<a class="reference external" href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W">https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</a></p>
+<dl class="py method">
+<dt id="darts.datasets.USGasolineDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.USGasolineDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.WineDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">WineDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.</p>
+<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</a></p>
+<dl class="py method">
+<dt id="darts.datasets.WineDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.WineDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.datasets.WoolyDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">WoolyDataset</code><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.</p>
+<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</a></p>
+<dl class="py method">
+<dt id="darts.datasets.WoolyDataset.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.WoolyDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
 
               </div>
               
@@ -158,7 +575,7 @@
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.dataprocessing.pipeline.html" title="previous page">Pipeline</a>
-    <a class='right-next' id="next-link" href="darts.metrics.html" title="next page">Metrics</a>
+    <a class='right-next' id="next-link" href="darts.datasets.dataset_loaders.html" title="next page">&lt;no title&gt;</a>
 
               </div>
               

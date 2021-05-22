@@ -98,15 +98,6 @@ Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/va
    series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
    train, val = series.split_after(pd.Timestamp('19580101'))
 
-Or you could go for our dataset loaders!
-
-.. code-block:: python
-
-   from darts.datasets import AirPassengersDataset
-   series = AirPassengersDataset.load()
-
-   train, val = series.split_after(pd.Timestamp('19580101'))
-
 Fit an exponential smoothing model, and make a prediction over the validation series' duration:
 
 .. code-block:: python

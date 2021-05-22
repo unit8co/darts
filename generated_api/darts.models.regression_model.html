@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Regression Model Base Class &#8212; darts  documentation</title>
+    <title>Regression Model &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
@@ -130,6 +130,12 @@
           
             
                 <li class="">
+                    <a href="darts.datasets.html">Datasets</a>
+                </li>
+            
+          
+            
+                <li class="">
                     <a href="darts.metrics.html">Metrics</a>
                 </li>
             
@@ -189,7 +195,7 @@
                         </li>
                     
                         <li class="active">
-                            <a href="">Regression Model Base Class</a>
+                            <a href="">Regression Model</a>
                         </li>
                     
                         <li class="">
@@ -262,13 +268,13 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.regression_model"></span><section id="regression-model-base-class">
-<h1>Regression Model Base Class<a class="headerlink" href="#regression-model-base-class" title="Permalink to this headline">¶</a></h1>
-<p>A regression model predicts values for a time series <span class="math notranslate nohighlight">\(Y_t\)</span> as a function
-of <span class="math notranslate nohighlight">\(N\)</span> “features” time series <span class="math notranslate nohighlight">\(X^i_t\)</span>:</p>
-<div class="math notranslate nohighlight">
-\[Y_t = f(X^1_t, ..., X^N_t),\]</div>
-<p>where <span class="math notranslate nohighlight">\(t\)</span> denotes the time step. Here, the function <span class="math notranslate nohighlight">\(f()\)</span> is not necessarily linear.</p>
+  <span class="target" id="module-darts.models.regression_model"></span><section id="regression-model">
+<h1>Regression Model<a class="headerlink" href="#regression-model" title="Permalink to this headline">¶</a></h1>
+<p>A <cite>RegressionModel</cite> forecasts future values of a target series based on lagged values of the target values
+and possibly lags of an exoneous series. They can wrap around any regression model having a <cite>fit()</cite>
+and <cite>predict()</cite> functions (e.g. scikit-learn regression models), and are using
+<cite>sklearn.linear_model.LinearRegression</cite> by default.</p>
+<p>Behind the scenes this model is tabularizing the time series data to make it work with regression models.</p>
 <dl class="py class">
 <dt id="darts.models.regression_model.RegressionModel">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.regression_model.</code><code class="sig-name descname">RegressionModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lags</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>list<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lags_exog</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>list<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/regression_model.html#RegressionModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_model.RegressionModel" title="Permalink to this definition">¶</a></dt>

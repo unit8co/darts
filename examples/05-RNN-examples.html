@@ -489,7 +489,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Read data:</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="c1"># Create training and validation sets:</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">))</span>
@@ -757,7 +757,7 @@ Training loss: 0.0041, validation loss: 0.0661
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">series_sunspot</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">check_seasonality</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">240</span><span class="p">)</span>

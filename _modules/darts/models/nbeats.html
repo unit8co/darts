@@ -153,10 +153,9 @@
 <span class="sd">-------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
@@ -516,8 +515,9 @@
 <span class="sd">        This is an implementation of the N-BEATS architecture, as outlined in this paper:</span>
 <span class="sd">        https://openreview.net/forum?id=r1ecqn4YwB</span>
 
-<span class="sd">        This model currently supports only univariate time series (and thus doesn&#39;t support using covariates).</span>
-<span class="sd">        It can nevertheless be trained on several time series.</span>
+<span class="sd">        In addition to the univariate version presented in the paper, our implementation also</span>
+<span class="sd">        supports multivariate series (and covariates) by flattening the model inputs to a 1-D series</span>
+<span class="sd">        and reshaping the outputs to a tensor of appropriate dimensions.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>

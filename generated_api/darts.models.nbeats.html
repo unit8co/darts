@@ -130,6 +130,12 @@
           
             
                 <li class="">
+                    <a href="darts.datasets.html">Datasets</a>
+                </li>
+            
+          
+            
+                <li class="">
                     <a href="darts.metrics.html">Metrics</a>
                 </li>
             
@@ -189,7 +195,7 @@
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.regression_model.html">Regression Model Base Class</a>
+                            <a href="darts.models.regression_model.html">Regression Model</a>
                         </li>
                     
                         <li class="">
@@ -271,8 +277,9 @@
 <p>Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).</p>
 <p>This is an implementation of the N-BEATS architecture, as outlined in this paper:
 <a class="reference external" href="https://openreview.net/forum?id=r1ecqn4YwB">https://openreview.net/forum?id=r1ecqn4YwB</a></p>
-<p>This model currently supports only univariate time series (and thus doesn’t support using covariates).
-It can nevertheless be trained on several time series.</p>
+<p>In addition to the univariate version presented in the paper, our implementation also
+supports multivariate series (and covariates) by flattening the model inputs to a 1-D series
+and reshaping the outputs to a tensor of appropriate dimensions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

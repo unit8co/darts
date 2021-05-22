@@ -464,7 +464,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Read data:</span>
-<span class="n">ts</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="n">ts</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>  <span class="c1"># scale the whole time series not caring about train/val split...</span>
 
@@ -575,7 +575,7 @@ Training loss: 0.0048, validation loss: 0.0063, best val loss: 0.0063
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="n">series_sp_transformed</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">)</span>
 
@@ -677,7 +677,7 @@ Training loss: 0.0071, validation loss: 0.0324, best val loss: 0.0299
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">df3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">pd_data_frame</span><span class="p">()</span>
+<span></span><span class="n">df3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">pd_data_frame</span><span class="p">()</span>
 <span class="n">df3_day_avg</span> <span class="o">=</span> <span class="n">df3</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">df3</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 <span class="n">series_en</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df3_day_avg</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;generation hydro run-of-river and poundage&#39;</span><span class="p">]),</span> <span class="s1">&#39;auto&#39;</span><span class="p">)</span>
 

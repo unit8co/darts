@@ -160,7 +160,7 @@
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 
-<div class="viewcode-block" id="DatasetLoaderMetadata"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderMetadata">[docs]</a><span class="nd">@dataclass</span>
+<div class="viewcode-block" id="DatasetLoaderMetadata"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.DatasetLoaderMetadata">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">DatasetLoaderMetadata</span><span class="p">:</span>
     <span class="c1"># name of the dataset file, including extension</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -175,11 +175,11 @@
     <span class="n">format_time</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="DatasetLoadingException"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoadingException</span><span class="p">(</span><span class="ne">BaseException</span><span class="p">):</span>
+<div class="viewcode-block" id="DatasetLoadingException"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.DatasetLoadingException">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoadingException</span><span class="p">(</span><span class="ne">BaseException</span><span class="p">):</span>
     <span class="k">pass</span></div>
 
 
-<div class="viewcode-block" id="DatasetLoader"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoader">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoader</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<div class="viewcode-block" id="DatasetLoader"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.DatasetLoader">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoader</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class that downloads a dataset and caches it locally.</span>
 <span class="sd">    Assumes that the file can be downloaded (i.e. publicly available via an URI)</span>
@@ -193,7 +193,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">root_path</span>
 
-<div class="viewcode-block" id="DatasetLoader.load"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoader.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<div class="viewcode-block" id="DatasetLoader.load"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.DatasetLoader.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load the dataset in memory, as a TimeSeries.</span>
 <span class="sd">        Downloads the dataset if it is not present already</span>
@@ -287,7 +287,7 @@
         <span class="k">return</span> <span class="n">df</span></div>
 
 
-<div class="viewcode-block" id="DatasetLoaderCSV"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoaderCSV</span><span class="p">(</span><span class="n">DatasetLoader</span><span class="p">):</span>
+<div class="viewcode-block" id="DatasetLoaderCSV"><a class="viewcode-back" href="../../../generated_api/darts.datasets.dataset_loaders.html#darts.datasets.DatasetLoaderCSV">[docs]</a><span class="k">class</span> <span class="nc">DatasetLoaderCSV</span><span class="p">(</span><span class="n">DatasetLoader</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">)</span>
 

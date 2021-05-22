@@ -513,7 +513,7 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -633,7 +633,7 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">incomplete_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
 </pre></div>
@@ -911,7 +911,7 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">filler</span> <span class="o">=</span> <span class="n">MissingValuesFiller</span><span class="p">()</span>
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
@@ -941,8 +941,8 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">multiple_ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">incomplete_series</span><span class="p">,</span> <span class="n">series</span><span class="p">[:</span><span class="mi">10</span><span class="p">]]</span>
 
@@ -992,7 +992,7 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">huge_number_of_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span><span class="o">*</span><span class="mi">100000</span>
 

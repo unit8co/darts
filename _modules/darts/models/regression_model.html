@@ -149,15 +149,15 @@
                 
   <h1>Source code for darts.models.regression_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Regression Model Base Class</span>
-<span class="sd">---------------------------</span>
+<span class="sd">Regression Model</span>
+<span class="sd">----------------</span>
 
-<span class="sd">A regression model predicts values for a time series :math:`Y_t` as a function</span>
-<span class="sd">of :math:`N` &quot;features&quot; time series :math:`X^i_t`:</span>
+<span class="sd">A `RegressionModel` forecasts future values of a target series based on lagged values of the target values</span>
+<span class="sd">and possibly lags of an exoneous series. They can wrap around any regression model having a `fit()`</span>
+<span class="sd">and `predict()` functions (e.g. scikit-learn regression models), and are using</span>
+<span class="sd">`sklearn.linear_model.LinearRegression` by default.</span>
 
-<span class="sd">.. math:: Y_t = f(X^1_t, ..., X^N_t),</span>
-
-<span class="sd">where :math:`t` denotes the time step. Here, the function :math:`f()` is not necessarily linear.</span>
+<span class="sd">Behind the scenes this model is tabularizing the time series data to make it work with regression models.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -169,11 +169,6 @@
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
 <span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">ExtendedForecastingModel</span>
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
-    <span class="n">_with_sanity_checks</span><span class="p">,</span>
-    <span class="n">_historical_forecasts_general_checks</span>
-<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
