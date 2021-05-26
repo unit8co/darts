@@ -176,8 +176,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.work_dir = work_dir
 
         self.n_epochs = n_epochs
+        self.current_epoch = 0
         self.batch_size = batch_size
-        self.from_scratch = True  # do we train the model from scratch  # TODO clean this
 
         # Define the loss function
         self.criterion = loss_fn
@@ -250,7 +250,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            verbose: bool = False) -> None:
+            verbose: bool = False,
+            epochs: int = 0) -> None:
         """
         The fit method for torch models.
         It wraps around `fit_from_dataset()`.
@@ -293,13 +294,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, verbose)
+        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs)
 
     @random_method
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
-                         verbose: bool = False) -> None:
+                         verbose: bool = False,
+                         epochs: int = 0) -> None:
+
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
@@ -307,8 +310,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
-        if self.from_scratch:
+        if epochs == 0:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
+            self.current_epoch = 0
 
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
@@ -343,10 +347,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer()
+        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
 
         # Train model
-        self._train(train_loader, val_loader, tb_writer, verbose)
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
+        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -550,7 +555,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                train_loader: DataLoader,
                val_loader: Optional[DataLoader],
                tb_writer: Optional[SummaryWriter],
-               verbose: bool) -> None:
+               verbose: bool,
+               train_num_epochs: int
+               ) -> None:
         """
         Performs the actual training
         :param train_loader: the training data loader feeding the training data and targets
@@ -560,9 +567,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         best_loss = np.inf
 
-        iterator = _build_tqdm_iterator(range(self.n_epochs), verbose)
+        iterator = _build_tqdm_iterator(
+            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1), verbose)
+
         for epoch in iterator:
-            epoch = epoch
             total_loss = 0
 
             for batch_idx, (data, target) in enumerate(train_loader):
@@ -585,6 +593,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
             self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+            self.current_epoch = epoch
 
             if epoch % self.nr_epochs_val_period == 0:
                 training_loss = total_loss / len(train_loader)
@@ -666,16 +675,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self):
+    def _prepare_tensorboard_writer(self, continue_training: bool = False):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if self.from_scratch:
+            if not continue_training:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.current_epoch)
         else:
             tb_writer = None
         return tb_writer
