@@ -26,9 +26,10 @@ from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
-CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
-RUNS_FOLDER = os.path.join('.darts', 'runs')
-UNTRAINED_MODELS_FOLDER = os.path.join('.darts', 'untrained_models')
+DEFAULT_DARTS_FOLDER = '.darts'
+CHECKPOINTS_FOLDER = 'checkpoints'
+RUNS_FOLDER = 'runs'
+UNTRAINED_MODELS_FOLDER = 'untrained_models'
 
 logger = get_logger(__name__)
 
@@ -105,7 +106,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  model_name: str = "torch_model_run",  # TODO: uid
-                 work_dir: str = os.getcwd(),
+                 work_dir: str = os.path.join(os.getcwd(), '.darts'),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
@@ -706,7 +707,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         if work_dir is None:
-            work_dir = os.getcwd()
+            work_dir = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER)
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
 
