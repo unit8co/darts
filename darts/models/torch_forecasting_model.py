@@ -582,8 +582,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         iterator = _build_tqdm_iterator(
             range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1),
             verbose=verbose,
-            initial=self.current_epoch,
-            total=self.current_epoch + train_num_epochs
         )
 
         for epoch in iterator:
