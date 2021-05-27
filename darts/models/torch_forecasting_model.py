@@ -176,7 +176,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.work_dir = work_dir
 
         self.n_epochs = n_epochs
-        self.current_epoch = 0
+        self.current_epoch = 0  # 0 means it wasn't trained yet. Epoch numbering starts with 1.
         self.batch_size = batch_size
 
         # Define the loss function
@@ -256,6 +256,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         The fit method for torch models.
         It wraps around `fit_from_dataset()`.
 
+        **Important**: running `fit()` or `fit_from_dataset()` removes previously trained model - all it's checkpoints
+        and tensorboard data. If you want to train your model for more epochs, see the `epochs` parameter.
+
+        **Note**: If your model wasn't yet trained and you requested it will be treated as
+
         *** Currently future covariates are not yet supported ***
 
         Parameters
@@ -271,6 +276,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, the covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
+        epochs
+            If your model is already trained but you want to train it even further, you can provide here the number of
+            additional epochs.
         """
         super().fit(series, covariates)
 
@@ -310,7 +318,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
-        if epochs == 0:
+        # if the model wasn't trained, but it was requested to retrain for more epochs, treat it like a
+        # training from scratch.
+        if epochs == 0 or self.current_epoch == 0:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
             self.current_epoch = 0
 
@@ -350,8 +360,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         tb_writer = self._prepare_tensorboard_writer(epochs > 0)
 
         # Train model
-        train_num_epochs = epochs if epochs > 0 else self.n_epochs
-        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
+        self._train(train_loader, val_loader, tb_writer, verbose, epochs)
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -556,20 +565,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                val_loader: Optional[DataLoader],
                tb_writer: Optional[SummaryWriter],
                verbose: bool,
-               train_num_epochs: int
+               epochs: int = 0
                ) -> None:
         """
         Performs the actual training
         :param train_loader: the training data loader feeding the training data and targets
         :param val_loader: optionally, a validation set loader
         :param tb_writer: optionally, a TensorBoard writer
+        :param epochs: value >0 means we're retraining model
         """
 
         best_loss = np.inf
 
+        # if user wants to train the model for more epochs, ignore the n_epochs parameter
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
         iterator = _build_tqdm_iterator(
-            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1), verbose,
-            initial=self.current_epoch + 1)
+            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1),
+            verbose=verbose,
+            initial=self.current_epoch,
+            total=self.current_epoch + train_num_epochs
+        )
 
         for epoch in iterator:
             total_loss = 0
