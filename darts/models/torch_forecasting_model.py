@@ -176,7 +176,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.work_dir = work_dir
 
         self.n_epochs = n_epochs
-        self.current_epoch = 0  # 0 means it wasn't trained yet. Epoch numbering starts with 1.
+        self.total_epochs = 0  # 0 means it wasn't trained yet.
         self.batch_size = batch_size
 
         # Define the loss function
@@ -320,9 +320,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if the model wasn't trained, but it was requested to retrain for more epochs, treat it like a
         # training from scratch.
-        if epochs == 0 or self.current_epoch == 0:
+        if epochs == 0 or self.total_epochs == 0:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
-            self.current_epoch = 0
+            self.total_epochs = 0
 
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
@@ -579,8 +579,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
+
         iterator = _build_tqdm_iterator(
-            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1),
+            range(self.total_epochs, self.total_epochs + train_num_epochs),
             verbose=verbose,
         )
 
@@ -606,7 +607,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
-            self.current_epoch = epoch
+            self.total_epochs = epoch + 1
             self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
@@ -698,7 +699,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.current_epoch)
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
         else:
             tb_writer = None
         return tb_writer
