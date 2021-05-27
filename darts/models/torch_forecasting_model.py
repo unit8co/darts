@@ -608,8 +608,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
-            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
             self.current_epoch = epoch
+            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
                 training_loss = total_loss / len(train_loader)
