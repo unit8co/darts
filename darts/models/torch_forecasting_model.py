@@ -568,7 +568,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         best_loss = np.inf
 
         iterator = _build_tqdm_iterator(
-            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1), verbose)
+            range(self.current_epoch + 1, self.current_epoch + train_num_epochs + 1), verbose,
+            initial=self.current_epoch + 1)
 
         for epoch in iterator:
             total_loss = 0
