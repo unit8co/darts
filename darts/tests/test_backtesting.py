@@ -20,6 +20,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
+    ARIMA
 )
 
 from .base_test_class import DartsBaseTestClass
@@ -219,6 +220,37 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
+
+    def test_gridsearch_n_jobs(self):
+        '''
+        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run
+        '''
+
+        np.random.seed(1)
+        ts_length = 50
+
+        dummy_series = (
+            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+        )
+
+        ts_train = dummy_series[:round(ts_length * 0.8)]
+        ts_val = dummy_series[round(ts_length * 0.8):]
+
+        parameters = {
+            'p': [18, 4, 8],
+            'q': [1, 2, 3]
+        }
+
+        _, best_params1 = ARIMA.gridsearch(parameters=parameters,
+                                           series=ts_train,
+                                           val_series=ts_val,
+                                           n_jobs=1)
+
+        _, best_params2 = ARIMA.gridsearch(parameters=parameters,
+                                           series=ts_train,
+                                           val_series=ts_val,
+                                           n_jobs=-1)
+        self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):

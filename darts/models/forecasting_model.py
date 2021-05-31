@@ -536,7 +536,7 @@ class ForecastingModel(ABC):
 
         min_error = min(errors)
 
-        best_param_combination = params_cross_product[errors.index(min_error)]
+        best_param_combination = dict(list(zip(parameters.keys(), params_cross_product[errors.index(min_error)])))
 
         logger.info('Chosen parameters: ' + str(best_param_combination))
 
