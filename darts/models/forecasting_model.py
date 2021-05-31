@@ -462,9 +462,9 @@ class ForecastingModel(ABC):
         verbose
             Whether to print progress.
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
-            (sequential). Setting the parameter to `-1` means using all the available processors.
+            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
+            combinations to evaluate. Each job will insantiate, train, and evaluate a different instance of the model.
+            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
 
         Returns
         -------
@@ -500,7 +500,7 @@ class ForecastingModel(ABC):
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose)
 
-        def _get_error_from_combination(param_combination):
+        def _evaluate_combination(param_combination):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
@@ -532,7 +532,7 @@ class ForecastingModel(ABC):
 
             return error
 
-        errors = _parallel_apply(iterator, _get_error_from_combination, n_jobs, {}, {})
+        errors = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
 
         min_error = min(errors)
 

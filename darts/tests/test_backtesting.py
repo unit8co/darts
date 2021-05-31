@@ -250,6 +250,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                                            series=ts_train,
                                            val_series=ts_val,
                                            n_jobs=-1)
+
         self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
