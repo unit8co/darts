@@ -403,8 +403,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The horizon `n` must be smaller or equal to the model output length when covariates are used. '
                  'n: {}, output_chunk_length: {}'.format(n, self.output_chunk_length))
 
-        if series is None and covariates is None:
+        if series is None:
             series = self.training_series
+
+        if covariates is None and self.covariate_series is not None:
+            covariates = self.covariate_series
 
         called_with_single_series = False
         if isinstance(series, TimeSeries):
