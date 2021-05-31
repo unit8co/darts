@@ -26,8 +26,10 @@ from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
-    _historical_forecasts_general_checks
+    _historical_forecasts_general_checks,
+    _parallel_apply
 )
+
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -394,7 +396,8 @@ class ForecastingModel(ABC):
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    reduction: Callable[[np.ndarray], float] = np.mean,
-                   verbose=False) -> Tuple['ForecastingModel', Dict]:
+                   verbose=False,
+                   n_jobs: int = 1) -> Tuple['ForecastingModel', Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -458,6 +461,10 @@ class ForecastingModel(ABC):
             on the different validation series when backtesting. By default it'll compute the mean of errors.
         verbose
             Whether to print progress.
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+            passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
 
         Returns
         -------
@@ -483,9 +490,6 @@ class ForecastingModel(ABC):
             raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
                                                               'same time axes.')
 
-        min_error = float('inf')
-        best_param_combination = {}
-
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
@@ -494,8 +498,9 @@ class ForecastingModel(ABC):
         predict_signature = signature(model_class.predict)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(params_cross_product, verbose)
-        for param_combination in iterator:
+        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose)
+
+        def _get_error_from_combination(param_combination):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
@@ -524,9 +529,15 @@ class ForecastingModel(ABC):
                 else:
                     pred = model.predict(n=len(val_series))
                 error = metric(pred, val_series)
-            if error < min_error:
-                min_error = error
-                best_param_combination = param_combination_dict
+
+            return error
+
+        errors = _parallel_apply(iterator, _get_error_from_combination, n_jobs, {}, {})
+
+        min_error = min(errors)
+
+        best_param_combination = params_cross_product[errors.index(min_error)]
+
         logger.info('Chosen parameters: ' + str(best_param_combination))
 
         return model_class(**best_param_combination), best_param_combination
@@ -595,6 +606,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     """
 
     _expect_covariates = False
+    covariate_series = None
 
     @abstractmethod
     def fit(self,
@@ -622,7 +634,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries) and covariates is None:
             super().fit(series)  # handle the single series case
         if covariates is not None:
-            self._expect_covariates = True
+            if isinstance(series, TimeSeries) and isinstance(covariates, TimeSeries):
+                self.training_series = series
+                self.covariate_series = covariates
+                self._fit_called = True
+            else:
+                self._expect_covariates = True
 
 
     @abstractmethod
