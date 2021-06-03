@@ -628,7 +628,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         ----------
         series
             One or several target time series. The model will be trained to forecast these time series.
-            Can be multivariate.
+            The series may or may not be multivariate, but if multiple series are provided they must have the same number of components.
         covariates
             One or several covariate time series. These time series will not be forecast, but can be used by
             some models as an input. Can be multivariate.
@@ -760,4 +760,3 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if self._expect_exog and len(exog) != n:
             raise_log(ValueError(f'Expecting exogenous variables with the same length as the'
                                  f' forecasting horizon ({n}).'))
-
