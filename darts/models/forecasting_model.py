@@ -589,7 +589,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:
     1. Models can be fitted on many series (multivariate or univariate) with different indices.
-    2. The input series can be different from the series used to fit the model.
+    2. The input series used by `predict()` can be different from the series used to fit the model.
     3. Covariates can be supported (multivariate or univariate).
     4. They can allow for multivariate target series and covariates.
     
