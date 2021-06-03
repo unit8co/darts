@@ -631,7 +631,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             The series may or may not be multivariate, but if multiple series are provided they must have the same number of components.
         covariates
             One or several covariate time series. These time series will not be forecast, but can be used by
-            some models as an input. Can be multivariate.
+            some models as an input. The covariate(s) may or may not be multivariate, but if multiple covariates are provided they must have the same number of components.
         """
 
         if isinstance(series, TimeSeries):
