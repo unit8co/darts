@@ -593,7 +593,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     3. Covariates can be supported (multivariate or univariate).
     4. They can allow for multivariate target series and covariates.
     
-    Note that not all global forecasting models implement points 3 and 4.
     The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
     to a temporally contiguous, "local", time series.
 
@@ -719,7 +718,7 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         Parameters
         ----------
         series
-            The model will be trained to forecast this time series. Can be multivariate.
+            The model will be trained to forecast this time series. Can be multivariate if the model supports it.
         exog
             A time series of exogenous variables. This time series will not be forecasted, but can be used by
             some models as an input. Can be multivariate.
