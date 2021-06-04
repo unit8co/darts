@@ -20,7 +20,8 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
-    ARIMA
+    ARIMA,
+    RNNModel
 )
 
 from .base_test_class import DartsBaseTestClass
@@ -223,7 +224,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
     def test_gridsearch_n_jobs(self):
         '''
-        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run
+        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run.
         '''
 
         np.random.seed(1)
@@ -236,22 +237,40 @@ class BacktestingTestCase(DartsBaseTestClass):
         ts_train = dummy_series[:round(ts_length * 0.8)]
         ts_val = dummy_series[round(ts_length * 0.8):]
 
-        parameters = {
-            'p': [18, 4, 8],
-            'q': [1, 2, 3]
-        }
+        test_cases = [
+            {
+                "model": ARIMA,  # ExtendedForecastingModel
+                "parameters": {
+                    'p': [18, 4, 8],
+                    'q': [1, 2, 3]
+                }
+            },
+            {
+                "model": RNNModel,   # TorchForecastingModel
+                "parameters": {
+                    'input_chunk_length': [1, 2, 3, 4, 5, 6],
+                    'output_chunk_length': [1, 2, 3, 4],
+                    'n_epochs': [1, 2]
+                }
+            }
+        ]
 
-        _, best_params1 = ARIMA.gridsearch(parameters=parameters,
-                                           series=ts_train,
-                                           val_series=ts_val,
-                                           n_jobs=1)
+        for test in test_cases:
 
-        _, best_params2 = ARIMA.gridsearch(parameters=parameters,
-                                           series=ts_train,
-                                           val_series=ts_val,
-                                           n_jobs=-1)
+            model = test.model
+            parameters = test.parameters
 
-        self.assertEqual(best_params1, best_params2)
+            _, best_params1 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=1)
+
+            _, best_params2 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=-1)
+
+            self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):

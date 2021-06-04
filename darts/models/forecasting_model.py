@@ -428,6 +428,11 @@ class ForecastingModel(ABC):
         member. The fitted values are the result of the fit of the model on `series`. Comparing with the
         fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.
 
+        Derived classes must ensure that a single instance of a model will not share parameters with the other
+        instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
+        several models in parallel (when `n_jobs != 1`). If this cannot be avoided, then gridsearch should be redefined,
+        forcing `n_jobs = 1`.
+
         Parameters
         ----------
         model_class
@@ -498,7 +503,7 @@ class ForecastingModel(ABC):
         predict_signature = signature(model_class.predict)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose)
+        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
 
         def _evaluate_combination(param_combination):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))

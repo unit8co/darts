@@ -104,7 +104,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 model_name: str = "torch_model_run",  # TODO: uid
+                 model_name: str = "torch_model_run_" + str(os.getpid()),
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
