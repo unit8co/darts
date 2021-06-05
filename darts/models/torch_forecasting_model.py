@@ -498,7 +498,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO currently we assume all forecasts fit in memory
 
         # create past input and future covariate (if necessary and available) tensors
-        in_past, cov_future = self._prepare_predict_data(n, input_series_dataset)
+        in_past, cov_future = self._prepare_predict_tensors(n, input_series_dataset)
 
         # iterate through batches to produce predictions
         pred_loader = DataLoader(in_past,
@@ -529,10 +529,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         batch[:, :, :self.tgt_series_width] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include the most current ones
-                    #TODO: add same check as above for input_chunk_length >= roll_size
-                    if cov_future is not None:
+                    if cov_future is not None  and self.input_chunk_length >= roll_size:
                         batch[:, -roll_size:, self.tgt_series_width:] = (
                             cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
+                        )
+                    elif cov_future is not None:
+                        batch[:, :, self.tgt_series_width:] = (
+                            cov_future[batch_idx, prediction_length-self.input_chunk_length:prediction_length , :]
                         )
 
                     # take only last part of the output sequence where needed
@@ -559,13 +562,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return predictions
 
-    def _prepare_predict_data(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
+    def _prepare_predict_tensors(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
         """
         Creates a torch tensor `in_past` from `TimeSeriesInferenceDataset` instance for initial input to model
-        which includes the target series and covariate series (if provided). Only past covariates are included,
-        even if more are provided.
+        which includes the target series and covariate series if the model was trained with covariates. 
+        Only past covariates are included, even if more are provided.
 
-        The second tensor `cov_future` contains
+        If the model is required to produce the forecast over multiple iterations, i.e. if 
+        `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future` will
+        contain the future covariates up to `n` time steps into the future.
 
         Parameters
         ----------
@@ -606,7 +611,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 # get first timestamp that lies in the future of target series
                 first_pred_time = target_series.end_time() + target_series.freq()
                 
-                # check whether future covariates are available and must be separated
+                # check whether future covariates are available and separate them if they are
                 if covariate_series.end_time() >= first_pred_time:
                     cov_past = covariate_series.drop_after(first_pred_time)
                 else:
@@ -638,8 +643,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             in_past = in_past.view(1, self.input_chunk_length, -1)
             in_past_arr.append(in_past)
 
-        # concatenate to one tensor of size [len(input_series_dataset), input_chunk_length, 
-        #                                    target width + covariate width)]
+        # concatenate tensors to include multiple time series in one batch
         in_past = torch.cat(in_past_arr, dim=0)
         cov_future = torch.cat(cov_future_arr, dim=0) if len(cov_future_arr) > 0 else None
 
