@@ -485,6 +485,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
         # TODO currently we assume all forecasts fit in memory
+
+        # create past input and future covariate (if necessary and available) tensors
         in_past, cov_future = self._prepare_predict_data(n, input_series_dataset)
 
         # iterate through batches to produce predictions
@@ -545,7 +547,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return predictions
 
-        def _prepare_predict_data(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
+    def _prepare_predict_data(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
         """
         Creates a torch tensor `in_past` from `TimeSeriesInferenceDataset` instance for initial input to model
         which includes the target series and covariate series (if provided). Only past covariates are included,
@@ -571,13 +573,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
             does require future covariates either because it does not require covariates at all or because
             `n <= self.output_chunk_length`.
-        """
+    """
+
         in_past_arr = []
         cov_future_arr = []
 
         for target_series, covariate_series in input_series_dataset:
             raise_if_not(len(target_series) >= self.input_chunk_length,
-                         'All input series must have length >= `input_chunk_length` ({}).'.format(
+                            'All input series must have length >= `input_chunk_length` ({}).'.format(
                 self.input_chunk_length))
 
             # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
