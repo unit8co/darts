@@ -360,8 +360,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 batch_size: Optional[int] = None,
                 verbose: bool = False,
-                n_jobs=1,
-                roll_size=None
+                n_jobs: int = 1,
+                roll_size: Optional[int] = None
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -394,6 +394,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, whether to print progress.
         n_jobs
             The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
+        roll_size
+            For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
+            outputs of the model are fed back into it at every iteration of feeding the predicted target
+            (and optionally future covariates) back into the model.
 
         Returns
         -------
@@ -428,8 +432,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              input_series_dataset: TimeSeriesInferenceDataset,
                              batch_size: Optional[int] = None,
                              verbose: bool = False,
-                             n_jobs=1,
-                             roll_size = None
+                             n_jobs: int = 1,
+                             roll_size: Optional[int] = None
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -460,6 +464,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Shows the progress bar for batch predicition. Off by default.
         n_jobs
             The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
+        roll_size
+            For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
+            outputs of the model are fed back into it at every iteration of feeding the predicted target
+            (and optionally future covariates) back into the model.
 
         Returns
         -------
@@ -470,8 +478,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if roll_size is None:
             roll_size = self.output_chunk_length
+        else:
+            raise_if_not(roll_size <= self.output_chunk_length and roll_size > 0,
+                         '`roll_size` must be an integer between 1 and `self.output_chunk_length`')
 
-        # preprocessing
+        # check input data type
         raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
                      'Only TimeSeriesInferenceDataset is accepted as input type')
 
@@ -518,6 +529,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         batch[:, :, :self.tgt_series_width] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include the most current ones
+                    #TODO: add same check as above for input_chunk_length >= roll_size
                     if cov_future is not None:
                         batch[:, -roll_size:, self.tgt_series_width:] = (
                             cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
