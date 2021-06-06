@@ -41,7 +41,7 @@ class TimeSeries:
             # The first dimension represents the time and may be named differently.
             raise_log(ValueError('The last two dimensions of the DataArray must be named {}'.format(DIMS[-2:])))
 
-        self._time_dim: str = xa.dims[0]  # how the time dimension is named
+        self._time_dim = xa.dims[0]  # how the time dimension is named
         self._time_index = xa.get_index(self._time_dim)
 
         if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
@@ -54,8 +54,10 @@ class TimeSeries:
 
         if self._has_datetime_index:
             self._freq: pd.DateOffset = self._time_index.freq
+            self._freq_str: str = self._time_index.inferred_freq
         else:
             self._freq = None
+            self._freq_str = None
 
     """ 
     Factory Methods
@@ -207,6 +209,34 @@ class TimeSeries:
     def freq(self):
         return self._freq
 
+    @property
+    def freq_str(self):
+        return self._freq_str
+
+    @property
+    def components(self):
+        """
+        The names of the components (equivalent to DataFrame columns) as a Pandas Index
+        """
+        return self._xa.get_index('component').copy()
+
+    @property
+    def columns(self):
+        """
+        Same as `components` property
+        """
+        return self.components
+
+    @property
+    def time_index(self) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+        """
+        Returns
+        -------
+        Union[pd.DatetimeIndex, pd.RangeIndex]
+            The time index of this time series.
+        """
+        return self._time_index.copy()
+
     """ 
     Other methods
     =============
@@ -267,4 +297,134 @@ class TimeSeries:
             return pd.DataFrame(self._xa[:, :, 0].values,
                                 index=self._time_index,
                                 columns=self._xa.get_index('component'))
+
+    def start_time(self) -> Union[pd.Timestamp, int]:
+        """
+        Returns
+        -------
+        Union[pandas.Timestamp, int]
+            A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
+            or an integer (if indexed by RangeIndex)
+        """
+        return self._time_index[0]
+
+    def end_time(self) -> Union[pd.Timestamp, int]:
+        """
+        Returns
+        -------
+        Union[pandas.Timestamp, int]
+            A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
+            or an integer (if indexed by RangeIndex)
+        """
+        return self._time_index[-1]
+
+    def first_value(self) -> float:
+        """
+        Returns
+        -------
+        float
+            The first value of this univariate deterministic time series
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+        return float(self._xa[0, 0, 0])
+
+    def last_value(self) -> float:
+        """
+        Returns
+        -------
+        float
+            The last value of this univariate deterministic time series
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+        return float(self._xa[-1, 0, 0])
+
+    def first_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The first values of every component of this deterministic time series
+        """
+        self._assert_deterministic()
+        return self._xa.values[0, :, 0].copy()
+
+    def last_values(self) -> np.ndarray:
+        """
+        Returns
+        -------
+        np.ndarray
+            The last values of every component of this deterministic time series
+        """
+        self._assert_deterministic()
+        return self._xa.values[-1, :, 0].copy()
+
+    def values(self, copy=True, sample=0) -> np.ndarray:
+        """
+        Returns a 2-D Numpy array of dimension (time, component), containing this series' values for one sample.
+        If this series is deterministic, it contains only one sample and only `sample=0` can be used.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing the time series.
+        """
+        raise_if(self.is_deterministic and sample != 0, 'This series contains one sample only (deterministic),'
+                                                        'so only sample=0 is accepted.')
+        if copy:
+            return np.copy(self._xa.values[:, :, sample])
+        else:
+            return self._xa.values[:, :, sample]
+
+    def all_values(self, copy=True):
+        """
+        Returns a 3-D Numpy array of dimension (time, component, sample),
+        containing this series' values for all samples.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing the time series.
+        """
+        if copy:
+            return np.copy(self._xa.values)
+        else:
+            return self._xa.values
+
+    def univariate_values(self, copy=True, sample=0) -> np.ndarray:
+        """
+        Returns a 1-D Numpy array of dimension (time,), containing this univariate series' values for one sample.
+        If this series is deterministic, it contains only one sample and only `sample=0` can be used.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values. Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing the time series guaranteed to be univariate.
+        """
+
+        self._assert_univariate()
+        if copy:
+            return np.copy(self._xa[:, 0, sample].values)
+        else:
+            return self._xa[:, 0, sample].values
+
+
 
