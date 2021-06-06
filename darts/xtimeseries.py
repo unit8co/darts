@@ -241,10 +241,23 @@ class TimeSeries:
         """
         return self._time_index.copy()
 
+    @property
+    def duration(self) -> Union[pd.Timedelta, int]:
+        """
+        Returns
+        -------
+        Union[pandas.Timedelta, int]
+            The duration of this time series; as a Timedelta if the series is indexed by a Datetimeindex,
+            and int otherwise.
+        """
+        return self._time_index[-1] - self._time_index[0]
+
     """ 
-    Other methods
+    Some asserts
     =============
     """
+    # TODO: put at the bottom
+
     def _assert_univariate(self):
         if not self.is_univariate:
             raise_log(AssertionError('Only univariate TimeSeries instances support this method'), logger)
@@ -259,6 +272,18 @@ class TimeSeries:
             raise_log(AssertionError('Only non-deterministic TimeSeries (with more than 1 samples) '
                                      'instances support this method'),
                       logger)
+
+    def _raise_if_not_within(self, ts: pd.Timestamp):
+        raise_if_not(self._has_datetime_index, 'This function can only be called on TimeSeries having'
+                                               'a DatetimeIndex as time index.')
+        if (ts < self.start_time()) or (ts > self.end_time()):
+            raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
+                                                                              self.end_time())), logger)
+
+    """
+    Export functions
+    ================
+    """
 
     def pd_series(self, copy=True) -> pd.Series:
         """
@@ -475,7 +500,7 @@ class TimeSeries:
         else:
             return self._xa.values[:, :, sample]
 
-    def all_values(self, copy=True):
+    def all_values(self, copy=True) -> np.ndarray:
         """
         Returns a 3-D Numpy array of dimension (time, component, sample),
         containing this series' values for all samples.
@@ -518,5 +543,53 @@ class TimeSeries:
         else:
             return self._xa[:, 0, sample].values
 
+    """
+    Other methods
+    =============
+    """
+
+    def gaps(self) -> pd.DataFrame:
+        """
+        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).
+
+        Returns
+        -------
+        pd.DataFrame
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            in this time series. The DataFrame contains three columns that include the start and end time stamps
+            of the gap and the integer length of the gap (in `self.freq()` units).
+        """
+
+        df = self.pd_dataframe()
+
+        is_nan_series = df.isna().all(axis=1).astype(int)
+        diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
+        gap_starts = diff[diff == 1].index + self.freq()
+        gap_ends = diff[diff == -1].index
+
+        if is_nan_series.iloc[0] == 1:
+            gap_starts = gap_starts.insert(0, self.start_time())
+        if is_nan_series.iloc[-1] == 1:
+            gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
+
+        gap_df = pd.DataFrame()
+        gap_df['gap_start'] = gap_starts
+        gap_df['gap_end'] = gap_ends
+        gap_df['gap_size'] = gap_df.apply(
+            lambda row: pd.date_range(start=row.gap_start, end=row.gap_end, freq=self.freq()).size, axis=1
+        )
+
+        return gap_df
+
+    def copy(self) -> 'TimeSeries':
+        """
+        Make a copy of this time series object
+
+        Returns
+        -------
+        TimeSeries
+            A copy of this time series.
+        """
+        return TimeSeries(self._xa)  # the xarray will be copied in the TimeSeries constructor
 
 
