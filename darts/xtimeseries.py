@@ -202,6 +202,10 @@ class TimeSeries:
         return self.n_samples == 1
 
     @property
+    def is_stochastic(self):
+        return not self.is_deterministic
+
+    @property
     def is_univariate(self):
         return self.n_components == 1
 
@@ -248,6 +252,12 @@ class TimeSeries:
     def _assert_deterministic(self):
         if not self.is_deterministic:
             raise_log(AssertionError('Only deterministic TimeSeries (with 1 sample) instances support this method'),
+                      logger)
+
+    def _assert_stochastic(self):
+        if not self.is_stochastic:
+            raise_log(AssertionError('Only non-deterministic TimeSeries (with more than 1 samples) '
+                                     'instances support this method'),
                       logger)
 
     def pd_series(self, copy=True) -> pd.Series:
@@ -297,6 +307,47 @@ class TimeSeries:
             return pd.DataFrame(self._xa[:, :, 0].values,
                                 index=self._time_index,
                                 columns=self._xa.get_index('component'))
+
+    def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
+        """
+        Returns a Pandas DataFrame containing the quantiles of each component (over the samples).
+        Each of the series components will appear as a column in the DataFrame. The column will be named
+        "<component>_X", where "<component>" is the column name corresponding to this component, and X
+        is the quantile value.
+        The quantiles represent the marginal distributions of the components of this series.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        quantiles
+            Tuple containing the desired quantiles. The values can be either represented as fractions (between 0 and 1),
+            or as percentage values (between 0 and 100). For instance, `(0.1, 0.5, 0.9)` will return a DataFrame
+            containing the 10th-percentile, median and 90th-percentile of the (marginal) distribution of each component.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The Pandas DataFrame containing the quantiles for each component.
+        """
+        self._assert_stochastic()
+        if max(quantiles) <= 1:
+            quantiles_norm = quantiles
+            normalised = False
+        else:
+            quantiles_norm = tuple(q / 100. for q in quantiles)
+            normalised = True
+
+        dfs = []
+        for i, quantile in enumerate(quantiles_norm):
+            # column names:
+            cnames = list(map(lambda s: s + '_{}'.format(quantile if not normalised else quantiles[i]), self.columns))
+
+            dfs.append(pd.DataFrame(self._xa.quantile(q=quantile, dim=DIMS[2]),
+                                    index=self._time_index,
+                                    columns=cnames))
+
+        return pd.concat(dfs, axis=1)
 
     def start_time(self) -> Union[pd.Timestamp, int]:
         """
