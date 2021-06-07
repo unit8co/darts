@@ -222,6 +222,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_jobs(self):
         '''
         Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run.
