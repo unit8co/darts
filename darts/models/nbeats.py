@@ -32,8 +32,8 @@ class _TrendGenerator(nn.Module):
                  output_dim):
         super(_TrendGenerator, self).__init__()
         self.T = nn.Parameter(
-            torch.stack([(torch.arange(output_dim) / output_dim)**i for i in range(expansion_coefficient_dim)], 1)
-        )
+            torch.stack([(torch.arange(output_dim) / output_dim)**i for i in range(expansion_coefficient_dim)], 1),
+            False)
 
     def forward(self, x):
         return torch.matmul(x, self.T.float().T)
@@ -47,7 +47,8 @@ class _SeasonalityGenerator(nn.Module):
         half_minus_one = int(output_dim / 2 - 1)
         cos_vectors = [torch.cos(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
         sin_vectors = [torch.sin(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        self.S = nn.Parameter(torch.stack([torch.ones(output_dim)] + cos_vectors + sin_vectors, 1))
+        self.S = nn.Parameter(torch.stack([torch.ones(output_dim)] + cos_vectors + sin_vectors, 1),
+                              False)
 
     def forward(self, x):
         return torch.matmul(x, self.S.float().T)
