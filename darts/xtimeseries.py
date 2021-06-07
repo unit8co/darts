@@ -273,9 +273,11 @@ class TimeSeries:
                                      'instances support this method'),
                       logger)
 
-    def _raise_if_not_within(self, ts: pd.Timestamp):
-        raise_if_not(self._has_datetime_index, 'This function can only be called on TimeSeries having'
-                                               'a DatetimeIndex as time index.')
+    def _raise_if_not_within(self, ts: Union[pd.Timestamp, int]):
+        if isinstance(ts, pd.Timestamp):
+            raise_if_not(self._has_datetime_index, 'Function called with a timestamp, but series not time-indexed.')
+        elif isinstance(ts, int):
+            raise_if(self._has_datetime_index, 'Function called with an integer, but series is time-indexed.')
         if (ts < self.start_time()) or (ts > self.end_time()):
             raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
                                                                               self.end_time())), logger)
@@ -592,4 +594,62 @@ class TimeSeries:
         """
         return TimeSeries(self._xa)  # the xarray will be copied in the TimeSeries constructor
 
+    def get_index_at_point(self, point: Union[pd.Timestamp, float, int]) -> int:
+        """
+        Converts a point into an integer index
 
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `pd.Timestamp`, `float` and `int`.
+
+            `pd.Timestamp` work only on series that are indexed with a `pd.DatetimeIndex`. In such cases, the returned
+            point will be the index of this timestamp, provided that it is present in the series time index,
+            otherwise will raise a ValueError.
+
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+
+            In the case of `int`, the parameter will returned as such, provided that it is in the series. Otherwise
+            it will raise a ValueError.
+        """
+        if isinstance(point, float):
+            raise_if_not(0. <= point <= 1., 'point (float) should be between 0.0 and 1.0.', logger)
+            point_index = int((self.__len__() - 1) * point)
+        elif isinstance(point, int):
+            raise_if(point not in range(self.__len__()), "point (int) should be a valid index in series", logger)
+            point_index = point
+        elif isinstance(point, pd.Timestamp):
+            raise_if_not(self._has_datetime_index,
+                         'A Timestamp has been provided, but this series is not time-indexed.')
+            raise_if(point not in self,
+                     'point (pandas.Timestamp) must be an entry in the time series\' time index',
+                     logger)
+            point_index = self._time_index.to_list().index(point)
+        else:
+            raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
+        return point_index
+
+    def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
+        """
+        Splits the TimeSeries in two, after a provided `split_point`.
+
+        Parameters
+        ----------
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the series to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after
+            which the split is performed. A pd.Timestamp can be provided for TimeSeries that are indexed by a
+            pd.DatetimeIndex. In such cases, the timestamp will be contained in the first TimeSeries, but not
+            in the second one. The timestamp itself does not have to appear in the original TimeSeries index.
+
+        Returns
+        -------
+        Tuple[TimeSeries, TimeSeries]
+            A tuple of two time series. The first time series contains the first samples up to the `split_point`,
+            and the second contains the remaining ones.
+        """
+        if isinstance(split_point, pd.Timestamp) or isinstance(split_point, int):
+            self._raise_if_not_within(split_point)
+        point_index = self.get_index_at_point(split_point)
+        return self[:point_index+1], self[point_index+1:]  # TODO Check
