@@ -263,7 +263,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **Note**: If your model wasn't yet trained and you requested to train for more epochs with `epoch` parameter,
         it will be treated as trained for 0 epochs.
 
-        *** Currently future covariates are not yet supported ***
+        *** Future covariates are not yet supported ***
 
         Parameters
         ----------
@@ -395,12 +395,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n
             The number of time steps after the end of the training time series for which to produce predictions
         series
-            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            Optionally, one or several input `TimeSeries`, representing the history of the target series whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
         covariates
             Optionally, the covariates series needed as inputs for the model. They must match the covariates used
-            for training.
+            for training in terms of dimension and type.
         batch_size
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
@@ -421,6 +421,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'n: {}, output_chunk_length: {}'.format(n, self.output_chunk_length))
 
         if series is None:
+            raise_if(self.training_series is None, "Input series has to be provided after fitting on multiple series.")
             series = self.training_series
 
         if covariates is None and self.covariate_series is not None:
@@ -535,7 +536,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 while sum(map(lambda t: t.shape[1], batch_prediction)) < n:
                     roll_size = min(self.output_chunk_length, self.input_chunk_length)
                     batch = torch.roll(batch, -roll_size, 1)
-                    batch[:, -roll_size:, :] = out[:, :roll_size, :]
+                    batch[:, -roll_size:, :] = out[:, -roll_size:, :]
                     # take only last part of the output sequence where needed
                     out = self.model(batch)[:, self.first_prediction_index:, :]
                     batch_prediction.append(out)
