@@ -522,13 +522,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     # roll over input series to contain latest target and covariate
                     batch = torch.roll(batch, -roll_size, 1)
 
-                    # update target input to include last predictions
+                    # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
                         batch[:, -roll_size:, :self.tgt_series_width] = out[:, :roll_size, :] 
                     else:
                         batch[:, :, :self.tgt_series_width] = out[:, -self.input_chunk_length:, :]
 
-                    # update covariates to include the most current ones
+                    # update covariates to include next `roll_size` predictions into the future
                     if cov_future is not None  and self.input_chunk_length >= roll_size:
                         batch[:, -roll_size:, self.tgt_series_width:] = (
                             cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
