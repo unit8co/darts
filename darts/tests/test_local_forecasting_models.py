@@ -111,7 +111,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_multivariate_input(self):
         es_model = ExponentialSmoothing()
         ts_passengers_enhanced = self.ts_passengers.add_datetime_attribute('month')
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             es_model.fit(ts_passengers_enhanced)
         es_model.fit(ts_passengers_enhanced["#Passengers"])
         with self.assertRaises(KeyError):

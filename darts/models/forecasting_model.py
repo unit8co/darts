@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 
 class ForecastingModel(ABC):
     """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to support.
-        The signatures in this base class are for "local" models handling only one series and no covariates.
+        The signatures in this base class are for "local" models handling only one univariate series and no covariates.
         Sub-classes can handle more complex cases.
     """
     @abstractmethod
@@ -51,13 +51,15 @@ class ForecastingModel(ABC):
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
-        """ Trains the model on the provided series
+        """ Trains the model on the provided univariate series.
 
         Parameters
         ----------
         series
             A target time series. The model will be trained to forecast this time series.
         """
+        if not isinstance(self, ExtendedForecastingModel):
+            series._assert_univariate()
         raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
                      .format(len(series), str(self), self.min_train_series_length))
@@ -601,13 +603,22 @@ class ForecastingModel(ABC):
 class GlobalForecastingModel(ForecastingModel, ABC):
     """ The base class for "global" forecasting models, handling several time series and optional covariates.
 
+    Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:
+    1. Models can be fitted on many series (multivariate or univariate) with different indices.
+    2. The input series used by `predict()` can be different from the series used to fit the model.
+    3. Covariates can be supported (multivariate or univariate).
+    4. They can allow for multivariate target series and covariates.
+    
+    The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
+    to a temporally contiguous, "local", time series.
+
     All implementations have to implement the `fit()` and `predict()` methods defined below.
     The `fit()` method is meant to train the model on one or several training time series, along with optional
-    covariates. Note that not all global models support covariates.
+    covariates.
 
-    If `fit()` has been called with only one training series as argument, then calling `predict()` will
+    If `fit()` has been called with only one training and covariate series as argument, then calling `predict()` will
     forecast the future of this series. Otherwise, the user has to provide to `predict()` the series they want
-    to forecast, as well as covariates if needed.
+    to forecast, as well as covariates, if needed.
     """
 
     _expect_covariates = False
@@ -620,31 +631,32 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             ) -> None:
         """ Fits/trains the model on the provided series
 
-        Defines behavior that should happen when calling the `fit()` method of every forecasting model.
+        Defines behavior that should happen when calling the `fit()` method of every global forecasting model.
 
         Some models support training only on one time series, while others can handle a sequence.
         Similarly, some models can handle covariates.
 
-        Some covariates are know in the future, and others aren't. This is a property of the `TimeSeries`, which
+        Some covariates are known in the future, and others aren't. This is a property of the `TimeSeries`, which
         may or may not be exploited by the models.
 
         Parameters
         ----------
         series
             One or several target time series. The model will be trained to forecast these time series.
+            The series may or may not be multivariate, but if multiple series are provided they must have the same number of components.
         covariates
             One or several covariate time series. These time series will not be forecast, but can be used by
-            some models as an input.
+            some models as an input. The covariate(s) may or may not be multivariate, but if multiple covariates are provided they must have the same number of components.
         """
-        if isinstance(series, TimeSeries) and covariates is None:
-            super().fit(series)  # handle the single series case
-        if covariates is not None:
-            if isinstance(series, TimeSeries) and isinstance(covariates, TimeSeries):
-                self.training_series = series
+
+        if isinstance(series, TimeSeries):
+            # if only one series is provided, save it for prediction time (including covariates, if available)
+            self.training_series = series
+            if covariates is not None:
                 self.covariate_series = covariates
-                self._fit_called = True
-            else:
-                self._expect_covariates = True
+        elif covariates is not None:
+            self._expect_covariates = True
+        self._fit_called = True
 
 
     @abstractmethod
@@ -656,7 +668,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """ Forecasts values for a certain number of time steps after the end of the series.
 
         If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function
-        is optional, and it will simply produce the next `horizon` time steps forecast.
+        is optional, and it will simply produce the next `horizon` time steps forecast. The `covariates` argument
+        also does not have to be provided again in this case.
 
         If `fit()` has been called with `series` specified as a `Sequence[TimeSeries]`, the `series` argument must
         be specified.
@@ -664,17 +677,18 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         When the `series` argument is specified, this function will compute the next `n` time steps forecasts
         for the simple series (or for each series in the sequence) given by `series`.
 
-        If covariates were specified during the training, they must also be specified here.
+        If multiple covariates were specified during the training, covariates must also be specified here. For every
+        input in `series` a matching covariate time series has to be provided.
 
         Parameters
         ----------
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         series
-            The series whose future we want to predict
+            The series whose future(s) we want to predict.
         covariates
-            One or several covariate time series which can be fed as inputs to the model. They must match the
-            covariates that have been used with the `fit()` function for training.
+            One covariate time series for every input time series in `series`. They must match the
+            covariates that have been used with the `fit()` function for training in terms of dimension and type.
 
         Returns
         -------
@@ -696,6 +710,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 class ExtendedForecastingModel(ForecastingModel, ABC):
     """ The base class for "extended" forecasting models, handling optional exogenous variables.
 
+    Extended forecasting models expand upon the functionality of `ForecastingModel` in 2 ways:
+    1. They introduce an optional `exog` time series parameter which can be used as a covariate.
+    2. Multivariate time series are supported, both as target and exogenous series.
+
     All implementations have to implement the `fit()` and `predict()` methods defined below.
     The `fit()` method is meant to train the model on a time series, along with optional
     exogenous variables.
@@ -716,19 +734,17 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         Parameters
         ----------
         series
-            A time series. The model will be trained to forecast this time series.
+            The model will be trained to forecast this time series. Can be multivariate if the model supports it.
         exog
             A time series of exogenous variables. This time series will not be forecasted, but can be used by
-            some models as an input.
+            some models as an input. Can be multivariate.
         """
-        if exog is None:
-            super().fit(series)
+
         if exog is not None:
             raise_if_not(series.has_same_time_as(exog),
                          'The target series and the exogenous variables series must have the same time index.')
             self._expect_exog = True
-            self._fit_called = True
-            self.training_series = series
+        super().fit(series)
 
     @abstractmethod
     def predict(self,
@@ -759,4 +775,3 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if self._expect_exog and len(exog) != n:
             raise_log(ValueError(f'Expecting exogenous variables with the same length as the'
                                  f' forecasting horizon ({n}).'))
-
