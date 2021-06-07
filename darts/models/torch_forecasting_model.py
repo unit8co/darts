@@ -254,7 +254,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         The fit method for torch models.
         It wraps around `fit_from_dataset()`.
 
-        *** Currently future covariates are not yet supported ***
+        *** Future covariates are not yet supported ***
 
         Parameters
         ----------
@@ -382,12 +382,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n
             The number of time steps after the end of the training time series for which to produce predictions
         series
-            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            Optionally, one or several input `TimeSeries`, representing the history of the target series whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
         covariates
             Optionally, the covariates series needed as inputs for the model. They must match the covariates used
-            for training.
+            for training in terms of dimension and type.
         batch_size
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
@@ -408,6 +408,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         super().predict(n, series, covariates)
 
         if series is None:
+            raise_if(self.training_series is None, "Input series has to be provided after fitting on multiple series.")
             series = self.training_series
 
         if covariates is None and self.covariate_series is not None:
