@@ -20,16 +20,16 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
-    ARIMA,
-    RNNModel
+    ARIMA
 )
+
 
 from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TCNModel
+    from ..models import TCNModel, RNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch models are not installed - will not be tested for backtesting')
