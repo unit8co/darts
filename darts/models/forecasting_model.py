@@ -470,7 +470,7 @@ class ForecastingModel(ABC):
             Whether to print progress.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
-            combinations to evaluate. Each job will insantiate, train, and evaluate a different instance of the model.
+            combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
 
         Returns
