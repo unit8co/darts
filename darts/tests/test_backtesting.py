@@ -228,10 +228,10 @@ class BacktestingTestCase(DartsBaseTestClass):
         '''
 
         np.random.seed(1)
-        ts_length = 50
+        ts_length = 100
 
         dummy_series = (
-            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+            lt(length=ts_length, end_value=1) + st(length=ts_length, value_y_offset=0) + rt(length=ts_length)
         )
 
         ts_train = dummy_series[:round(ts_length * 0.8)]
@@ -248,17 +248,18 @@ class BacktestingTestCase(DartsBaseTestClass):
             {
                 "model": RNNModel,   # TorchForecastingModel
                 "parameters": {
-                    'input_chunk_length': [1, 2, 3, 4, 5, 6],
-                    'output_chunk_length': [1, 2, 3, 4],
-                    'n_epochs': [1, 2]
+                    'input_chunk_length': [1, 3, 5, 10],
+                    'output_chunk_length': [1, 3, 5, 10],
+                    'n_epochs': [1, 5],
+                    'random_state': [42]  # necessary to avoid randomness among runs with same parameters
                 }
             }
         ]
 
         for test in test_cases:
 
-            model = test.model
-            parameters = test.parameters
+            model = test["model"]
+            parameters = test["parameters"]
 
             _, best_params1 = model.gridsearch(parameters=parameters,
                                                series=ts_train,
