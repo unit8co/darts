@@ -106,7 +106,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  model_name: str = "torch_model_run",  # TODO: uid
-                 work_dir: str = os.path.join(os.getcwd(), '.darts'),
+                 work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
@@ -256,10 +256,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         The fit method for torch models.
         It wraps around `fit_from_dataset()`.
 
-        **Important**: running `fit()` or `fit_from_dataset()` removes previously trained model - all it's checkpoints
-        and tensorboard data. If you want to train your model for more epochs, see the `epochs` parameter.
+        **Important**: if `epochs=0` (default), running `fit()` or `fit_from_dataset()` removes previously trained model - all it's checkpoints
+        and tensorboard data. If you want to train your model for more epochs, set the `epochs` parameter to value
+        greater than 0.
 
-        **Note**: If your model wasn't yet trained and you requested it will be treated as
+        **Note**: If your model wasn't yet trained and you requested to train for more epochs with `epoch` parameter,
+        it will be treated as trained for 0 epochs.
 
         *** Currently future covariates are not yet supported ***
 
@@ -318,7 +320,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
-        # if the model wasn't trained, but it was requested to retrain for more epochs, treat it like a
+        # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a
         # training from scratch.
         if epochs == 0 or self.total_epochs == 0:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
