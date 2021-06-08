@@ -56,7 +56,7 @@ class TimeSeries:
             self._freq: pd.DateOffset = self._time_index.freq
             self._freq_str: str = self._time_index.inferred_freq
         else:
-            self._freq = None
+            self._freq = 1
             self._freq_str = None
 
     """ 
@@ -559,14 +559,15 @@ class TimeSeries:
         pd.DataFrame
             A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
-            of the gap and the integer length of the gap (in `self.freq()` units).
+            of the gap and the integer length of the gap (in `self.freq()` units if the series is indexed
+            by a DatetimeIndex).
         """
 
         df = self.pd_dataframe()
 
         is_nan_series = df.isna().all(axis=1).astype(int)
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
-        gap_starts = diff[diff == 1].index + self.freq()
+        gap_starts = diff[diff == 1].index + self._freq
         gap_ends = diff[diff == -1].index
 
         if is_nan_series.iloc[0] == 1:
@@ -577,8 +578,15 @@ class TimeSeries:
         gap_df = pd.DataFrame()
         gap_df['gap_start'] = gap_starts
         gap_df['gap_end'] = gap_ends
+
+        def intvl(start, end):
+            if self._has_datetime_index:
+                return pd.date_range(start=start, end=end, freq=self._freq).size
+            else:
+                return start - end
+
         gap_df['gap_size'] = gap_df.apply(
-            lambda row: pd.date_range(start=row.gap_start, end=row.gap_end, freq=self.freq()).size, axis=1
+            lambda row: intvl(start=row.gap_start, end=row.gap_end).size, axis=1
         )
 
         return gap_df
@@ -625,10 +633,19 @@ class TimeSeries:
             raise_if(point not in self,
                      'point (pandas.Timestamp) must be an entry in the time series\' time index',
                      logger)
-            point_index = self._time_index.to_list().index(point)
+            point_index = self._time_index.get_loc(point)
         else:
             raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
         return point_index
+
+    def _split_at(self,
+                  split_point: Union[pd.Timestamp, float, int],
+                  after: bool = True) -> Tuple['TimeSeries', 'TimeSeries']:
+
+        if isinstance(split_point, pd.Timestamp) or isinstance(split_point, int):
+            self._raise_if_not_within(split_point)
+        point_index = self.get_index_at_point(split_point)
+        return self[:point_index+(1 if after else 0)], self[point_index+(1 if after else 0):]  # TODO Check
 
     def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
@@ -649,7 +666,173 @@ class TimeSeries:
             A tuple of two time series. The first time series contains the first samples up to the `split_point`,
             and the second contains the remaining ones.
         """
-        if isinstance(split_point, pd.Timestamp) or isinstance(split_point, int):
-            self._raise_if_not_within(split_point)
-        point_index = self.get_index_at_point(split_point)
-        return self[:point_index+1], self[point_index+1:]  # TODO Check
+        return self._split_at(split_point, after=True)
+
+    def split_before(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
+        """
+        Splits the TimeSeries in two, before a provided `split_point`.
+
+        Parameters
+        ----------
+        split_point
+            A timestamp, float or integer. If float, represents the proportion of the series to include in the
+            first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before
+            which the split is performed. A pd.Timestamp can be provided for TimeSeries that are indexed by a
+            pd.DatetimeIndex. In such cases, the timestamp will be contained in the second TimeSeries, but not
+            in the first one. The timestamp itself does not have to appear in the original TimeSeries index.
+
+        Returns
+        -------
+        Tuple[TimeSeries, TimeSeries]
+            A tuple of two time series. The first time series contains the first samples up to the `split_point`,
+            and the second contains the remaining ones.
+        """
+        return self._split_at(split_point, after=False)
+
+    def slice(self):
+        pass
+        # TODO: needed, or can be addressed using [] only?
+
+    def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries, starting a `start_ts` and having at most `n` points.
+
+        The provided timestamps will be included in the series.
+
+        Parameters
+        ----------
+        start_ts
+            The timestamp or index that indicates the splitting time.
+        n
+            The maximal length of the new TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with length at most `n`, starting at `start_ts`
+        """
+        raise_if_not(n > 0, 'n should be a positive integer.', logger)
+        self._raise_if_not_within(start_ts)
+        point_index = self.get_index_at_point(start_ts)
+        return self[point_index:point_index+n]
+
+    def slice_n_points_before(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries, ending at `start_ts` and having at most `n` points.
+
+        The provided timestamps will be included in the series.
+
+        Parameters
+        ----------
+        start_ts
+            The timestamp or index that indicates the splitting time.
+        n
+            The maximal length of the new TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with length at most `n`, ending at `start_ts`
+        """
+        raise_if_not(n > 0, 'n should be a positive integer.', logger)
+        self._raise_if_not_within(start_ts)
+        point_index = self.get_index_at_point(start_ts)
+        return self[point_index-n+1:point_index+1]
+
+    def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Returns a TimeSeries slice of this time series, where the time index has been intersected with the one
+        provided in argument. Note that this method is in general *not* symmetric.
+
+        Parameters
+        ----------
+        other
+            the other time series
+
+        Returns
+        -------
+        TimeSeries
+            a new series, containing the values of this series, over the time-span common to both time series.
+        """
+        time_index = self.time_index.intersection(other.time_index)
+        return self.__getitem__(time_index)
+
+    def strip(self) -> 'TimeSeries':
+        """
+        Returns a TimeSeries slice of this deterministic time series, where NaN-only entries at the beginning
+        and the end of the series are removed. No entries after (and including) the first non-NaN entry and
+        before (and including) the last non-NaN entry are removed.
+
+        This method is only applicable to deterministic series (i.e., having 1 sample).
+
+        Returns
+        -------
+        TimeSeries
+            a new series based on the original where NaN-only entries at start and end have been removed
+        """
+
+        df = self.pd_dataframe(copy=False)
+        new_start_idx = df.first_valid_index()
+        new_end_idx = df.last_valid_index()
+        new_series = df.loc[new_start_idx:new_end_idx]
+        return TimeSeries.from_dataframe(new_series)
+
+    def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
+        """
+        Returns the largest TimeSeries slice of this deterministic time series that contains no gaps
+        (contigouse all-NaN rows) larger than `max_gap_size`.
+
+        This method is only applicable to deterministic series (i.e., having 1 sample).
+
+        Returns
+        -------
+        TimeSeries
+            a new series constituting the largest slice of the original with no or bounded gaps
+        """
+        if not (self._xa == np.nan).any():
+            return self.copy()
+        stripped_series = self.strip()
+        gaps = stripped_series.gaps()
+        relevant_gaps = gaps[gaps['gap_size'] > max_gap_size]
+
+        curr_slice_start = stripped_series.start_time()
+        max_size = pd.Timedelta(days=0) if self._has_datetime_index else 0
+        max_slice_start = None
+        max_slice_end = None
+        for index, row in relevant_gaps.iterrows():
+            size = row['gap_start'] - curr_slice_start - self._freq
+            if size > max_size:
+                max_size = size
+                max_slice_start = curr_slice_start
+                max_slice_end = row['gap_start'] - self._freq
+            curr_slice_start = row['gap_end'] + self._freq
+
+        if stripped_series.end_time() - curr_slice_start > max_size:
+            max_slice_start = curr_slice_start
+            max_slice_end = self.end_time()
+
+        return stripped_series[max_slice_start:max_slice_end]
+
+    def rescale_with_value(self, value_at_first_step: float) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries, which is a multiple of this TimeSeries such that
+        the first value is `value_at_first_step`.
+        (Note: numerical errors can appear with `value_at_first_step > 1e+24`).
+
+        Parameters
+        ----------
+        value_at_first_step
+            The new value for the first entry of the TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, where the first value is `value_at_first_step` and other values
+            have been scaled accordingly.
+        """
+
+        raise_if_not((self._xa[0, :, :] != 0).all(), 'Cannot rescale with first value 0.', logger)
+        coef = value_at_first_step / self._xa[0, :, :]
+        new_series = coef * self._xa
+        return TimeSeries(new_series)
+
