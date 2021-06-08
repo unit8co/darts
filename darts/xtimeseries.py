@@ -163,7 +163,7 @@ class TimeSeries:
 
         xa = xr.DataArray(series_df.values[:, :, np.newaxis],
                           dims=(time_index.name,) + DIMS[-2:],
-                          coords={'time': time_index, 'component': columns_list})
+                          coords={time_index.name: time_index, DIMS[1]: columns_list})
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
 
@@ -1072,7 +1072,10 @@ class TimeSeries:
         TimeSeries
             A new univariate TimeSeries instance.
         """
-        new_xa = self._xa.isel(component=index) if isinstance(index, int) else self._xa.sel(component=index)
+        if isinstance(index, int):
+            new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
+        else:
+            self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
     def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
@@ -1237,4 +1240,37 @@ class TimeSeries:
             A JSON String representing the time series
         """
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
+
+    def plot(self,
+             new_plot: bool = False,
+             *args,
+             **kwargs):
+        """
+        A wrapper method around `xarray.DataArray.plot()`.
+
+        Parameters
+        ----------
+        new_plot
+            whether to spawn a new Figure
+        args
+            some positional arguments for the `plot()` method
+        kwargs
+            some keyword arguments for the `plot()` method
+        """
+        raise_if(self.n_components > 15, "Current TimeSeries instance contains too many components to plot.", logger)
+        fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
+        kwargs['figure'] = fig
+        label = kwargs['label'] if 'label' in kwargs else None
+        for i in range(self.n_components):
+            if i > 0:
+                kwargs['figure'] = plt.gcf()
+                if 'label' in kwargs:
+                    kwargs['label'] = (label + '_' if label is not None else '') + str(self._xa.component.values[i])
+                    
+            # TODO: support multi-samples
+            self.univariate_component(i).pd_series().plot(*args, **kwargs)
+                
+        x_label = self.time_index.name
+        if x_label is not None and len(x_label) > 0:
+            plt.xlabel(x_label)
 
