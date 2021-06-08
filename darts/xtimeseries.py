@@ -91,7 +91,7 @@ class TimeSeries:
                 freq = observed_frequencies.pop()
 
             # TODO: test this
-            xa_ = xa.resample(freq).asfreq(fill_value=None)
+            xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
@@ -169,7 +169,6 @@ class TimeSeries:
 
     @staticmethod
     def from_series() -> 'TimeSeries':
-        # create
         pass
 
     @staticmethod
@@ -179,6 +178,27 @@ class TimeSeries:
     @staticmethod
     def from_values() -> 'TimeSeries':
         pass
+
+    @staticmethod
+    def from_json(json_str: str) -> 'TimeSeries':
+        """
+        Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
+        into a `TimeSeries` object
+
+        At the moment this only supports deterministic time series (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        json_str
+            The JSON String to convert
+
+        Returns
+        -------
+        TimeSeries
+            The time series object converted from the JSON String
+        """
+        df = pd.read_json(json_str, orient='split')
+        return TimeSeries.from_dataframe(df)
 
     """ 
     Properties
@@ -1054,3 +1074,167 @@ class TimeSeries:
         """
         new_xa = self._xa.isel(component=index) if isinstance(index, int) else self._xa.sel(component=index)
         return TimeSeries(new_xa)
+
+    def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
+        of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
+
+        Parameters
+        ----------
+        attribute
+            A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+        one_hot
+            Boolean value indicating whether to add the specified attribute as a one hot encoding
+            (results in more columns).
+
+        Returns
+        -------
+        TimeSeries
+            New TimeSeries instance enhanced by `attribute`.
+        """
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
+
+    def add_holidays(self,
+                     country_code: str,
+                     prov: str = None,
+                     state: str = None) -> 'TimeSeries':
+        """
+        Adds a binary univariate component to the current series that equals 1 at every index that
+        corresponds to selected country's holiday, and 0 otherwise. The frequency of the TimeSeries is daily.
+
+        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+
+        Parameters
+        ----------
+        country_code
+            The country ISO code
+        prov
+            The province
+        state
+            The state
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance, enhanced with binary holiday component.
+        """
+        from .utils import timeseries_generation as tg
+        return self.stack(tg.holidays_timeseries(self.time_index, country_code, prov, state))
+
+    def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
+        """
+        Creates an reindexed time series with a given frequency.
+        Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
+
+        Parameters
+        ----------
+        freq
+            The new time difference between two adjacent entries in the returned TimeSeries.
+            A DateOffset alias is expected.
+        method:
+            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
+
+            ‘pad’: propagate last valid observation forward to next valid
+
+            ‘backfill’: use NEXT valid observation to fill.
+        Returns
+        -------
+        TimeSeries
+            A reindexed TimeSeries with given frequency.
+        """
+
+        resample = self._xa.resample(freq)
+
+        # TODO: check
+        if method == 'pad':
+            new_xa = resample.pad()
+        elif method == 'bfill':
+            new_xa = resample.backfill()
+        else:
+            raise_log(ValueError('Unknown method: {}'.format(method)))
+        return TimeSeries(new_xa)
+
+    def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
+        """
+        Check whether a given timestamp or integer is withing the time interval of this time series.
+        If a timestamp is provided, it does not need to be *in* the time series.
+
+        Parameters
+        ----------
+        ts
+            The `pandas.Timestamp` or integer to check
+
+        Returns
+        -------
+        bool
+            Whether `ts` is contained within the interval of this time series.
+        """
+        return self.time_index[0] <= ts <= self.time_index[-1]
+
+    def map(self,
+            fn: Union[Callable[[np.number], np.number],
+                      Callable[[Union[pd.Timestamp, int], np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
+        """
+        Applies the function `fn` elementwise to all values in this TimeSeries.
+        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied elementwise.
+        If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tuples.
+
+        At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        fn
+            Either a function which takes a value and returns a value ie. `f(x) = y`
+            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`
+            The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
+            or an integer otherwise (if the series is indexed with a RangeIndex).
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance
+        """
+        if not isinstance(fn, Callable):
+            raise_log(TypeError("fn should be callable"), logger)
+
+        if isinstance(fn, np.ufunc):
+            if fn.nin == 1 and fn.nout == 1:
+                num_args = 1
+            elif fn.nin == 2 and fn.nout == 1:
+                num_args = 2
+            else:
+                raise_log(ValueError("fn must have either one or two arguments and return a single value"), logger)
+        else:
+            try:
+                num_args = len(signature(fn).parameters)
+            except ValueError:
+                raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
+                          logger)
+
+        if num_args == 1:  # simple map function f(x)
+            df = self.pd_dataframe().applymap(fn)
+        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
+            def apply_fn_wrapper(row):
+                timestamp = row.name
+                return row.map(lambda x: fn(timestamp, x))
+            df = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
+        else:
+            raise_log(ValueError("fn must have either one or two arguments"), logger)
+
+        return TimeSeries.from_dataframe(df)
+
+    def to_json(self) -> str:
+        """
+        Converts the `TimeSeries` object to a JSON String
+
+        At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+
+        Returns
+        -------
+        str
+            A JSON String representing the time series
+        """
+        return self.pd_dataframe().to_json(orient='split', date_format='iso')
+
