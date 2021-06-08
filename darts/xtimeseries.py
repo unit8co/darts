@@ -194,6 +194,10 @@ class TimeSeries:
         return len(self._xa.component)
 
     @property
+    def width(self):
+        return self.n_components
+
+    @property
     def n_timesteps(self):
         return len(self._xa.time)
 
@@ -242,6 +246,13 @@ class TimeSeries:
         return self._time_index.copy()
 
     @property
+    def has_datetime_index(self) -> bool:
+        """
+        Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with a RangeIndex)
+        """
+        return self._has_datetime_index
+
+    @property
     def duration(self) -> Union[pd.Timedelta, int]:
         """
         Returns
@@ -286,6 +297,22 @@ class TimeSeries:
     Export functions
     ================
     """
+
+    def data_array(self, copy=True) -> xr.DataArray:
+        """
+        Returns the xarray DataArray representation of this time series.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        pandas.Series
+            The xarray DataArray underlying this time series.
+        """
+        return self._xa.copy() if copy else self._xa
 
     def pd_series(self, copy=True) -> pd.Series:
         """
@@ -836,3 +863,194 @@ class TimeSeries:
         new_series = coef * self._xa
         return TimeSeries(new_series)
 
+    def shift(self, n: int) -> 'TimeSeries':
+        """
+        Shifts the time axis of this TimeSeries by `n` time steps.
+
+        If :math:`n > 0`, shifts in the future. If :math:`n < 0`, shifts in the past.
+
+        For example, with :math:`n=2` and `freq='M'`, March 2013 becomes May 2013.
+        With :math:`n=-2`, March 2013 becomes Jan 2013.
+
+        Parameters
+        ----------
+        n
+            The number of time steps to shift by. Can be negative.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, with a shifted index.
+        """
+        try:
+            self._time_index[-1] + n * self.freq
+        except pd.errors.OutOfBoundsDatetime:
+            raise_log(OverflowError("the add operation between {} and {} will "
+                                    "overflow".format(n * self.freq, self.time_index[-1])), logger)
+        new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+        new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
+        return TimeSeries(new_xa)
+
+    def diff(self,
+             n: Optional[int] = 1,
+             periods: Optional[int] = 1) -> 'TimeSeries':
+        """
+        Returns a differenced time series. This is often used to make a time series stationary.
+
+        Parameters
+        ----------
+        n
+            Optionally, a positive integer indicating the number of differencing steps (default = 1).
+        periods
+            Optionally, periods to shift for calculating difference.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed after differencing.
+        """
+        if not isinstance(n, int) or n < 1:
+             raise_log(ValueError("'n' must be a positive integer >= 1."))
+        if not isinstance(periods, int) or periods < 1:
+             raise_log(ValueError("'periods' must be an integer >= 1."))
+
+        new_xa = self._xa.diff(dim=self._time_dim, n=periods)
+        for _ in range(n-1):
+            new_xa = new_xa.diff(dim=self._time_dim, n=periods)
+        return TimeSeries(new_xa)
+
+    def has_same_time_as(self, other: 'TimeSeries') -> bool:
+        """
+        Checks whether this TimeSeries and another one have the same time index.
+
+        Parameters
+        ----------
+        other
+            the other series
+
+        Returns
+        -------
+        bool
+            True if both TimeSeries have the same index, False otherwise.
+        """
+        return (other.time_index == self.time_index).all()
+
+    def append(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Appends another TimeSeries to this TimeSeries.
+
+        Parameters
+        ----------
+        other
+            A second TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, obtained by appending the second TimeSeries to the first.
+        """
+        raise_if_not(other.has_datetime_index == self.has_datetime_index,
+                     'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).')
+        raise_if_not(other.freq == self.freq,
+                     'Appended TimeSeries must have the same frequency as the current one', logger)
+        if self._has_datetime_index:
+            raise_if_not(other.start_time() == self.end_time() + self.freq,
+                         'Appended TimeSeries must start one time step after current one.', logger)
+
+        other_xa = other.data_array()
+
+        # TODO: could we just remove this constraint and rename the dimension if needed
+        raise_if_not(other_xa.dims[0] != self._time_dim,
+                     'Both time series must have the same name for the time dimensions.')
+
+        new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
+        if not self._has_datetime_index:
+            new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
+
+        return TimeSeries(new_xa)
+
+    def append_values(self,
+                      values: np.ndarray,
+                      index: pd.DatetimeIndex = None) -> 'TimeSeries':
+        """
+        Appends values to current TimeSeries, to the given indices.
+
+        If no index is provided, assumes that it follows the original data.
+
+        Parameters
+        ----------
+        values
+            An array with the values to append.
+        index
+            A `pandas.DateTimeIndex` for the new values (optional)
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the new values appended
+        """
+        # TODO: needed?
+        raise NotImplementedError()
+
+    def update(self,
+               index: pd.DatetimeIndex,
+               values: np.ndarray = None) -> 'TimeSeries':
+        """
+        Updates the TimeSeries with the new values provided.
+        If indices are not in original TimeSeries, they will be discarded.
+        Use `numpy.nan` to ignore a specific index in a series.
+
+        Parameters
+        ----------
+        index
+            A `pandas.DateTimeIndex` containing the indices to replace.
+        values
+            An array containing the values to replace (optional).
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with updated values.
+        """
+        # TODO: I don't think this is needed... probably better to just create a new TimeSeries
+        raise NotImplementedError()
+
+    def stack(self, other: 'TimeSeries') -> 'TimeSeries':
+        """
+        Stacks another univariate or multivariate TimeSeries with the same time index on top of
+        the current one and returns the newly formed multivariate TimeSeries that includes
+        all the components of `self` and of `other`.
+
+        Parameters
+        ----------
+        other
+            A TimeSeries instance with the same index as the current one.
+
+        Returns
+        -------
+        TimeSeries
+            A new multivariate TimeSeries instance.
+        """
+        raise_if_not(self.has_same_time_as(other), 'The indices of the two TimeSeries instances '
+                     'must be equal', logger)
+
+        new_xa = xr.concat([self._xa, other.data_array(copy=False)], dim=DIMS[1])
+        return TimeSeries(new_xa)
+
+    def univariate_component(self, index: Union[str, int]) -> 'TimeSeries':
+        """
+        Retrieves one of the components of the current TimeSeries instance
+        and returns it as new univariate TimeSeries instance.
+
+        Parameters
+        ----------
+        index
+            An zero-indexed integer indicating which component to retrieve.
+
+        Returns
+        -------
+        TimeSeries
+            A new univariate TimeSeries instance.
+        """
+        new_xa = self._xa.isel(component=index) if isinstance(index, int) else self._xa.sel(component=index)
+        return TimeSeries(new_xa)
