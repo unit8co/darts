@@ -1289,7 +1289,9 @@ class TimeSeries:
             if i > 0:
                 kwargs['figure'] = plt.gcf()
             if 'label' in kwargs:
-                kwargs['label'] = (label + '_' if label is not None else '') + str(comp_name)
+                kwargs['label'] = label + '_' + str(comp_name)
+            else:
+                kwargs['label'] = str(comp_name)
 
             comp = self._xa.sel(component=c)
 
