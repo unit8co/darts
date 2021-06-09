@@ -1243,6 +1243,9 @@ class TimeSeries:
 
     def plot(self,
              new_plot: bool = False,
+             central_quantile: Union[float, str] = 0.5,
+             confidence_low_quantile: Optional[float] = 0.05,
+             confidence_high_quantile: Optional[float] = 0.95,
              *args,
              **kwargs):
         """
@@ -1257,20 +1260,63 @@ class TimeSeries:
         kwargs
             some keyword arguments for the `plot()` method
         """
-        raise_if(self.n_components > 15, "Current TimeSeries instance contains too many components to plot.", logger)
+        colors = ['black', 'blue', 'magenta', 'mediumturquoise', 'green', 'darkorange', 'red']
+        alpha_confidence_intvls = 0.25
+
+        if central_quantile != 'mean':
+            raise_if_not(isinstance(central_quantile, float) and 0. <= central_quantile <= 1.,
+                         'central_quantile must be either "mean", or a float between 0 and 1.')
+
+        if confidence_high_quantile is not None and confidence_low_quantile is not None:
+            raise_if_not(0. <= confidence_low_quantile <= 1. and 0. <= confidence_high_quantile <= 1.,
+                         'confidence interval low and high quantiles must be between 0 and 1.')
+
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
         label = kwargs['label'] if 'label' in kwargs else None
-        for i in range(self.n_components):
+
+        if 'lw' not in kwargs:
+            kwargs['lw'] = 2
+
+        if self.n_components > 7:
+            logger.warn('Number of components is larger than 7 ({}). Plotting only the first 15 components.'.format(
+                self.n_components
+            ))
+
+        for i, c in enumerate(self._xa.component[:7]):
+            comp_name = str(c.values)
+
             if i > 0:
                 kwargs['figure'] = plt.gcf()
-                if 'label' in kwargs:
-                    kwargs['label'] = (label + '_' if label is not None else '') + str(self._xa.component.values[i])
-                    
-            # TODO: support multi-samples
-            self.univariate_component(i).pd_series().plot(*args, **kwargs)
-                
-        x_label = self.time_index.name
-        if x_label is not None and len(x_label) > 0:
-            plt.xlabel(x_label)
+            if 'label' in kwargs:
+                kwargs['label'] = (label + '_' if label is not None else '') + str(comp_name)
 
+            comp = self._xa.sel(component=c)
+
+            if comp.sample.size > 1:
+                if confidence_low_quantile is not None and confidence_high_quantile is not None:
+                    low_series = comp.quantile(q=confidence_low_quantile, dim=DIMS[2])
+                    high_series = comp.quantile(q=confidence_high_quantile, dim=DIMS[2])
+                    color = kwargs['color'] if 'color' in kwargs else colors[i % len(colors)]
+                    plt.fill_between(self.time_index, low_series, high_series, color=color,
+                                     alpha=(alpha_confidence_intvls if 'alpha' not in kwargs else kwargs['alpha']))
+
+                if central_quantile == 'mean':
+                    central_series = comp.mean(dim=DIMS[2])
+                else:
+                    central_series = comp.quantile(q=central_quantile, dim=DIMS[2])
+
+            else:
+                central_series = comp.mean(dim=DIMS[2])
+
+            if 'color' not in kwargs:
+                kwargs['color'] = colors[i % len(colors)]
+
+            # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
+            alpha = kwargs['alpha'] if 'alpha' in kwargs else None
+            kwargs['alpha'] = 1
+            central_series.plot(*args, **kwargs)
+            kwargs['alpha'] = alpha if alpha is not None else alpha_confidence_intvls
+
+        plt.legend()
+        plt.title(self._xa.name);
