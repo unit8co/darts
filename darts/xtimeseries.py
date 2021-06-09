@@ -1255,6 +1255,19 @@ class TimeSeries:
         ----------
         new_plot
             whether to spawn a new Figure
+        central_quantile
+            The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
+            it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
+            of the components' marginal distributions). For instance, setting `central_quantile=0.5` will plot the
+            median of each component. `central_quantile` can also be set to 'mean'.
+        confidence_low_quantile
+            The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
+            this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+            interval is shown if `confidence_low_quantile` is None (default 0.05).
+        confidence_high_quantile
+            The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
+            this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+            interval is shown if `confidence_high_quantile` is None (default 0.95).
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -1322,3 +1335,4 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name);
+
