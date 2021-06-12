@@ -1548,4 +1548,50 @@ class TimeSeries:
     def __deepcopy__(self):
         return TimeSeries(self._xa.copy())
 
-    
+    def __getitem__(self,
+                    key: Union[pd.DatetimeIndex,
+                               pd.RangeIndex,
+                               List[str],
+                               List[int],
+                               List[pd.Timestamp],
+                               str,
+                               int,
+                               pd.Timestamp,
+                               Any]) -> 'TimeSeries':
+        """Allow indexing on darts TimeSeries.
+
+        The supported index types are the following base types as a single value, a list or a slice:
+        - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
+        - str -> return a TimeSeries including the column(s) specified as str.
+        - int -> return a TimeSeries with the value(s) at the given row index.
+
+        `pd.DatetimeIndex` is also supported and will return the corresponding value(s) at the provided time indices.
+
+        .. warning::
+            slices use pandas convention of including both ends of the slice.
+
+        """
+        if isinstance(key, pd.DatetimeIndex):
+            raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex, '
+                                                   'but the series uses a RangeIndex.')
+            # if any(elem not in self.time_index for elem in key):
+            #     raise_log(IndexError("None of the index element is in the TimeSeries"), logger)
+            return TimeSeries(self._xa.sel({self._time_dim: key}))
+        elif isinstance(key, pd.RangeIndex):
+            raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
+                                               'but the series uses a DatetimeIndex.')
+            return TimeSeries(self._xa.sel({self._time_dim: key}))
+
+        elif isinstance(key, slice):
+            # TODO: need specific support for ints and pd.Timestamp?
+            return TimeSeries(self._xa.__getitem__(key))
+        elif isinstance(key, str) or (isinstance(key, list) and all(isinstance(s, str) for s in key)):
+            # when string(s) are provided, we consider it as (a list of) component(s)
+            return TimeSeries(self._xa.sel({DIMS[1]: key}))
+        elif isinstance(key, int) or (isinstance(key, list) and all(isinstance(i, int) for i in key)):
+            return TimeSeries(self._xa.isel({self._time_dim: key}))
+        elif isinstance(key, pd.Timestamp) or (isinstance(key, list) and all(isinstance(t, pd.Timestamp) for t in key)):
+            return TimeSeries(self._xa.sel({self._time_dim: key}))
+
+        raise_log(IndexError("The type of your index was not matched."), logger)
+        
