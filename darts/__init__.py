@@ -3,7 +3,7 @@ darts
 -----
 """
 
-from .xtimeseries import TimeSeries
+from .timeseries import TimeSeries
 import matplotlib as mpl
 from matplotlib import cycler
 
