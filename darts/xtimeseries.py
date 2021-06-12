@@ -1053,6 +1053,8 @@ class TimeSeries:
         """
         raise_if_not(self.has_same_time_as(other), 'The indices of the two TimeSeries instances '
                      'must be equal', logger)
+        raise_if_not(self.n_samples == other.n_samples, 'Two series can be stacked only if they '
+                                                        'have the same number of samples.')
 
         new_xa = xr.concat([self._xa, other.data_array(copy=False)], dim=DIMS[1])
         return TimeSeries(new_xa)
@@ -1065,7 +1067,8 @@ class TimeSeries:
         Parameters
         ----------
         index
-            An zero-indexed integer indicating which component to retrieve.
+            An zero-indexed integer indicating which component to retrieve. If components have names,
+            this can be a string with the component's name.
 
         Returns
         -------
@@ -1083,6 +1086,8 @@ class TimeSeries:
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
 
+        This works only for deterministic time series (i.e., made of 1 sample).
+
         Parameters
         ----------
         attribute
@@ -1096,6 +1101,7 @@ class TimeSeries:
         TimeSeries
             New TimeSeries instance enhanced by `attribute`.
         """
+        self._assert_deterministic()
         from .utils import timeseries_generation as tg
         return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
 
@@ -1108,6 +1114,8 @@ class TimeSeries:
         corresponds to selected country's holiday, and 0 otherwise. The frequency of the TimeSeries is daily.
 
         Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+
+        This works only for deterministic time series (i.e., made of 1 sample).
 
         Parameters
         ----------
@@ -1123,6 +1131,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries instance, enhanced with binary holiday component.
         """
+        self._assert_deterministic()
         from .utils import timeseries_generation as tg
         return self.stack(tg.holidays_timeseries(self.time_index, country_code, prov, state))
 
@@ -1336,3 +1345,207 @@ class TimeSeries:
         plt.legend()
         plt.title(self._xa.name);
 
+    """
+    Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
+    """
+
+    def mean(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).mean(axis, skipna, level, numeric_only, **kwargs)
+
+    def var(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).var(axis, skipna, level, ddof, numeric_only, **kwargs)
+
+    def std(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).std(axis, skipna, level, ddof, numeric_only, **kwargs)
+
+    def skew(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).skew(axis, skipna, level, numeric_only, **kwargs)
+
+    def kurtosis(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).kurtosis(axis, skipna, level, numeric_only, **kwargs)
+
+    def min(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).min(axis, skipna, level, numeric_only, **kwargs)
+
+    def max(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).max(axis, skipna, level, numeric_only, **kwargs)
+
+    def sum(self, axis=None, skipna=None, level=None, numeric_only=None, min_count=0, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).sum(axis, skipna, level, numeric_only, min_count, **kwargs)
+
+    def median(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        return self.pd_dataframe(copy=False).median(axis, skipna, level, numeric_only, **kwargs)
+
+    def autocorr(self, lag=1) -> float:
+        return self.pd_dataframe(copy=False).autocorr(lag)
+
+    def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
+        return self.pd_dataframe(copy=False).describe(percentiles, include, exclude)
+
+    """
+    Dunder methods
+    """
+
+    #
+    def _combine_arrays(self,
+                        other: Union['TimeSeries', xr.DataArray, np.ndarray],
+                        combine_fn: Callable[[np.ndarray, np.ndarray], np.ndarray]) -> 'TimeSeries':
+        """
+        This is a helper function that allows us to combine this series with another one,
+        directly applying an operation on their underlying numpy arrays.
+        """
+
+        if isinstance(other, TimeSeries):
+            other_vals = other.data_array(copy=False).values
+        elif isinstance(other, xr.DataArray):
+            other_vals = other.values
+        else:
+            other_vals = other
+
+        raise_if_not(self._xa.values.shape == other_vals.shape, 'Attempted to perform operation on two TimeSeries '
+                                                                'of unequal shapes.')
+        new_xa = self._xa.copy()
+        new_xa.values = combine_fn(new_xa.values, other_vals)
+        return TimeSeries(new_xa)
+
+    def __eq__(self, other):
+        if isinstance(other, TimeSeries):
+            return self._xa.equals(other.data_array(copy=False))
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __len__(self):
+        return len(self._xa)
+
+    def __add__(self, other):
+        if isinstance(other, (int, float, np.integer)):
+            return TimeSeries(self._xa + other)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 + s2)
+        else:
+            raise_log(TypeError('unsupported operand type(s) for + or add(): \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        if isinstance(other, (int, float, np.integer)):
+            return TimeSeries(self._xa - other)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 - s2)
+        else:
+            raise_log(TypeError('unsupported operand type(s) for - or sub(): \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float, np.integer)):
+            return TimeSeries(self._xa * other)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 * s2)
+        else:
+            raise_log(TypeError('unsupported operand type(s) for * or mul(): \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __pow__(self, n):
+        if isinstance(n, (int, float, np.integer)):
+            raise_if(n < 0, 'Attempted to raise a series to a negative power.')
+            return TimeSeries(self._xa ** float(n))
+        if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
+        else:
+            raise_log(TypeError('unsupported operand type(s) for ** or pow(): \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(n).__name__)), logger)
+
+    def __truediv__(self, other):
+        if isinstance(other, (int, float, np.integer)):
+            if other == 0:
+                raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
+            return TimeSeries(self._xa / other)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            # here we leave it up to Numpy to check and raise a 0 division error
+            return self._combine_arrays(other, lambda s1, s2: s1 / s2)
+        else:
+            raise_log(TypeError('unsupported operand type(s) for / or truediv(): \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+
+    def __rtruediv__(self, n):
+        return n * (self ** (-1))
+
+    def __abs__(self):
+        return TimeSeries(abs(self._xa))
+
+    def __neg__(self):
+        return TimeSeries(-self._xa)
+
+    def __contains__(self, ts: Union[int, pd.Timestamp]) -> bool:
+        return ts in self.time_index
+
+    def __round__(self, n=None):
+        return TimeSeries(self._xa.round(n))
+
+    def __lt__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            series = self._xa < other
+        elif isinstance(other, TimeSeries):
+            series = self._xa < other.data_array(copy=False)
+        else:
+            series = None
+            raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+        return series  # Note: we return a DataArray
+
+    def __gt__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            series = self._xa > other
+        elif isinstance(other, TimeSeries):
+            series = self._xa > other.data_array(copy=False)
+        else:
+            series = None
+            raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+        return series  # Note: we return a DataArray
+
+    def __le__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            series = self._xa <= other
+        elif isinstance(other, TimeSeries):
+            series = self._xa <= other.data_array(copy=False)
+        else:
+            series = None
+            raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+        return series  # Note: we return a DataArray
+
+    def __ge__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            series = self._xa >= other
+        elif isinstance(other, TimeSeries):
+            series = self._xa >= other.data_array(copy=False)
+        else:
+            series = None
+            raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
+                                .format(type(self).__name__, type(other).__name__)), logger)
+        return series  # Note: we return a DataArray
+
+    def __str__(self):
+        return str(self._xa)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __copy__(self, deep: bool = True):
+        return self.copy()
+
+    def __deepcopy__(self):
+        return TimeSeries(self._xa.copy())
+
+    
