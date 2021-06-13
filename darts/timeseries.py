@@ -48,12 +48,19 @@ class TimeSeries:
             raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
                                  'or with a RangeIndex.'))
 
-        self._xa: xr.DataArray = xa.sortby(self._time_dim)  # returns a copy
+        # The following sorting returns a copy, which we are relying on.
+        # Also, as of xarray 0.18.2, this sorting discards the freq of the index for some reason
+        # https://github.com/pydata/xarray/issues/5466
+        self._xa: xr.DataArray = xa.sortby(self._time_dim)
 
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
             self._freq: pd.DateOffset = self._time_index.freq
+
+            # reset freq inside the xarray index (see bug of sortby() above).
+            self._xa.get_index(self._time_dim).freq = self._freq
+
             self._freq_str: str = self._time_index.inferred_freq
         else:
             self._freq = 1
@@ -92,8 +99,10 @@ class TimeSeries:
         """
 
         # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
-        time_index = xa.get_index(xa.dims[0])
-        if fill_missing_dates and isinstance(time_index, pd.DatetimeIndex):
+        if fill_missing_dates and isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex):
+            sorted_xa = xa.sortby(xa.dims[0])
+            time_index = sorted_xa.get_index(xa.dims[0])
+
             if not freq:
                 samples_size = 3
                 observed_frequencies = [
@@ -113,7 +122,7 @@ class TimeSeries:
                 freq = observed_frequencies.pop()
 
             # TODO: test this
-            xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
+            xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
@@ -221,7 +230,7 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: pd.DatetimeIndex,
+    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
                               values: Union[np.ndarray, pd.DataFrame],
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
@@ -793,7 +802,7 @@ class TimeSeries:
         if isinstance(split_point, pd.Timestamp) or isinstance(split_point, int):
             self._raise_if_not_within(split_point)
         point_index = self.get_index_at_point(split_point)
-        return self[:point_index+(1 if after else 0)], self[point_index+(1 if after else 0):]  # TODO Check
+        return self[:point_index+(1 if after else 0)], self[point_index+(1 if after else 0):]
 
     def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
         """
@@ -1638,10 +1647,13 @@ class TimeSeries:
         return series  # Note: we return a DataArray
 
     def __str__(self):
-        return str(self._xa)
+        return str(self._xa).replace('xarray.DataArray', 'TimeSeries (DataArray)')
 
     def __repr__(self):
-        return self.__str__()
+        return self._xa.__repr__().replace('xarray.DataArray', 'TimeSeries (DataArray)')
+
+    def _repr_html_(self):
+        return self._xa._repr_html_().replace('xarray.DataArray', 'TimeSeries (DataArray)')
 
     def __copy__(self, deep: bool = True):
         return self.copy()
