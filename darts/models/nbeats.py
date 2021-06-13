@@ -3,9 +3,10 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List
+from typing import NewType, Union, List, Optional
 from enum import Enum
 import numpy as np
+from numpy.random import RandomStatecle
 import torch
 import torch.nn as nn
 
@@ -359,6 +360,7 @@ class NBEATSModel(TorchForecastingModel):
                  layer_widths: Union[int, List[int]] = 256,
                  expansion_coefficient_dim: int = 5,
                  trend_polynomial_degree: int = 2,
+                 random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
