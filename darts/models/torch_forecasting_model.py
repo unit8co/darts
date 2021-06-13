@@ -544,7 +544,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     # update predictions depending on whether we have reached the last one or not
                     if prediction_length < n - self.output_chunk_length:
-                        batch_prediction.append(out[:roll_size])
+                        batch_prediction.append(out[:, :roll_size, :])
                         prediction_length += roll_size
                     else:
                         batch_prediction.append(out)
