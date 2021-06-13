@@ -56,7 +56,7 @@ if TORCH_AVAILABLE:
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
                 mape_err = mape(self.ts_pass_val, pred)
@@ -65,7 +65,7 @@ if TORCH_AVAILABLE:
 
         def test_multi_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
@@ -85,11 +85,8 @@ if TORCH_AVAILABLE:
 
         def test_covariates(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-                if model_cls == NBEATSModel:
-                    # N-BEATS does not support multivariate
-                    continue
 
-                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
                 model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
                           covariates=[self.time_covariates_train, self.time_covariates_train])
                 with self.assertRaises(ValueError):
@@ -97,17 +94,21 @@ if TORCH_AVAILABLE:
                     model.predict(n=1)
 
                 with self.assertRaises(ValueError):
-                    # when model is fit using covariates, covariates are required at prediction time
+                    # when model is fit using multiple covariates, covariates are required at prediction time
                     model.predict(n=1, series=self.ts_pass_train)
 
                 with self.assertRaises(ValueError):
-                    # when model is fit using covariates, n cannot be greater than output_chunk_length
-                    model.predict(n=13, series=self.ts_pass_train)
+                    # when model is fit using covariates, n cannot be greater than output_chunk_length...
+                    model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates_train)
+
+                # ... unless future covariates are provided
+                model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
 
                 pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
+
                 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
@@ -119,6 +120,21 @@ if TORCH_AVAILABLE:
                 self.assertEqual(pred1, pred2)
                 self.assertEqual(pred1, pred3)
                 self.assertEqual(pred1, pred4)
+
+        def test_future_covariates(self):
+            # models with future covariates should produce better predictions over a long forecasting horizon
+            # than a model trained with no covariates
+            model = TCNModel(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, n_epochs=10)
+
+            model.fit(series=[self.ts_pass_train, self.ts_pass_train_1])
+            long_pred_no_cov = model_no_cov.predict(n=36, series=self.ts_pass_train)
+            long_pred_with_cov = model.predict(n=36, series=self.ts_pass_train, covariates=self.time_covariates)
+
+            model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
+                          covariates=[self.time_covariates_train, self.time_covariates_train])
+            print(mape(self.ts_pass_val, long_pred_no_cov), mape(self.ts_pass_val, long_pred_with_cov))
+            self.assertTrue(mape(self.ts_pass_val, long_pred_no_cov) > mape(self.ts_pass_val, long_pred_with_cov),
+                            'Models with future covariates should produce better predictions.')
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed
