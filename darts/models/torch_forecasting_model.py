@@ -279,8 +279,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_covariates = wrap_fn(val_covariates)
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
 
-        self.tgt_series_width = series.width if isinstance(series, TimeSeries) else series[0].width 
-
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
             train_set_dim = (series[0].width + (0 if covariates is None else covariates[0].width))
@@ -525,17 +523,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, :self.tgt_series_width] = out[:, :roll_size, :] 
+                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
                     else:
-                        batch[:, :, :self.tgt_series_width] = out[:, -self.input_chunk_length:, :]
+                        batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include next `roll_size` predictions into the future
                     if cov_future is not None  and self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, self.tgt_series_width:] = (
+                        batch[:, -roll_size:, self.output_dim:] = (
                             cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
                         )
                     elif cov_future is not None:
-                        batch[:, :, self.tgt_series_width:] = (
+                        batch[:, :, self.output_dim:] = (
                             cov_future[batch_idx, prediction_length-self.input_chunk_length:prediction_length , :]
                         )
 
@@ -629,12 +627,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # handle future covariates
                 if n > self.output_chunk_length:
+                    # check that enough future covariates are available and keep only necessary ones
+                    raise_if_not(covariate_series.end_time() >= target_series.end_time() + n * target_series.freq(),
+                                'All covariates must be known `n` time steps into the future')
                     # drop past covariates (already used)
                     cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq()).values(copy=False)
-
-                    # check that enough future covariates are available and keep only necessary ones
-                    raise_if_not(len(cov_future) >= n,
-                                'All covariates must be known `n` time steps into the future')
                     cov_future = cov_future[:n]
                     cov_future = torch.from_numpy(cov_future).float().to(self.device)
                     cov_future = cov_future.view(1, n, -1)
