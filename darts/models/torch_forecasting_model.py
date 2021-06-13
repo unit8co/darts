@@ -366,7 +366,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         or after the end of the specified `series`.
 
         If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last `output_chunk_length` forecast points as
+        auto-regressive way, by iteratively feeding the last `roll_size` forecast points as
         inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
@@ -395,7 +395,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size
             For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
             outputs of the model are fed back into it at every iteration of feeding the predicted target
-            (and optionally future covariates) back into the model.
+            (and optionally future covariates) back into the model. If this parameter is not provided,
+            it will be set `self.output_chunk_length` by default.
 
         Returns
         -------
@@ -440,7 +441,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ``input_series_dataset``.
 
         If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last ``output_chunk_length`` forecast points as
+        auto-regressive way, by iteratively feeding the last ``roll_size`` forecast points as
         inputs to the model until a forecast of length ``n`` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n` into the future. In other words, if `n` is larger than `output_chunk_length`
@@ -466,7 +467,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size
             For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
             outputs of the model are fed back into it at every iteration of feeding the predicted target
-            (and optionally future covariates) back into the model.
+            (and optionally future covariates) back into the model. If this parameter is not provided,
+            it will be set `self.output_chunk_length` by default.
 
         Returns
         -------
@@ -478,7 +480,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if roll_size is None:
             roll_size = self.output_chunk_length
         else:
-            raise_if_not(roll_size <= self.output_chunk_length and roll_size > 0,
+            raise_if_not(0 < roll_size <= self.output_chunk_length,
                          '`roll_size` must be an integer between 1 and `self.output_chunk_length`')
 
         # check input data type
