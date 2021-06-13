@@ -444,7 +444,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         auto-regressive way, by iteratively feeding the last ``roll_size`` forecast points as
         inputs to the model until a forecast of length ``n`` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
-        `n` into the future. In other words, if `n` is larger than `output_chunk_length`
+        `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
         then covariates need to be available in the future.
 
         If some series in the ``input_series_dataset`` have more time steps than the model was trained with,
@@ -515,7 +515,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
                 out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
-                batch_prediction.append(out[:roll_size])
+                batch_prediction.append(out[:, :roll_size, :])
                 prediction_length = roll_size
 
                 while prediction_length < n:
@@ -530,7 +530,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include next `roll_size` predictions into the future
-                    if cov_future is not None  and self.input_chunk_length >= roll_size:
+                    if cov_future is not None and self.input_chunk_length >= roll_size:
                         batch[:, -roll_size:, self.output_dim:] = (
                             cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
                         )
@@ -542,8 +542,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     # take only last part of the output sequence where needed
                     out = self.model(batch)[:, self.first_prediction_index:, :]
 
-                    # update predictions depending on whether we have reached the last one or not
-                    if prediction_length < n - self.output_chunk_length:
+                    # update predictions depending on how many data points have been predicted
+                    if prediction_length <= n - self.output_chunk_length - roll_size:
+                        batch_prediction.append(out[:, :roll_size, :])
+                        prediction_length += roll_size
+                    elif prediction_length < n - self.output_chunk_length:
+                        # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
+                        # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
+                        # so that the final forecast produces exactly the right number of predictions to reach `n`
+                        spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
+                        roll_size -= spillover_prediction_length
                         batch_prediction.append(out[:, :roll_size, :])
                         prediction_length += roll_size
                     else:
@@ -630,13 +638,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 # handle future covariates
                 if n > self.output_chunk_length:
                     # check that enough future covariates are available and keep only necessary ones
-                    raise_if_not(covariate_series.end_time() >= target_series.end_time() + n * target_series.freq(),
-                                'All covariates must be known `n` time steps into the future')
+                    last_required_future_covariate_ts = (
+                        target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
+                    )
+                    raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
+                                'All covariates must be known `n - output_chunk_length` time steps into the future')
+
                     # drop past covariates (already used)
                     cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq()).values(copy=False)
-                    cov_future = cov_future[:n]
+                    cov_future = cov_future[:n - self.output_chunk_length]
                     cov_future = torch.from_numpy(cov_future).float().to(self.device)
-                    cov_future = cov_future.view(1, n, -1)
+                    cov_future = cov_future.view(1, n - self.output_chunk_length, -1)
                     cov_future_arr.append(cov_future)
 
 
