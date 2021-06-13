@@ -124,16 +124,28 @@ if TORCH_AVAILABLE:
         def test_future_covariates(self):
             # models with future covariates should produce better predictions over a long forecasting horizon
             # than a model trained with no covariates
-            model = TCNModel(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, n_epochs=10)
+            ts_length = 400
+            split_ratio = 0.6
+            sine_1_ts = tg.sine_timeseries(length=ts_length)
+            sine_2_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.05)
+            sine_3_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.003, value_amplitude=5)
+            linear_ts = tg.linear_timeseries(length=ts_length, start_value=3, end_value=8)
 
-            model.fit(series=[self.ts_pass_train, self.ts_pass_train_1])
-            long_pred_no_cov = model_no_cov.predict(n=36, series=self.ts_pass_train)
-            long_pred_with_cov = model.predict(n=36, series=self.ts_pass_train, covariates=self.time_covariates)
 
-            model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
-                          covariates=[self.time_covariates_train, self.time_covariates_train])
-            print(mape(self.ts_pass_val, long_pred_no_cov), mape(self.ts_pass_val, long_pred_with_cov))
-            self.assertTrue(mape(self.ts_pass_val, long_pred_no_cov) > mape(self.ts_pass_val, long_pred_with_cov),
+            covariates = sine_3_ts.stack(sine_2_ts).stack(linear_ts)
+            covariates_past, covariates_future = covariates.split_after(split_ratio)
+
+            target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
+            target_past, target_future = target.split_after(split_ratio)
+            model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
+
+            model.fit(series=target_past)
+            long_pred_no_cov = model.predict(n=160)
+
+            model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
+            model.fit(series=target_past, covariates=covariates_past)
+            long_pred_with_cov = model.predict(n=160, series=target_past, covariates=covariates)
+            self.assertTrue(mape(target_future, long_pred_no_cov) > mape(target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
         def test_predict_from_dataset_unsupported_input(self):

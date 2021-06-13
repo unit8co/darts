@@ -6,7 +6,7 @@ N-BEATS
 from typing import NewType, Union, List, Optional
 from enum import Enum
 import numpy as np
-from numpy.random import RandomStatecle
+from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
