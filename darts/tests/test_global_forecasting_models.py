@@ -144,9 +144,16 @@ if TORCH_AVAILABLE:
 
             model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
             model.fit(series=target_past, covariates=covariates_past)
-            long_pred_with_cov = model.predict(n=160, series=target_past, covariates=covariates)
+            long_pred_with_cov = model.predict(n=160, covariates=covariates)
             self.assertTrue(mape(target_future, long_pred_no_cov) > mape(target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
+
+            # models can predict up to self.output_chunk_length points beyond the last future covariate...
+            model.predict(n=165, covariates=covariates)
+
+            # ... not more
+            with self.assertRaises(ValueError):
+                model.predict(n=166, series=self.ts_pass_train)
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed
