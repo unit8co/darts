@@ -847,6 +847,12 @@ class TimeSeries:
         """
         return self._split_at(split_point, after=False)
 
+    def drop_after(self, split_point: Union[pd.Timestamp, float, int]):
+        return self.split_after(split_point)[1]
+
+    def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
+        return self.split_before(split_point)[0]
+
     def slice(self):
         pass
         # TODO: needed, or can be addressed using [] only?
@@ -1091,7 +1097,7 @@ class TimeSeries:
         other_xa = other.data_array()
 
         # TODO: could we just remove this constraint and rename the dimension if needed
-        raise_if_not(other_xa.dims[0] != self._time_dim,
+        raise_if_not(other_xa.dims[0] == self._time_dim,
                      'Both time series must have the same name for the time dimensions.')
 
         new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
