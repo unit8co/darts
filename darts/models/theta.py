@@ -217,8 +217,6 @@ class FourTheta(ForecastingModel):
 
     def fit(self, series):
         super().fit(series)
-        # Check univariate time series
-        series._assert_univariate()
 
         self.length = len(series)
         # normalization of data
