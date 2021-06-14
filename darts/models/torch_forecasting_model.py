@@ -361,8 +361,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer(epochs > 0)
 
+
+        # if user wants to train the model for more epochs, ignore the n_epochs parameter
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
+
         # Train model
-        self._train(train_loader, val_loader, tb_writer, verbose, epochs)
+        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -580,11 +584,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         best_loss = np.inf
 
-        # if user wants to train the model for more epochs, ignore the n_epochs parameter
-        train_num_epochs = epochs if epochs > 0 else self.n_epochs
-
         iterator = _build_tqdm_iterator(
-            range(self.total_epochs, self.total_epochs + train_num_epochs),
+            range(self.total_epochs, self.total_epochs + epochs),
             verbose=verbose,
         )
 
