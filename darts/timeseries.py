@@ -4,7 +4,6 @@ Timeseries
 
 `TimeSeries` is the main class in `darts`. It represents a univariate or multivariate time series.
 It can represent a stochastic time series by storing several samples (trajectories).
-The sub-class `SampleTimeSeries` contains one sample (and is thus not stochastic).
 """
 
 import pandas as pd
@@ -42,24 +41,26 @@ class TimeSeries:
             raise_log(ValueError('The last two dimensions of the DataArray must be named {}'.format(DIMS[-2:])))
 
         self._time_dim = xa.dims[0]  # how the time dimension is named
-        self._time_index = xa.get_index(self._time_dim)
-
-        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
-            raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
-                                 'or with a RangeIndex.'))
 
         # The following sorting returns a copy, which we are relying on.
         # Also, as of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         self._xa: xr.DataArray = xa.sortby(self._time_dim)
 
+        self._time_index = self._xa.get_index(self._time_dim)
+
+        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
+            raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
+                                 'or with a RangeIndex.'))
+
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
-            self._freq: pd.DateOffset = self._time_index.freq
+            freq_tmp = xa.get_index(self._time_dim).freq  # store original freq (see bug of sortby() above).
+            self._freq: pd.DateOffset = freq_tmp
 
             # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = self._freq
+            self._xa.get_index(self._time_dim).freq = freq_tmp
 
             self._freq_str: str = self._time_index.inferred_freq
         else:
