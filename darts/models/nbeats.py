@@ -317,6 +317,12 @@ class _NBEATSModule(nn.Module):
 
         self.stacks = nn.ModuleList(self.stacks_list)
 
+        # setting the last backcast "branch" to be not trainable (without next block/stack, it doesn't need to be
+        # backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored
+        # on this params (the last block backcast is not part of the final output of the net).
+        self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
+        self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
+
     def forward(self, x):
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
