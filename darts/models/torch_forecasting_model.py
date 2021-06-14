@@ -16,6 +16,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
+import time
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -104,7 +105,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-                 model_name: str = "torch_model_run_" + str(os.getpid()),
+                 model_name: str = None,
                  work_dir: str = os.getcwd(),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
@@ -140,7 +141,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         loss_fn
             PyTorch loss function used for training (default: `torch.nn.MSELoss()`).
         model_name
-            Name of the model. Used for creating the checkpoints and saving tensorboard data.
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+            the same time by different processes to share the same model_name). E.g.,
+            2021-06-14_09:53:32_torch_model_run_44607.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             (default: current working directory).
@@ -170,6 +175,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.output_chunk_length = output_chunk_length
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
+
+        if model_name is None:
+            current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+            model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
         self.work_dir = work_dir
