@@ -31,7 +31,10 @@ class TimeSeries:
         Wrapper around a (well formed) DataArray. Use the static factory methods to build instances unless
         you know what you are doing.
         """
-        raise_if_not(isinstance(xa, xr.DataArray), 'Data must be provided as an xarray DataArray instance.')
+        raise_if_not(isinstance(xa, xr.DataArray), 'Data must be provided as an xarray DataArray instance. '
+                                                   'If you need to create a TimeSeries from another type '
+                                                   '(e.g. a DataFrame), look at TimeSeries factory methods '
+                                                   '(e.g. TimeSeries.from_dataframe()).')
         raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS))
         raise_if_not(xa.size > 0, 'The time series array must not be empty.')
         raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numerical values only.')
@@ -145,10 +148,12 @@ class TimeSeries:
         df
             The DataFrame
         time_col
-            The time column name (mandatory). If set to `None`, the DataFrame index will be used.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
+            either a pandas DatetimeIndex or a pandas RangeIndex.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
-            `None` use the whole DataFrame.
+            `None`, the whole DataFrame will be used.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
@@ -231,7 +236,7 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
+    def from_times_and_values(times: Optional[Union[pd.DatetimeIndex, pd.RangeIndex]],
                               values: Union[np.ndarray, pd.DataFrame],
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
@@ -259,7 +264,8 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        df = pd.DataFrame(values, index=times)
+        idx = times if isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex) else None
+        df = pd.DataFrame(values, index=idx)
         if columns is not None:
             df.columns = columns
         return TimeSeries.from_dataframe(df,
@@ -382,6 +388,13 @@ class TimeSeries:
         Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with a RangeIndex)
         """
         return self._has_datetime_index
+
+    @property
+    def has_range_index(self) -> bool:
+        """
+        Whether this series is indexed with a RangeIndex (otherwise it is indexed with a DatetimeIndex)
+        """
+        return not self._has_datetime_index
 
     @property
     def duration(self) -> Union[pd.Timedelta, int]:
@@ -744,7 +757,7 @@ class TimeSeries:
                 return start - end
 
         gap_df['gap_size'] = gap_df.apply(
-            lambda row: intvl(start=row.gap_start, end=row.gap_end).size, axis=1
+            lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
         )
 
         return gap_df
@@ -1119,15 +1132,14 @@ class TimeSeries:
         values
             An array with the values to append.
         index
-            A `pandas.DateTimeIndex` for the new values (optional)
+            A `pandas.DateTimeIndex` or `pandas.RangeIndex` for the new values (optional)
 
         Returns
         -------
         TimeSeries
             A new TimeSeries with the new values appended
         """
-        # TODO: needed?
-        raise NotImplementedError()
+        return self.append(TimeSeries.from_times_and_values(values=values, times=index))
 
     def update(self,
                index: pd.DatetimeIndex,
@@ -1150,7 +1162,7 @@ class TimeSeries:
             A new TimeSeries with updated values.
         """
         # TODO: I don't think this is needed... probably better to just create a new TimeSeries
-        raise NotImplementedError()
+        raise NotImplementedError('TimeSeries.update() is not supported anymore.')
 
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -1350,6 +1362,7 @@ class TimeSeries:
                 return row.map(lambda x: fn(timestamp, x))
             df = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
         else:
+            df = None
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
         return TimeSeries.from_dataframe(df)
