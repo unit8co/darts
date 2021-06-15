@@ -713,7 +713,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             if tb_writer is not None:
                 for name, param in self.model.named_parameters():
-                    tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
+                    # if the param doesn't require gradient, then param.grad = None and param.grad.data will crash
+                    if param.requires_grad:
+                        tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
+
                 tb_writer.add_scalar("training/loss", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)

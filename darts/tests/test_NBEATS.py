@@ -68,4 +68,14 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(res), 3)
             self.assertTrue(abs(np.average(res)) < 5)
 
+        def test_logtensorboard(self):
+            ts = tg.constant_timeseries(length=50, value=10)
 
+            # testing if both the modes (generic and interpretable) runs with tensorboard
+            architectures = [True, False]
+            for architecture in architectures:
+                # Test basic fit and predict
+                model = NBEATSModel(input_chunk_length=1, output_chunk_length=1, n_epochs=1,
+                                    log_tensorboard=True, generic_architecture=architecture)
+                model.fit(ts)
+                model.predict(n=2)
