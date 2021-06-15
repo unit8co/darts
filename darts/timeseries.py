@@ -45,10 +45,17 @@ class TimeSeries:
 
         self._time_dim = xa.dims[0]  # how the time dimension is named
 
-        # The following sorting returns a copy, which we are relying on.
-        # Also, as of xarray 0.18.2, this sorting discards the freq of the index for some reason
-        # https://github.com/pydata/xarray/issues/5466
-        self._xa: xr.DataArray = xa.sortby(self._time_dim)
+        if isinstance(xa.get_index(self._time_dim), pd.DatetimeIndex):
+            # We only sort the xarray if it's indexed by time. That is because sorting with a RangeIndex
+            # transforms the RangeIndex into Int64Index, which messes up things afterwards.
+
+            # The following sorting returns a copy, which we are relying on.
+
+            # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
+            # https://github.com/pydata/xarray/issues/5466
+            self._xa: xr.DataArray = xa.sortby(self._time_dim)
+        else:
+            self._xa = xa.copy()
 
         self._time_index = self._xa.get_index(self._time_dim)
 
@@ -1425,7 +1432,8 @@ class TimeSeries:
 
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
-        label = kwargs['label'] if 'label' in kwargs else None
+        label = kwargs['label'] if 'label' in kwargs else ''
+        color = kwargs['color'] if 'color' in kwargs else None
 
         if 'lw' not in kwargs:
             kwargs['lw'] = 2
@@ -1440,10 +1448,6 @@ class TimeSeries:
 
             if i > 0:
                 kwargs['figure'] = plt.gcf()
-            if 'label' in kwargs:
-                kwargs['label'] = label + '_' + str(comp_name)
-            else:
-                kwargs['label'] = str(comp_name)
 
             comp = self._xa.sel(component=c)
 
@@ -1463,12 +1467,13 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            if 'color' not in kwargs:
-                kwargs['color'] = colors[i % len(colors)]
-
             # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs['alpha'] if 'alpha' in kwargs else None
             kwargs['alpha'] = 1
+            label_to_use = (label + '_') if label != '' else '' + str(comp_name)
+            kwargs['label'] = label_to_use
+            color_to_use = color if color is not None else colors[i % len(colors)]
+            kwargs['color'] = color_to_use
             central_series.plot(*args, **kwargs)
             kwargs['alpha'] = alpha if alpha is not None else alpha_confidence_intvls
 
