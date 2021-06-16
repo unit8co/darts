@@ -1709,26 +1709,37 @@ class TimeSeries:
             slices use pandas convention of including both ends of the slice.
 
         """
-        if isinstance(key, pd.DatetimeIndex):
-            raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex, '
+        def _check_dt():
+            raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex or a timestamp, '
                                                    'but the series uses a RangeIndex.')
-            # if any(elem not in self.time_index for elem in key):
-            #     raise_log(IndexError("None of the index element is in the TimeSeries"), logger)
-            return TimeSeries(self._xa.sel({self._time_dim: key}))
-        elif isinstance(key, pd.RangeIndex):
+
+        def _check_range():
             raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
                                                'but the series uses a DatetimeIndex.')
+
+        if isinstance(key, pd.DatetimeIndex):
+            _check_dt()
+            return TimeSeries(self._xa.sel({self._time_dim: key}))
+
+        elif isinstance(key, pd.RangeIndex):
+            _check_range()
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
         elif isinstance(key, slice):
             # TODO: need specific support for ints and pd.Timestamp?
             return TimeSeries(self._xa.__getitem__(key))
-        elif isinstance(key, str) or (isinstance(key, list) and all(isinstance(s, str) for s in key)):
+        elif isinstance(key, str):
+            return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
+        elif isinstance(key, list) and all(isinstance(s, str) for s in key):
             # when string(s) are provided, we consider it as (a list of) component(s)
             return TimeSeries(self._xa.sel({DIMS[1]: key}))
-        elif isinstance(key, int) or (isinstance(key, list) and all(isinstance(i, int) for i in key)):
+        elif isinstance(key, int):
+            return TimeSeries(self._xa.isel({self._time_dim: [key]}))
+        elif isinstance(key, list) and all(isinstance(i, int) for i in key):
             return TimeSeries(self._xa.isel({self._time_dim: key}))
-        elif isinstance(key, pd.Timestamp) or (isinstance(key, list) and all(isinstance(t, pd.Timestamp) for t in key)):
+        elif isinstance(key, pd.Timestamp):
+            return TimeSeries(self._xa.sel({self._time_dim: [key]}))
+        elif isinstance(key, list) and all(isinstance(t, pd.Timestamp) for t in key):
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
         raise_log(IndexError("The type of your index was not matched."), logger)
