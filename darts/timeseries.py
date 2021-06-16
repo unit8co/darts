@@ -286,10 +286,13 @@ class TimeSeries:
                     fill_missing_dates: Optional[bool] = True,
                     freq: Optional[str] = None,
                     columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+
         time_index = pd.RangeIndex(0, len(values), 1)
-        if len(values.shape) == 2:
+
+        if len(values.shape) <= 2:
+            values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
             return TimeSeries.from_times_and_values(times=time_index,
-                                                    values=values,
+                                                    values=values_,
                                                     fill_missing_dates=fill_missing_dates,
                                                     freq=freq,
                                                     columns=columns)
@@ -873,9 +876,34 @@ class TimeSeries:
     def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
         return self.split_before(split_point)[0]
 
-    def slice(self):
-        pass
-        # TODO: needed, or can be addressed using [] only?
+    def slice(self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]):
+        """
+        Returns a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.
+        The timestamps don't have to be in the series.
+
+        Parameters
+        ----------
+        start_ts
+            The timestamp that indicates the left cut-off.
+        end_ts
+            The timestamp that indicates the right cut-off.
+
+        Returns
+        -------
+        TimeSeries
+            A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
+        """
+        raise_if_not(type(start_ts) == type(end_ts), 'The two timestamps provided to slice() have to be of the '
+                                                     'same type.')
+        if isinstance(start_ts, pd.Timestamp):
+            raise_if_not(self._has_datetime_index, 'Timestamps have been provided to slice(), but the series is '
+                                                   'indexed using an integer-based RangeIndex.')
+            idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t <= end_ts, self._time_index))
+        else:
+            raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
+                                               'the series is indexed with a DatetimeIndex.')
+            idx = pd.RangeIndex(start_ts, end_ts, step=1)
+        return self[idx]
 
     def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
         """
@@ -1016,7 +1044,7 @@ class TimeSeries:
         """
 
         raise_if_not((self._xa[0, :, :] != 0).all(), 'Cannot rescale with first value 0.', logger)
-        coef = value_at_first_step / self._xa[0, :, :]
+        coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
         new_series = coef * self._xa
         return TimeSeries(new_series)
 
@@ -1039,11 +1067,16 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with a shifted index.
         """
+        if not isinstance(n, int):
+            logger.warning(f"TimeSeries.shift(): converting n to int from {n} to {int(n)}")
+            n = int(n)
+
         try:
             self._time_index[-1] + n * self.freq
         except pd.errors.OutOfBoundsDatetime:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq, self.time_index[-1])), logger)
+
         new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return TimeSeries(new_xa)
@@ -1293,7 +1326,7 @@ class TimeSeries:
             A reindexed TimeSeries with given frequency.
         """
 
-        resample = self._xa.resample(freq)
+        resample = self._xa.resample({self._time_dim: freq})
 
         # TODO: check
         if method == 'pad':
@@ -1738,8 +1771,10 @@ class TimeSeries:
         elif isinstance(key, list) and all(isinstance(i, int) for i in key):
             return TimeSeries(self._xa.isel({self._time_dim: key}))
         elif isinstance(key, pd.Timestamp):
+            _check_dt()
             return TimeSeries(self._xa.sel({self._time_dim: [key]}))
         elif isinstance(key, list) and all(isinstance(t, pd.Timestamp) for t in key):
+            _check_dt()
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
         raise_log(IndexError("The type of your index was not matched."), logger)

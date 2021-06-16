@@ -124,12 +124,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(len(seriesK), 5)
         test_case.assertEqual(len(seriesL), len(test_series) - 5)
 
-        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesC.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesE.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesG.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesI.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesK.freq_str())
+        test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesC.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesE.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesG.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesI.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesK.freq_str)
 
         # Test split points outside of range
         for value in [-5, 1.1, pd.Timestamp('21300104')]:
@@ -146,8 +146,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105') + test_series.freq)
         test_case.assertTrue(np.all(seriesB.time_index > pd.Timestamp('20130105')))
 
-        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesB.freq_str())
+        test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesB.freq_str)
 
     @staticmethod
     def helper_test_intersect(test_case, test_series: TimeSeries):
@@ -427,12 +427,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
         series_test = TimeSeries.from_series(pd.Series(range(9), index=range_))
-        self.assertEqual(series_test.freq_str(), 'D')
+        self.assertEqual(series_test.freq_str, 'D')
 
         range_ = pd.date_range('20130101', '20130104', freq='2D') \
             .append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries.from_series(pd.Series(range(5), index=range_))
-        self.assertEqual(series_test.freq_str(), '2D')
+        self.assertEqual(series_test.freq_str, '2D')
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
@@ -443,13 +443,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         timeseries = TimeSeries.from_series(pd_series)
 
         resampled_timeseries = timeseries.resample('H')
-        self.assertEqual(resampled_timeseries.freq_str(), 'H')
+        self.assertEqual(resampled_timeseries.freq_str, 'H')
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101020000')], 0)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130102020000')], 1)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109090000')], 8)
 
         resampled_timeseries = timeseries.resample('2D')
-        self.assertEqual(resampled_timeseries.freq_str(), '2D')
+        self.assertEqual(resampled_timeseries.freq_str, '2D')
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101')], 0)
         with self.assertRaises(KeyError):
             resampled_timeseries.pd_series().at[pd.Timestamp('20130102')]
