@@ -27,6 +27,7 @@ except ModuleNotFoundError:
 
 try:
     from .rnn_model import RNNModel
+    from .true_rnn_model import TrueRNNModel
     from .tcn_model import TCNModel
     from .nbeats import NBEATSModel
     from .transformer_model import TransformerModel

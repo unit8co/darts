@@ -90,7 +90,7 @@ class TimeSeriesTorchDataset(Dataset):
             return self._cat_with_optional(input_tgt, input_cov), output_tgt
 
         else:
-            raise ValueError('The dataset has to contain tuples of size 2 or 4')
+            raise ValueError('The dataset has to contain tuples of size 2 or 3')
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
@@ -374,8 +374,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
-        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last `roll_size` forecast points as
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
+        recurrent way, by iteratively feeding the last `roll_size` forecast points as
         inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
@@ -522,50 +522,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch_idx, batch in enumerate(iterator):
 
-                batch_prediction = []  # (num_batches, n % output_chunk_length)
-                out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length = roll_size
-
-                while prediction_length < n:
-
-                    # roll over input series to contain latest target and covariate
-                    batch = torch.roll(batch, -roll_size, 1)
-
-                    # update target input to include next `roll_size` predictions
-                    if self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
-                    else:
-                        batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
-
-                    # update covariates to include next `roll_size` predictions into the future
-                    if cov_future is not None and self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, self.output_dim:] = (
-                            cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
-                        )
-                    elif cov_future is not None:
-                        batch[:, :, self.output_dim:] = (
-                            cov_future[batch_idx, prediction_length-self.input_chunk_length:prediction_length , :]
-                        )
-
-                    # take only last part of the output sequence where needed
-                    out = self.model(batch)[:, self.first_prediction_index:, :]
-
-                    # update predictions depending on how many data points have been predicted
-                    if prediction_length <= n - self.output_chunk_length - roll_size:
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    elif prediction_length < n - self.output_chunk_length:
-                        # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
-                        # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
-                        # so that the final forecast produces exactly the right number of predictions to reach `n`
-                        spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
-                        roll_size -= spillover_prediction_length
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    else:
-                        batch_prediction.append(out)
-                        prediction_length += self.output_chunk_length
+                batch_prediction = self._produce_batch_prediction(n, batch, cov_future, roll_size)
 
                 # bring predictions into desired format and drop unnecessary values
                 batch_prediction = torch.cat(batch_prediction, dim=1)
@@ -579,6 +536,55 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 predictions.extend(ts_forecasts)
 
         return predictions
+
+    def _produce_batch_prediction(self, n, batch, cov_future, roll_size):
+
+        batch_prediction = []
+        out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
+        batch_prediction.append(out[:, :roll_size, :])
+        prediction_length = roll_size
+
+        while prediction_length < n:
+
+            # roll over input series to contain latest target and covariate
+            batch = torch.roll(batch, -roll_size, 1)
+
+            # update target input to include next `roll_size` predictions
+            if self.input_chunk_length >= roll_size:
+                batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
+            else:
+                batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+
+            # update covariates to include next `roll_size` predictions into the future
+            if cov_future is not None and self.input_chunk_length >= roll_size:
+                batch[:, -roll_size:, self.output_dim:] = (
+                    cov_future[batch_idx, prediction_length-roll_size:prediction_length , :]
+                )
+            elif cov_future is not None:
+                batch[:, :, self.output_dim:] = (
+                    cov_future[batch_idx, prediction_length-self.input_chunk_length:prediction_length , :]
+                )
+
+            # take only last part of the output sequence where needed
+            out = self.model(batch)[:, self.first_prediction_index:, :]
+
+            # update predictions depending on how many data points have been predicted
+            if prediction_length <= n - self.output_chunk_length - roll_size:
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            elif prediction_length < n - self.output_chunk_length:
+                # if we produce `n - output_chunk_length < #predictions < n` we want to only use
+                # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
+                # so that the final forecast produces exactly the right number of predictions to reach `n`
+                spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
+                roll_size -= spillover_prediction_length
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            else:
+                batch_prediction.append(out)
+                prediction_length += self.output_chunk_length
+
+        return batch_prediction
 
     def _prepare_predict_tensors(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
         """
