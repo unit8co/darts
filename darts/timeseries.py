@@ -925,8 +925,16 @@ class TimeSeries:
         """
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(start_ts)
-        point_index = self.get_index_at_point(start_ts)
-        return self[point_index:point_index+n]
+
+        if isinstance(start_ts, int):
+            return self[start_ts:start_ts+n]
+        elif isinstance(start_ts, pd.Timestamp):
+            # get first timestamp smaller or equal to start_ts
+            tss = list(filter(lambda ts: ts <= start_ts, self._time_index))[-1]
+            point_index = self.get_index_at_point(tss)
+            return self[point_index:point_index + n]
+        else:
+            raise_log(ValueError('Unknown type of start_ts.'))
 
     def slice_n_points_before(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
         """
@@ -1733,14 +1741,14 @@ class TimeSeries:
 
         The supported index types are the following base types as a single value, a list or a slice:
         - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
-        - str -> return a TimeSeries including the column(s) specified as str.
-        - int -> return a TimeSeries with the value(s) at the given row index.
+        - str -> return a TimeSeries including the column(s) (components) specified as str.
+        - int -> return a TimeSeries with the value(s) at the given row (time) index.
 
-        `pd.DatetimeIndex` is also supported and will return the corresponding value(s) at the provided time indices.
+        `pd.DatetimeIndex` and `pd.RangeIndex` are also supported and will return the corresponding value(s)
+        at the provided time indices.
 
         .. warning::
             slices use pandas convention of including both ends of the slice.
-
         """
         def _check_dt():
             raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex or a timestamp, '
