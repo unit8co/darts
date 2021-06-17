@@ -638,7 +638,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # get first timestamp that lies in the future of target series
                 first_pred_time = target_series.end_time() + target_series.freq()
-                print(first_pred_time)
                 
                 # check whether future covariates are available and separate them if they are
                 if covariate_series.end_time() >= first_pred_time:
@@ -683,7 +682,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         #cov_future = torch.cat(cov_future_arr, dim=0) if len(cov_future_arr) > 0 else None
         cov_past_arr = None if len(cov_past_arr) == 0 else cov_past_arr
         cov_future_arr = None if len(cov_future_arr) == 0 else cov_future_arr
-        print(cov_future_arr)
+
         return in_past_arr, cov_past_arr, cov_future_arr
 
     def untrained_model(self):
