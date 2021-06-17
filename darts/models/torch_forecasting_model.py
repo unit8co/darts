@@ -632,7 +632,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # TODO: e.g. by taking their latest common timestamp.
 
             in_past = target_series[-self.input_chunk_length:]
-            #in_past = torch.from_numpy(in_past).float().to(self.device)
 
             if covariate_series is not None:
 
@@ -647,10 +646,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # keep only the last covariates that the model can use as input
                 cov_past = cov_past[-self.input_chunk_length:]
-
-                # create torch tensor
-                #cov_past = torch.from_numpy(cov_past).float().to(self.device)
-                #cov_past = cov_past.view(1, self.input_chunk_length, -1)
                 cov_past_arr.append(cov_past)
 
                 # handle future covariates
@@ -666,20 +661,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
                     cov_future = cov_future[:n - self.output_chunk_length]
 
-
-                    #cov_future = torch.from_numpy(cov_future).float().to(self.device)
-                    #cov_future = cov_future.view(1, n - self.output_chunk_length, -1)
                     cov_future_arr.append(cov_future)
 
-
-            #in_past = in_past.view(1, self.input_chunk_length, -1)
             in_past_arr.append(in_past)
             
 
         # concatenate tensors to include multiple time series in one batch
-        #in_past = torch.cat(in_past_arr, dim=0)
-        #cov_past = torch.cat(cov_past_arr, dim=0) if len(cov_past_arr) > 0 else None
-        #cov_future = torch.cat(cov_future_arr, dim=0) if len(cov_future_arr) > 0 else None
         cov_past_arr = None if len(cov_past_arr) == 0 else cov_past_arr
         cov_future_arr = None if len(cov_future_arr) == 0 else cov_future_arr
 
