@@ -26,8 +26,10 @@ from ..logging import get_logger, raise_log, raise_if_not, raise_if
 from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
-    _historical_forecasts_general_checks
+    _historical_forecasts_general_checks,
+    _parallel_apply
 )
+
 from .. import metrics
 
 logger = get_logger(__name__)
@@ -396,7 +398,8 @@ class ForecastingModel(ABC):
                    use_fitted_values: bool = False,
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    reduction: Callable[[np.ndarray], float] = np.mean,
-                   verbose=False) -> Tuple['ForecastingModel', Dict]:
+                   verbose=False,
+                   n_jobs: int = 1) -> Tuple['ForecastingModel', Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -426,6 +429,11 @@ class ForecastingModel(ABC):
         Not all models have fitted values, and this method raises an error if the model doesn't have a `fitted_values`
         member. The fitted values are the result of the fit of the model on `series`. Comparing with the
         fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.
+
+        Derived classes must ensure that a single instance of a model will not share parameters with the other
+        instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
+        several models in parallel (when `n_jobs != 1`). If this cannot be avoided, then gridsearch should be redefined,
+        forcing `n_jobs = 1`.
 
         Parameters
         ----------
@@ -460,6 +468,10 @@ class ForecastingModel(ABC):
             on the different validation series when backtesting. By default it'll compute the mean of errors.
         verbose
             Whether to print progress.
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
+            combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
+            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
 
         Returns
         -------
@@ -485,9 +497,6 @@ class ForecastingModel(ABC):
             raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
                                                               'same time axes.')
 
-        min_error = float('inf')
-        best_param_combination = {}
-
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
@@ -496,8 +505,9 @@ class ForecastingModel(ABC):
         predict_signature = signature(model_class.predict)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(params_cross_product, verbose)
-        for param_combination in iterator:
+        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
+
+        def _evaluate_combination(param_combination):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
@@ -526,9 +536,15 @@ class ForecastingModel(ABC):
                 else:
                     pred = model.predict(n=len(val_series))
                 error = metric(pred, val_series)
-            if error < min_error:
-                min_error = error
-                best_param_combination = param_combination_dict
+
+            return error
+
+        errors = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
+
+        min_error = min(errors)
+
+        best_param_combination = dict(list(zip(parameters.keys(), params_cross_product[errors.index(min_error)])))
+
         logger.info('Chosen parameters: ' + str(best_param_combination))
 
         return model_class(**best_param_combination), best_param_combination
