@@ -1,4 +1,5 @@
 import numpy as np
+from unittest.mock import MagicMock, patch, ANY
 
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
@@ -177,3 +178,60 @@ if TORCH_AVAILABLE:
                 pred2 = model.predict(n=36, series=multiple_ts, n_jobs=-1)  # assuming > 1 core available in the machine
 
                 self.assertEqual(pred1, pred2, 'Model {} produces different predictions with different number of jobs')
+
+        @patch('darts.models.torch_forecasting_model.torch.save')
+        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        def test_fit_with_constr_epochs(self, rmtree_patch, train_patch, save_patch):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                multiple_ts = [self.ts_pass_train] * 10
+                model.fit(multiple_ts)
+
+                rmtree_patch.assert_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
+
+        @patch('darts.models.torch_forecasting_model.torch.save')
+        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        def test_fit_with_fit_epochs(self, rmtree_patch, train_patch, save_patch):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                multiple_ts = [self.ts_pass_train] * 10
+                epochs = 42
+
+                model.fit(multiple_ts, epochs=epochs)
+
+                rmtree_patch.assert_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+                model.total_epochs = epochs
+                rmtree_patch.reset_mock()
+                # continue training
+                model.fit(multiple_ts, epochs=epochs)
+
+                rmtree_patch.assert_not_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+        @patch('darts.models.torch_forecasting_model.torch.save')
+        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        def test_fit_from_dataset_with_epochs(self, rmtree_patch, train_patch, save_patch):
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                multiple_ts = [self.ts_pass_train] * 10
+                train_dataset = model._build_train_dataset(multiple_ts, covariates=None)
+                epochs = 42
+
+                model.fit_from_dataset(train_dataset, epochs=epochs)
+
+                rmtree_patch.assert_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+                model.total_epochs = epochs
+                rmtree_patch.reset_mock()
+                # continue training
+                model.fit_from_dataset(train_dataset, epochs=epochs)
+
+                rmtree_patch.assert_not_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)

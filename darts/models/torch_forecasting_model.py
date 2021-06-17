@@ -27,9 +27,10 @@ from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
-CHECKPOINTS_FOLDER = os.path.join('.darts', 'checkpoints')
-RUNS_FOLDER = os.path.join('.darts', 'runs')
-UNTRAINED_MODELS_FOLDER = os.path.join('.darts', 'untrained_models')
+DEFAULT_DARTS_FOLDER = '.darts'
+CHECKPOINTS_FOLDER = 'checkpoints'
+RUNS_FOLDER = 'runs'
+UNTRAINED_MODELS_FOLDER = 'untrained_models'
 
 logger = get_logger(__name__)
 
@@ -106,7 +107,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  lr_scheduler_kwargs: Optional[Dict] = None,
                  loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  model_name: str = None,
-                 work_dir: str = os.getcwd(),
+                 work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None):
@@ -184,8 +185,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.work_dir = work_dir
 
         self.n_epochs = n_epochs
+        self.total_epochs = 0  # 0 means it wasn't trained yet.
         self.batch_size = batch_size
-        self.from_scratch = True  # do we train the model from scratch  # TODO clean this
 
         # Define the loss function
         self.criterion = loss_fn
@@ -258,10 +259,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            verbose: bool = False) -> None:
+            verbose: bool = False,
+            epochs: int = 0) -> None:
         """
         The fit method for torch models.
         It wraps around `fit_from_dataset()`.
+
+        **Important**: if `epochs=0` (default), running `fit()` or `fit_from_dataset()` removes previously trained model - all it's checkpoints
+        and tensorboard data. If you want to train your model for more epochs, set the `epochs` parameter to value
+        greater than 0.
+
+        **Note**: If your model wasn't yet trained and you requested to train for more epochs with `epoch` parameter,
+        it will be treated as trained for 0 epochs.
 
         *** Future covariates are not yet supported ***
 
@@ -278,6 +287,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, the covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
+        epochs
+            If your model is already trained but you want to train it even further, you can provide here the number of
+            additional epochs.
         """
         super().fit(series, covariates)
 
@@ -301,13 +313,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, verbose)
+        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs)
 
     @random_method
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
-                         verbose: bool = False) -> None:
+                         verbose: bool = False,
+                         epochs: int = 0) -> None:
+
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
@@ -315,8 +329,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
-        if self.from_scratch:
+        # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a
+        # training from scratch.
+        if epochs == 0 or self.total_epochs == 0:
             shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
+            self.total_epochs = 0
 
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
@@ -351,10 +368,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer()
+        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
+
+
+        # if user wants to train the model for more epochs, ignore the n_epochs parameter
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
         # Train model
-        self._train(train_loader, val_loader, tb_writer, verbose)
+        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -534,7 +555,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
+                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
                     else:
                         batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
@@ -583,10 +604,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _prepare_predict_tensors(self, n: int, input_series_dataset: TimeSeriesInferenceDataset):
         """
         Creates a torch tensor `in_past` from `TimeSeriesInferenceDataset` instance for initial input to model
-        which includes the target series and covariate series if the model was trained with covariates. 
+        which includes the target series and covariate series if the model was trained with covariates.
         Only past covariates are included, even if more are provided.
 
-        If the model is required to produce the forecast over multiple iterations, i.e. if 
+        If the model is required to produce the forecast over multiple iterations, i.e. if
         `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future` will
         contain the future covariates up to `n` time steps into the future.
 
@@ -602,7 +623,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Returns
         -------
         torch.Tensor of shape `(len(input_series_dataset), self.input_chunk_length, target.width + covariates.width)`
-            Initial input to model which contains the input target sereis and the matching past covariates, 
+            Initial input to model which contains the input target sereis and the matching past covariates,
             if available
         Optional[torch.Tensor] of shape `(len(input_series_dataset), n, covariates.width)`
             Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
@@ -628,7 +649,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # get first timestamp that lies in the future of target series
                 first_pred_time = target_series.end_time() + target_series.freq()
-                
+
                 # check whether future covariates are available and separate them if they are
                 if covariate_series.end_time() >= first_pred_time:
                     cov_past = covariate_series.drop_after(first_pred_time)
@@ -684,19 +705,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                train_loader: DataLoader,
                val_loader: Optional[DataLoader],
                tb_writer: Optional[SummaryWriter],
-               verbose: bool) -> None:
+               verbose: bool,
+               epochs: int = 0
+               ) -> None:
         """
         Performs the actual training
         :param train_loader: the training data loader feeding the training data and targets
         :param val_loader: optionally, a validation set loader
         :param tb_writer: optionally, a TensorBoard writer
+        :param epochs: value >0 means we're retraining model
         """
 
         best_loss = np.inf
 
-        iterator = _build_tqdm_iterator(range(self.n_epochs), verbose)
+        iterator = _build_tqdm_iterator(
+            range(self.total_epochs, self.total_epochs + epochs),
+            verbose=verbose,
+        )
+
         for epoch in iterator:
-            epoch = epoch
             total_loss = 0
 
             for batch_idx, (data, target) in enumerate(train_loader):
@@ -721,6 +748,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
+            self.total_epochs = epoch + 1
             self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
@@ -803,16 +831,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self):
+    def _prepare_tensorboard_writer(self, continue_training: bool = False):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if self.from_scratch:
+            if not continue_training:
                 shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
             else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.start_epoch)
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
         else:
             tb_writer = None
         return tb_writer
@@ -844,7 +872,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         if work_dir is None:
-            work_dir = os.getcwd()
+            work_dir = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER)
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
 
