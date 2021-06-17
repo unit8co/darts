@@ -440,12 +440,17 @@ class TimeSeries:
 
     def _raise_if_not_within(self, ts: Union[pd.Timestamp, int]):
         if isinstance(ts, pd.Timestamp):
+            # Not that the converse doesn't apply (a time-indexed series can be called with an integer)
             raise_if_not(self._has_datetime_index, 'Function called with a timestamp, but series not time-indexed.')
-        elif isinstance(ts, int):
-            raise_if(self._has_datetime_index, 'Function called with an integer, but series is time-indexed.')
-        if (ts < self.start_time()) or (ts > self.end_time()):
-            raise_log(ValueError('Timestamp must be between {} and {}'.format(self.start_time(),
-                                                                              self.end_time())), logger)
+            is_inside = self.start_time() <= ts <= self.end_time()
+        else:
+            if self._has_datetime_index:
+                is_inside = 0 <= ts <= self.__len__()
+            else:
+                is_inside = self.start_time() <= ts <= self.end_time()
+
+        raise_if_not(is_inside, 'Timestamp must be between {} and {}'.format(self.start_time(),
+                                                                             self.end_time()))
 
     """
     Export functions
@@ -823,8 +828,6 @@ class TimeSeries:
                   split_point: Union[pd.Timestamp, float, int],
                   after: bool = True) -> Tuple['TimeSeries', 'TimeSeries']:
 
-        if isinstance(split_point, pd.Timestamp) or isinstance(split_point, int):
-            self._raise_if_not_within(split_point)
         point_index = self.get_index_at_point(split_point)
         return self[:point_index+(1 if after else 0)], self[point_index+(1 if after else 0):]
 
