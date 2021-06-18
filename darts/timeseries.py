@@ -37,7 +37,14 @@ class TimeSeries:
                                                    '(e.g. TimeSeries.from_dataframe()).')
         raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS))
         raise_if_not(xa.size > 0, 'The time series array must not be empty.')
-        raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numerical values only.')
+
+        # Ideally values should be np.float, otherwise certain functionalities like diff()
+        # relying on np.nan (which is a float) won't work very properly.
+        raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.')
+        if not np.issubdtype(xa.values.dtype, np.float):
+            logger.warn('TimeSeries is using a numeric type different from np.float. Not all functionalities '
+                        'may work properly. It is recommended casting your data to floating point numbers before '
+                        'using TimeSeries.')
 
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
@@ -133,14 +140,13 @@ class TimeSeries:
                 freq = observed_frequencies.pop()
 
             # TODO: test this
-            # we have to cast using astype(), because asfreq() can change the dtype (e.g. from int64 to float)
-            xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq().astype(xa.values.dtype)
+            xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
-
-
-        return TimeSeries(xa_)
+        # We cast the array to float
+        # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
+        return TimeSeries(xa_.astype(np.float))
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
@@ -1097,7 +1103,8 @@ class TimeSeries:
 
     def diff(self,
              n: Optional[int] = 1,
-             periods: Optional[int] = 1) -> 'TimeSeries':
+             periods: Optional[int] = 1,
+             dropna: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a differenced time series. This is often used to make a time series stationary.
 
@@ -1107,8 +1114,11 @@ class TimeSeries:
             Optionally, a positive integer indicating the number of differencing steps (default = 1).
             For instance, n=2 computes the second order differences.
         periods
-            Optionally, periods to shift for calculating difference. For instance, periods=1 computes the
-            difference between values at time `t` and times `t-1`.
+            Optionally, periods to shift for calculating difference. For instance, periods=12 computes the
+            difference between values at time `t` and times `t-12`.
+        dropna
+            Whether to drop the missing values after each differencing steps. If set to False, the corresponding
+            first `periods` time steps will be filled with NaNs.
 
         Returns
         -------
@@ -1120,11 +1130,17 @@ class TimeSeries:
         if not isinstance(periods, int) or periods < 1:
              raise_log(ValueError("'periods' must be an integer >= 1."))
 
-        def _compute_diff(xa):
-            # TODO: is this the cleanest? Probably not... but xarray doesn't support filling first values with Nans
-            new_xa_ = xa.copy()
-            new_xa_.values[0:periods, :, :] = np.nan
-            new_xa_.values[periods:, :, :] = new_xa_.diff(dim=self._time_dim, n=periods)
+        def _compute_diff(xa: xr.DataArray):
+            # xarray doesn't support Pandas "period" so compute diff() ourselves
+            if not dropna:
+                # In this case the new DataArray will have the same size and filled with NaNs
+                new_xa_ = xa.copy()
+                new_xa_.values[:periods, :, :] = np.nan
+                new_xa_.values[periods:, :, :] = xa.values[periods:, :, :] - xa.values[:-periods, :, :]
+            else:
+                # In this case the new DataArray will be shorter
+                new_xa_ = xa[periods:, :, :].copy()
+                new_xa_.values = xa.values[periods:, :, :] - xa.values[:-periods, :, :]
             return new_xa_
 
         new_xa = _compute_diff(self._xa)

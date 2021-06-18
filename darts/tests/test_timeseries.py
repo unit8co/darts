@@ -20,7 +20,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
-        self.assertTrue(series_test.pd_series().equals(self.pd_series1))
+        self.assertTrue(series_test.pd_series().equals(self.pd_series1.astype(np.float)))
 
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
@@ -272,11 +272,11 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             self.series1.diff(periods=0.2)
 
         self.assertEqual(self.series1.diff(), diff1_no_na)
-        self.assertEqual(self.series1.diff(n=2), diff2_no_na)
-        # self.assertEqual(self.series1.diff(dropna=False), diff1)
-        # self.assertEqual(self.series1.diff(n=2, dropna=0), diff2)
-        self.assertEqual(self.series1.diff(periods=2), diff_shift2_no_na)
-        # self.assertEqual(self.series1.diff(n=2, periods=2, dropna=False), diff2_shift2)
+        self.assertEqual(self.series1.diff(n=2, dropna=True), diff2_no_na)
+        self.assertEqual(self.series1.diff(dropna=False), diff1)
+        self.assertEqual(self.series1.diff(n=2, dropna=0), diff2)
+        self.assertEqual(self.series1.diff(periods=2, dropna=True), diff_shift2_no_na)
+        self.assertEqual(self.series1.diff(n=2, periods=2, dropna=False), diff2_shift2)
 
     def test_ops(self):
         seriesA = TimeSeries.from_series(pd.Series([2 for _ in range(10)], index=self.pd_series1.index))
