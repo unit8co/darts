@@ -1060,7 +1060,7 @@ class TimeSeries:
         TimeSeries
             a new series constituting the largest slice of the original with no or bounded gaps
         """
-        if not (self._xa == np.nan).any():
+        if not (np.isnan(self._xa)).any():
             return self.copy()
         stripped_series = self.strip()
         gaps = stripped_series.gaps()
