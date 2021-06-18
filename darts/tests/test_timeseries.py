@@ -223,7 +223,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesA.append(seriesB).freq, test_series.freq)
 
         # Creating a gap is not allowed
-        seriesC = test_series.drop_before(pd.Timestamp('20130107'))
+        seriesC = test_series.drop_before(pd.Timestamp('20130108'))
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesC)
 

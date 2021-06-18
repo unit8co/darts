@@ -883,10 +883,38 @@ class TimeSeries:
         return self._split_at(split_point, after=False)
 
     def drop_after(self, split_point: Union[pd.Timestamp, float, int]):
-        return self.split_after(split_point)[1]
+        """
+        Drops everything after the provided timestamp `ts`, included.
+        The timestamp may not be in the TimeSeries. If it is, the timestamp will be dropped.
+
+        Parameters
+        ----------
+        split_point
+            The timestamp that indicates cut-off time.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, after `ts`.
+        """
+        return self.split_before(split_point)[0]
 
     def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
-        return self.split_before(split_point)[0]
+        """
+        Drops everything before the provided timestamp `ts`, included.
+        The timestamp may not be in the TimeSeries. If it is, the timestamp will be dropped.
+
+        Parameters
+        ----------
+        split_point
+            The timestamp that indicates cut-off time.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, after `ts`.
+        """
+        return self.split_after(split_point)[1]
 
     def slice(self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]):
         """
@@ -1218,7 +1246,18 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-        return self.append(TimeSeries.from_times_and_values(values=values, times=index))
+
+        # TODO test
+        if index is not None:
+            idx = index
+        elif self._has_datetime_index:
+            idx = pd.DatetimeIndex(self.end_time() + self._freq,
+                                   self.end_time() + len(values) * self._freq,
+                                   self._freq)
+        else:
+            idx = pd.RangeIndex(len(self), len(self)+len(values), 1)
+
+        return self.append(TimeSeries.from_times_and_values(values=values, times=idx))
 
     def update(self,
                index: pd.DatetimeIndex,
