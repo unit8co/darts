@@ -79,6 +79,10 @@ class TimeSeries:
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = freq_tmp
 
+            raise_if_not(self._time_index.inferred_freq, 'Could not infer frequency. Are some dates missing? '
+                         'If you are using a constructor method, try specifying `fill_missing_dates=True` or specify '
+                         'the `freq` parameter.', logger)
+            
             self._freq_str: str = self._time_index.inferred_freq
         else:
             self._freq = 1
