@@ -19,9 +19,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     series3: TimeSeries = TimeSeries.from_series(pd_series2)
 
     def test_creation(self):
-        with self.assertRaises(ValueError):
-            # Index is dateTimeIndex
-            TimeSeries.from_series(pd.Series(range(10), range(10)))
         series_test = TimeSeries.from_series(self.pd_series1)
         self.assertTrue(series_test.pd_series().equals(self.pd_series1))
 
@@ -235,41 +232,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesM)
 
-    """
-    @staticmethod
-    def helper_test_append_values(test_case, test_series: TimeSeries):
-        # reconstruct series
-        seriesA, seriesB = test_series.split_after(pd.Timestamp('20130106'))
-        test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index), test_series)
-        test_case.assertEqual(seriesA.append_values(seriesB.values()), test_series)
-
-        # test for equality
-        test_case.assertEqual(test_series.drop_after(pd.Timestamp('20130105'))
-                              .append_values(test_series.drop_before(pd.Timestamp('20130104')).values()), test_series)
-        test_case.assertEqual(seriesA.append_values([]), seriesA)
-
-        # randomize order
-        rd_order = np.random.permutation(range(len(seriesB.values())))
-        test_case.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index[rd_order]),
-                              test_series)
-
-        # add non consecutive index
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index + seriesB.freq),
-                                  test_series)
-
-        # add existing indices
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index - 3 * seriesB.freq),
-                                  test_series)
-
-        # other frequency
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(),
-                                                        pd.date_range('20130107', '20130113', freq='2d')),
-                                  test_series)
-    """
-
     def test_slice(self):
         TimeSeriesTestCase.helper_test_slice(self, self.series1)
 
@@ -287,58 +249,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
-
-    # def test_append_values(self):
-    #     TimeSeriesTestCase.helper_test_append_values(self, self.series1)
-
-    """
-    def test_update(self):
-        seriesA: TimeSeries = TimeSeries.from_times_and_values(self.times, [0, 1, 1, 3, 4, 5, 6, 2, 8, 0])
-        seriesB: TimeSeries = TimeSeries.from_times_and_values(self.times, range(10))
-
-        # change nothing
-        seriesC = self.series1.copy()
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times)
-        seriesC = seriesC.update(self.times, range(10))
-        self.assertEqual(seriesC, self.series1)
-
-        # different len
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, [])
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, np.arange(3))
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, np.arange(4))
-
-        # change outside
-        seriesC = seriesA.copy()
-        with self.assertRaises(ValueError):
-            seriesC.update(self.times + 100 * seriesC.freq, range(10))
-        seriesC = seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
-                                 list(range(10)) + [0] * 10)
-        self.assertEqual(seriesC, self.series1)
-
-        # change random
-        seriesC = seriesA.copy()
-        seriesC = seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2])
-        self.assertEqual(seriesC, self.series1)
-
-        # change one of each series
-        seriesD = seriesB.copy()
-        seriesD = seriesD.update(self.times, seriesA.pd_series().values)
-        seriesA = seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9])
-        self.assertEqual(seriesA, self.series1)
-        seriesB = seriesB.update(self.times[::2], range(5))
-        self.assertNotEqual(seriesB, self.series2)
-
-        # use nan
-        new_series = np.empty(10)
-        new_series[:] = np.nan
-        new_series[[2, 7, 9]] = [2, 7, 9]
-        seriesD = seriesD.update(self.times, new_series)
-        self.assertEqual(seriesD, self.series1)
-    """
 
     def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())

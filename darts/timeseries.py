@@ -133,9 +133,12 @@ class TimeSeries:
                 freq = observed_frequencies.pop()
 
             # TODO: test this
-            xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
+            # we have to cast using astype(), because asfreq() can change the dtype (e.g. from int64 to float)
+            xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq().astype(xa.values.dtype)
         else:
             xa_ = xa
+
+
 
         return TimeSeries(xa_)
 
@@ -1102,8 +1105,10 @@ class TimeSeries:
         ----------
         n
             Optionally, a positive integer indicating the number of differencing steps (default = 1).
+            For instance, n=2 computes the second order differences.
         periods
-            Optionally, periods to shift for calculating difference.
+            Optionally, periods to shift for calculating difference. For instance, periods=1 computes the
+            difference between values at time `t` and times `t-1`.
 
         Returns
         -------
@@ -1115,9 +1120,16 @@ class TimeSeries:
         if not isinstance(periods, int) or periods < 1:
              raise_log(ValueError("'periods' must be an integer >= 1."))
 
-        new_xa = self._xa.diff(dim=self._time_dim, n=periods)
+        def _compute_diff(xa):
+            # TODO: is this the cleanest? Probably not... but xarray doesn't support filling first values with Nans
+            new_xa_ = xa.copy()
+            new_xa_.values[0:periods, :, :] = np.nan
+            new_xa_.values[periods:, :, :] = new_xa_.diff(dim=self._time_dim, n=periods)
+            return new_xa_
+
+        new_xa = _compute_diff(self._xa)
         for _ in range(n-1):
-            new_xa = new_xa.diff(dim=self._time_dim, n=periods)
+            new_xa = _compute_diff(new_xa)
         return TimeSeries(new_xa)
 
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
