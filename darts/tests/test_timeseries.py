@@ -315,7 +315,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                                                   freq=self.series1.freq))
         self.assertEqual(self.series1[pd.Timestamp('20130101'):pd.Timestamp('20130104')], seriesA)
 
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.series1[pd.date_range('19990101', '19990201')]
 
         with self.assertRaises(KeyError):
