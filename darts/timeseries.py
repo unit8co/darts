@@ -79,10 +79,17 @@ class TimeSeries:
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = freq_tmp
 
-            raise_if_not(self._time_index.inferred_freq, 'Could not infer frequency. Are some dates missing? '
-                         'If you are using a constructor method, try specifying `fill_missing_dates=True` or specify '
-                         'the `freq` parameter.', logger)
-            
+            # We have to check manually if the index is complete. Another way could be to rely
+            # on `inferred_freq` being present, but this fails for series of length < 3.
+            is_index_complete = len(pd.date_range(self._time_index.min(),
+                                                  self._time_index.max(),
+                                                  freq=self._freq).difference(self._time_index)) == 0
+
+            raise_if_not(is_index_complete, 'Not all timestamps seem to be present in the time index. Does '
+                                            'the series contain holes? If you are using a constructor method, '
+                                            'try specifying `fill_missing_dates=True` '
+                                            'or specify the `freq` parameter.', logger)
+
             self._freq_str: str = self._time_index.inferred_freq
         else:
             self._freq = 1
