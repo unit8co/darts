@@ -77,7 +77,7 @@ class TimeSeriesTorchDataset(Dataset):
         """
         item = self.ts_dataset[idx]
 
-        if isinstance(self.ts_dataset, SimpleInferenceDataset):
+        if isinstance(self.ts_dataset, TimeSeriesInferenceDataset):
             # the dataset contains (input_target, input_covariate) only
             input_tgt = torch.from_numpy(item[0].values()).float()
             input_cov = torch.from_numpy(item[1].values()).float() if item[1] is not None else None
@@ -439,9 +439,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
         # create past input, past covariate and future covariate series
-        in_past_arr, cov_past_arr, cov_future_arr = self._prepare_predict_timeseries(n, series, covariates)
+        tgt_past_arr, cov_past_arr, cov_future_arr = self._prepare_predict_timeseries(n, series, covariates)
 
-        dataset = SimpleInferenceDataset(in_past_arr, cov_past_arr, cov_future_arr)
+        dataset = SimpleInferenceDataset(tgt_past_arr, cov_past_arr, cov_future_arr)
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size)
         return predictions[0] if called_with_single_series else predictions
@@ -520,37 +520,36 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predictions = []
         iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
         with torch.no_grad():
-            for batch_idx, (batch, cov_future) in enumerate(iterator):
-
+            for batch_idx, (input_series, cov_future) in enumerate(iterator):
 
                 batch_prediction = []  # (num_batches, n % output_chunk_length)
-                out = self.model(batch)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
+                out = self.model(input_series)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
                 batch_prediction.append(out[:, :roll_size, :])
                 prediction_length = roll_size
 
                 while prediction_length < n:
 
                     # roll over input series to contain latest target and covariate
-                    batch = torch.roll(batch, -roll_size, 1)
+                    input_series = torch.roll(input_series, -roll_size, 1)
 
                     # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
+                        input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
                     else:
-                        batch[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+                        input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include next `roll_size` predictions into the future
                     if len(cov_future.shape) == 3 and self.input_chunk_length >= roll_size:
-                        batch[:, -roll_size:, self.output_dim:] = (
+                        input_series[:, -roll_size:, self.output_dim:] = (
                             cov_future[:, prediction_length-roll_size:prediction_length , :]
                         )
                     elif len(cov_future.shape) == 3:
-                        batch[:, :, self.output_dim:] = (
+                        input_series[:, :, self.output_dim:] = (
                             cov_future[:, prediction_length-self.input_chunk_length:prediction_length , :]
                         )
 
                     # take only last part of the output sequence where needed
-                    out = self.model(batch)[:, self.first_prediction_index:, :]
+                    out = self.model(input_series)[:, self.first_prediction_index:, :]
 
                     # update predictions depending on how many data points have been predicted
                     if prediction_length <= n - self.output_chunk_length - roll_size:
@@ -583,14 +582,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _prepare_predict_timeseries(self, n: int, series, covariates):
         """
-        Creates a torch tensor `in_past` from `TimeSeriesInferenceDataset` instance for initial input to model
-        which includes the target series and covariate series if the model was trained with covariates. 
-        Only past covariates are included, even if more are provided.
-        TODO: update description
-
+        Creates 3 lists with `TimeSeries` instances required to produce model predictions. 
+        `tgt_past_arr` contains target series, which will be predicted into the future.
+        `cov_past_arr` contains covariates with the same time indices as the target series, if the model
+        was trained on covariates. Otherwise the function will return `None`.
+        Both `tgt_past_arr` and `cov_past_arr` will contain elements that are `input_chunk_length` long.
         If the model is required to produce the forecast over multiple iterations, i.e. if 
-        `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future` will
-        contain the future covariates up to `n` time steps into the future.
+        `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future_arr` will
+        contain the future covariates up to `n - self.output_chunk_length` time steps into the future.
 
         Parameters
         ----------
@@ -603,19 +602,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-        torch.Tensor of shape `(len(input_series_dataset), self.input_chunk_length, target.width + covariates.width)`
-            Initial input to model which contains the input target sereis and the matching past covariates, 
-            if available
-        Optional[torch.Tensor] of shape `(len(input_series_dataset), n, covariates.width)`
+        Sequence[TimeSeries]
+            Past target series which are going to be predicted into the future, and which will used as
+            input to the model.
+        Optional[Sequence[TimeSeries]]
             Covariates required to predict horizons up to `self.output_chunk_length`, or `None` if the model
-            does covariates.
-        Optional[torch.Tensor] of shape `(len(input_series_dataset), n, covariates.width)`
+            does not require covariates.
+        Optional[torch.Tensor]
             Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
             does require future covariates either because it does not require covariates at all or because
             `n <= self.output_chunk_length`.
     """
 
-        in_past_arr = []
+        tgt_past_arr = []
         cov_past_arr = []
         cov_future_arr = []
 
@@ -631,46 +630,43 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
             # TODO: e.g. by taking their latest common timestamp.
 
-            in_past = target_series[-self.input_chunk_length:]
+            tgt_past = target_series[-self.input_chunk_length:]
 
             if covariate_series is not None:
 
                 # get first timestamp that lies in the future of target series
                 first_pred_time = target_series.end_time() + target_series.freq()
                 
-                # check whether future covariates are available and separate them if they are
+                # isolate past covariates and add them to array
                 if covariate_series.end_time() >= first_pred_time:
                     cov_past = covariate_series.drop_after(first_pred_time)
                 else:
                     cov_past = covariate_series
-
-                # keep only the last covariates that the model can use as input
                 cov_past = cov_past[-self.input_chunk_length:]
                 cov_past_arr.append(cov_past)
 
-                # handle future covariates
+                # check whether future covariates are required
                 if n > self.output_chunk_length:
-                    # check that enough future covariates are available and keep only necessary ones
+
+                    # check that enough future covariates are available
                     last_required_future_covariate_ts = (
                         target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
                     )
                     raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
                                 'All covariates must be known `n - output_chunk_length` time steps into the future')
 
-                    # drop past covariates (already used)
+                    # isolate necessary future covariates and add them to array
                     cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
                     cov_future = cov_future[:n - self.output_chunk_length]
-
                     cov_future_arr.append(cov_future)
 
-            in_past_arr.append(in_past)
+            tgt_past_arr.append(tgt_past)
             
 
-        # concatenate tensors to include multiple time series in one batch
         cov_past_arr = None if len(cov_past_arr) == 0 else cov_past_arr
         cov_future_arr = None if len(cov_future_arr) == 0 else cov_future_arr
 
-        return in_past_arr, cov_past_arr, cov_future_arr
+        return tgt_past_arr, cov_past_arr, cov_future_arr
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
