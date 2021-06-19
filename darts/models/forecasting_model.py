@@ -104,15 +104,20 @@ class ForecastingModel(ABC):
 
     def _generate_new_dates(self,
                             n: int,
-                            input_series: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
+                            input_series: Optional[TimeSeries] = None) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
         """
         Generates `n` new dates after the end of the specified series
         """
         input_series = input_series if input_series is not None else self.training_series
-        new_dates = [
-            (input_series.time_index()[-1] + (i * input_series.freq())) for i in range(1, n + 1)
-        ]
-        return pd.DatetimeIndex(new_dates, freq=input_series.freq_str())
+
+        if input_series.has_datetime_index:
+            time_index = input_series.time_index
+            new_dates = [
+                (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
+            ]
+            return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
+        else:
+            return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
 
     def _build_forecast_series(self,
                                points_preds: np.ndarray,
