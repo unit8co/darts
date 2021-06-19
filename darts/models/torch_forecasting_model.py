@@ -555,11 +555,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
-<<<<<<< HEAD
                         input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
-=======
-                        batch[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
->>>>>>> develop
                     else:
                         input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
@@ -607,7 +603,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _prepare_predict_timeseries(self, n: int, series, covariates):
         """
-<<<<<<< HEAD
         Creates 3 lists with `TimeSeries` instances required to produce model predictions. 
         `tgt_past_arr` contains target series, which will be predicted into the future.
         `cov_past_arr` contains covariates with the same time indices as the target series, if the model
@@ -616,15 +611,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         If the model is required to produce the forecast over multiple iterations, i.e. if 
         `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future_arr` will
         contain the future covariates up to `n - self.output_chunk_length` time steps into the future.
-=======
-        Creates a torch tensor `in_past` from `TimeSeriesInferenceDataset` instance for initial input to model
-        which includes the target series and covariate series if the model was trained with covariates.
-        Only past covariates are included, even if more are provided.
-
-        If the model is required to produce the forecast over multiple iterations, i.e. if
-        `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future` will
-        contain the future covariates up to `n` time steps into the future.
->>>>>>> develop
 
         Parameters
         ----------
@@ -637,7 +623,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Returns
         -------
-<<<<<<< HEAD
         Sequence[TimeSeries]
             Past target series which are going to be predicted into the future, and which will used as
             input to the model.
@@ -645,12 +630,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Covariates required to predict horizons up to `self.output_chunk_length`, or `None` if the model
             does not require covariates.
         Optional[torch.Tensor]
-=======
-        torch.Tensor of shape `(len(input_series_dataset), self.input_chunk_length, target.width + covariates.width)`
-            Initial input to model which contains the input target sereis and the matching past covariates,
-            if available
-        Optional[torch.Tensor] of shape `(len(input_series_dataset), n, covariates.width)`
->>>>>>> develop
             Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
             does require future covariates either because it does not require covariates at all or because
             `n <= self.output_chunk_length`.
