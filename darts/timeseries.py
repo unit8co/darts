@@ -151,6 +151,7 @@ class TimeSeries:
                 freq = observed_frequencies.pop()
 
             # TODO: test this
+            # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
@@ -980,14 +981,14 @@ class TimeSeries:
         if isinstance(start_ts, int):
             return self[start_ts:start_ts+n]
         elif isinstance(start_ts, pd.Timestamp):
-            # get first timestamp smaller or equal to start_ts
-            tss = list(filter(lambda ts: ts <= start_ts, self._time_index))[-1]
+            # get first timestamp greater or equal to start_ts
+            tss = next(filter(lambda ts: ts >= start_ts, self._time_index))
             point_index = self.get_index_at_point(tss)
             return self[point_index:point_index + n]
         else:
-            raise_log(ValueError('Unknown type of start_ts.'))
+            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'))
 
-    def slice_n_points_before(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
+    def slice_n_points_before(self, start_ts: Union[pd.Timestamp, float, int], n: int) -> 'TimeSeries':
         """
         Returns a new TimeSeries, ending at `start_ts` and having at most `n` points.
 
@@ -1005,10 +1006,19 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with length at most `n`, ending at `start_ts`
         """
+
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(start_ts)
-        point_index = self.get_index_at_point(start_ts)
-        return self[point_index-n+1:point_index+1]
+
+        if isinstance(start_ts, int):
+            return self[start_ts-n+1:start_ts+1]
+        elif isinstance(start_ts, pd.Timestamp):
+            # get last timestamp smaller or equal to start_ts
+            tss = next(filter(lambda ts: ts <= start_ts, self._time_index[::-1]))
+            point_index = self.get_index_at_point(tss)
+            return self[max(0, point_index-n+1):point_index+1]
+        else:
+            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'))
 
     def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -1104,6 +1114,7 @@ class TimeSeries:
 
         raise_if_not((self._xa[0, :, :] != 0).all(), 'Cannot rescale with first value 0.', logger)
         coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
+        coef = coef.values.reshape((self.n_components, self.n_samples))  # TODO: test
         new_series = coef * self._xa
         return TimeSeries(new_series)
 
@@ -1728,7 +1739,8 @@ class TimeSeries:
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
             return TimeSeries(self._xa / other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            # here we leave it up to Numpy to check and raise a 0 division error
+            if not (other.all_values() != 0).all():
+                raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
             return self._combine_arrays(other, lambda s1, s2: s1 / s2)
         else:
             raise_log(TypeError('unsupported operand type(s) for / or truediv(): \'{}\' and \'{}\'.'
