@@ -10,9 +10,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 
-from copy import deepcopy
 import matplotlib.pyplot as plt
-from pandas.tseries.frequencies import to_offset
 from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
 
@@ -473,6 +471,12 @@ class TimeSeries:
         raise_if_not(is_inside, 'Timestamp must be between {} and {}'.format(self.start_time(),
                                                                              self.end_time()))
 
+    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp:
+        return next(filter(lambda t: t >= ts, self._time_index))
+
+    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> pd.Timestamp:
+        return next(filter(lambda t: t <= ts, self._time_index[::-1]))
+
     """
     Export functions
     ================
@@ -766,7 +770,7 @@ class TimeSeries:
         pd.DataFrame
             A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
-            of the gap and the integer length of the gap (in `self.freq()` units if the series is indexed
+            of the gap and the integer length of the gap (in `self.freq` units if the series is indexed
             by a DatetimeIndex).
         """
 
@@ -809,7 +813,7 @@ class TimeSeries:
         """
         return TimeSeries(self._xa)  # the xarray will be copied in the TimeSeries constructor
 
-    def get_index_at_point(self, point: Union[pd.Timestamp, float, int]) -> int:
+    def get_index_at_point(self, point: Union[pd.Timestamp, float, int], after=True) -> int:
         """
         Converts a point into an integer index
 
@@ -819,15 +823,21 @@ class TimeSeries:
             This parameter supports 3 different data types: `pd.Timestamp`, `float` and `int`.
 
             `pd.Timestamp` work only on series that are indexed with a `pd.DatetimeIndex`. In such cases, the returned
-            point will be the index of this timestamp, provided that it is present in the series time index,
-            otherwise will raise a ValueError.
+            point will be the index of this timestamp if it is present in the series time index. It it's not present
+            in the time index, the index of the next timestamp is returned if `after=True` (if it exists in the series),
+            otherwise the index of the previous timestamp is returned (if it exists in the series).
 
             In case of a `float`, the parameter will be treated as the proportion of the time series
             that should lie before the point.
 
             In the case of `int`, the parameter will returned as such, provided that it is in the series. Otherwise
             it will raise a ValueError.
+        after
+            If the provided pandas Timestamp is not in the time series index, whether to return the index of the
+            next timestamp or the index of the previous one.
+
         """
+        point_index = -1
         if isinstance(point, float):
             raise_if_not(0. <= point <= 1., 'point (float) should be between 0.0 and 1.0.', logger)
             point_index = int((self.__len__() - 1) * point)
@@ -837,10 +847,12 @@ class TimeSeries:
         elif isinstance(point, pd.Timestamp):
             raise_if_not(self._has_datetime_index,
                          'A Timestamp has been provided, but this series is not time-indexed.')
-            raise_if(point not in self,
-                     'point (pandas.Timestamp) must be an entry in the time series\' time index',
-                     logger)
-            point_index = self._time_index.get_loc(point)
+            self._raise_if_not_within(point)
+            if point in self:
+                point_index = self._time_index.get_loc(point)
+            else:
+                point_index = self._time_index.get_loc(self._get_first_timestamp_after(point) if after else
+                                                       self._get_last_timestamp_before(point))
         else:
             raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
         return point_index
@@ -849,7 +861,7 @@ class TimeSeries:
                   split_point: Union[pd.Timestamp, float, int],
                   after: bool = True) -> Tuple['TimeSeries', 'TimeSeries']:
 
-        point_index = self.get_index_at_point(split_point)
+        point_index = self.get_index_at_point(split_point, after)
         return self[:point_index+(1 if after else 0)], self[point_index+(1 if after else 0):]
 
     def split_after(self, split_point: Union[pd.Timestamp, float, int]) -> Tuple['TimeSeries', 'TimeSeries']:
@@ -982,7 +994,7 @@ class TimeSeries:
             return self[start_ts:start_ts+n]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
-            tss = next(filter(lambda ts: ts >= start_ts, self._time_index))
+            tss = self._get_first_timestamp_after(start_ts)
             point_index = self.get_index_at_point(tss)
             return self[point_index:point_index + n]
         else:
@@ -1014,7 +1026,7 @@ class TimeSeries:
             return self[start_ts-n+1:start_ts+1]
         elif isinstance(start_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
-            tss = next(filter(lambda ts: ts <= start_ts, self._time_index[::-1]))
+            tss = self._get_last_timestamp_before(start_ts)
             point_index = self.get_index_at_point(tss)
             return self[max(0, point_index-n+1):point_index+1]
         else:
