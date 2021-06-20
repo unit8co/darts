@@ -169,9 +169,9 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
     if (required_matches is None or len(required_matches) == 0):
         return series
 
-    first_ts = series.time_index()[0]
+    first_ts = series.time_index[0]
     freq = first_ts.freq
-    pred_ts = series.time_index()[-1] + freq
+    pred_ts = series.time_index[-1] + freq
 
     # start at first timestamp of given series and move forward until a matching timestamp is found
     curr_ts = first_ts
@@ -249,7 +249,7 @@ class FFT(ForecastingModel):
 
         # subtract trend
         detrended_values = series.univariate_values() - self.trend_function(range(len(series)))
-        detrended_series = TimeSeries.from_times_and_values(series.time_index(), detrended_values)
+        detrended_series = TimeSeries.from_times_and_values(series.time_index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
         if (self.required_matches is None):

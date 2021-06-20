@@ -128,7 +128,7 @@ class RegressionModel(ExtendedForecastingModel):
 
         # Prepare data
         training_x = self._create_training_data(series=series, exog=exog)
-        training_y = series[training_x.time_index()]
+        training_y = series[training_x.time_index]
 
         # Fit model
         if "series" in signature(self.model.fit).parameters:

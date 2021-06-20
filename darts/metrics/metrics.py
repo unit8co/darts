@@ -130,7 +130,7 @@ def _get_values_or_raise(series_a: TimeSeries,
     raise_if_not(series_a_common.has_same_time_as(series_b_common), 'The two time series (or their intersection) '
                                                                     'must have the same time index.'
                                                                     '\nFirst series: {}\nSecond series: {}'.format(
-                                                                    series_a.time_index(), series_b.time_index()),
+                                                                    series_a.time_index, series_b.time_index),
                  logger)
 
     return series_a_common.univariate_values(), series_b_common.univariate_values()

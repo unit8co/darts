@@ -228,9 +228,9 @@ class ForecastingModel(ABC):
 
         # build the prediction times in advance (to be able to use tqdm)
         if overlap_end:
-            last_valid_pred_time = series.time_index()[-1]
+            last_valid_pred_time = series.time_index[-1]
         else:
-            last_valid_pred_time = series.time_index()[-forecast_horizon]
+            last_valid_pred_time = series.time_index[-forecast_horizon]
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
@@ -521,7 +521,7 @@ class ForecastingModel(ABC):
                     model.fit(series, covariates=covariates)
                 else:
                     model.fit(series)
-                fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
+                fitted_values = TimeSeries.from_times_and_values(series.time_index, model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(series,
@@ -588,7 +588,7 @@ class ForecastingModel(ABC):
         series._assert_univariate()
 
         # get first index not contained in the first training set
-        first_index = series.time_index()[self.min_train_series_length]
+        first_index = series.time_index[self.min_train_series_length]
 
         # compute fitted values
         p = self.historical_forecasts(series=series,

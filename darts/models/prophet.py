@@ -62,7 +62,7 @@ class Prophet(ForecastingModel):
         series = self.training_series
 
         in_df = pd.DataFrame(data={
-            'ds': series.time_index(),
+            'ds': series.time_index,
             'y': series.univariate_values()
         })
 

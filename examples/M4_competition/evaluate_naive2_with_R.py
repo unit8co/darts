@@ -130,8 +130,8 @@ if __name__ == "__main__":
                     
             season_diff.append(np.abs(train_des.values() - r_train_des)/np.abs(r_train_des))
             
-            train_des = TimeSeries.from_times_and_values(train.time_index(), r_train_des)
-            seasonOut = TimeSeries.from_times_and_values(test.time_index(), r_seasonOut)
+            train_des = TimeSeries.from_times_and_values(train.time_index, r_train_des)
+            seasonOut = TimeSeries.from_times_and_values(test.time_index, r_seasonOut)
             
             naive2 = NaiveSeasonal(K=1)
             naive2.fit(train_des)

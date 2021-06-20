@@ -43,10 +43,10 @@ def compare_best_against_random(model_class, params, series):
                                           series,
                                           forecast_horizon=10,
                                           metric=mape,
-                                          start=series.time_index()[-21])
+                                          start=series.time_index[-21])
 
     # instantiate best model in split mode
-    train, val = series.split_before(series.time_index()[-10])
+    train, val = series.split_before(series.time_index[-10])
     best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
@@ -56,8 +56,8 @@ def compare_best_against_random(model_class, params, series):
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_score_1 = best_model_1.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
-    random_score_1 = random_model.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
+    best_score_1 = best_model_1.backtest(series, start=series.time_index[-21], forecast_horizon=10)
+    random_score_1 = random_model.backtest(series, start=series.time_index[-21], forecast_horizon=10)
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
