@@ -20,14 +20,16 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
+    ARIMA
 )
+
 
 from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TCNModel
+    from ..models import TCNModel, RNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch models are not installed - will not be tested for backtesting')
@@ -219,6 +221,58 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_gridsearch_n_jobs(self):
+        '''
+        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run.
+        '''
+
+        np.random.seed(1)
+        ts_length = 100
+
+        dummy_series = (
+            lt(length=ts_length, end_value=1) + st(length=ts_length, value_y_offset=0) + rt(length=ts_length)
+        )
+
+        ts_train = dummy_series[:round(ts_length * 0.8)]
+        ts_val = dummy_series[round(ts_length * 0.8):]
+
+        test_cases = [
+            {
+                "model": ARIMA,  # ExtendedForecastingModel
+                "parameters": {
+                    'p': [18, 4, 8],
+                    'q': [1, 2, 3]
+                }
+            },
+            {
+                "model": RNNModel,   # TorchForecastingModel
+                "parameters": {
+                    'input_chunk_length': [1, 3, 5, 10],
+                    'output_chunk_length': [1, 3, 5, 10],
+                    'n_epochs': [1, 5],
+                    'random_state': [42]  # necessary to avoid randomness among runs with same parameters
+                }
+            }
+        ]
+
+        for test in test_cases:
+
+            model = test["model"]
+            parameters = test["parameters"]
+
+            _, best_params1 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=1)
+
+            _, best_params2 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=-1)
+
+            self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):
