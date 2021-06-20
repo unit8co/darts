@@ -66,11 +66,12 @@ class ForecastingModel(ABC):
         self.training_series = series
         self._fit_called = True
 
-        if series.has_dummy_index:
-            self._supports_dummy_index()
+        if series.has_range_index:
+            self._supports_range_index()
 
-    def _supports_dummy_index(self) -> bool:
-        """ Checks if the forecasting model supports a dummy index.
+    def _supports_range_index(self) -> bool:
+        """ Checks if the forecasting model supports a range index.
+        Some models may not support this, if for instance the rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
         dummy indexing and raise meaningful exception.
