@@ -206,7 +206,7 @@ def random_walk_timeseries(length: int = 10,
     return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
-def holidays_timeseries(time_index,
+def holidays_timeseries(time_index: pd.DatetimeIndex,
                         country_code: str,
                         prov: str = None,
                         state: str = None) -> TimeSeries:
@@ -218,6 +218,8 @@ def holidays_timeseries(time_index,
 
     Parameters
     ----------
+    time_index
+        The time index over which to generate the holidays
     country_code
         The country ISO code
     prov
@@ -262,7 +264,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     """
 
     if isinstance(time_index, TimeSeries):
-        time_index = time_index.time_index()
+        time_index = time_index.time_index
 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                  'of pd.DatetimeIndex', logger)
