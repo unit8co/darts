@@ -185,7 +185,7 @@ class RegressionModel(ExtendedForecastingModel):
                 training_data_list.append(lagged_data)
 
         training_data = pd.concat(training_data_list, axis=1)[self.max_lag:]
-        return TimeSeries(training_data, freq=series.freq())
+        return TimeSeries(training_data, freq=series.freq)
 
     def _create_lagged_data(self, series: TimeSeries, lags: list):
         """ Creates a data frame where every lag is a new column.
@@ -240,7 +240,7 @@ class RegressionModel(ExtendedForecastingModel):
             prediction_data = prediction_data.append_values(dummy_row)
 
         if exog is not None and self.lags_exog != [0]:
-            required_start = self.training_series.end_time()+self.training_series.freq()
+            required_start = self.training_series.end_time()+self.training_series.freq
             raise_if_not(exog.start_time() == required_start,
                 "`exog` first date must be equal to self.training_series.end_time()+1*freq. " +
                 "Given: {}. Needed: {}.".format(exog.start_time(), required_start)
@@ -258,7 +258,7 @@ class RegressionModel(ExtendedForecastingModel):
                     prediction_data = pd.DataFrame(
                         append_row, columns=self.prediction_data.columns, index=[exog.index[i]]
                     )
-                    prediction_data = TimeSeries(prediction_data, freq=self.training_series.freq())
+                    prediction_data = TimeSeries(prediction_data, freq=self.training_series.freq)
                 else:
                     prediction_data = prediction_data[:-1] # Remove last dummy row
                     prediction_data = prediction_data.append_values(append_row)
@@ -268,7 +268,7 @@ class RegressionModel(ExtendedForecastingModel):
             exog_data = prediction_data[self.exog_columns] if self.exog_columns is not None else None
             forecasting_data = self._create_training_data(series=target_data, exog=exog_data).pd_dataframe()
             if "series" in signature(self.model.fit).parameters:
-                forecasting_data = TimeSeries(forecasting_data, freq=self.training_series.freq())
+                forecasting_data = TimeSeries(forecasting_data, freq=self.training_series.freq)
                 forecast = self.model.predict(n=len(forecasting_data), exog=forecasting_data, **kwargs)
                 forecast = forecast.pd_dataframe().values
             else:

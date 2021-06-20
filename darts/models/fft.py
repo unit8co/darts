@@ -84,11 +84,11 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
     """
     relevant_attributes = set()
 
-    if (type(series.freq()) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
+    if (type(series.freq) in {pd.tseries.offsets.MonthBegin, pd.tseries.offsets.MonthEnd}):
         # check for yearly seasonality
         if (_check_approximate_seasonality(series, 12, 1, 0)):
             relevant_attributes.add('month')
-    elif (type(series.freq()) == pd.tseries.offsets.Day):
+    elif (type(series.freq) == pd.tseries.offsets.Day):
         # check for yearly seasonality
         if (_check_approximate_seasonality(series, 365, 5, 20)):
             relevant_attributes.update({'month', 'day'})
@@ -98,7 +98,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for weekly seasonality
         elif (_check_approximate_seasonality(series, 7, 0, 0)):
             relevant_attributes.add('weekday')
-    elif (type(series.freq()) == pd.tseries.offsets.Hour):
+    elif (type(series.freq) == pd.tseries.offsets.Hour):
         # check for yearly seasonality
         if (_check_approximate_seasonality(series, 8760, 100, 100)):
             relevant_attributes.update({'month', 'day', 'hour'})
@@ -111,7 +111,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for daily seasonality
         elif (_check_approximate_seasonality(series, 24, 1, 1)):
             relevant_attributes.add('hour')
-    elif (type(series.freq()) == pd.tseries.offsets.Minute):
+    elif (type(series.freq) == pd.tseries.offsets.Minute):
         # check for daily seasonality
         if (_check_approximate_seasonality(series, 1440, 20, 50)):
             relevant_attributes.update({'hour', 'minute'})

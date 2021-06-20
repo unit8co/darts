@@ -83,7 +83,7 @@ def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1) -> Li
 
     # Remove null values from the series extremes
     series = series.strip()
-    freq = series.freq()
+    freq = series.freq
 
     if series.pd_dataframe().isna().sum().sum() == 0:
         return [series]

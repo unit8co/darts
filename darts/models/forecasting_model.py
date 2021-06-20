@@ -172,7 +172,7 @@ class ForecastingModel(ABC):
         the end of the training set forward by `stride` time steps.
 
         By default, this method will return a single time series made up of the last point of each
-        historical forecast. This time series will thus have a frequency of `series.freq() * stride`.
+        historical forecast. This time series will thus have a frequency of `series.freq * stride`.
         If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
 
         By default, this method always re-trains the models on the entire available history,
@@ -235,7 +235,7 @@ class ForecastingModel(ABC):
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
             # compute the next prediction time and add it to pred times
-            pred_times.append(pred_times[-1] + series.freq() * stride)
+            pred_times.append(pred_times[-1] + series.freq * stride)
 
         # the last prediction time computed might have overshot last_valid_pred_time
         if pred_times[-1] > last_valid_pred_time:
@@ -279,8 +279,8 @@ class ForecastingModel(ABC):
                     forecast = self.predict(n=forecast_horizon, series=train, **covar_argument)
                 else:
                     if 'exog' in covar_argument: # Used for objects of type `RegressionModel`
-                        start = train.end_time() + train.freq()
-                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq()]
+                        start = train.end_time() + train.freq
+                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq]
                     forecast = self.predict(n=forecast_horizon, **covar_argument)
             else:
                 if 'series' in predict_signature.parameters:
@@ -297,7 +297,7 @@ class ForecastingModel(ABC):
         if last_points_only:
             return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
                                                     np.array(last_points_values),
-                                                    freq=series.freq() * stride)
+                                                    freq=series.freq * stride)
         return forecasts
 
     def backtest(self,

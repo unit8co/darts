@@ -608,7 +608,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                      "The two TimeSeries instances must have the same width.", logger)
         raise_if_not(actual_series.width == insample.width,
                      "The insample TimeSeries must have the same width as the other series.", logger)
-        raise_if_not(insample.end_time() + insample.freq() == pred_series.start_time(),
+        raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
                      "The pred_series must be the forecast of the insample series", logger)
 
         value_list = []

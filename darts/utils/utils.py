@@ -204,7 +204,7 @@ def _historical_forecasts_general_checks(series, kwargs):
     overlap_end = n.overlap_end
 
     if not overlap_end:
-        raise_if_not(start + series.freq() * forecast_horizon in series,
+        raise_if_not(start + series.freq * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
                      '`overlap_end` set to `False`.', logger)
 
