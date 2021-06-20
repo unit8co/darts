@@ -131,7 +131,7 @@ class ForecastingModel(ABC):
         """
         input_series = input_series if input_series is not None else self.training_series
         time_index = self._generate_new_dates(len(points_preds), input_series=input_series)
-        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str())
+        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
