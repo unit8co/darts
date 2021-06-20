@@ -1,12 +1,11 @@
-import pandas as pd
 import numpy as np
 
 from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
+from ..datasets import AirPassengersDataset
 
 logger = get_logger(__name__)
 
@@ -38,8 +37,7 @@ if TORCH_AVAILABLE:
         torch.manual_seed(42)
 
         # real timeseries for functionality tests
-        df = pd.read_csv('examples/AirPassengers.csv', delimiter=",")
-        ts_passengers = TimeSeries.from_dataframe(df, 'Month', ['#Passengers'])
+        ts_passengers = AirPassengersDataset().load()
         scaler = Scaler()
         ts_passengers = scaler.fit_transform(ts_passengers)
         ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
@@ -110,6 +108,17 @@ if TORCH_AVAILABLE:
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
+                
+                # when model is fit using 1 training and 1 covariate series, time series args are optional
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
+                pred1 = model.predict(1)
+                pred2 = model.predict(1, series=self.ts_pass_train)
+                pred3 = model.predict(1, covariates=self.time_covariates_train)
+                pred4 = model.predict(1, covariates=self.time_covariates_train, series=self.ts_pass_train)
+                self.assertEqual(pred1, pred2)
+                self.assertEqual(pred1, pred3)
+                self.assertEqual(pred1, pred4)
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed

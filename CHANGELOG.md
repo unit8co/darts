@@ -4,21 +4,55 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.8.1...develop)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.7.0...develop)
+
+## [0.8.1](https://github.com/unit8co/darts/tree/0.8.1) (2021-05-22)
+**Fixed:**
+- Some fixes in the documentation
+
+**Changed:**
+- The way to instantiate Dataset classes; datasets should now be used like this
+```
+from darts.datasets import AirPassengers
+ts: TimeSeries = AirPassengers().load()
+```
+
+## [0.8.0](https://github.com/unit8co/darts/tree/0.8.0) (2021-05-21)
+
 ### For users of the library:
-
 **Added:**
 - `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from (lagged) exogenous
 variables and lagged values of the target.
+- `darts.datasets` is a new submodule allowing to easily download, cache and import some commonly used time series.
+- Better support for processing sequences of `TimeSeries`. 
+  * The Transformers, Pipelines and metrics have been adapted to be used on sequences of `TimeSeries` 
+  (rather than isolated series).
+  * The inference of neural networks on sequences of series has been improved
+- There is a new utils function `darts.utils.model_selection.train_test_split` which allows to split a `TimeSeries`
+or a sequence of `TimeSeries` into train and test sets; either along the sample axis or along the time axis.
+It also optionally allows to do "model-aware" splitting, where the split reclaims as much data as possible for the
+training set.
+- Our implementation of N-BEATS, `NBEATSModel`, now supports multivariate time series, as well as covariates.
 
 **Changed**
 - `RegressionModel` is now a user exposed class. It acts as a wrapper around any regression model with a `fit()` and `predict()`
 method. It enables the flexible usage of lagged values of the target variable as well as lagged values of multiple exogenous
 variables. Allowed values for the `lags` argument are positive integers or a list of positive integers indicating which lags
-should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable. `lags=[1, 4, 8, 12]` translates to training with the previous value, the value at lag 4, lag 8 and lag 12.
-- `StandardRegressionModel` is now called `LinearRegressionModel`. It implements a linear regression model from `sklearn.linear_model.LinearRegression.
+should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable. 
+`lags=[1, 4, 8, 12]` translates to training with the previous value, the value at lag 4, lag 8 and lag 12.
+- &#x1F534; `StandardRegressionModel` is now called `LinearRegressionModel`. It implements a linear regression model 
+from `sklearn.linear_model.LinearRegression`. Users who still need to use the former `StandardRegressionModel` with
+another sklearn model should use the `RegressionModel` now.
 
+**Fixed**
+- We have fixed a bug arising when multiple scalers were used.
+- We have fixed a small issue in the TCN architecture, which makes our implementation follow the original paper
+more closely.
+
+### For developers of the library:
+**Added:**
+- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/develop/CONTRIBUTE.md).
 
 ## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
 
