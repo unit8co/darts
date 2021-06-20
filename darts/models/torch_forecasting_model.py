@@ -72,7 +72,7 @@ class TimeSeriesTorchDataset(Dataset):
     def __len__(self):
         return len(self.ts_dataset)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def __getitem__(self, idx: int):
         """
         Cast the content of the dataset to torch tensors
         """
@@ -82,9 +82,12 @@ class TimeSeriesTorchDataset(Dataset):
             # the dataset contains (input_target, input_covariate) only
             input_tgt = torch.from_numpy(item[0].values()).float()
             input_cov = torch.from_numpy(item[1].values()).float() if item[1] is not None else None
-            future_cov = torch.from_numpy(item[2].values()).float() if item[2] is not None else np.array([])
+            future_cov = torch.from_numpy(item[2].values()).float() if item[2] is not None else None
 
-            return self._cat_with_optional(input_tgt, input_cov), future_cov
+            if future_cov is not None:
+                return self._cat_with_optional(input_tgt, input_cov), future_cov, idx
+            else:
+                return self._cat_with_optional(input_tgt, input_cov), idx
 
         elif isinstance(self.ts_dataset, TrainingDataset):
             # the dataset contains (input_target, output_target, input_covariate)
@@ -372,7 +375,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer(epochs > 0)
 
-
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
@@ -467,8 +469,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 roll_size=roll_size)
         return predictions[0] if called_with_single_series else predictions
 
-
-
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: TimeSeriesInferenceDataset,
@@ -532,8 +532,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO currently we assume all forecasts fit in memory
 
         # iterate through batches to produce predictions
+        batch_size = batch_size or self.batch_size
         pred_loader = DataLoader(TimeSeriesTorchDataset(input_series_dataset, self.device),
-                                 batch_size=batch_size or self.batch_size,
+                                 batch_size=batch_size,
                                  shuffle=False,
                                  num_workers=0,
                                  pin_memory=False,
@@ -541,10 +542,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predictions = []
         iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
         with torch.no_grad():
-            for batch_idx, (input_series, cov_future) in enumerate(iterator):
+            for batch_tuple in iterator:
 
-                batch_prediction = []  # (num_batches, n % output_chunk_length)
-                out = self.model(input_series)[:, self.first_prediction_index:, :]  # (batch_size, output_chunk_length, width)
+                input_series, indices = batch_tuple[0], batch_tuple[-1]
+                cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
+
+                batch_prediction = []
+                out = self.model(input_series)[:, self.first_prediction_index:, :]
                 batch_prediction.append(out[:, :roll_size, :])
                 prediction_length = roll_size
 
@@ -555,18 +559,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     # update target input to include next `roll_size` predictions
                     if self.input_chunk_length >= roll_size:
-                        input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :] 
+                        input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
                     else:
                         input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
 
                     # update covariates to include next `roll_size` predictions into the future
-                    if len(cov_future.shape) == 3 and self.input_chunk_length >= roll_size:
+                    if cov_future is not None and self.input_chunk_length >= roll_size:
                         input_series[:, -roll_size:, self.output_dim:] = (
-                            cov_future[:, prediction_length-roll_size:prediction_length , :]
+                            cov_future[:, prediction_length - roll_size:prediction_length, :]
                         )
-                    elif len(cov_future.shape) == 3:
+                    elif cov_future is not None:
                         input_series[:, :, self.output_dim:] = (
-                            cov_future[:, prediction_length-self.input_chunk_length:prediction_length , :]
+                            cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
                         )
 
                     # take only last part of the output sequence where needed
@@ -593,9 +597,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_prediction = batch_prediction[:, :n, :]
                 batch_prediction = batch_prediction.cpu().detach().numpy()
                 
-                ts_forecasts = Parallel(n_jobs=n_jobs)(delayed(self._build_forecast_series)(prediction, input_series[0])
-                                                       for prediction, input_series in zip(batch_prediction,
-                                                                                           input_series_dataset))
+                ts_forecasts = Parallel(n_jobs=n_jobs)(
+                    delayed(self._build_forecast_series)(
+                        batch_prediction[batch_idx],
+                        input_series_dataset[dataset_idx][0]
+                    )
+                    for batch_idx, dataset_idx in enumerate(indices)
+                )
                 
                 predictions.extend(ts_forecasts)
 
@@ -645,7 +653,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         for target_series, covariate_series in zip(series, covariates):
             raise_if_not(len(target_series) >= self.input_chunk_length,
-                            'All input series must have length >= `input_chunk_length` ({}).'.format(
+                         'All input series must have length >= `input_chunk_length` ({}).'.format(
                 self.input_chunk_length))
 
             # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
@@ -674,7 +682,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
                     )
                     raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                                'All covariates must be known `n - output_chunk_length` time steps into the future')
+                                 'All covariates must be known `n - output_chunk_length` time steps into the future')
 
                     # isolate necessary future covariates and add them to array
                     cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
@@ -682,7 +690,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     cov_future_arr.append(cov_future)
 
             tgt_past_arr.append(tgt_past)
-            
 
         cov_past_arr = None if len(cov_past_arr) == 0 else cov_past_arr
         cov_future_arr = None if len(cov_future_arr) == 0 else cov_future_arr
