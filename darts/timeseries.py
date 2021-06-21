@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
 from collections import defaultdict
+from pandas.tseries.frequencies import to_offset
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -73,6 +74,9 @@ class TimeSeries:
         if self._has_datetime_index:
             freq_tmp = xa.get_index(self._time_dim).freq  # store original freq (see bug of sortby() above).
             self._freq: pd.DateOffset = freq_tmp
+            raise_if(self._freq is None, 'The time index of the provided DataArray is missing the freq attribute.')
+
+            self._freq_str: str = self._freq.freqstr
 
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = freq_tmp
@@ -87,8 +91,6 @@ class TimeSeries:
                                             'the series contain holes? If you are using a constructor method, '
                                             'try specifying `fill_missing_dates=True` '
                                             'or specify the `freq` parameter.', logger)
-
-            self._freq_str: str = self._time_index.inferred_freq
         else:
             self._freq = 1
             self._freq_str = None
@@ -160,8 +162,22 @@ class TimeSeries:
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
         if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
+
+            def _clean_component_list(columns) -> List[str]:
+                # return a list of string containing column names
+                # make each column name unique in case some columns have the same names
+                clist = columns.to_list()
+                name_to_occurence = defaultdict(int)
+                for i, column in enumerate(clist):
+                    if not isinstance(column, str):
+                        clist[i] = str(column)
+                    name_to_occurence[clist[i]] += 1
+                    if name_to_occurence[clist[i]] > 1:
+                        clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]]-1)
+                return clist
+
             time_index_name = xa_.dims[0]
-            columns_list = TimeSeries._clean_component_list(components)
+            columns_list = _clean_component_list(components)
 
             # TODO: is there a way to just update the component index without re-creating a new DataArray?
             xa_ = xr.DataArray(xa_.values,
@@ -296,10 +312,14 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
+
+        # TODO: make it more general, not always going via a DataFrame
+
         idx = times if isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex) else None
         df = pd.DataFrame(values, index=idx)
         if columns is not None:
             df.columns = columns
+
         return TimeSeries.from_dataframe(df,
                                          time_col=None,
                                          value_cols=None,
@@ -351,20 +371,6 @@ class TimeSeries:
         """
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
-
-    @staticmethod
-    def _clean_component_list(columns) -> List[str]:
-        # return a list of string containing column names
-        # make each column name unique in case some columns have the same names
-        clist = columns.to_list()
-        name_to_occurence = defaultdict(int)
-        for i, column in enumerate(clist):
-            if not isinstance(column, str):
-                clist[i] = str(column)
-            name_to_occurence[clist[i]] += 1
-            if name_to_occurence[clist[i]] > 1:
-                clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]])
-        return clist
 
     """ 
     Properties
@@ -1284,6 +1290,10 @@ class TimeSeries:
                      'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).')
         raise_if_not(other.freq == self.freq,
                      'Appended TimeSeries must have the same frequency as the current one', logger)
+        raise_if_not(other.n_components == self.n_components,
+                     'Both series must have the same number of components.')
+        raise_if_not(other.n_samples == self.n_samples,
+                     'Both series must have the same number of components.')
         if self._has_datetime_index:
             raise_if_not(other.start_time() == self.end_time() + self.freq,
                          'Appended TimeSeries must start one time step after current one.', logger)
@@ -1294,26 +1304,25 @@ class TimeSeries:
         raise_if_not(other_xa.dims[0] == self._time_dim,
                      'Both time series must have the same name for the time dimensions.')
 
-        new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
+        new_xa = xr.DataArray(np.concatenate((self._xa.values, other_xa.values), axis=0),
+                              dims=self._xa.dims,
+                              coords={self._time_dim: self._time_index.append(other.time_index),
+                                      DIMS[1]: self.components})
+
+        # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
         if not self._has_datetime_index:
             new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
 
-        return TimeSeries(new_xa)
+        return TimeSeries.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
 
-    def append_values(self,
-                      values: np.ndarray,
-                      index: pd.DatetimeIndex = None) -> 'TimeSeries':
+    def append_values(self, values: np.ndarray) -> 'TimeSeries':
         """
         Appends values to current TimeSeries, to the given indices.
-
-        If no index is provided, assumes that it follows the original data.
 
         Parameters
         ----------
         values
             An array with the values to append.
-        index
-            A `pandas.DateTimeIndex` or `pandas.RangeIndex` for the new values (optional)
 
         Returns
         -------
@@ -1322,16 +1331,14 @@ class TimeSeries:
         """
 
         # TODO test
-        if index is not None:
-            idx = index
-        elif self._has_datetime_index:
-            idx = pd.DatetimeIndex(self.end_time() + self._freq,
-                                   self.end_time() + len(values) * self._freq,
-                                   self._freq)
+        if self._has_datetime_index:
+            idx = pd.DatetimeIndex([self.end_time() + i * self._freq for i in range(1, len(values)+1)], freq=self._freq)
         else:
             idx = pd.RangeIndex(len(self), len(self)+len(values), 1)
 
-        return self.append(TimeSeries.from_times_and_values(values=values, times=idx))
+        return self.append(TimeSeries.from_times_and_values(values=values,
+                                                            times=idx,
+                                                            fill_missing_dates=False))
 
     def update(self,
                index: pd.DatetimeIndex,
@@ -1905,10 +1912,24 @@ class TimeSeries:
             raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
                                                'but the series uses a DatetimeIndex.')
 
+        def _set_freq_in_xa(xa_: xr.DataArray):
+            # mutates the DataArray to make sure it contains the freq
+            inferred_freq = xa_.get_index(self._time_dim).inferred_freq
+            if inferred_freq is not None:
+                xa_.get_index(self._time_dim).freq = to_offset(inferred_freq)
+            else:
+                xa_.get_index(self._time_dim).freq = self._freq
+
         # handle DatetimeIndex and RangeIndex:
         if isinstance(key, pd.DatetimeIndex):
             _check_dt()
-            return TimeSeries(self._xa.sel({self._time_dim: key}))
+            xa_ = self._xa.sel({self._time_dim: key})
+
+            # indexing may discard the freq so we restore it...
+            # TODO: unit-test this
+            _set_freq_in_xa(xa_)
+
+            return TimeSeries(xa_)
         elif isinstance(key, pd.RangeIndex):
             _check_range()
             return TimeSeries(self._xa.sel({self._time_dim: key}))
@@ -1921,8 +1942,11 @@ class TimeSeries:
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
-                return TimeSeries(self._xa.sel({self._time_dim: key}))
-            # return TimeSeries(self._xa.__getitem__(key))
+
+                # indexing may discard the freq so we restore it...
+                xa_ = self._xa.sel({self._time_dim: key})
+                _set_freq_in_xa(xa_)
+                return TimeSeries(xa_)
 
         # handle simple types:
         elif isinstance(key, str):
@@ -1931,7 +1955,11 @@ class TimeSeries:
             return TimeSeries(self._xa.isel({self._time_dim: [key]}))
         elif isinstance(key, pd.Timestamp):
             _check_dt()
-            return TimeSeries(self._xa.sel({self._time_dim: [key]}))
+
+            # indexing may discard the freq so we restore it...
+            xa_ = self._xa.sel({self._time_dim: [key]})
+            _set_freq_in_xa(xa_)
+            return TimeSeries(xa_)
 
         # handle lists:
         if isinstance(key, list):
@@ -1942,6 +1970,10 @@ class TimeSeries:
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
-                return TimeSeries(self._xa.sel({self._time_dim: key}))
+
+                # indexing may discard the freq so we restore it...
+                xa_ = self._xa.sel({self._time_dim: key})
+                _set_freq_in_xa(xa_)
+                return TimeSeries(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
