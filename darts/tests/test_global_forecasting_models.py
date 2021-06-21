@@ -167,7 +167,7 @@ if TORCH_AVAILABLE:
             self._batch_prediction_test_helper_function(targets_multivar)
 
         def _batch_prediction_test_helper_function(self, targets):
-            epsilon = 1e-5
+            epsilon = 1e-4
             model = TCNModel(input_chunk_length=50, output_chunk_length=10, n_epochs=10, random_state=0)
             model.fit(series=targets[0], covariates=self.covariates_past)
             preds_default = model.predict(n=160, series=targets,
