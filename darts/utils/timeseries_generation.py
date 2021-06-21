@@ -294,4 +294,4 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     if one_hot:
         values_df.columns = [attribute + '_' + str(column_name) for column_name in values_df.columns]
 
-    return TimeSeries(values_df)
+    return TimeSeries.from_dataframe(values_df)

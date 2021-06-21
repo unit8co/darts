@@ -243,9 +243,6 @@ class TimeSeries:
         if not time_index.name:
             time_index.name = DIMS[0]
 
-        # get columns' names
-        # columns_list = TimeSeries._clean_component_list(series_df.columns)
-
         xa = xr.DataArray(series_df.values[:, :, np.newaxis],
                           dims=(time_index.name,) + DIMS[-2:],
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
