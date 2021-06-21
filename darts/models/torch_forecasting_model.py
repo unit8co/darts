@@ -637,7 +637,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Optional[Sequence[TimeSeries]]
             Covariates required to predict horizons up to `self.output_chunk_length`, or `None` if the model
             does not require covariates.
-        Optional[torch.Tensor]
+        Optional[Sequence[TimeSeries]]
             Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
             does require future covariates either because it does not require covariates at all or because
             `n <= self.output_chunk_length`.
