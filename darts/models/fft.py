@@ -50,7 +50,7 @@ def _check_approximate_seasonality(series: TimeSeries, seasonality_period: int,
         return False
 
     # compute relevant autocorrelation values
-    r = acf(series.univariate_values(), nlags=int(seasonality_period * (1 + frac)))
+    r = acf(series.univariate_values(), nlags=int(seasonality_period * (1 + frac)), fft=False)
 
     # compute the approximate autocorrelation value for the given period
     left_bound = seasonality_period - period_error_margin

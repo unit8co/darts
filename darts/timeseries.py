@@ -857,6 +857,26 @@ class TimeSeries:
             raise_log(TypeError("`point` needs to be either `float`, `int` or `pd.Timestamp`"), logger)
         return point_index
 
+    def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> pd.Timestamp:
+        """
+        Converts a point into a pandas.Timestamp in the time series
+
+        Parameters
+        ----------
+        point
+            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
+            In case of a `float`, the parameter will be treated as the proportion of the time series
+            that should lie before the point.
+            In the case of `int`, the parameter will be treated as an integer index to the time index of
+            `series`. Will raise a ValueError if not a valid index in `series`
+            In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
+            is present in the series time index, otherwise will raise a ValueError.
+        """
+        raise_if_not(self._has_datetime_index, 'Called get_timestamp_at_point() but this series '
+                                               'is not indexed with a DatetimeIndex.')
+        idx = self.get_index_at_point(point)
+        return self._time_index[idx]
+
     def _split_at(self,
                   split_point: Union[pd.Timestamp, float, int],
                   after: bool = True) -> Tuple['TimeSeries', 'TimeSeries']:

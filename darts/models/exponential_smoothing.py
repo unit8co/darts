@@ -72,7 +72,8 @@ class ExponentialSmoothing(ForecastingModel):
                                            trend=self.trend.value,
                                            damped_trend=self.damped,
                                            seasonal=self.seasonal.value,
-                                           seasonal_periods=self.seasonal_periods)
+                                           seasonal_periods=self.seasonal_periods,
+                                           initialization_method='estimated')
 
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
