@@ -9,10 +9,10 @@ It can represent a stochastic time series by storing several samples (trajectori
 import pandas as pd
 import numpy as np
 import xarray as xr
-
 import matplotlib.pyplot as plt
 from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
+from collections import defaultdict
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -108,6 +108,9 @@ class TimeSeries:
         dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
         respectively.
 
+        If two components have the same name or are not strings, this method will disambiguate the components
+        names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
+
         Parameters
         ----------
         xa
@@ -154,6 +157,17 @@ class TimeSeries:
         else:
             xa_ = xa
 
+        # clean components (columns) names if needed (if names are not unique, or not strings)
+        components = xa_.get_index(DIMS[1])
+        if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
+            time_index_name = xa_.dims[0]
+            columns_list = TimeSeries._clean_component_list(components)
+
+            # TODO: is there a way to just update the component index without re-creating a new DataArray?
+            xa_ = xr.DataArray(xa_.values,
+                               dims=xa_.dims,
+                               coords={time_index_name: xa_.get_index(time_index_name), DIMS[1]: columns_list})
+
         # We cast the array to float
         # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
         return TimeSeries(xa_.astype(np.float))
@@ -193,14 +207,6 @@ class TimeSeries:
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
 
-        def _get_column_list(columns: pd._typing.Axes) -> pd.Index:
-            # return a list of string containing column names
-            clist = columns.to_list()
-            for i, column in enumerate(clist):
-                if not isinstance(column, str):
-                    clist[i] = str(column)
-            return clist
-
         # get values
         if value_cols is None:
             series_df = df.loc[:, df.columns != time_col]
@@ -222,11 +228,11 @@ class TimeSeries:
             time_index.name = DIMS[0]
 
         # get columns' names
-        columns_list = _get_column_list(series_df.columns)
+        # columns_list = TimeSeries._clean_component_list(series_df.columns)
 
         xa = xr.DataArray(series_df.values[:, :, np.newaxis],
                           dims=(time_index.name,) + DIMS[-2:],
-                          coords={time_index.name: time_index, DIMS[1]: columns_list})
+                          coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
 
@@ -346,6 +352,20 @@ class TimeSeries:
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
 
+    @staticmethod
+    def _clean_component_list(columns) -> List[str]:
+        # return a list of string containing column names
+        # make each column name unique in case some columns have the same names
+        clist = columns.to_list()
+        name_to_occurence = defaultdict(int)
+        for i, column in enumerate(clist):
+            if not isinstance(column, str):
+                clist[i] = str(column)
+            name_to_occurence[clist[i]] += 1
+            if name_to_occurence[clist[i]] > 1:
+                clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]])
+        return clist
+
     """ 
     Properties
     ==========
@@ -392,7 +412,7 @@ class TimeSeries:
         """
         The names of the components (equivalent to DataFrame columns) as a Pandas Index
         """
-        return self._xa.get_index('component').copy()
+        return self._xa.get_index(DIMS[1]).copy()
 
     @property
     def columns(self):
@@ -1358,7 +1378,9 @@ class TimeSeries:
                                                         'have the same number of samples.')
 
         new_xa = xr.concat([self._xa, other.data_array(copy=False)], dim=DIMS[1])
-        return TimeSeries(new_xa)
+
+        # we call the factory method here to disambiguate column names if needed.
+        return TimeSeries.from_xarray(new_xa, fill_missing_dates=False)
 
     def univariate_component(self, index: Union[str, int]) -> 'TimeSeries':
         """
