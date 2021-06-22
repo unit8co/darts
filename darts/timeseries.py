@@ -33,13 +33,14 @@ class TimeSeries:
         raise_if_not(isinstance(xa, xr.DataArray), 'Data must be provided as an xarray DataArray instance. '
                                                    'If you need to create a TimeSeries from another type '
                                                    '(e.g. a DataFrame), look at TimeSeries factory methods '
-                                                   '(e.g. TimeSeries.from_dataframe()).')
-        raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS))
-        raise_if_not(xa.size > 0, 'The time series array must not be empty.')
+                                                   '(e.g. TimeSeries.from_dataframe()).', logger)
+        raise_if_not(xa.size > 0, 'The time series array must not be empty.', logger)
+        raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS), logger)
 
         # Ideally values should be np.float, otherwise certain functionalities like diff()
         # relying on np.nan (which is a float) won't work very properly.
-        raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.')
+        raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.',
+                     logger)
         if not np.issubdtype(xa.values.dtype, np.float):
             logger.warn('TimeSeries is using a numeric type different from np.float. Not all functionalities '
                         'may work properly. It is recommended casting your data to floating point numbers before '
@@ -47,12 +48,13 @@ class TimeSeries:
 
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
-            raise_log(ValueError('The last two dimensions of the DataArray must be named {}'.format(DIMS[-2:])))
+            raise_log(ValueError('The last two dimensions of the DataArray must be named {}'.format(DIMS[-2:])), logger)
 
         # check that columns/component names are unique
         components = xa.get_index(DIMS[1])
         raise_if_not(len(set(components)) == len(components),
-                     'The components (columns) names must be unique. Provided: {}'.format(components))
+                     'The components (columns) names must be unique. Provided: {}'.format(components),
+                     logger)
 
         self._time_dim = xa.dims[0]  # how the time dimension is named
 
@@ -72,14 +74,16 @@ class TimeSeries:
 
         if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
             raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
-                                 'or with a RangeIndex.'))
+                                 'or with a RangeIndex.'), logger)
 
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
             freq_tmp = xa.get_index(self._time_dim).freq  # store original freq (see bug of sortby() above).
             self._freq: pd.DateOffset = freq_tmp
-            raise_if(self._freq is None, 'The time index of the provided DataArray is missing the freq attribute.')
+            raise_if(self._freq is None,
+                     'The time index of the provided DataArray is missing the freq attribute.',
+                     logger)
 
             self._freq_str: str = self._freq.freqstr
 
@@ -167,6 +171,8 @@ class TimeSeries:
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
         if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
+
+            # TODO: test this
             def _clean_component_list(columns) -> List[str]:
                 # return a list of string containing column names
                 # make each column name unique in case some columns have the same names
@@ -177,8 +183,8 @@ class TimeSeries:
                     if not isinstance(column, str):
                         clist[i] = str(column)
 
-                has_repetition = len(set(clist)) != len(clist)
-                while has_repetition:
+                has_duplicate = len(set(clist)) != len(clist)
+                while has_duplicate:
                     # we may have to loop several times (e.g. we could have columns ["0", "0_1", "0"] and not
                     # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
                     name_to_occurence = defaultdict(int)
@@ -188,7 +194,7 @@ class TimeSeries:
                         if name_to_occurence[clist[i]] > 1:
                             clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]]-1)
 
-                    has_repetition = len(set(clist)) != len(clist)
+                    has_duplicate = len(set(clist)) != len(clist)
 
                 return clist
 
@@ -253,7 +259,7 @@ class TimeSeries:
         else:
             raise_if_not(isinstance(df.index, pd.RangeIndex) or isinstance(df.index, pd.DatetimeIndex),
                          'If time_col is not specified, the DataFrame must be indexed either with'
-                         'a DatetimeIndex, or with a RangeIndex.')
+                         'a DatetimeIndex, or with a RangeIndex.', logger)
             time_index = df.index
 
         if not time_index.name:
@@ -499,7 +505,9 @@ class TimeSeries:
     def _raise_if_not_within(self, ts: Union[pd.Timestamp, int]):
         if isinstance(ts, pd.Timestamp):
             # Not that the converse doesn't apply (a time-indexed series can be called with an integer)
-            raise_if_not(self._has_datetime_index, 'Function called with a timestamp, but series not time-indexed.')
+            raise_if_not(self._has_datetime_index,
+                         'Function called with a timestamp, but series not time-indexed.',
+                         logger)
             is_inside = self.start_time() <= ts <= self.end_time()
         else:
             if self._has_datetime_index:
@@ -508,7 +516,8 @@ class TimeSeries:
                 is_inside = self.start_time() <= ts <= self.end_time()
 
         raise_if_not(is_inside, 'Timestamp must be between {} and {}'.format(self.start_time(),
-                                                                             self.end_time()))
+                                                                             self.end_time()),
+                     logger)
 
     def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp:
         return next(filter(lambda t: t >= ts, self._time_index))
@@ -609,7 +618,7 @@ class TimeSeries:
         """
         self._assert_stochastic()
         raise_if_not(0 <= quantile <= 1,
-                     'The quantile values must be expressed as fraction (between 0 and 1 inclusive).')
+                     'The quantile values must be expressed as fraction (between 0 and 1 inclusive).', logger)
 
         # column names
         cnames = list(map(lambda s: s + '_{}'.format(quantile), self.columns))
@@ -746,7 +755,7 @@ class TimeSeries:
             The values composing the time series.
         """
         raise_if(self.is_deterministic and sample != 0, 'This series contains one sample only (deterministic),'
-                                                        'so only sample=0 is accepted.')
+                                                        'so only sample=0 is accepted.', logger)
         if copy:
             return np.copy(self._xa.values[:, :, sample])
         else:
@@ -885,7 +894,7 @@ class TimeSeries:
             point_index = point
         elif isinstance(point, pd.Timestamp):
             raise_if_not(self._has_datetime_index,
-                         'A Timestamp has been provided, but this series is not time-indexed.')
+                         'A Timestamp has been provided, but this series is not time-indexed.', logger)
             self._raise_if_not_within(point)
             if point in self:
                 point_index = self._time_index.get_loc(point)
@@ -912,7 +921,7 @@ class TimeSeries:
             is present in the series time index, otherwise will raise a ValueError.
         """
         raise_if_not(self._has_datetime_index, 'Called get_timestamp_at_point() but this series '
-                                               'is not indexed with a DatetimeIndex.')
+                                               'is not indexed with a DatetimeIndex.', logger)
         idx = self.get_index_at_point(point)
         return self._time_index[idx]
 
@@ -1017,14 +1026,14 @@ class TimeSeries:
             A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
         """
         raise_if_not(type(start_ts) == type(end_ts), 'The two timestamps provided to slice() have to be of the '
-                                                     'same type.')
+                                                     'same type.', logger)
         if isinstance(start_ts, pd.Timestamp):
             raise_if_not(self._has_datetime_index, 'Timestamps have been provided to slice(), but the series is '
-                                                   'indexed using an integer-based RangeIndex.')
+                                                   'indexed using an integer-based RangeIndex.', logger)
             idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t <= end_ts, self._time_index))
         else:
             raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
-                                               'the series is indexed with a DatetimeIndex.')
+                                               'the series is indexed with a DatetimeIndex.', logger)
             idx = pd.RangeIndex(start_ts, end_ts, step=1)
         return self[idx]
 
@@ -1057,7 +1066,7 @@ class TimeSeries:
             point_index = self.get_index_at_point(tss)
             return self[point_index:point_index + n]
         else:
-            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'))
+            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'), logger)
 
     def slice_n_points_before(self, start_ts: Union[pd.Timestamp, float, int], n: int) -> 'TimeSeries':
         """
@@ -1089,7 +1098,7 @@ class TimeSeries:
             point_index = self.get_index_at_point(tss)
             return self[max(0, point_index-n+1):point_index+1]
         else:
-            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'))
+            raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'), logger)
 
     def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -1247,9 +1256,9 @@ class TimeSeries:
             A TimeSeries constructed after differencing.
         """
         if not isinstance(n, int) or n < 1:
-             raise_log(ValueError("'n' must be a positive integer >= 1."))
+             raise_log(ValueError("'n' must be a positive integer >= 1."), logger)
         if not isinstance(periods, int) or periods < 1:
-             raise_log(ValueError("'periods' must be an integer >= 1."))
+             raise_log(ValueError("'periods' must be an integer >= 1."), logger)
 
         def _compute_diff(xa: xr.DataArray):
             # xarray doesn't support Pandas "period" so compute diff() ourselves
@@ -1300,13 +1309,13 @@ class TimeSeries:
             A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
         raise_if_not(other.has_datetime_index == self.has_datetime_index,
-                     'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).')
+                     'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).', logger)
         raise_if_not(other.freq == self.freq,
                      'Appended TimeSeries must have the same frequency as the current one', logger)
         raise_if_not(other.n_components == self.n_components,
-                     'Both series must have the same number of components.')
+                     'Both series must have the same number of components.', logger)
         raise_if_not(other.n_samples == self.n_samples,
-                     'Both series must have the same number of components.')
+                     'Both series must have the same number of components.', logger)
         if self._has_datetime_index:
             raise_if_not(other.start_time() == self.end_time() + self.freq,
                          'Appended TimeSeries must start one time step after current one.', logger)
@@ -1391,7 +1400,7 @@ class TimeSeries:
         raise_if_not(self.has_same_time_as(other), 'The indices of the two TimeSeries instances '
                      'must be equal', logger)
         raise_if_not(self.n_samples == other.n_samples, 'Two series can be stacked only if they '
-                                                        'have the same number of samples.')
+                                                        'have the same number of samples.', logger)
 
         new_xa = xr.concat([self._xa, other.data_array(copy=False)], dim=DIMS[1])
 
@@ -1504,7 +1513,7 @@ class TimeSeries:
         elif method == 'bfill':
             new_xa = resample.backfill()
         else:
-            raise_log(ValueError('Unknown method: {}'.format(method)))
+            raise_log(ValueError('Unknown method: {}'.format(method)), logger)
         return TimeSeries(new_xa)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
@@ -1627,11 +1636,13 @@ class TimeSeries:
 
         if central_quantile != 'mean':
             raise_if_not(isinstance(central_quantile, float) and 0. <= central_quantile <= 1.,
-                         'central_quantile must be either "mean", or a float between 0 and 1.')
+                         'central_quantile must be either "mean", or a float between 0 and 1.',
+                         logger)
 
         if confidence_high_quantile is not None and confidence_low_quantile is not None:
             raise_if_not(0. <= confidence_low_quantile <= 1. and 0. <= confidence_high_quantile <= 1.,
-                         'confidence interval low and high quantiles must be between 0 and 1.')
+                         'confidence interval low and high quantiles must be between 0 and 1.',
+                         logger)
 
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
@@ -1741,7 +1752,7 @@ class TimeSeries:
             other_vals = other
 
         raise_if_not(self._xa.values.shape == other_vals.shape, 'Attempted to perform operation on two TimeSeries '
-                                                                'of unequal shapes.')
+                                                                'of unequal shapes.', logger)
         new_xa = self._xa.copy()
         new_xa.values = combine_fn(new_xa.values, other_vals)
         return TimeSeries(new_xa)
@@ -1795,7 +1806,7 @@ class TimeSeries:
 
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
-            raise_if(n < 0, 'Attempted to raise a series to a negative power.')
+            raise_if(n < 0, 'Attempted to raise a series to a negative power.', logger)
             return TimeSeries(self._xa ** float(n))
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
@@ -1915,11 +1926,11 @@ class TimeSeries:
         """
         def _check_dt():
             raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex or a timestamp, '
-                                                   'but the series uses a RangeIndex.')
+                                                   'but the series uses a RangeIndex.', logger)
 
         def _check_range():
             raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
-                                               'but the series uses a DatetimeIndex.')
+                                               'but the series uses a DatetimeIndex.', logger)
 
         def _set_freq_in_xa(xa_: xr.DataArray):
             # mutates the DataArray to make sure it contains the freq

@@ -47,7 +47,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_exog1 = ts_periodic.stack(ts_gaussian)
     ts_exog1 = ts_exog1.pd_dataframe()
     ts_exog1.columns = ["Periodic", "Gaussian"]
-    ts_exog1 = TimeSeries(ts_exog1)
+    ts_exog1 = TimeSeries.from_dataframe(ts_exog1)
     ts_sum1 = ts_periodic + ts_gaussian
 
     ts_exog2 = ts_sum1.stack(ts_random_walk)
