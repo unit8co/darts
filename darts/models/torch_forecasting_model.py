@@ -648,7 +648,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if covariate_series is not None:
 
                 # get first timestamp that lies in the future of target series
-                first_pred_time = target_series.end_time() + target_series.freq()
+                first_pred_time = target_series.end_time() + target_series.freq
 
                 # check whether future covariates are available and separate them if they are
                 if covariate_series.end_time() >= first_pred_time:
