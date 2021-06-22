@@ -39,7 +39,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         and `cov_past` time series.
 
         Parameters `n`, `output_chunk_length` and `model_is_recurrent` are necessary to determine whether
-        cov_future` is necessary (or can be set to `None`) and to determine the required length for `cov_future`.
+        `cov_future` is necessary (or can be set to `None`) and to determine the required length for `cov_future`.
         It is important for the 3 emitted time series to have the same length across data points because
         they will be cast to tensors later on.
 
