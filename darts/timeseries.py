@@ -49,6 +49,11 @@ class TimeSeries:
             # The first dimension represents the time and may be named differently.
             raise_log(ValueError('The last two dimensions of the DataArray must be named {}'.format(DIMS[-2:])))
 
+        # check that columns/component names are unique
+        components = xa.get_index(DIMS[1])
+        raise_if_not(len(set(components)) == len(components),
+                     'The components (columns) names must be unique. Provided: {}'.format(components))
+
         self._time_dim = xa.dims[0]  # how the time dimension is named
 
         if isinstance(xa.get_index(self._time_dim), pd.DatetimeIndex):
@@ -162,18 +167,29 @@ class TimeSeries:
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
         if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
-
             def _clean_component_list(columns) -> List[str]:
                 # return a list of string containing column names
                 # make each column name unique in case some columns have the same names
                 clist = columns.to_list()
-                name_to_occurence = defaultdict(int)
+
+                # convert everything to string if needed
                 for i, column in enumerate(clist):
                     if not isinstance(column, str):
                         clist[i] = str(column)
-                    name_to_occurence[clist[i]] += 1
-                    if name_to_occurence[clist[i]] > 1:
-                        clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]]-1)
+
+                has_repetition = len(set(clist)) != len(clist)
+                while has_repetition:
+                    # we may have to loop several times (e.g. we could have columns ["0", "0_1", "0"] and not
+                    # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
+                    name_to_occurence = defaultdict(int)
+                    for i, column in enumerate(clist):
+                        name_to_occurence[clist[i]] += 1
+
+                        if name_to_occurence[clist[i]] > 1:
+                            clist[i] = clist[i] + '_{}'.format(name_to_occurence[clist[i]]-1)
+
+                    has_repetition = len(set(clist)) != len(clist)
+
                 return clist
 
             time_index_name = xa_.dims[0]

@@ -260,7 +260,8 @@ class RegressionModel(ExtendedForecastingModel):
                         append_row, columns=self.prediction_data.columns, index=[exog.index[i]]
                     )
                     prediction_data = TimeSeries.from_dataframe(prediction_data,
-                                                                fill_missing_dates=False)
+                                                                fill_missing_dates=True,
+                                                                freq=self.training_series.freq)
                 else:
                     prediction_data = prediction_data[:-1]  # Remove last dummy row
                     prediction_data = prediction_data.append_values(append_row)
