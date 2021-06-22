@@ -127,10 +127,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         nan_series = self.ts_sum1.pd_dataframe()
         nan_series.iloc[[0, 2, 8, 32, 497, 499], :] = np.nan
-        nan_series = TimeSeries(nan_series)
+        nan_series = TimeSeries.from_dataframe(nan_series)
         training_data = model._create_training_data(series=nan_series)
         self.assertEqual(len(training_data), len(nan_series)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(len(training_data.columns), lags)
         self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
 
 
