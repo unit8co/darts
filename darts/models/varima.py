@@ -58,14 +58,14 @@ class VARIMA(ExtendedForecastingModel):
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
     def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
-        self._last_values = series.last_values() # needed for back-transformation when d=1
+        self._last_values = series.last_values()  # needed for back-transformation when d=1
         for _ in range(self.d):
-            series = TimeSeries(series._df.diff().dropna())
+            series = TimeSeries.from_dataframe(series.pd_dataframe(copy=False).diff().dropna())
 
         super().fit(series, exog)
         series = self.training_series
         exog = exog.values() if exog else None
-        m = staVARMA(endog=series._df, exog=exog, order=(self.p, self.q), trend=self.trend)
+        m = staVARMA(endog=series.pd_dataframe(copy=False), exog=exog, order=(self.p, self.q), trend=self.trend)
         self.model = m.fit(disp=0)
 
     def predict(self, n: int, exog: Optional[TimeSeries] = None):

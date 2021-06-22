@@ -1297,10 +1297,6 @@ class TimeSeries:
 
         other_xa = other.data_array()
 
-        # TODO: could we just remove this constraint and rename the dimension if needed
-        raise_if_not(other_xa.dims[0] == self._time_dim,
-                     'Both time series must have the same name for the time dimensions.')
-
         new_xa = xr.DataArray(np.concatenate((self._xa.values, other_xa.values), axis=0),
                               dims=self._xa.dims,
                               coords={self._time_dim: self._time_index.append(other.time_index),

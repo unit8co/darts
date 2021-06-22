@@ -669,13 +669,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 if n > self.output_chunk_length:
                     # check that enough future covariates are available and keep only necessary ones
                     last_required_future_covariate_ts = (
-                        target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
+                        target_series.end_time() + (n - self.output_chunk_length) * target_series.freq
                     )
                     raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
                                 'All covariates must be known `n - output_chunk_length` time steps into the future')
 
                     # drop past covariates (already used)
-                    cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq()).values(copy=False)
+                    cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq).values(copy=False)
                     cov_future = cov_future[:n - self.output_chunk_length]
                     cov_future = torch.from_numpy(cov_future).float().to(self.device)
                     cov_future = cov_future.view(1, n - self.output_chunk_length, -1)
