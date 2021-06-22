@@ -150,12 +150,19 @@ if TORCH_AVAILABLE:
             self.assertTrue(mape(self.target_future, long_pred_no_cov) > mape(self.target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
-            # models can predict up to self.output_chunk_length points beyond the last future covariate...
+            # block models can predict up to self.output_chunk_length points beyond the last future covariate...
             model.predict(n=165, covariates=self.covariates)
 
             # ... not more
             with self.assertRaises(ValueError):
                 model.predict(n=166, series=self.ts_pass_train)
+
+            # recurrent models can only predict data points for time steps where future covariates are available
+            model = TrueRNNModel(n_epochs=1)
+            model.fit(series=self.target_past, covariates=self.covariates_past)
+            model.predict(n=160, covariates=self.covariates)
+            with self.assertRaises(ValueError):
+                model.predict(n=161, covariates=self.covariates)
 
         def test_batch_predictions(self):
             # predicting multiple time series at once needs to work for arbitrary batch sizes
