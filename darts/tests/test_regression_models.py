@@ -122,7 +122,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = RegressionModel(lags=lags)
         training_data = model._create_training_data(series=self.ts_sum1)
         self.assertEqual(len(training_data), len(self.ts_sum1)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(len(training_data.columns), lags)
         self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
 
         nan_series = self.ts_sum1.pd_dataframe()
@@ -225,4 +225,4 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             prediction = model.predict(n=10)
             self.assertEqual(model.nr_exog, 0)
             self.assertEqual(len(model.prediction_data), lags)
-            self.assertEqual(len(model.prediction_data.columns()), 1)
+            self.assertEqual(len(model.prediction_data.columns), 1)
