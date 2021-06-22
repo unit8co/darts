@@ -687,7 +687,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  'All covariates must be known `n - output_chunk_length` time steps into the future')
 
                     # isolate necessary future covariates and add them to array
-                    cov_future = covariate_series.drop_before(first_pred_time + (1 - int(self.is_recurrent))
+                    cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.is_recurrent))
                                                               * covariate_series.freq())
                     cov_future = cov_future[:n - self.output_chunk_length + int(self.is_recurrent)]
                     cov_future_arr.append(cov_future)
