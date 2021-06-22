@@ -17,6 +17,7 @@ class ShiftedDataset(TrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
+                 shift_covariates: bool = False,
                  max_samples_per_ts: Optional[int] = None):
         """
         A time series dataset containing tuples of (input, output, input_covariates) arrays, which all have length
@@ -42,13 +43,17 @@ class ShiftedDataset(TrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates:
+        covariates
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`.
         length
             The length of the emitted input and output series.
         shift
             The number of time steps by which to shift the output relative to the input.
+        shift_covariates
+            Whether or not to shift the covariates forward the same way as the target.
+            Block models require this parameter to be set to `False` In the case of recurrent
+            model, this parameter should be set to `True`.
         max_samples_per_ts
             This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
@@ -66,8 +71,7 @@ class ShiftedDataset(TrainingDataset):
                      'The provided sequence of target series must have the same length as '
                      'the provided sequence of covariate series.')
 
-
-        self.length, self.shift = length, shift
+        self.length, self.shift, self.shift_covariates = length, shift, shift_covariates
         self.max_samples_per_ts = max_samples_per_ts
 
         if self.max_samples_per_ts is None:
@@ -83,7 +87,7 @@ class ShiftedDataset(TrainingDataset):
     def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         raise_if_not(min(len(ts) for ts in self.target_series) - self.length - self.shift + 1 > 0,
                      "Every target series needs to be at least `length + shift` long")
-    
+
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx].values(copy=False)
@@ -118,6 +122,14 @@ class ShiftedDataset(TrainingDataset):
                          'The dataset contains some target/covariate series '
                          'pair that are not the same size ({}-th)'.format(ts_idx))
 
-            input_covariate = ts_covariate[-(self.length + end_of_output_idx + self.shift):-(end_of_output_idx + self.shift)]
+            if self.shift_covariates:
+                if end_of_output_idx == 0:
+                    # we need this case because "-0" is not supported as an indexing bound
+                    input_covariate = ts_covariate[-self.length:]
+                else:
+                    input_covariate = ts_covariate[-(self.length + end_of_output_idx):-end_of_output_idx]
+            else:
+                input_covariate = ts_covariate[-(self.length + end_of_output_idx + self.shift):
+                                               -(end_of_output_idx + self.shift)]
 
         return input_series, output_series, input_covariate
