@@ -66,9 +66,6 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
                      self.input_chunk_length))
 
-        # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
-        # TODO: e.g. by taking their latest common timestamp.
-
         tgt_past = target_series[-self.input_chunk_length:]
 
         cov_past = cov_future = None
@@ -99,4 +96,3 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 cov_future = cov_future[:self.n - self.output_chunk_length]
 
         return tgt_past, cov_past, cov_future
-
