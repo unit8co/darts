@@ -401,6 +401,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
+        Block models:
         If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
         recurrent way, by iteratively feeding the last `roll_size` forecast points as
         inputs to the model until a forecast of length `n` is obtained. If the model was trained with
@@ -408,8 +409,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
         then covariates need to be available in the future.
 
-        If some time series in the ``series`` argument have more time steps than the model was trained with,
-        only the last ``input_chunk_length`` time steps will be considered.
+        Recurrent models:
+        All predictions are produced in a recurrent way by taking as input
+        - the previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction
+        - the previous hidden state
+        - the current covariates (if the model was trained with covariates)
+        As a result, if covariates were used, `n` covariates have to be available into the future.
+
+        If some time series in the `series` argument have more time steps than the model was trained with,
+        only the last `input_chunk_length` time steps will be considered.
 
         Parameters
         ----------
@@ -482,17 +491,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         """
         Predicts values for a certain number of time steps after the end of the series appearing in the specified
-        ``input_series_dataset``.
+        `input_series_dataset`.
 
-        If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last ``roll_size`` forecast points as
-        inputs to the model until a forecast of length ``n`` is obtained. If the model was trained with
+        Block models:
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
+        recurrent way, by iteratively feeding the last `roll_size` forecast points as
+        inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
         then covariates need to be available in the future.
 
-        If some series in the ``input_series_dataset`` have more time steps than the model was trained with,
-        only the last ``input_chunk_length`` time steps will be considered.
+        Recurrent models:
+        All predictions are produced in a recurrent way by taking as input
+        - the previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction
+        - the previous hidden state
+        - the current covariates (if the model was trained with covariates)
+        As a result, if covariates were used, `n` covariates have to be available into the future.
+
+        If some series in the `input_series_dataset` have more time steps than `input_chunk_length`,
+        only the last `input_chunk_length` time steps will be considered.
 
         Parameters
         ----------
@@ -549,10 +567,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
-                if not self.is_recurrent:
-                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
-                else:
+                if self.is_recurrent:
                     batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
+                else:
+                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
 
                 # bring predictions into desired format and drop unnecessary values
                 batch_prediction = torch.cat(batch_prediction, dim=1)
@@ -657,7 +675,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Both `tgt_past_arr` and `cov_past_arr` will contain elements that are `input_chunk_length` long.
         If the model is required to produce the forecast over multiple iterations, i.e. if
         `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future_arr` will
-        contain the future covariates up to `n - self.output_chunk_length` time steps into the future.
+        contain the future covariates. For block models this means up to `n - self.output_chunk_length`
+        time steps into the future, whereas for recurrent models `n` future covariates are required.
 
         Parameters
         ----------
@@ -717,11 +736,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 if n > self.output_chunk_length:
 
                     # check that enough future covariates are available
+                    # block models need `n - output_chunk_length`
+                    # recurrent models need `n`
                     last_required_future_covariate_ts = (
-                        target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
+                        target_series.end_time() + (n - self.output_chunk_length * (1 - int(self.is_recurrent)))
+                        * target_series.freq()
                     )
+                    req_cov_string = 'n' if self.is_recurrent else 'n - output_chunk_length'
                     raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                                 'All covariates must be known `n - output_chunk_length` time steps into the future')
+                                 'All covariates must be known `{}` time steps into the future'.format(req_cov_string))
 
                     # isolate necessary future covariates and add them to array
                     cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.is_recurrent))

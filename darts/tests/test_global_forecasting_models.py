@@ -11,7 +11,7 @@ from ..datasets import AirPassengersDataset
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel
+    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel, TrueRNNModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -24,6 +24,7 @@ if TORCH_AVAILABLE:
     OUT_LEN = 12
     models_cls_kwargs_errs = [
         (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (TrueRNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -117,9 +118,9 @@ if TORCH_AVAILABLE:
                     model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates_train)
 
                 # ... unless future covariates are provided
-                model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
+                pred = model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
 
-                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)
+                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
