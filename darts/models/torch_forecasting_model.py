@@ -546,70 +546,107 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch_tuple in iterator:
 
-                input_series, indices = batch_tuple[0], batch_tuple[-1]
+                input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
-                batch_prediction = []
-                out = self.model(input_series)[:, self.first_prediction_index:, :]
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length = roll_size
-
-                while prediction_length < n:
-
-                    # roll over input series to contain latest target and covariate
-                    input_series = torch.roll(input_series, -roll_size, 1)
-
-                    # update target input to include next `roll_size` predictions
-                    if self.input_chunk_length >= roll_size:
-                        input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
-                    else:
-                        input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
-
-                    # update covariates to include next `roll_size` predictions into the future
-                    if cov_future is not None and self.input_chunk_length >= roll_size:
-                        input_series[:, -roll_size:, self.output_dim:] = (
-                            cov_future[:, prediction_length - roll_size:prediction_length, :]
-                        )
-                    elif cov_future is not None:
-                        input_series[:, :, self.output_dim:] = (
-                            cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
-                        )
-
-                    # take only last part of the output sequence where needed
-                    out = self.model(input_series)[:, self.first_prediction_index:, :]
-
-                    # update predictions depending on how many data points have been predicted
-                    if prediction_length <= n - self.output_chunk_length - roll_size:
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    elif prediction_length < n - self.output_chunk_length:
-                        # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
-                        # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
-                        # so that the final forecast produces exactly the right number of predictions to reach `n`
-                        spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
-                        roll_size -= spillover_prediction_length
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    else:
-                        batch_prediction.append(out)
-                        prediction_length += self.output_chunk_length
+                if not self.is_recurrent:
+                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
+                else:
+                    batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
 
                 # bring predictions into desired format and drop unnecessary values
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 batch_prediction = batch_prediction[:, :n, :]
                 batch_prediction = batch_prediction.cpu().detach().numpy()
-                
+
+                batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
                         batch_prediction[batch_idx],
                         input_series_dataset[dataset_idx][0]
                     )
-                    for batch_idx, dataset_idx in enumerate(indices)
+                    for batch_idx, dataset_idx in enumerate(batch_indices)
                 )
-                
+
                 predictions.extend(ts_forecasts)
 
         return predictions
+
+    def _predict_batch_block_model(self,
+                                   n,
+                                   input_series,
+                                   cov_future,
+                                   roll_size) -> Sequence[TimeSeries]:
+
+        batch_prediction = []
+        out = self.model(input_series)[:, self.first_prediction_index:, :]
+        batch_prediction.append(out[:, :roll_size, :])
+        prediction_length = roll_size
+
+        while prediction_length < n:
+
+            # roll over input series to contain latest target and covariate
+            input_series = torch.roll(input_series, -roll_size, 1)
+
+            # update target input to include next `roll_size` predictions
+            if self.input_chunk_length >= roll_size:
+                input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
+            else:
+                input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+
+            # update covariates to include next `roll_size` predictions into the future
+            if cov_future is not None and self.input_chunk_length >= roll_size:
+                input_series[:, -roll_size:, self.output_dim:] = (
+                    cov_future[:, prediction_length - roll_size:prediction_length, :]
+                )
+            elif cov_future is not None:
+                input_series[:, :, self.output_dim:] = (
+                    cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
+                )
+
+            # take only last part of the output sequence where needed
+            out = self.model(input_series)[:, self.first_prediction_index:, :]
+
+            # update predictions depending on how many data points have been predicted
+            if prediction_length <= n - self.output_chunk_length - roll_size:
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            elif prediction_length < n - self.output_chunk_length:
+                # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
+                # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
+                # so that the final forecast produces exactly the right number of predictions to reach `n`
+                spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
+                roll_size -= spillover_prediction_length
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            else:
+                batch_prediction.append(out)
+                prediction_length += self.output_chunk_length
+
+        return batch_prediction
+
+    def _predict_batch_recurrent_model(self, n, input_series, cov_future):
+        batch_prediction = []
+        out, last_hidden_state = self.model(input_series)
+        batch_prediction.append(out[:, -1:, :])
+        prediction_length = 1
+
+        while prediction_length < n:
+
+            # create new input to model from last prediction and current covariates, if available
+            new_input = (
+                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
+                if cov_future is not None else out[:, -1:, :]
+            )
+
+            # feed new input to model, including the last hidden state from the previous iteration
+            out, last_hidden_state = self.model(new_input, last_hidden_state)
+
+            # append prediction to batch prediction array, increase counter
+            batch_prediction.append(out[:, -1:, :])
+            prediction_length += 1
+
+        return batch_prediction
 
     def _prepare_predict_timeseries(self, n: int, series, covariates):
         """
