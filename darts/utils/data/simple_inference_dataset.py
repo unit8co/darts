@@ -29,6 +29,13 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         `n > self.output_chunk_length`, and if covariates were provided, then `cov_future` will
         be equal to the future covariates up to `n - self.output_chunk_length` time steps into the future.
 
+        The parameter `input_chunk_length` is necessary to determine the minimum length for all `tgt_past`
+        and `cov_past` time series.
+        Parameters `n` and `output_chunk_length` are necessary to determine whether `cov_future` is necessary
+        (or can be set to `None`) and to determine the required length for `cov_future`.
+        It is important for the 3 emitted time series to have the same length across data points because
+        they will be cast to tensors later on.
+
         Parameters
         ----------
         series
