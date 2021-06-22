@@ -461,10 +461,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      'of the series this model has been trained on. Provided input dim = {}, '
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
-        # create past input, past covariate and future covariate series
-        tgt_past_arr, cov_past_arr, cov_future_arr = self._prepare_predict_timeseries(n, series, covariates)
-
-        dataset = SimpleInferenceDataset(tgt_past_arr, cov_past_arr, cov_future_arr)
+        dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length)
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size)
         return predictions[0] if called_with_single_series else predictions
@@ -596,7 +593,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 batch_prediction = batch_prediction[:, :n, :]
                 batch_prediction = batch_prediction.cpu().detach().numpy()
-                
+
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
                         batch_prediction[batch_idx],
@@ -604,97 +601,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     )
                     for batch_idx, dataset_idx in enumerate(indices)
                 )
-                
+
                 predictions.extend(ts_forecasts)
 
         return predictions
-
-    def _prepare_predict_timeseries(self, n: int, series, covariates):
-        """
-        Creates 3 lists with `TimeSeries` instances required to produce model predictions. 
-        `tgt_past_arr` contains target series, which will be predicted into the future.
-        `cov_past_arr` contains covariates with the same time indices as the target series, if the model
-        was trained on covariates. Otherwise the function will return `None`.
-        Both `tgt_past_arr` and `cov_past_arr` will contain elements that are `input_chunk_length` long.
-        If the model is required to produce the forecast over multiple iterations, i.e. if 
-        `n > self.output_chunk_length`, and if it was trained with covariates, then `cov_future_arr` will
-        contain the future covariates up to `n - self.output_chunk_length` time steps into the future.
-
-        Parameters
-        ----------
-        n
-            The number of time steps after the end of the training time series for which to produce predictions
-        input_series_dataset
-            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
-            future is to be predicted. If specified, the method returns the forecasts of these
-            series. Otherwise, the method returns the forecast of the (single) training series.
-
-        Returns
-        -------
-        Sequence[TimeSeries]
-            Past target series which are going to be predicted into the future, and which will used as
-            input to the model.
-        Optional[Sequence[TimeSeries]]
-            Covariates required to predict horizons up to `self.output_chunk_length`, or `None` if the model
-            does not require covariates.
-        Optional[Sequence[TimeSeries]]
-            Covariates required to predict horizons beyond `self.output_chunk_length`, or `None` if the model
-            does require future covariates either because it does not require covariates at all or because
-            `n <= self.output_chunk_length`.
-    """
-
-        tgt_past_arr = []
-        cov_past_arr = []
-        cov_future_arr = []
-
-        covariates = [None] * len(series) if covariates is None else covariates
-        raise_if_not(len(series) == len(covariates),
-                     'The number of target series must be equal to the number of covariates.')
-
-        for target_series, covariate_series in zip(series, covariates):
-            raise_if_not(len(target_series) >= self.input_chunk_length,
-                         'All input series must have length >= `input_chunk_length` ({}).'.format(
-                self.input_chunk_length))
-
-            # TODO: here we could be smart and handle cases where target and covariates do not have same time axis.
-            # TODO: e.g. by taking their latest common timestamp.
-
-            tgt_past = target_series[-self.input_chunk_length:]
-
-            if covariate_series is not None:
-
-                # get first timestamp that lies in the future of target series
-                first_pred_time = target_series.end_time() + target_series.freq()
-                
-                # isolate past covariates and add them to array
-                if covariate_series.end_time() >= first_pred_time:
-                    cov_past = covariate_series.drop_after(first_pred_time)
-                else:
-                    cov_past = covariate_series
-                cov_past = cov_past[-self.input_chunk_length:]
-                cov_past_arr.append(cov_past)
-
-                # check whether future covariates are required
-                if n > self.output_chunk_length:
-
-                    # check that enough future covariates are available
-                    last_required_future_covariate_ts = (
-                        target_series.end_time() + (n - self.output_chunk_length) * target_series.freq()
-                    )
-                    raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                                 'All covariates must be known `n - output_chunk_length` time steps into the future')
-
-                    # isolate necessary future covariates and add them to array
-                    cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
-                    cov_future = cov_future[:n - self.output_chunk_length]
-                    cov_future_arr.append(cov_future)
-
-            tgt_past_arr.append(tgt_past)
-
-        cov_past_arr = None if len(cov_past_arr) == 0 else cov_past_arr
-        cov_future_arr = None if len(cov_future_arr) == 0 else cov_future_arr
-
-        return tgt_past_arr, cov_past_arr, cov_future_arr
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
