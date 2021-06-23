@@ -197,7 +197,7 @@ class ForecastingModel(ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
+            instances such as `BlockRNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
@@ -348,7 +348,7 @@ class ForecastingModel(ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
+            instances such as `BlockRNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not

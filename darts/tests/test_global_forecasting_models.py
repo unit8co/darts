@@ -11,7 +11,7 @@ from ..datasets import AirPassengersDataset
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel, TrueRNNModel
+    from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -23,8 +23,8 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
-        (TrueRNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -158,7 +158,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = TrueRNNModel(n_epochs=1)
+            model = RNNModel(n_epochs=1)
             model.fit(series=self.target_past, covariates=self.covariates_past)
             model.predict(n=160, covariates=self.covariates)
             with self.assertRaises(ValueError):

@@ -26,8 +26,8 @@ except ModuleNotFoundError:
                    "To enable it, install u8darts[fbprophet] or u8darts[all].")
 
 try:
+    from .block_rnn_model import BlockRNNModel
     from .rnn_model import RNNModel
-    from .true_rnn_model import TrueRNNModel
     from .tcn_model import TCNModel
     from .nbeats import NBEATSModel
     from .transformer_model import TransformerModel
