@@ -45,7 +45,9 @@ class ShiftedDataset(TrainingDataset):
             One or a sequence of target `TimeSeries`.
         covariates
             Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`.
+            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            covariates in this list must be at least as long as their corresponding target series and
+            must have the same starting point.
         length
             The length of the emitted input and output series.
         shift
@@ -116,7 +118,7 @@ class ShiftedDataset(TrainingDataset):
         # optionally also produce the input covariate
         input_covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx].values(copy=False)
+            ts_covariate = self.covariates[ts_idx].values(copy=False)[:len(ts_target)]
 
             raise_if_not(len(ts_covariate) == len(ts_target),
                          'The dataset contains some target/covariate series '
