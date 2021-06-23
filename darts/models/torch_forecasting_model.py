@@ -97,6 +97,10 @@ class TimeSeriesTorchDataset(Dataset):
 
         else:
             raise ValueError('The dataset must be of type `TrainingDataset` or `TimeSeriesInferenceDataset`')
+<<<<<<< HEAD
+=======
+
+>>>>>>> develop
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
