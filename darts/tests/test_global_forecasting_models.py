@@ -55,6 +55,20 @@ if TORCH_AVAILABLE:
         time_covariates = scaler_dt.fit_transform(year_series.stack(month_series))
         time_covariates_train, time_covariates_val = time_covariates[:-36], time_covariates[-36:]
 
+        # an artificial time series that is highly dependent on covariates
+        ts_length = 400
+        split_ratio = 0.6
+        sine_1_ts = tg.sine_timeseries(length=ts_length)
+        sine_2_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.05)
+        sine_3_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.003, value_amplitude=5)
+        linear_ts = tg.linear_timeseries(length=ts_length, start_value=3, end_value=8)
+
+        covariates = sine_3_ts.stack(sine_2_ts).stack(linear_ts)
+        covariates_past, _ = covariates.split_after(split_ratio)
+
+        target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
+        target_past, target_future = target.split_after(split_ratio)
+
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
@@ -110,7 +124,6 @@ if TORCH_AVAILABLE:
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
 
-                
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
@@ -125,36 +138,47 @@ if TORCH_AVAILABLE:
         def test_future_covariates(self):
             # models with future covariates should produce better predictions over a long forecasting horizon
             # than a model trained with no covariates
-            ts_length = 400
-            split_ratio = 0.6
-            sine_1_ts = tg.sine_timeseries(length=ts_length)
-            sine_2_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.05)
-            sine_3_ts = tg.sine_timeseries(length=ts_length, value_frequency=0.003, value_amplitude=5)
-            linear_ts = tg.linear_timeseries(length=ts_length, start_value=3, end_value=8)
-
-
-            covariates = sine_3_ts.stack(sine_2_ts).stack(linear_ts)
-            covariates_past, covariates_future = covariates.split_after(split_ratio)
-
-            target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
-            target_past, target_future = target.split_after(split_ratio)
             model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
 
-            model.fit(series=target_past)
+            model.fit(series=self.target_past)
             long_pred_no_cov = model.predict(n=160)
 
             model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
-            model.fit(series=target_past, covariates=covariates_past)
-            long_pred_with_cov = model.predict(n=160, covariates=covariates)
-            self.assertTrue(mape(target_future, long_pred_no_cov) > mape(target_future, long_pred_with_cov),
+            model.fit(series=self.target_past, covariates=self.covariates_past)
+            long_pred_with_cov = model.predict(n=160, covariates=self.covariates)
+            self.assertTrue(mape(self.target_future, long_pred_no_cov) > mape(self.target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
             # models can predict up to self.output_chunk_length points beyond the last future covariate...
-            model.predict(n=165, covariates=covariates)
+            model.predict(n=165, covariates=self.covariates)
 
             # ... not more
             with self.assertRaises(ValueError):
                 model.predict(n=166, series=self.ts_pass_train)
+
+        def test_batch_predictions(self):
+            # predicting multiple time series at once needs to work for arbitrary batch sizes
+            # univariate case
+            targets_univar = [self.target_past, self.target_past[:60], self.target_past[:80]]
+            self._batch_prediction_test_helper_function(targets_univar)
+
+            # multivariate case
+            targets_multivar = [tgt.stack(tgt) for tgt in targets_univar]
+            self._batch_prediction_test_helper_function(targets_multivar)
+
+        def _batch_prediction_test_helper_function(self, targets):
+            epsilon = 1e-4
+            model = TCNModel(input_chunk_length=50, output_chunk_length=10, n_epochs=10, random_state=0)
+            model.fit(series=targets[0], covariates=self.covariates_past)
+            preds_default = model.predict(n=160, series=targets,
+                                          covariates=[self.covariates] * len(targets), batch_size=None)
+
+            for batch_size in range(1, 5):
+                preds = model.predict(n=160, series=targets,
+                                      covariates=[self.covariates] * len(targets), batch_size=batch_size)
+
+                for i in range(len(targets)):
+                    self.assertLess(sum(sum((preds[i] - preds_default[i]).values())), epsilon)
 
         def test_predict_from_dataset_unsupported_input(self):
             # an exception should be thrown if an unsupported type is passed
