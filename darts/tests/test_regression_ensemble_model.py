@@ -78,16 +78,16 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     if TORCH_AVAILABLE:
         def test_torch_models_retrain(self):
-            model1 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
-            model2 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+            model1 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0)
+            model2 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0)
 
             ensemble = RegressionEnsembleModel([model1], 5)
-            ensemble.fit(self.combined)
+            ensemble.fit(self.combined, epochs=2)
 
             model1_fitted = ensemble.models[0]
             forecast1 = model1_fitted.predict(10)
 
-            model2.fit(self.combined)
+            model2.fit(self.combined, epochs=2)
             forecast2 = model2.predict(10)
 
             self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=3)

@@ -51,7 +51,19 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self, series: TimeSeries, epochs: Optional[int]=100) -> None:
+        ''' Fits the models in ensemble.
+
+            Parameters
+            ----------
+            series
+                timeseries to train on
+            epochs
+                Number of epochs to train the model. Currently only `TorchForecastingModel`
+                instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` use this parameter.
+                [Default: 100]
+
+        '''
         super().fit(series)
 
         # spare train_n_points points to serve as regression target
@@ -64,7 +76,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # fit the forecasting models
         for model in self.models:
-            model.fit(forecast_training)
+            if model.__class__.__bases__[0].__name__ == 'TorchForecastingModel':
+                model.fit(forecast_training, epochs=epochs)
+            else:
+                model.fit(forecast_training)
 
         # predict train_n_points points for each model
         predictions = self.models[0].predict(self.train_n_points)
@@ -84,7 +99,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # fit the forecasting models
         for model in self.models:
-            model.fit(self.training_series)
+            if model.__class__.__bases__[0].__name__ == 'TorchForecastingModel':
+                model.fit(self.training_series, epochs=epochs)
+            else:
+                model.fit(self.training_series)
 
     def ensemble(self, predictions: TimeSeries) -> TimeSeries:
         return self.regression_model.predict(n=len(predictions), exog=predictions)

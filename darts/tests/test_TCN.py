@@ -28,13 +28,13 @@ if TORCH_AVAILABLE:
             small_ts = tg.constant_timeseries(length=100, value=10)
 
             # Test basic fit and predict
-            model = TCNModel(input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1)
-            model.fit(large_ts[:98])
+            model = TCNModel(input_chunk_length=12, output_chunk_length=1, num_layers=1)
+            model.fit(large_ts[:98], epochs=10)
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
-            model2 = TCNModel(input_chunk_length=12, output_chunk_length=1, n_epochs=10, num_layers=1)
-            model2.fit(small_ts[:98])
+            model2 = TCNModel(input_chunk_length=12, output_chunk_length=1, num_layers=1)
+            model2.fit(small_ts[:98], epochs=10)
             pred2 = model2.predict(n=2).values()[0]
             self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
 
@@ -46,8 +46,8 @@ if TORCH_AVAILABLE:
             # test TCN performance on dummy time series
             ts = tg.sine_timeseries(length=100) + tg.linear_timeseries(length=100, end_value=2)
             train, test = ts[:90], ts[90:]
-            model = TCNModel(input_chunk_length=12, output_chunk_length=10, n_epochs=300, random_state=0)
-            model.fit(train)
+            model = TCNModel(input_chunk_length=12, output_chunk_length=10, random_state=0)
+            model.fit(train, epochs=300)
             pred = model.predict(n=10)
 
             self.assertTrue(mae(pred, test) < 0.3)
@@ -69,11 +69,10 @@ if TORCH_AVAILABLE:
                                          output_chunk_length=1,
                                          kernel_size=kernel_size,
                                          dilation_base=dilation_base,
-                                         weight_norm=False,
-                                         n_epochs=1)
+                                         weight_norm=False)
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
-                        model.fit(tg.gaussian_timeseries(length=100))
+                        model.fit(tg.gaussian_timeseries(length=100), epochs=1)
 
                         for res_block in model.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
@@ -96,11 +95,10 @@ if TORCH_AVAILABLE:
                                            kernel_size=kernel_size,
                                            dilation_base=dilation_base,
                                            weight_norm=False,
-                                           num_layers=model.model.num_layers - 1,
-                                           n_epochs=1)
+                                           num_layers=model.model.num_layers - 1)
 
                         # we have to fit the model on a dummy series in order to create the internal nn.Module
-                        model_2.fit(tg.gaussian_timeseries(length=100))
+                        model_2.fit(tg.gaussian_timeseries(length=100), epochs=1)
 
                         for res_block in model_2.model.res_blocks:
                             res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
@@ -124,8 +122,8 @@ if TORCH_AVAILABLE:
                         self.assertTrue(uncovered_input_found)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(input_chunk_length=12, output_chunk_length=3, n_epochs=1)
-            model.fit(series)
+            model = pytorch_model(input_chunk_length=12, output_chunk_length=3)
+            model.fit(series, epochs=1)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)
             pred = model.predict(2)

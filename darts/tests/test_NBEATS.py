@@ -29,15 +29,15 @@ if TORCH_AVAILABLE:
             small_ts = tg.constant_timeseries(length=100, value=10)
 
             # Test basic fit and predict
-            model = NBEATSModel(input_chunk_length=1, output_chunk_length=1, n_epochs=10,
+            model = NBEATSModel(input_chunk_length=1, output_chunk_length=1,
                                 num_stacks=1, num_blocks=1, layer_widths=20)
-            model.fit(large_ts[:98])
+            model.fit(large_ts[:98], epochs=10)
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
             model2 = NBEATSModel(input_chunk_length=1, output_chunk_length=1,
-                                 n_epochs=10, num_stacks=1, num_blocks=1, layer_widths=20)
-            model2.fit(small_ts[:98])
+                                 num_stacks=1, num_blocks=1, layer_widths=20)
+            model2.fit(small_ts[:98], epochs=10)
             pred2 = model2.predict(n=2).values()[0]
             self.assertTrue(abs(pred2 - 10) < abs(pred - 10))
 
@@ -49,9 +49,9 @@ if TORCH_AVAILABLE:
 
             # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
             series_multivariate = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100, start_value = 0, end_value=0.5))
-            model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, n_epochs=20)
+            model = NBEATSModel(input_chunk_length=3, output_chunk_length=1)
 
-            model.fit(series_multivariate)
+            model.fit(series_multivariate, epochs=20)
             res = model.predict(n=2).values()
 
             # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
@@ -60,8 +60,8 @@ if TORCH_AVAILABLE:
 
             # Test Covariates
             series_covariates = tg.linear_timeseries(length=100).stack(tg.linear_timeseries(length=100, start_value = 0, end_value=0.1))
-            model = NBEATSModel(input_chunk_length=3, output_chunk_length=4, n_epochs=5)
-            model.fit(series_multivariate, covariates=series_covariates)
+            model = NBEATSModel(input_chunk_length=3, output_chunk_length=4)
+            model.fit(series_multivariate, covariates=series_covariates, epochs=5)
 
             res = model.predict(n=3, series=series_multivariate, covariates=series_covariates).values()
 
@@ -75,7 +75,7 @@ if TORCH_AVAILABLE:
             architectures = [True, False]
             for architecture in architectures:
                 # Test basic fit and predict
-                model = NBEATSModel(input_chunk_length=1, output_chunk_length=1, n_epochs=1,
+                model = NBEATSModel(input_chunk_length=1, output_chunk_length=1,
                                     log_tensorboard=True, generic_architecture=architecture)
-                model.fit(ts)
+                model.fit(ts, epochs=1)
                 model.predict(n=2)

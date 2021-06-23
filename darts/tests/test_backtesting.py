@@ -124,7 +124,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
-            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1)
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1)
             pred = tcn_model.historical_forecasts(linear_series,
                                                   start=pd.Timestamp('20000125'),
                                                   forecast_horizon=3,
@@ -138,7 +138,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                 tcn_model.backtest(linear_series_multi, start=pd.Timestamp('20000125'),
                                    forecast_horizon=3, verbose=False)
 
-            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1)
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1)
             pred = tcn_model.historical_forecasts(linear_series_multi,
                                                   start=pd.Timestamp('20000125'),
                                                   forecast_horizon=3,
@@ -251,7 +251,6 @@ class BacktestingTestCase(DartsBaseTestClass):
                 "parameters": {
                     'input_chunk_length': [1, 3, 5, 10],
                     'output_chunk_length': [1, 3, 5, 10],
-                    'n_epochs': [1, 5],
                     'random_state': [42]  # necessary to avoid randomness among runs with same parameters
                 }
             }
@@ -260,16 +259,19 @@ class BacktestingTestCase(DartsBaseTestClass):
         for test in test_cases:
 
             model = test["model"]
-            parameters = test["parameters"]
+            parameters = test['parameters']
+            epochs = 5
 
             _, best_params1 = model.gridsearch(parameters=parameters,
                                                series=ts_train,
                                                val_series=ts_val,
+                                               epochs=epochs,
                                                n_jobs=1)
 
             _, best_params2 = model.gridsearch(parameters=parameters,
                                                series=ts_train,
                                                val_series=ts_val,
+                                               epochs=epochs,
                                                n_jobs=-1)
 
             self.assertEqual(best_params1, best_params2)
@@ -280,14 +282,15 @@ class BacktestingTestCase(DartsBaseTestClass):
         tcn_params = {
             'input_chunk_length': [12],
             'output_chunk_length': [3],
-            'n_epochs': [1],
             'batch_size': [1],
             'kernel_size': [2, 3, 4]
         }
         TCNModel.gridsearch(tcn_params,
                             dummy_series,
                             forecast_horizon=3,
-                            metric=mape)
+                            metric=mape,
+                            epochs=1
+                            )
 
     def test_forecasting_residuals(self):
         model = NaiveSeasonal(K=1)

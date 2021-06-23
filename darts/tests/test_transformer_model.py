@@ -39,9 +39,8 @@ if TORCH_AVAILABLE:
 
         def test_fit(self):
             # Test fit-save-load cycle
-            model2 = TransformerModel(input_chunk_length=1, output_chunk_length=1,
-                                      n_epochs=2, model_name='unittest-model-transformer')
-            model2.fit(self.series)
+            model2 = TransformerModel(input_chunk_length=1, output_chunk_length=1, model_name='unittest-model-transformer')
+            model2.fit(self.series, epochs=2)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-transformer', best=False)
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)
@@ -50,8 +49,8 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.)
 
             # Another random model should not
-            model3 = TransformerModel(input_chunk_length=1, output_chunk_length=1, n_epochs=1)
-            model3.fit(self.series)
+            model3 = TransformerModel(input_chunk_length=1, output_chunk_length=1)
+            model3.fit(self.series, epochs=1)
             pred3 = model3.predict(n=6)
             self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.)
 
@@ -65,8 +64,8 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred4), 6)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(input_chunk_length=1, output_chunk_length=3, n_epochs=1)
-            model.fit(series)
+            model = pytorch_model(input_chunk_length=1, output_chunk_length=3)
+            model.fit(series, epochs=1)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)
             pred = model.predict(2)
