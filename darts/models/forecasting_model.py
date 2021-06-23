@@ -154,6 +154,7 @@ class ForecastingModel(ABC):
                              forecast_horizon: int = 1,
                              stride: int = 1,
                              retrain: bool = True,
+                             retrain_epochs: int = 100,
                              overlap_end: bool = False,
                              last_points_only: bool = True,
                              verbose: bool = False) -> Union[TimeSeries, List[TimeSeries]]:
@@ -199,6 +200,10 @@ class ForecastingModel(ABC):
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
+        retrain_epochs
+            If ``retrain`` is set to ``True``, retrain for so many epochs. Currently only `TorchForecastingModel`
+            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` use this parameter.
+            [Default: 100]
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -254,12 +259,20 @@ class ForecastingModel(ABC):
                 train_cov = covariates.drop_after(pred_time)
 
             if retrain:
-                if covariates and "covariates" in fit_signature.parameters:
-                    self.fit(series=train, covariates=train_cov)
-                elif covariates and "exog" in fit_signature.parameters:
-                    self.fit(series=train, exog=train_cov)
+                if self.__class__.__bases__[0].__name__ == 'TorchForecastingModel':
+                    if covariates and "covariates" in fit_signature.parameters:
+                        self.fit(series=train, covariates=train_cov, epochs=retrain_epochs)
+                    elif covariates and "exog" in fit_signature.parameters:
+                        self.fit(series=train, exog=train_cov, epochs=retrain_epochs)
+                    else:
+                        self.fit(series=train, epochs=retrain_epochs)
                 else:
-                    self.fit(series=train)
+                    if covariates and "covariates" in fit_signature.parameters:
+                        self.fit(series=train, covariates=train_cov)
+                    elif covariates and "exog" in fit_signature.parameters:
+                        self.fit(series=train, exog=train_cov)
+                    else:
+                        self.fit(series=train)
 
             if covariates:
                 if 'covariates' in predict_signature.parameters:
@@ -301,6 +314,7 @@ class ForecastingModel(ABC):
                  forecast_horizon: int = 1,
                  stride: int = 1,
                  retrain: bool = True,
+                 retrain_epochs: int = 100,
                  overlap_end: bool = False,
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -350,6 +364,10 @@ class ForecastingModel(ABC):
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
             instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
+        retrain_epochs
+            If ``retrain`` is set to ``True``, retrain for so many epochs. Currently only `TorchForecastingModel`
+            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` use this parameter.
+            [Default: 100]
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -373,6 +391,7 @@ class ForecastingModel(ABC):
                                               forecast_horizon,
                                               stride,
                                               retrain,
+                                              retrain_epochs,
                                               overlap_end,
                                               last_points_only,
                                               verbose)
@@ -392,6 +411,7 @@ class ForecastingModel(ABC):
                    series: TimeSeries,
                    covariates: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
+                   epochs: int = 100,
                    start: Union[pd.Timestamp, float, int] = 0.5,
                    last_points_only: bool = False,
                    val_series: Optional[TimeSeries] = None,
@@ -448,6 +468,10 @@ class ForecastingModel(ABC):
             An optional covariate series. This applies only if the model supports covariates.
         forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
+        epochs
+            train for so many epochs. Currently only `TorchForecastingModel`
+            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` use this parameter.
+            [Default: 100]
         start
             The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index
             of `training_series` from which predictions will be made to evaluate the model.
@@ -510,11 +534,19 @@ class ForecastingModel(ABC):
         def _evaluate_combination(param_combination):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
+
             if use_fitted_values:  # fitted value mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
-                    model.fit(series, covariates=covariates)
+                if model.__class__.__bases__[0].__name__ == 'TorchForecastingModel':
+                    if covariates is not None and 'covariates' in fit_signature.parameters:
+                        model.fit(series, covariates=covariates, epochs=epochs)
+                    else:
+                        model.fit(series, epochs=epochs)
                 else:
-                    model.fit(series)
+                    if covariates is not None and 'covariates' in fit_signature.parameters:
+                        model.fit(series, covariates=covariates)
+                    else:
+                        model.fit(series)
+
                 fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
@@ -526,10 +558,16 @@ class ForecastingModel(ABC):
                                        reduction=reduction,
                                        last_points_only=last_points_only)
             else:  # split mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
-                    model.fit(series, covariates=covariates)
+                if model.__class__.__bases__[0].__name__ == 'TorchForecastingModel':
+                    if covariates is not None and 'covariates' in fit_signature.parameters:
+                        model.fit(series, covariates=covariates, epochs=epochs)
+                    else:
+                        model.fit(series, epochs=epochs)
                 else:
-                    model.fit(series)
+                    if covariates is not None and 'covariates' in fit_signature.parameters:
+                        model.fit(series, covariates=covariates)
+                    else:
+                        model.fit(series)
 
                 if covariates is not None and 'covariates' in predict_signature.parameters:
                     pred = model.predict(n=len(val_series), covariates=covariates)
@@ -552,6 +590,7 @@ class ForecastingModel(ABC):
     def residuals(self,
                   series: TimeSeries,
                   forecast_horizon: int = 1,
+                  retrain_epochs: int = 100,
                   verbose: bool = False) -> TimeSeries:
         """ A function for computing the residuals produced by the current model on a univariate time series.
 
@@ -572,6 +611,10 @@ class ForecastingModel(ABC):
             The univariate TimeSeries instance which the residuals will be computed for.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
+        epochs
+            retrain for so many epochs. Currently only `TorchForecastingModel`
+            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` use this parameter.
+            [Default: 100]
         verbose
             Whether to print progress.
         Returns
@@ -590,6 +633,7 @@ class ForecastingModel(ABC):
                                       forecast_horizon=forecast_horizon,
                                       stride=1,
                                       retrain=True,
+                                      retrain_epochs=retrain_epochs,
                                       last_points_only=True,
                                       verbose=verbose)
 
