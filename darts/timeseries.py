@@ -1631,7 +1631,6 @@ class TimeSeries:
         kwargs
             some keyword arguments for the `plot()` method
         """
-        colors = ['black', 'blue', 'magenta', 'mediumturquoise', 'green', 'darkorange', 'red']
         alpha_confidence_intvls = 0.25
 
         if central_quantile != 'mean':
@@ -1647,17 +1646,16 @@ class TimeSeries:
         fig = (plt.figure() if new_plot else (kwargs['figure'] if 'figure' in kwargs else plt.gcf()))
         kwargs['figure'] = fig
         label = kwargs['label'] if 'label' in kwargs else ''
-        color = kwargs['color'] if 'color' in kwargs else None
 
         if 'lw' not in kwargs:
             kwargs['lw'] = 2
 
-        if self.n_components > 7:
-            logger.warn('Number of components is larger than 7 ({}). Plotting only the first 15 components.'.format(
+        if self.n_components > 10:
+            logger.warn('Number of components is larger than 10 ({}). Plotting only the first 10 components.'.format(
                 self.n_components
             ))
 
-        for i, c in enumerate(self._xa.component[:7]):
+        for i, c in enumerate(self._xa.component[:10]):
             comp_name = str(c.values)
 
             if i > 0:
@@ -1666,30 +1664,31 @@ class TimeSeries:
             comp = self._xa.sel(component=c)
 
             if comp.sample.size > 1:
-                if confidence_low_quantile is not None and confidence_high_quantile is not None:
-                    low_series = comp.quantile(q=confidence_low_quantile, dim=DIMS[2])
-                    high_series = comp.quantile(q=confidence_high_quantile, dim=DIMS[2])
-                    color = kwargs['color'] if 'color' in kwargs else colors[i % len(colors)]
-                    plt.fill_between(self.time_index, low_series, high_series, color=color,
-                                     alpha=(alpha_confidence_intvls if 'alpha' not in kwargs else kwargs['alpha']))
-
                 if central_quantile == 'mean':
                     central_series = comp.mean(dim=DIMS[2])
                 else:
                     central_series = comp.quantile(q=central_quantile, dim=DIMS[2])
-
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
             # temporarily set alpha to 1 to plot the central value (this way alpha impacts only the confidence intvls)
             alpha = kwargs['alpha'] if 'alpha' in kwargs else None
             kwargs['alpha'] = 1
-            label_to_use = (label + '_') if label != '' else '' + str(comp_name)
+
+            label_to_use = (label + ('_' + str(i) if len(self.components) > 1 else '')) if label != '' \
+                           else '' + str(comp_name)
             kwargs['label'] = label_to_use
-            color_to_use = color if color is not None else colors[i % len(colors)]
-            kwargs['color'] = color_to_use
-            central_series.plot(*args, **kwargs)
+
+            p = central_series.plot(*args, **kwargs)
+            color_used = p[0].get_color()
             kwargs['alpha'] = alpha if alpha is not None else alpha_confidence_intvls
+
+            # Optionally show confidence intervals
+            if comp.sample.size > 1 and confidence_low_quantile is not None and confidence_high_quantile is not None:
+                    low_series = comp.quantile(q=confidence_low_quantile, dim=DIMS[2])
+                    high_series = comp.quantile(q=confidence_high_quantile, dim=DIMS[2])
+                    plt.fill_between(self.time_index, low_series, high_series, color=color_used,
+                                     alpha=(alpha_confidence_intvls if 'alpha' not in kwargs else kwargs['alpha']))
 
         plt.legend()
         plt.title(self._xa.name);
