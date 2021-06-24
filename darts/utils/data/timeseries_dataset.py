@@ -16,8 +16,8 @@ logger = get_logger(__name__)
 class TimeSeriesInferenceDataset(ABC, Sequence):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` inference dataset. It contains 2-tuples of
-        `(input_target, input_covariate)` `TimeSeries`.
+        Abstract class for a `TimeSeries` inference dataset. It contains 3-tuples of
+        `(input_target, past_covariate, future_covariate)` `TimeSeries`.
         The emitted covariates are optional and can be `None`.
 
         It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
@@ -36,7 +36,7 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
         pass
 
 
