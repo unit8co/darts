@@ -97,14 +97,12 @@ class TimeSeriesTorchDataset(Dataset):
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
-
-    immutable_args = ['input_chunk_length', 'output_chunk_length']
-
     # TODO: add is_stochastic & reset methods
     def __init__(self,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  batch_size: int = 32,
+                 n_epochs: int = 100,
                  optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
                  optimizer_kwargs: Optional[Dict] = None,
                  lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
@@ -122,10 +120,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         When subclassing this class, please make sure to set the self.model attribute
         in the __init__ function and then call super().__init__ while passing the kwargs.
 
-        Note: if you set custom name for your model and do some training (i.e. checkpoints are generated), then
-        during next model initialization with the same name, exisiting state from the last checkpoint will be loaded.
-        If you want to train your model from scratch, use ``reset_model()`` method.
-
         Parameters
         ----------
         input_chunk_length
@@ -134,6 +128,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of time steps to be output by the internal forecasting module.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
+        n_epochs
+            Number of epochs over which to train the model.
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -190,6 +186,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model_name = model_name
         self.work_dir = work_dir
 
+        self.n_epochs = n_epochs
         self.total_epochs = 0  # 0 means it wasn't trained yet.
         self.batch_size = batch_size
 
@@ -465,7 +462,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
 
         input_dim, output_dim = torch_train_dataset[0][0].shape[1], torch_train_dataset[0][1].shape[1]
-
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             self.input_dim, self.output_dim = input_dim, output_dim
@@ -495,10 +491,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer()
+        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
+
+
+        # if user wants to train the model for more epochs, ignore the n_epochs parameter
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
         # Train model
-        self._train(train_loader, val_loader, tb_writer, verbose, epochs)
+        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -954,10 +954,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self):
+    def _prepare_tensorboard_writer(self, continue_training: bool = False):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if self.total_epochs == 0:
+            if not continue_training:
+                shutil.rmtree(runs_folder, ignore_errors=True)
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
