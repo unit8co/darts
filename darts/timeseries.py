@@ -1387,10 +1387,12 @@ class TimeSeries:
         the current one and returns the newly formed multivariate TimeSeries that includes
         all the components of `self` and of `other`.
 
+        The resulting TimeSeries will have the same name for its time dimension as this TimeSeries.
+
         Parameters
         ----------
         other
-            A TimeSeries instance with the same index as the current one.
+            A TimeSeries instance with the same index and the same number of samples as the current one.
 
         Returns
         -------
@@ -1402,7 +1404,15 @@ class TimeSeries:
         raise_if_not(self.n_samples == other.n_samples, 'Two series can be stacked only if they '
                                                         'have the same number of samples.', logger)
 
-        new_xa = xr.concat([self._xa, other.data_array(copy=False)], dim=DIMS[1])
+        other_xa = other.data_array(copy=False)
+        if other_xa.dims[0] != self._time_dim:
+            new_other_xa = xr.DataArray(other_xa.values,
+                                        dims=self._xa.dims,
+                                        coords={self._time_dim: self._time_index, DIMS[1]: other.components})
+        else:
+            new_other_xa = other_xa
+
+        new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
 
         # we call the factory method here to disambiguate column names if needed.
         return TimeSeries.from_xarray(new_xa, fill_missing_dates=False)
