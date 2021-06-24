@@ -32,14 +32,13 @@ if TORCH_AVAILABLE:
             model2 = RNNModel(10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
 
-        def test_create_instance_existing_model_with_name(self):
+        def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = 'test_model'
             model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
-            #no exception is raised
+            # no exception is raised
 
             model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
-            self.assertRaisesRegex(AttributeError,
-                                   "You already have model data for the \'{}\' name.*".format(model_name))
+            # no exception is raised
 
         def test_create_instance_existing_model_with_name_force(self):
             model_name = 'test_model'
@@ -53,24 +52,24 @@ if TORCH_AVAILABLE:
         def test_create_instance_existing_model_with_name_force_fit_no_reset(self):
             model_name = 'test_model'
             model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
-            #no exception is raised
+            # no exception is raised
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             model1.fit(series, epochs=1)
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force=True)
-            self.assertWarnsRegex(UserWarning, "You already have model data for the '{}' name and you "
-                                  "initialized it with".format(model_name))
+            with self.assertWarnsRegex(UserWarning, "You already have model data for the '{}' name and you "
+                                                    "initialized it with".format(model_name)):
+                model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force=True)
 
-            model2.fit(series, epochs=1)
-            self.assertRaisesRegex(ValueError, "You forced initialization of the model but the data already exist.*")
+            with self.assertRaisesRegex(ValueError, "You forced initialization of the model but.*"):
+                model2.fit(series, epochs=1)
 
         def test_create_instance_existing_model_with_name_force_fit_with_reset(self):
             model_name = 'test_model'
             model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
-            #no exception is raised
+            # no exception is raised
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -80,6 +79,7 @@ if TORCH_AVAILABLE:
             model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force=True)
             model2.reset_model()
             model2.fit(series, epochs=1)
+            # no exception is raised
 
         # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs
         def test_train_from_0_to_20_no_fit_epochs(self):
