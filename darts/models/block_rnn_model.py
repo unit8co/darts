@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _RNNModule(nn.Module):
+class _BlockRNNModule(nn.Module):
     def __init__(self,
                  name: str,
                  input_size: int,
@@ -27,12 +27,17 @@ class _RNNModule(nn.Module):
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
 
-        """ PyTorch module implementing a RNN to be used in `BlockRNNModel`.
+        """ PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
 
-        PyTorch module implementing a simple RNN with the specified `name` layer.
+        PyTorch module implementing a simple block RNN with the specified `name` layer.
         This module combines a PyTorch RNN module, together with a fully connected network, which maps the
         last hidden layers to output of the desired size `output_chunk_length` and makes it compatible with
         `BlockRNNModel`s.
+
+        This module uses an RNN to encode the input sequence, and subsequently uses a fully connected
+        network as the decoder which takes as input the last hidden state of the encoder RNN.
+        The final output of the encoder is a sequence of length `output_chunk_length`. In this sense,
+        the RNN produces 'blocks' of forecasts at a time (which is different from `_RNNModule`).
 
         Parameters
         ----------
@@ -65,7 +70,7 @@ class _RNNModule(nn.Module):
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
-        super(_RNNModule, self).__init__()
+        super(_BlockRNNModule, self).__init__()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
@@ -118,7 +123,7 @@ class BlockRNNModel(TorchForecastingModel):
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
-        """ Recurrent Neural Network Model (RNNs).
+        """ Block Recurrent Neural Network Model (RNNs).
 
         This class provides three variants of RNNs:
 
@@ -128,12 +133,16 @@ class BlockRNNModel(TorchForecastingModel):
 
         * GRU
 
+        This is the 'block' implementation of the RNN model, which produces forecasts by using
+        an RNN as an encoder, and a fully connected network as a decoder which produces 'blocks'
+        of forecasts as a function of the last hidden state of the encoder.
+
         Parameters
         ----------
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
-            `darts.models.rnn_model.RNNModule`.
+            `darts.models.rnn_model._BlockRNNModule`.
         input_chunk_length
             The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
@@ -172,14 +181,14 @@ class BlockRNNModel(TorchForecastingModel):
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
-            model = _RNNModule(name=self.rnn_type_or_module,
-                               input_size=input_dim,
-                               target_size=output_dim,
-                               hidden_dim=self.hidden_size,
-                               num_layers=self.n_rnn_layers,
-                               output_chunk_length=self.output_chunk_length,
-                               num_layers_out_fc=hidden_fc_sizes,
-                               dropout=self.dropout)
+            model = _BlockRNNModule(name=self.rnn_type_or_module,
+                                    input_size=input_dim,
+                                    target_size=output_dim,
+                                    hidden_dim=self.hidden_size,
+                                    num_layers=self.n_rnn_layers,
+                                    output_chunk_length=self.output_chunk_length,
+                                    num_layers_out_fc=hidden_fc_sizes,
+                                    dropout=self.dropout)
         else:
             model = self.rnn_type_or_module
         return model

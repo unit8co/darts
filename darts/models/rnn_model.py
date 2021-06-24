@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _TrueRNNModule(nn.Module):
+class _RNNModule(nn.Module):
     def __init__(self,
                  name: str,
                  input_size: int,
@@ -30,12 +30,12 @@ class _TrueRNNModule(nn.Module):
                  target_size: int = 1,
                  dropout: float = 0.):
 
-        """ PyTorch module implementing a RNN to be used in `RNNModel`.
+        """ PyTorch module implementing an RNN to be used in `RNNModel`.
 
-        PyTorch module implementing a simple RNN with the specified `name` layer.
-        This module combines a PyTorch RNN module, together with a fully connected network, which maps the
-        last hidden layers to output of the desired size `output_chunk_length` and makes it compatible with
-        `RNNModel`s.
+        PyTorch module implementing a simple RNN with the specified `name` type.
+        This module combines a PyTorch RNN module, together with one fully connected layer which
+        maps the hidden state of the RNN at each step to the output value of the model at that
+        time step.
 
         Parameters
         ----------
@@ -47,9 +47,6 @@ class _TrueRNNModule(nn.Module):
             The number of features in the hidden state `h` of the RNN module.
         target_size
             The dimensionality of the output time series.
-        num_layers_out_fc
-            A list containing the dimensions of the hidden layers of the fully connected NN.
-            This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
 
@@ -60,11 +57,13 @@ class _TrueRNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, output_length, output_size)`
-            The `output_length` is equal to 1 at prediction time, but equal to the `input_length` during training.
+        y of shape `(batch_size, input_length, output_size)`
+            Tensor containing the outputs of the RNN at every time step of the input sequence.
+            During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
+            However, this module always returns the whole Tensor.
         """
 
-        super(_TrueRNNModule, self).__init__()
+        super(_RNNModule, self).__init__()
 
         # Defining parameters
         self.target_size = target_size
@@ -117,6 +116,12 @@ class RNNModel(TorchForecastingModel):
 
         * GRU
 
+        RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
+        - previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction
+        - the previous hidden state
+        - the current covariates (if the model was trained with covariates)
+
         Parameters
         ----------
         model
@@ -154,11 +159,11 @@ class RNNModel(TorchForecastingModel):
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
-            model = _TrueRNNModule(name=self.rnn_type_or_module,
-                                   input_size=input_dim,
-                                   target_size=output_dim,
-                                   hidden_dim=self.hidden_dim,
-                                   dropout=self.dropout)
+            model = _RNNModule(name=self.rnn_type_or_module,
+                               input_size=input_dim,
+                               target_size=output_dim,
+                               hidden_dim=self.hidden_dim,
+                               dropout=self.dropout)
         else:
             model = self.rnn_type_or_module
         return model
