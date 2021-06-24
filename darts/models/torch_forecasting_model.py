@@ -204,116 +204,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         if os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0:
-            self.load()
             logger.info("Checkpoints folder found. Loading successful. If you want to train model from scratch,"
                         " either instantiate the model with different `model_name` parameter or run `reset_model()`.")
-
-    def load(self, best=False):
-        ''' Loads the model from a checkpoint by given name and work directory.
-
-            Parameters
-            ----------
-            best
-                Load the best performing checkpoint checkpoint instead of the latest checkpoint (the default)
-
-        '''
-        params = {k:v for k,v in self.get_params() if k not in self.immutable_args}
-        loaded_model = self.load_from_checkpoint(self.model_name, self.work_dir, best)
-        self.__dict__.update(loaded_model.__dict__)
-        self.set_params(**params)
-
-    @classmethod
-    def _get_param_names(cls):
-        """Get parameter names for the estimator"""
-        # fetch the constructor or the original constructor before
-        # deprecation wrapping if any
-        # source: scikit-learn's base.py
-        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
-        if init is object.__init__:
-            # No explicit constructor to introspect
-            return []
-
-        # introspect the constructor arguments to find the model parameters
-        # to represent
-        init_signature = inspect.signature(init)
-        # Consider the constructor parameters excluding 'self'
-        parameters = [p for p in init_signature.parameters.values()
-                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
-        for p in parameters:
-            if p.kind == p.VAR_POSITIONAL:
-                raise RuntimeError("scikit-learn estimators should always "
-                                   "specify their parameters in the signature"
-                                   " of their __init__ (no varargs)."
-                                   " %s with constructor %s doesn't "
-                                   " follow this convention."
-                                   % (cls, init_signature))
-        # Extract and sort argument names excluding 'self'
-        return sorted([p.name for p in parameters])
-
-    def get_params(self, deep=True):
-        """
-        Get parameters for this estimator.
-        source: scikit-learn's base.py
-        Parameters
-        ----------
-        deep : bool, default=Tru
-            If True, will return the parameters for this estimator and
-            contained subobjects that are estimators.
-        Returns
-        -------
-        params : dict
-            Parameter names mapped to their values.
-        """
-        out = dict()
-        for key in self._get_param_names():
-            value = getattr(self, key)
-            if deep and hasattr(value, 'get_params'):
-                deep_items = value.get_params().items()
-                out.update((key + '__' + k, val) for k, val in deep_items)
-            out[key] = value
-        return out
-
-    def set_params(self, **params):
-        """
-        Set the parameters of this estimator.
-        The method works on simple estimators as well as on nested objects
-        (such as :class:`~sklearn.pipeline.Pipeline`). The latter have
-        parameters of the form ``<component>__<parameter>`` so that it's
-        possible to update each component of a nested object.
-        source: scikit-learn's base.py
-        Parameters
-        ----------
-        **params : dict
-            Estimator parameters.
-        Returns
-        -------
-        self : estimator instance
-            Estimator instance.
-        """
-        if not params:
-            # Simple optimization to gain speed (inspect is slow)
-            return self
-        valid_params = self.get_params(deep=True)
-
-        nested_params = defaultdict(dict)  # grouped by prefix
-        for key, value in params.items():
-            key, delim, sub_key = key.partition('__')
-            if key not in valid_params:
-                raise ValueError('Invalid parameter %s for estimator %s. '
-                                 'Check the list of available parameters '
-                                 'with `estimator.get_params().keys()`.' %
-                                 (key, self))
-
-            if delim:
-                nested_params[key][sub_key] = value
-            else:
-                setattr(self, key, value)
-                valid_params[key] = value
-
-        for key, sub_params in nested_params.items():
-            valid_params[key].set_params(**sub_params)
-
-        return self
 
     def reset_model(self):
         ''' Resets the model object.
@@ -491,7 +383,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
+        tb_writer = self._prepare_tensorboard_writer()
 
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
@@ -954,16 +846,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self, continue_training: bool = False):
+    def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if not continue_training:
-                shutil.rmtree(runs_folder, ignore_errors=True)
+            if self.total_epochs == 0:
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
+            else:
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
         else:
             tb_writer = None
         return tb_writer

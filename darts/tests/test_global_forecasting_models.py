@@ -188,7 +188,6 @@ if TORCH_AVAILABLE:
                 multiple_ts = [self.ts_pass_train] * 10
                 model.fit(multiple_ts)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -202,15 +201,12 @@ if TORCH_AVAILABLE:
 
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -225,13 +221,10 @@ if TORCH_AVAILABLE:
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
