@@ -208,6 +208,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         if os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0:
             self.load()
+            logger.info("Checkpoints folder found. Loading successful. If you want to train model from scratch,"
+                        " either instantiate the model with different `model_name` parameter or run `reset_model()`.")
 
     def load(self, best=False):
         ''' Loads the model from a checkpoint by given name and work directory.
@@ -219,8 +221,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         '''
         params = {k:v for k,v in self.get_params() if k not in self.immutable_args}
-        model = self.load_from_checkpoint(self.model_name, self.work_dir, best)
-        self.__dict__.update(model.__dict__)
+        loaded_model = self.load_from_checkpoint(self.model_name, self.work_dir, best)
+        self.__dict__.update(loaded_model.__dict__)
         self.set_params(**params)
 
     @classmethod
@@ -463,6 +465,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
 
         input_dim, output_dim = torch_train_dataset[0][0].shape[1], torch_train_dataset[0][1].shape[1]
+
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             self.input_dim, self.output_dim = input_dim, output_dim
