@@ -79,7 +79,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         if covariate_series is not None:
 
             # get first timestamp that lies in the future of target series
-            first_pred_time = target_series.end_time() + target_series.freq()
+            first_pred_time = target_series.end_time() + target_series.freq
 
             # isolate past covariates and add them to array
             if covariate_series.end_time() >= first_pred_time:
@@ -93,13 +93,13 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
 
                 # check that enough future covariates are available
                 last_required_future_covariate_ts = (
-                    target_series.end_time() + (self.n - self.output_chunk_length) * target_series.freq()
+                    target_series.end_time() + (self.n - self.output_chunk_length) * target_series.freq
                 )
                 raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
                              'All covariates must be known `n - output_chunk_length` time steps into the future')
 
                 # isolate necessary future covariates and add them to array
-                cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
+                cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq)
                 cov_future = cov_future[:self.n - self.output_chunk_length]
 
         return tgt_past, cov_past, cov_future
