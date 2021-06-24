@@ -9,8 +9,6 @@ import os
 import re
 from glob import glob
 import shutil
-from collections import defaultdict
-import inspect
 from joblib import Parallel, delayed
 from typing import Optional, Dict, Tuple, Union, Sequence
 from abc import ABC, abstractmethod
@@ -19,6 +17,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 import time
+import warnings
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -112,7 +111,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
-                 torch_device_str: Optional[str] = None):
+                 torch_device_str: Optional[str] = None,
+                 force=False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -161,6 +161,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
+        force
+            force model loading, even if the data does not exist. Note that you won't be able to train model initialized
+            this way until you run ``reset_model()``
         """
         super().__init__()
 
@@ -202,20 +205,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.lr_scheduler_cls = lr_scheduler_cls
         self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
 
+        self.force = force
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
-        if os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0:
-            logger.info("Checkpoints folder found. Loading successful. If you want to train model from scratch,"
-                        " either instantiate the model with different `model_name` parameter or run `reset_model()`.")
+        self.checkpoint_exists = \
+            os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
+
+        if self.checkpoint_exists:
+            if force:
+                warnings.warn("You already have model data for the '{}' name and you initialized it with ``force=True``"
+                              " parameter. Until you run `reset_model()` or load existing model data, you won't be able"
+                              " to train the model.".format(self.model_name)
+                              )
+            else:
+                raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
+                                     " training or use `force=True` to initialize anyway and `reset_model()` to start"
+                                     " training from scratch".format(self.model_name)
+                                     )
 
     def reset_model(self):
-        ''' Resets the model object.
-
-            WARNING: also removes all stored data like checkpoints and training history.
-        '''
+        """ Resets the model object and removes all the stored data - model, checkpoints and training history.
+        """
         shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
         shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
         shutil.rmtree(_get_untrained_models_folder(self.work_dir, self.model_name), ignore_errors=True)
 
+        self.checkpoint_exists = False
         self.total_epochs = 0
         self.model = None
         self.input_dim = None
@@ -343,6 +357,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          verbose: bool = False,
                          epochs: int = 0) -> None:
 
+        raise_if(self.checkpoint_exists and self.force,
+                 'You forced initialization of the model but the data already exist for that model name. Either run'
+                 ' `reset_model()` or load model from the checkpoint.',
+                 logger)
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
