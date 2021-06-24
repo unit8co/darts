@@ -23,11 +23,11 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32}, 180.),
-        (TCNModel, {'batch_size': 32}, 240.),
+        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
-                            'dim_feedforward': 16, 'batch_size': 32}, 180.),
-        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12}, 180.)
+                            'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 180.)
     ]
 
     class GlobalForecastingModelsTestCase(DartsBaseTestClass):
@@ -58,7 +58,7 @@ if TORCH_AVAILABLE:
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
-                model.fit(self.ts_pass_train, epochs=10)
+                model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (one time '
@@ -67,7 +67,7 @@ if TORCH_AVAILABLE:
         def test_multi_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
-                model.fit([self.ts_pass_train, self.ts_pass_train_1], epochs=10)
+                model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
                     model.predict(n=1)
@@ -89,7 +89,7 @@ if TORCH_AVAILABLE:
 
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
                 model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
-                          covariates=[self.time_covariates_train, self.time_covariates_train], epochs=10)
+                          covariates=[self.time_covariates_train, self.time_covariates_train])
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
                     model.predict(n=1)
@@ -113,7 +113,7 @@ if TORCH_AVAILABLE:
                 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
-                model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train, epochs=10)
+                model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
                 pred1 = model.predict(1)
                 pred2 = model.predict(1, series=self.ts_pass_train)
                 pred3 = model.predict(1, covariates=self.time_covariates_train)
@@ -138,13 +138,13 @@ if TORCH_AVAILABLE:
 
             target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
             target_past, target_future = target.split_after(split_ratio)
-            model = TCNModel(input_chunk_length=50, output_chunk_length=5, random_state=0)
+            model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
 
-            model.fit(series=target_past, epochs=20)
+            model.fit(series=target_past)
             long_pred_no_cov = model.predict(n=160)
 
-            model = TCNModel(input_chunk_length=50, output_chunk_length=5, random_state=0)
-            model.fit(series=target_past, covariates=covariates_past, epochs=20)
+            model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
+            model.fit(series=target_past, covariates=covariates_past)
             long_pred_with_cov = model.predict(n=160, covariates=covariates)
             self.assertTrue(mape(target_future, long_pred_no_cov) > mape(target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
@@ -186,11 +186,10 @@ if TORCH_AVAILABLE:
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 multiple_ts = [self.ts_pass_train] * 10
-                epochs = 10
-                model.fit(multiple_ts, epochs=epochs)
+                model.fit(multiple_ts)
 
-                rmtree_patch.assert_not_called()
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+                rmtree_patch.assert_called()
+                train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
 
         @patch('darts.models.torch_forecasting_model.torch.save')
         @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
@@ -203,7 +202,7 @@ if TORCH_AVAILABLE:
 
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
+                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
@@ -226,7 +225,7 @@ if TORCH_AVAILABLE:
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
+                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
