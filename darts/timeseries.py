@@ -1436,7 +1436,7 @@ class TimeSeries:
         if isinstance(index, int):
             new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
         else:
-            self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
+            new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
     def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
