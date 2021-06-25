@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-import time
+import datetime
 import warnings
 
 from ..timeseries import TimeSeries
@@ -163,7 +163,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is available, otherwise "cpu")
         force
             force model loading, even if the data does not exist. Note that you won't be able to train model initialized
-            this way until you run ``reset_model()``
+            this way until you run ``reset_model()`` [default: False]
         """
         super().__init__()
 
@@ -183,7 +183,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model_name is None:
-            current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
