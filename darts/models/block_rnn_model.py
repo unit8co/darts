@@ -37,7 +37,8 @@ class _BlockRNNModule(nn.Module):
         This module uses an RNN to encode the input sequence, and subsequently uses a fully connected
         network as the decoder which takes as input the last hidden state of the encoder RNN.
         The final output of the decoder is a sequence of length `output_chunk_length`. In this sense,
-        the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different from `_RNNModule`).
+        the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different 
+        from `_RNNModule` used by the `RNNModel`).
 
         Parameters
         ----------
@@ -66,7 +67,7 @@ class _BlockRNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, out_len, output_size)`
+        y of shape `(batch_size, output_chunk_length, target_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
