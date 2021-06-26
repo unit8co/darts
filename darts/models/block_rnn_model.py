@@ -67,7 +67,7 @@ class _BlockRNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, out_len, output_size)`
+        y of shape `(batch_size, output_chunk_length, target_size)`
             Tensor containing the (point) prediction at the last time step of the sequence.
         """
 
