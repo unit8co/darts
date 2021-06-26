@@ -214,7 +214,7 @@ class ForecastingModel(ABC):
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
         if covariates:
-            raise_if_not(series.end_time() <= covariates.end_time(),
+            raise_if_not(series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
                          'The provided covariates must be at least as long as the target series.')
 
         # prepare the start parameter -> pd.Timestamp

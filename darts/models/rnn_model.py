@@ -83,10 +83,8 @@ class _RNNModule(nn.Module):
         out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
         # TODO: confirm shape of out
 
-        """ Here, we apply the V matrix to every hidden state to produce the outputs
-        """
-        # TODO: for one layer out should be equal to hidden, make sure that's true
-        predictions = self.V(out)  # TODO: make sure this matrix multiplication is correct
+        # Here, we apply the V matrix to every hidden state to produce the outputs
+        predictions = self.V(out)
 
         # predictions is of size (batch_size, input_length, target_size)
         predictions = predictions.view(batch_size, -1, self.target_size)

@@ -563,6 +563,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch_tuple in iterator:
 
+                # at this point `input_series` contains both the past target series and past covariates
                 input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
