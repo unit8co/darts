@@ -121,6 +121,8 @@ class RNNModel(TorchForecastingModel):
           and for all other predictions it will be set to the previous prediction
         - the previous hidden state
         - the current covariates (if the model was trained with covariates)
+        
+        For a block version using an RNN model as an encoder only, checkout `BlockRNNModel`.
 
         Parameters
         ----------
