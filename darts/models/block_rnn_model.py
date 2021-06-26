@@ -142,7 +142,7 @@ class BlockRNNModel(TorchForecastingModel):
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
-            `darts.models.rnn_model._BlockRNNModule`.
+            `darts.models.block_rnn_model._BlockRNNModule`.
         input_chunk_length
             The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
