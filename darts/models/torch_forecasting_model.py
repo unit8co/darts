@@ -418,7 +418,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         - the current covariates (if the model was trained with covariates)
         As a result, if covariates were used, `n` covariates have to be available into the future.
 
-        If some time series in the `series` argument have more time steps than the model was trained with,
+        If some time series in the `series` argument have more than `input_chunk_length` time steps,
         only the last `input_chunk_length` time steps will be considered.
 
         Parameters
