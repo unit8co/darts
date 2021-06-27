@@ -135,7 +135,10 @@ class RNNModel(TorchForecastingModel):
         dropout
             Fraction of neurons afected by Dropout.
         training_length
-            The length of 1 training sample time series.
+            The length of both input (target and covariates) and output (target) time series used during
+            training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
+            because otherwise during training the RNN is never run for as many iterations as it will during
+            training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.

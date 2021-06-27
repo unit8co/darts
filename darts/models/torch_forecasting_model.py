@@ -4,6 +4,7 @@ Torch Forecasting Model Base Class
 This is the super class for all PyTorch-based forecasting models.
 """
 
+from darts.utils.data.shifted_dataset import ShiftedDataset
 import numpy as np
 import os
 import re
@@ -335,6 +336,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  logger)
         raise_if(val_dataset is not None and len(val_dataset) == 0,
                  'The provided validation time series dataset is too short for obtaining even one training point.',
+                 logger)
+        raise_if(self.is_recurrent and not isinstance(self, ShiftedDataset),
+                 'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
                  logger)
 
         # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a

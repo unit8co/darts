@@ -7,7 +7,7 @@ from typing import Union, Sequence, Optional, Tuple
 
 from .timeseries_dataset import TimeSeriesInferenceDataset
 from ...timeseries import TimeSeries
-from ...logging import raise_if_not
+from ...logging import raise_if_not, raise_if
 
 
 class SimpleInferenceDataset(TimeSeriesInferenceDataset):
@@ -56,6 +56,8 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
             The length of the time series the model takes as input.
         output_chunk_length
             The length of the model predictions after one call to its `forward` function.
+        model_is_recurrent
+            Boolean indicating whether the model that uses this dataset is recurrent or not.
     """
 
         super().__init__()
@@ -65,6 +67,9 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.model_is_recurrent = model_is_recurrent
+
+        raise_if(model_is_recurrent and output_chunk_length != 1,
+                 'Recurrent models require an `output_chunk_length == 1`.')
 
         raise_if_not((covariates is None or len(series) == len(covariates)),
                      'The number of target series must be equal to the number of covariates.')
