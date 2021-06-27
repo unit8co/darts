@@ -337,7 +337,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         raise_if(val_dataset is not None and len(val_dataset) == 0,
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
-        raise_if(self.is_recurrent and not isinstance(self, ShiftedDataset),
+        raise_if(self.is_recurrent and not isinstance(train_dataset, ShiftedDataset),
                  'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
                  logger)
 
