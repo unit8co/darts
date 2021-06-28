@@ -96,7 +96,8 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
 
             # isolate past covariates and add them to array
             if covariate_series.end_time() >= first_pred_time:
-                cov_past = covariate_series.drop_after(first_pred_time)
+                cov_past = covariate_series.drop_after(first_pred_time + int(self.model_is_recurrent)
+                                                       * covariate_series.freq())
             else:
                 cov_past = covariate_series
             cov_past = cov_past[-self.input_chunk_length:]
@@ -125,7 +126,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 when making a prediction (covariates with the same timestamp as the target).
                 Because the RNN is trained that way, this shift has to be incorporated into `SimpleInferenceDataset`
                 as well, and this applies to future covariates too. This translates to the different cutoff
-                points seen above.
+                points seen at the creation of `cov_past` and `cov_future`.
                 """
 
         return tgt_past, cov_past, cov_future
