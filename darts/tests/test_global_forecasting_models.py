@@ -11,7 +11,7 @@ from ..datasets import AirPassengersDataset
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel
+    from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -23,7 +23,8 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -117,9 +118,9 @@ if TORCH_AVAILABLE:
                     model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates_train)
 
                 # ... unless future covariates are provided
-                model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
+                pred = model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
 
-                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)
+                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
@@ -149,12 +150,19 @@ if TORCH_AVAILABLE:
             self.assertTrue(mape(self.target_future, long_pred_no_cov) > mape(self.target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
-            # models can predict up to self.output_chunk_length points beyond the last future covariate...
+            # block models can predict up to self.output_chunk_length points beyond the last future covariate...
             model.predict(n=165, covariates=self.covariates)
 
             # ... not more
             with self.assertRaises(ValueError):
                 model.predict(n=166, series=self.ts_pass_train)
+
+            # recurrent models can only predict data points for time steps where future covariates are available
+            model = RNNModel(n_epochs=1)
+            model.fit(series=self.target_past, covariates=self.covariates_past)
+            model.predict(n=160, covariates=self.covariates)
+            with self.assertRaises(ValueError):
+                model.predict(n=161, covariates=self.covariates)
 
         def test_batch_predictions(self):
             # predicting multiple time series at once needs to work for arbitrary batch sizes
