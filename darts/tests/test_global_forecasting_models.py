@@ -7,6 +7,7 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -259,3 +260,19 @@ if TORCH_AVAILABLE:
 
                 rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+        def test_sample_smaller_than_batch_size(self):
+            """
+            Checking that the TorchForecastingModels do not crash even if the number of available samples for training
+            is strictly lower than the selected batch_size
+            """
+            # TS with 50 timestamps. TorchForecastingModels will use the SequentialDataset for producing training
+            # samples, which means we will have 50 - 22 - 2 + 1 = 27 samples, which is < 32 (batch_size). The model
+            # should still train on those samples and not crash in any way
+            ts = linear_timeseries(0, 1, 50)
+
+            model = RNNModel(input_chunk_length=20,
+                             output_chunk_length=2,
+                             n_epochs=2,
+                             batch_size=32)
+            model.fit(ts)
