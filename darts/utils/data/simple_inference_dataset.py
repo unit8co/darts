@@ -119,5 +119,13 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.model_is_recurrent))
                                                           * covariate_series.freq())
                 cov_future = cov_future[:self.n - self.output_chunk_length + int(self.model_is_recurrent)]
+                """
+                In the shifted dataset, for recurrent models, the covariates are shifted forward relative to the input
+                series by one time step. This ensures that recurrent models have as input the most recent covariates
+                when making a prediction (covariates with the same timestamp as the target).
+                Because the RNN is trained that way, this shift has to be incorporated into `SimpleInferenceDataset`
+                as well, and this applies to future covariates too. This translates to the different cutoff
+                points seen above.
+                """
 
         return tgt_past, cov_past, cov_future
