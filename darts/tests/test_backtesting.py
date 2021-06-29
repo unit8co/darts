@@ -29,7 +29,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TCNModel, RNNModel
+    from ..models import TCNModel, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch models are not installed - will not be tested for backtesting')
@@ -247,7 +247,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                 }
             },
             {
-                "model": RNNModel,   # TorchForecastingModel
+                "model": BlockRNNModel,   # TorchForecastingModel
                 "parameters": {
                     'input_chunk_length': [1, 3, 5, 10],
                     'output_chunk_length': [1, 3, 5, 10],
