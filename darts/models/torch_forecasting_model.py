@@ -782,7 +782,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if self.total_epochs == 0:
+            if self.total_epochs > 0:
                 tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
             else:
                 tb_writer = SummaryWriter(runs_folder)
