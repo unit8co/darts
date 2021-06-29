@@ -346,6 +346,45 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
+    def from_times_and_values_probabilistic(times: Optional[Union[pd.DatetimeIndex, pd.RangeIndex]],
+                                            values: np.ndarray,
+                                            fill_missing_dates: Optional[bool] = True,
+                                            freq: Optional[str] = None) -> 'TimeSeries':
+        """
+        Returns a probabilistic TimeSeries built from an index and values.
+
+        Parameters
+        ----------
+        times
+            A `pandas.DateTimeIndex` or `pandas.RangeIndex` representing the time axis for the time series.
+        values
+            A 3-dimensional Numpy array of values for the TimeSeries. The dimensions should be (time, component, sample).
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed from the inputs.
+        """
+
+        # TODO: make it more general, not always going via a DataFrame
+
+        idx = times if isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex) else None
+        if not idx.name:
+            idx.name = DIMS[0]
+
+        xa = xr.DataArray(values,
+                          dims=(idx.name,) + DIMS[-2:],
+                          coords={idx.name: times})
+
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
+
+    @staticmethod
     def from_values(values: np.ndarray,
                     fill_missing_dates: Optional[bool] = True,
                     freq: Optional[str] = None,

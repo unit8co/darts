@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 from inspect import signature
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_log, raise_if_not, raise_if
@@ -123,15 +124,21 @@ class ForecastingModel(ABC):
             return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
 
     def _build_forecast_series(self,
-                               points_preds: np.ndarray,
+                               points_preds: Union[np.ndarray, Sequence[np.ndarray]],
                                input_series: Optional[TimeSeries] = None) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index (or after the end of the input series, if specified).
         """
         input_series = input_series if input_series is not None else self.training_series
-        time_index = self._generate_new_dates(len(points_preds), input_series=input_series)
-        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
+        time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
+        time_index = self._generate_new_dates(time_index_length, input_series=input_series)
+
+        if isinstance(points_preds, np.ndarray):
+            return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
+
+        return TimeSeries.from_times_and_values_probabilistic(time_index, np.stack(points_preds, axis=2),
+                                                              freq=input_series.freq_str)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -156,6 +163,7 @@ class ForecastingModel(ABC):
     def historical_forecasts(self,
                              series: TimeSeries,
                              covariates: Optional[TimeSeries] = None,
+                             num_samples: int = 1,
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
@@ -188,6 +196,9 @@ class ForecastingModel(ABC):
             The target time series to use to successively train and evaluate the historical forecasts
         covariates
             An optional covariate series. This applies only if the model supports covariates.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.

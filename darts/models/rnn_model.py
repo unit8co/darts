@@ -28,7 +28,8 @@ class _RNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  target_size: int = 1,
-                 dropout: float = 0.):
+                 dropout: float = 0.,
+                 probabilistic: bool = False):
 
         """ PyTorch module implementing an RNN to be used in `RNNModel`.
 
@@ -49,6 +50,9 @@ class _RNNModule(nn.Module):
             The dimensionality of the output time series.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        probabilistic
+            Boolean value indicating whether forecasts should be probability distributions
+            instead of point predictions. For now, only the Gaussian distribution is supported.
 
         Inputs
         ------
@@ -68,12 +72,15 @@ class _RNNModule(nn.Module):
         # Defining parameters
         self.target_size = target_size
         self.name = name
+        self.is_probabilistic = probabilistic
 
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, 1, batch_first=True, dropout=dropout)
+        # TODO: dropout is not used currently since the pytorch module doesn't adds it to the last layer and we have
+        # just 1 layer so no dropout is added
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
-        self.V = nn.Linear(hidden_dim, target_size)
+        self.V = nn.Linear(hidden_dim, target_size + int(probabilistic) * target_size)
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
@@ -81,13 +88,12 @@ class _RNNModule(nn.Module):
 
         # out is of size (batch_size, input_length, hidden_dim)
         out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
-        # TODO: confirm shape of out
 
         # Here, we apply the V matrix to every hidden state to produce the outputs
         predictions = self.V(out)
 
         # predictions is of size (batch_size, input_length, target_size)
-        predictions = predictions.view(batch_size, -1, self.target_size)
+        predictions = predictions.view(batch_size, -1, self.target_size + int(self.is_probabilistic) * self.target_size)
 
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
@@ -101,6 +107,7 @@ class RNNModel(TorchForecastingModel):
                  hidden_dim: int = 25,
                  dropout: float = 0.,
                  training_length: int = 24,
+                 probabilistic: bool = False,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -139,6 +146,9 @@ class RNNModel(TorchForecastingModel):
             training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
             because otherwise during training the RNN is never run for as many iterations as it will during
             training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+        probabilistic
+            Boolean value indicating whether forecasts should be probability distributions
+            instead of point predictions. For now, only the Gaussian distribution is supported.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -159,6 +169,7 @@ class RNNModel(TorchForecastingModel):
         self.hidden_dim = hidden_dim
         self.training_length = training_length
         self.is_recurrent = True
+        self.is_probabilistic = probabilistic
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
@@ -166,7 +177,8 @@ class RNNModel(TorchForecastingModel):
                                input_size=input_dim,
                                target_size=output_dim,
                                hidden_dim=self.hidden_dim,
-                               dropout=self.dropout)
+                               dropout=self.dropout,
+                               probabilistic=self.is_probabilistic)
         else:
             model = self.rnn_type_or_module
         return model
@@ -182,3 +194,26 @@ class RNNModel(TorchForecastingModel):
 
     def _produce_train_output(self, data):
         return self.model(data)[0]
+
+    def _compute_loss(self, output, target):
+        if self.is_probabilistic:
+            gaussian_loss = nn.GaussianNLLLoss(reduction='sum')
+            output_means, output_vars = self._means_and_vars_from_output(output)
+            return gaussian_loss(output_means, target, output_vars)
+        else:
+            return super()._compute_loss(output, target)
+
+    def _produce_predict_output(self, input, last_hidden_state=None):
+        if self.is_probabilistic:
+            output, hidden = self.model(input, last_hidden_state)
+            output_means, output_vars = self._means_and_vars_from_output(output)
+            return torch.normal(output_means, output_vars), hidden
+        else:
+            return self.model(input, last_hidden_state)
+
+    def _means_and_vars_from_output(self, output):
+        softplus_activation = nn.Softplus()
+        output_means = output[:, :, :self.model.target_size]
+        output_vars = softplus_activation(output[:, :, self.model.target_size:])
+        #print(output_means.shape, output_vars.shape)
+        return output_means, output_vars

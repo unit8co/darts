@@ -287,7 +287,7 @@ class RegressionModel(ExtendedForecastingModel):
 
             # Append forecast
             forecasts[i] = forecast[0]
-        return self._build_forecast_series(forecasts)
+        return self._build_forecast_series(np.array(forecasts))
 
     def __str__(self):
         return self.model.__str__()

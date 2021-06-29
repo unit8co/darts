@@ -209,6 +209,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # by default models are block models (i.e. not recurrent)
         self.is_recurrent = False
 
+        # by default models are deterministic (i.e. not probabilistic)
+        self.is_probabilistic = False
+
     def _init_model(self) -> None:
         """
         Init self.model - the torch module of this class, based on examples of input/output tensors (to get the
@@ -400,7 +403,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_size: Optional[int] = None,
                 verbose: bool = False,
                 n_jobs: int = 1,
-                roll_size: Optional[int] = None
+                roll_size: Optional[int] = None,
+                num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -447,6 +451,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set `self.output_chunk_length` by default.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -480,7 +487,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
                                          self.is_recurrent)
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size)
+                                                roll_size=roll_size, num_samples=num_samples)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
@@ -489,7 +496,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              batch_size: Optional[int] = None,
                              verbose: bool = False,
                              n_jobs: int = 1,
-                             roll_size: Optional[int] = None
+                             roll_size: Optional[int] = None,
+                             num_samples: int = 1,
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -534,6 +542,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set `self.output_chunk_length` by default.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -546,13 +557,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             roll_size = self.output_chunk_length
         else:
             raise_if_not(0 < roll_size <= self.output_chunk_length,
-                         '`roll_size` must be an integer between 1 and `self.output_chunk_length`')
+                         '`roll_size` must be an integer between 1 and `self.output_chunk_length`.')
 
         # check input data type
         raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
-                     'Only TimeSeriesInferenceDataset is accepted as input type')
+                     'Only TimeSeriesInferenceDataset is accepted as input type.')
 
-        # TODO currently we assume all forecasts fit in memory
+        # check that `num_samples` is a positive integer
+        raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
+
+        # check that the desired number of samples for non-probabilistic models is equal to 1
+        raise_if(not self.is_probabilistic and num_samples > 1,
+                 '`num_samples > 1` is only supported for probabilistic models.')
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
@@ -571,20 +587,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
-                if self.is_recurrent:
-                    batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
-                else:
-                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
+                # repeat prediction procedure for every needed sample
+                batch_predictions = []
+                for i in range(num_samples):
+                    if self.is_recurrent:
+                        batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
+                    else:
+                        batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
 
-                # bring predictions into desired format and drop unnecessary values
-                batch_prediction = torch.cat(batch_prediction, dim=1)
-                batch_prediction = batch_prediction[:, :n, :]
-                batch_prediction = batch_prediction.cpu().detach().numpy()
+                    # bring predictions into desired format and drop unnecessary values
+                    batch_prediction = torch.cat(batch_prediction, dim=1)
+                    batch_prediction = batch_prediction[:, :n, :]
+                    batch_prediction = batch_prediction.cpu().detach().numpy()
+
+                    batch_predictions.append(batch_prediction)
 
                 batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
-                        batch_prediction[batch_idx],
+                        [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                         input_series_dataset[dataset_idx][0]
                     )
                     for batch_idx, dataset_idx in enumerate(batch_indices)
@@ -601,7 +622,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                    roll_size) -> Sequence[TimeSeries]:
 
         batch_prediction = []
-        out = self.model(input_series)[:, self.first_prediction_index:, :]
+        out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
         batch_prediction.append(out[:, :roll_size, :])
         prediction_length = roll_size
 
@@ -627,7 +648,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # take only last part of the output sequence where needed
-            out = self.model(input_series)[:, self.first_prediction_index:, :]
+            out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
 
             # update predictions depending on how many data points have been predicted
             if prediction_length <= n - self.output_chunk_length - roll_size:
@@ -649,7 +670,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _predict_batch_recurrent_model(self, n, input_series, cov_future):
         batch_prediction = []
-        out, last_hidden_state = self.model(input_series)
+        out, last_hidden_state = self._produce_predict_output(input_series)
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
@@ -662,7 +683,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self.model(new_input, last_hidden_state)
+            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
 
             # append prediction to batch prediction array, increase counter
             batch_prediction.append(out[:, -1:, :])
@@ -709,7 +730,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 self.model.train()
                 data, target = data.to(self.device), target.to(self.device)
                 output = self._produce_train_output(data)
-                loss = self.criterion(output, target)
+                loss = self._compute_loss(output, target)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -750,6 +771,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _produce_train_output(self, data):
         return self.model(data)
 
+    def _compute_loss(self, output, target):
+        return self.criterion(output, target)
+
+    def _produce_predict_output(self, input):
+        return self.model(input)
+
     def _evaluate_validation_loss(self, val_loader: DataLoader):
         total_loss = 0
         self.model.eval()
@@ -757,7 +784,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_idx, (data, target) in enumerate(val_loader):
                 data, target = data.to(self.device), target.to(self.device)
                 output = self._produce_train_output(data)
-                loss = self.criterion(output, target)
+                loss = self._compute_loss(output, target)
                 total_loss += loss.item()
 
         validation_loss = total_loss / (batch_idx + 1)

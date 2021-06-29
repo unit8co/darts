@@ -9,6 +9,7 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
+import numpy as np
 import pandas as pd
 
 from statsmodels.tsa.api import VAR as staVAR
@@ -72,7 +73,7 @@ class VARIMA(ExtendedForecastingModel):
         super().predict(n, exog)
         forecast = self.model.forecast(steps=n, exog=exog.values() if exog else None)
         forecast = self._invert_transformation(forecast)
-        return self._build_forecast_series(forecast)
+        return self._build_forecast_series(np.array(forecast))
 
     def _invert_transformation(self, series_df: pd.DataFrame):
         if self.d == 0:
