@@ -20,7 +20,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
         def test_routine(length):
             # testing for constant value
             constant_ts = constant_timeseries(value=value, length=length)
-            value_set = set(constant_ts._df.values.flatten())
+            value_set = set(constant_ts.values().flatten())
             self.assertTrue(len(value_set) == 1)
 
         for length in [1, 2, 5, 10, 100]:

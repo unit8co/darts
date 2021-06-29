@@ -53,7 +53,7 @@ if __name__ == "__main__":
             except ValueError:
                 # not useful anymore
                 train_des = train_des.shift(-len(train_des)).append(train_des)
-#                 train_des = TimeSeries.from_times_and_values(train_des.shift(-11).time_index()[:11], 
+#                 train_des = TimeSeries.from_times_and_values(train_des.shift(-11).time_index[:11],
 #                                                              2*train_des.values()[0]-train_des.values()[10::-1]) \
 #                                                             .append(train_des)
                 ses.fit(train_des)

@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 import unittest
 import numpy as np
+import xarray as xr
 import re
 from testfixtures import LogCapture
 
@@ -59,12 +60,12 @@ class LoggingTestCase(unittest.TestCase):
         with LogCapture() as lc:
             get_logger('darts.timeseries').handlers = []
             try:
-                TimeSeries(empty_series)
+                TimeSeries(xr.DataArray(empty_series))
             except Exception:
                 pass
 
         lc.check(
-            ('darts.timeseries', 'ERROR', 'ValueError: Time series must not be empty.')
+            ('darts.timeseries', 'ERROR', 'ValueError: The time series array must not be empty.')
         )
 
     def test_timeseries_split_error_log(self):
