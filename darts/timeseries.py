@@ -1536,12 +1536,12 @@ class TimeSeries:
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
         Check whether a given timestamp or integer is withing the time interval of this time series.
-        If a timestamp is provided, it does not need to be *in* the time series.
+        If a timestamp is provided, it does not need to be an element of the time index of the series.
 
         Parameters
         ----------
         ts
-            The `pandas.Timestamp` or integer to check
+            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with RangeIndex) to check.
 
         Returns
         -------
@@ -1864,7 +1864,6 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._xa < other.data_array(copy=False)
         else:
-            series = None
             raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
         return series  # Note: we return a DataArray
