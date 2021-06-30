@@ -33,7 +33,9 @@ class TimeSeries:
         raise_if_not(isinstance(xa, xr.DataArray), 'Data must be provided as an xarray DataArray instance. '
                                                    'If you need to create a TimeSeries from another type '
                                                    '(e.g. a DataFrame), look at TimeSeries factory methods '
-                                                   '(e.g. TimeSeries.from_dataframe()).', logger)
+                                                   '(e.g. TimeSeries.from_dataframe(), '
+                                                   'TimeSeries.from_xarray(), TimeSeries.from_values()'
+                                                   'TimeSeries.from_times_and_values(), etc...).', logger)
         raise_if_not(xa.size > 0, 'The time series array must not be empty.', logger)
         raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS), logger)
 
