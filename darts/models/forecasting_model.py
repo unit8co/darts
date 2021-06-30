@@ -96,6 +96,12 @@ class ForecastingModel(ABC):
                                  'For global models, if `predict()` is called without specifying a series,'
                                  'the model must have been fit on a single training series.'), logger)
 
+    def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
+        self.fit(series)
+
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
+        return self.predict(n)
+
     @property
     def min_train_series_length(self) -> int:
         """
@@ -243,44 +249,16 @@ class ForecastingModel(ABC):
         last_points_times = []
         last_points_values = []
 
-        # TODO: We should find a better object oriented way of handling covariates in GlobalForecastingModel
-        fit_signature = signature(self.fit)
-        predict_signature = signature(self.predict)
-
         # iterate and forecast
         for pred_time in iterator:
             train = series.drop_after(pred_time)  # build the training series
-            if covariates:
-                train_cov = covariates.drop_after(pred_time)
+
+            train_cov = covariates.drop_after(pred_time) if covariates else None
 
             if retrain:
-                if covariates and "covariates" in fit_signature.parameters:
-                    self.fit(series=train, covariates=train_cov)
-                elif covariates and "exog" in fit_signature.parameters:
-                    self.fit(series=train, exog=train_cov)
-                else:
-                    self.fit(series=train)
+                self._fit_wrapper(series=train, covariates=train_cov)
 
-            if covariates:
-                if 'covariates' in predict_signature.parameters:
-                    covar_argument = {"covariates": covariates}
-                elif 'exog' in predict_signature.parameters:
-                    covar_argument = {"exog": train_cov}
-                else:
-                    raise ValueError("`covariates` is not None but model does not support `exog` or `covariates`.")
-
-                if 'series' in predict_signature.parameters:
-                    forecast = self.predict(n=forecast_horizon, series=train, **covar_argument)
-                else:
-                    if 'exog' in covar_argument: # Used for objects of type `RegressionModel`
-                        start = train.end_time() + train.freq()
-                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq()]
-                    forecast = self.predict(n=forecast_horizon, **covar_argument)
-            else:
-                if 'series' in predict_signature.parameters:
-                    forecast = self.predict(n=forecast_horizon, series=train)
-                else:
-                    forecast = self.predict(n=forecast_horizon)
+            forecast = self._predict_wrapper(forecast_horizon, train, covariates)
 
             if last_points_only:
                 last_points_values.append(forecast.values()[-1])
@@ -500,10 +478,6 @@ class ForecastingModel(ABC):
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
-        # TODO: We should find a better object oriented way of handling covariates in GlobalForecastingModel
-        fit_signature = signature(model_class.fit)
-        predict_signature = signature(model_class.predict)
-
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
 
@@ -511,10 +485,7 @@ class ForecastingModel(ABC):
             param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
-                    model.fit(series, covariates=covariates)
-                else:
-                    model.fit(series)
+                model._fit_wrapper(series, covariates)
                 fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
@@ -526,15 +497,8 @@ class ForecastingModel(ABC):
                                        reduction=reduction,
                                        last_points_only=last_points_only)
             else:  # split mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
-                    model.fit(series, covariates=covariates)
-                else:
-                    model.fit(series)
-
-                if covariates is not None and 'covariates' in predict_signature.parameters:
-                    pred = model.predict(n=len(val_series), covariates=covariates)
-                else:
-                    pred = model.predict(n=len(val_series))
+                model._fit_wrapper(series, covariates)
+                pred = model._predict_wrapper(len(val_series), series, covariates)
                 error = metric(pred, val_series)
 
             return error
@@ -706,6 +670,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
 
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
+        return self.predict(n, series, covariates=covariates)
+
+    def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
+        self.fit(series, covariates=covariates)
+
 
 class ExtendedForecastingModel(ForecastingModel, ABC):
     """ The base class for "extended" forecasting models, handling optional exogenous variables.
@@ -775,3 +745,12 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if self._expect_exog and len(exog) != n:
             raise_log(ValueError(f'Expecting exogenous variables with the same length as the'
                                  f' forecasting horizon ({n}).'))
+
+    def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
+        self.fit(series, exog=covariates)
+
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
+        if covariates is not None:
+            start = series.end_time() + series.freq()
+            covariates = covariates[start:start + (n - 1) * series.freq()]
+        return self.predict(n, exog=covariates)
