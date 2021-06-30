@@ -414,7 +414,7 @@ class TimeSeries:
 
     @property
     def n_timesteps(self):
-        return len(self._xa.time)
+        return len(self._time_index)
 
     @property
     def is_deterministic(self):
@@ -515,7 +515,7 @@ class TimeSeries:
             is_inside = self.start_time() <= ts <= self.end_time()
         else:
             if self._has_datetime_index:
-                is_inside = 0 <= ts <= self.__len__()
+                is_inside = 0 <= ts <= len(self)
             else:
                 is_inside = self.start_time() <= ts <= self.end_time()
 
@@ -545,7 +545,7 @@ class TimeSeries:
 
         Returns
         -------
-        pandas.Series
+        xarray.DataArray
             The xarray DataArray underlying this time series.
         """
         return self._xa.copy() if copy else self._xa
@@ -588,7 +588,10 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame representation of this time series
         """
-        self._assert_deterministic()
+        if not self.is_deterministic:
+            raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
+                                     'time series, and this series is not deterministic (it contains several samples). '
+                                     'Consider calling quantile_df() instead.'))
         if copy:
             return pd.DataFrame(self._xa[:, :, 0].values.copy(),
                                 index=self._time_index.copy(),
