@@ -82,7 +82,7 @@ if TORCH_AVAILABLE:
             # no exception is raised
 
         # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs
-        def test_train_from_0_to_20_no_fit_epochs(self):
+        def test_train_from_0_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
@@ -93,7 +93,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(model1.total_epochs, 20)
 
         # n_epochs = 20, fit|epochs=None, total_epochs=20 - train for another 20 epochs
-        def test_train_from_20_to_40_no_fit_epochs(self):
+        def test_train_from_20_n_epochs_40_no_fit_epochs(self):
             model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
@@ -106,20 +106,21 @@ if TORCH_AVAILABLE:
             self.assertEqual(model1.total_epochs, 40)
 
         # n_epochs = 20, fit|epochs=None, total_epochs=10 - train for another 20 epochs
-        def test_train_from_10_to_20_no_fit_epochs(self):
+        def test_train_from_10_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=10)  # cheating here a little bit
+            # simulate the case that user interrupted training with Ctrl-C after 10 epochs
+            model1.fit(series, epochs=10)
             self.assertEqual(model1.total_epochs, 10)
 
             model1.fit(series)
             self.assertEqual(model1.total_epochs, 30)
 
         # n_epochs = 20, fit|epochs=15, total_epochs=0 - train for 15 epochs
-        def test_train_from_0_to_20_fit_15_epochs(self):
+        def test_train_from_0_n_epochs_20_fit_15_epochs(self):
             model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
@@ -129,13 +130,14 @@ if TORCH_AVAILABLE:
             self.assertEqual(model1.total_epochs, 15)
 
         # n_epochs = 20, fit|epochs=15, total_epochs=10 - train for 15 epochs
-        def test_train_from_0_to_20_fit_15_epochs(self):
+        def test_train_from_10_n_epochs_20_fit_15_epochs(self):
             model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=10)  # cheating here a little bit
+            # simulate the case that user interrupted training with Ctrl-C after 10 epochs
+            model1.fit(series, epochs=10)
             self.assertEqual(model1.total_epochs, 10)
 
             model1.fit(series, epochs=15)
