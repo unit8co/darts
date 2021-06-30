@@ -159,7 +159,8 @@ class TimeSeries:
                     len(observed_frequencies) == 1,
                     "Could not infer explicit frequency. Observed frequencies: "
                     + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
-                    + ". Is Series too short (n=2)?",
+                    + (". Is Series too short (n={})?".format(samples_size-1) if len(observed_frequencies) == 0
+                       else '.'),
                     logger)
 
                 freq = observed_frequencies.pop()
@@ -305,7 +306,7 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: Optional[Union[pd.DatetimeIndex, pd.RangeIndex]],
+    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
                               values: Union[np.ndarray, pd.DataFrame],
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
@@ -335,9 +336,10 @@ class TimeSeries:
         """
 
         # TODO: make it more general, not always going via a DataFrame
-
-        idx = times if isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex) else None
-        df = pd.DataFrame(values, index=idx)
+        raise_if_not(isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex),
+                     'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
+                     'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
+        df = pd.DataFrame(values, index=times)
         if columns is not None:
             df.columns = columns
 
