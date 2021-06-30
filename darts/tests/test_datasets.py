@@ -19,20 +19,22 @@ class DatasetTestCase(DartsBaseTestClass):
 
     def test_simple_inference_dataset(self):
         # one target series
-        ds = SimpleInferenceDataset(series=self.target1)
-        self.assertEqual(ds[0], (self.target1, None))
+        ds = SimpleInferenceDataset(series=self.target1, input_chunk_length=len(self.target1))
+        self.assertEqual(ds[0], (self.target1, None, None))
 
         # two target series
-        ds = SimpleInferenceDataset(series=[self.target1, self.target2])
-        self.assertEqual(ds[1], (self.target2, None))
+        ds = SimpleInferenceDataset(series=[self.target1, self.target2],
+                                    input_chunk_length=max(len(self.target1), len(self.target2)))
+        self.assertEqual(ds[1], (self.target2, None, None))
 
         # fail if covariates do not have same size
         with self.assertRaises(ValueError):
             ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1])
 
         # with covariates
-        ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1, self.cov2])
-        self.assertEqual(ds[1], (self.target2, self.cov2))
+        ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1, self.cov2],
+                                    input_chunk_length=max(len(self.target1), len(self.target2)))
+        self.assertEqual(ds[1], (self.target2, self.cov2, None))
 
     def test_sequential_dataset(self):
         # one target series
