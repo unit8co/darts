@@ -217,14 +217,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if self.checkpoint_exists:
             if force:
-                warnings.warn("You already have model data for the '{}' name and you initialized it with ``force=True``"
-                              " parameter. Until you run `reset_model()` or load existing model data, you won't be able"
-                              " to train the model.".format(self.model_name)
-                              )
+                self.reset_model()
             else:
                 raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
-                                     " training or use `force=True` to initialize anyway and `reset_model()` to start"
-                                     " training from scratch".format(self.model_name)
+                                     " training or use `force=True` to initialize anyway to start"
+                                     " training from scratch and remove all the model data".format(self.model_name)
                                      )
 
     def reset_model(self):
@@ -328,8 +325,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose
             Optionally, whether to print progress.
         epochs
-            If your model is already trained but you want to train it even further, you can provide here the number of
-            additional epochs.
+            If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
+            was provided to the model constructor.
         """
         super().fit(series, covariates)
 
@@ -362,10 +359,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          verbose: bool = False,
                          epochs: int = 0) -> None:
 
-        raise_if(self.checkpoint_exists and self.force,
-                 'You forced initialization of the model but the data already exist for that model name. Either run'
-                 ' `reset_model()` or load model from the checkpoint.',
-                 logger)
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
