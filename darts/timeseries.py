@@ -15,7 +15,6 @@ from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
 
-from .utils import timeseries_generation as tg
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
 logger = get_logger(__name__)
@@ -1469,6 +1468,7 @@ class TimeSeries:
             New TimeSeries instance enhanced by `attribute`.
         """
         self._assert_deterministic()
+        from .utils import timeseries_generation as tg
         return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
 
     def add_holidays(self,
@@ -1498,6 +1498,7 @@ class TimeSeries:
             A new TimeSeries instance, enhanced with binary holiday component.
         """
         self._assert_deterministic()
+        from .utils import timeseries_generation as tg
         return self.stack(tg.holidays_timeseries(self.time_index, country_code, prov, state))
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
