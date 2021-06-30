@@ -203,7 +203,7 @@ class ForecastingModel(ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
+            instances such as `BlockRNNModel`, `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
@@ -220,8 +220,8 @@ class ForecastingModel(ABC):
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
         if covariates:
-            raise_if_not(series.has_same_time_as(covariates),
-                         'The provided series and covariates must have the same time index.')
+            raise_if_not(series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
+                         'The provided covariates must be at least as long as the target series.')
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
@@ -269,7 +269,7 @@ class ForecastingModel(ABC):
 
             if covariates:
                 if 'covariates' in predict_signature.parameters:
-                    covar_argument = {"covariates": train_cov}
+                    covar_argument = {"covariates": covariates}
                 elif 'exog' in predict_signature.parameters:
                     covar_argument = {"exog": train_cov}
                 else:
@@ -354,7 +354,7 @@ class ForecastingModel(ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`
-            instances such as `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
+            instances such as `BlockRNNModel`, `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support
             setting `retrain` to `False`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not

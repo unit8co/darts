@@ -4,6 +4,7 @@ Torch Forecasting Model Base Class
 This is the super class for all PyTorch-based forecasting models.
 """
 
+from darts.utils.data.shifted_dataset import ShiftedDataset
 import numpy as np
 import os
 import re
@@ -205,6 +206,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.lr_scheduler_cls = lr_scheduler_cls
         self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
 
+        # by default models are block models (i.e. not recurrent)
+        self.is_recurrent = False
+
     def _init_model(self) -> None:
         """
         Init self.model - the torch module of this class, based on examples of input/output tensors (to get the
@@ -333,6 +337,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         raise_if(val_dataset is not None and len(val_dataset) == 0,
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
+        raise_if(self.is_recurrent and not isinstance(train_dataset, ShiftedDataset),
+                 'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
+                 logger)
 
         # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a
         # training from scratch.
@@ -399,15 +406,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
-        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last `roll_size` forecast points as
+        Block models:
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
+        recurrent way, by iteratively feeding the last `roll_size` forecast points as
         inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
         then covariates need to be available in the future.
 
-        If some time series in the ``series`` argument have more time steps than the model was trained with,
-        only the last ``input_chunk_length`` time steps will be considered.
+        Recurrent models:
+        All predictions are produced in a recurrent way by taking as input
+        - the previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction
+        - the previous hidden state
+        - the current covariates (if the model was trained with covariates)
+        As a result, if covariates were used, `n` covariates have to be available into the future.
+
+        If some time series in the `series` argument have more than `input_chunk_length` time steps,
+        only the last `input_chunk_length` time steps will be considered.
 
         Parameters
         ----------
@@ -461,7 +477,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      'of the series this model has been trained on. Provided input dim = {}, '
                      'model input dim = {}'.format(in_dim, self.input_dim))
 
-        dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length)
+        dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
+                                         self.is_recurrent)
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size)
         return predictions[0] if called_with_single_series else predictions
@@ -477,17 +494,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         """
         Predicts values for a certain number of time steps after the end of the series appearing in the specified
-        ``input_series_dataset``.
+        `input_series_dataset`.
 
-        If ``n`` is larger than the model ``output_chunk_length``, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last ``roll_size`` forecast points as
-        inputs to the model until a forecast of length ``n`` is obtained. If the model was trained with
+        Block models:
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
+        recurrent way, by iteratively feeding the last `roll_size` forecast points as
+        inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
         then covariates need to be available in the future.
 
-        If some series in the ``input_series_dataset`` have more time steps than the model was trained with,
-        only the last ``input_chunk_length`` time steps will be considered.
+        Recurrent models:
+        All predictions are produced in a recurrent way by taking as input
+        - the previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction
+        - the previous hidden state
+        - the current covariates (if the model was trained with covariates)
+        As a result, if covariates were used, `n` covariates have to be available into the future.
+
+        If some series in the `input_series_dataset` have more time steps than `input_chunk_length`,
+        only the last `input_chunk_length` time steps will be considered.
 
         Parameters
         ----------
@@ -541,70 +567,108 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch_tuple in iterator:
 
-                input_series, indices = batch_tuple[0], batch_tuple[-1]
+                # at this point `input_series` contains both the past target series and past covariates
+                input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
-                batch_prediction = []
-                out = self.model(input_series)[:, self.first_prediction_index:, :]
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length = roll_size
-
-                while prediction_length < n:
-
-                    # roll over input series to contain latest target and covariate
-                    input_series = torch.roll(input_series, -roll_size, 1)
-
-                    # update target input to include next `roll_size` predictions
-                    if self.input_chunk_length >= roll_size:
-                        input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
-                    else:
-                        input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
-
-                    # update covariates to include next `roll_size` predictions into the future
-                    if cov_future is not None and self.input_chunk_length >= roll_size:
-                        input_series[:, -roll_size:, self.output_dim:] = (
-                            cov_future[:, prediction_length - roll_size:prediction_length, :]
-                        )
-                    elif cov_future is not None:
-                        input_series[:, :, self.output_dim:] = (
-                            cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
-                        )
-
-                    # take only last part of the output sequence where needed
-                    out = self.model(input_series)[:, self.first_prediction_index:, :]
-
-                    # update predictions depending on how many data points have been predicted
-                    if prediction_length <= n - self.output_chunk_length - roll_size:
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    elif prediction_length < n - self.output_chunk_length:
-                        # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
-                        # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
-                        # so that the final forecast produces exactly the right number of predictions to reach `n`
-                        spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
-                        roll_size -= spillover_prediction_length
-                        batch_prediction.append(out[:, :roll_size, :])
-                        prediction_length += roll_size
-                    else:
-                        batch_prediction.append(out)
-                        prediction_length += self.output_chunk_length
+                if self.is_recurrent:
+                    batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
+                else:
+                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
 
                 # bring predictions into desired format and drop unnecessary values
                 batch_prediction = torch.cat(batch_prediction, dim=1)
                 batch_prediction = batch_prediction[:, :n, :]
                 batch_prediction = batch_prediction.cpu().detach().numpy()
 
+                batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
                         batch_prediction[batch_idx],
                         input_series_dataset[dataset_idx][0]
                     )
-                    for batch_idx, dataset_idx in enumerate(indices)
+                    for batch_idx, dataset_idx in enumerate(batch_indices)
                 )
 
                 predictions.extend(ts_forecasts)
 
         return predictions
+
+    def _predict_batch_block_model(self,
+                                   n,
+                                   input_series,
+                                   cov_future,
+                                   roll_size) -> Sequence[TimeSeries]:
+
+        batch_prediction = []
+        out = self.model(input_series)[:, self.first_prediction_index:, :]
+        batch_prediction.append(out[:, :roll_size, :])
+        prediction_length = roll_size
+
+        while prediction_length < n:
+
+            # roll over input series to contain latest target and covariate
+            input_series = torch.roll(input_series, -roll_size, 1)
+
+            # update target input to include next `roll_size` predictions
+            if self.input_chunk_length >= roll_size:
+                input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
+            else:
+                input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+
+            # update covariates to include next `roll_size` predictions into the future
+            if cov_future is not None and self.input_chunk_length >= roll_size:
+                input_series[:, -roll_size:, self.output_dim:] = (
+                    cov_future[:, prediction_length - roll_size:prediction_length, :]
+                )
+            elif cov_future is not None:
+                input_series[:, :, self.output_dim:] = (
+                    cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
+                )
+
+            # take only last part of the output sequence where needed
+            out = self.model(input_series)[:, self.first_prediction_index:, :]
+
+            # update predictions depending on how many data points have been predicted
+            if prediction_length <= n - self.output_chunk_length - roll_size:
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            elif prediction_length < n - self.output_chunk_length:
+                # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
+                # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
+                # so that the final forecast produces exactly the right number of predictions to reach `n`
+                spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
+                roll_size -= spillover_prediction_length
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            else:
+                batch_prediction.append(out)
+                prediction_length += self.output_chunk_length
+
+        return batch_prediction
+
+    def _predict_batch_recurrent_model(self, n, input_series, cov_future):
+        batch_prediction = []
+        out, last_hidden_state = self.model(input_series)
+        batch_prediction.append(out[:, -1:, :])
+        prediction_length = 1
+
+        while prediction_length < n:
+
+            # create new input to model from last prediction and current covariates, if available
+            new_input = (
+                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
+                if cov_future is not None else out[:, -1:, :]
+            )
+
+            # feed new input to model, including the last hidden state from the previous iteration
+            out, last_hidden_state = self.model(new_input, last_hidden_state)
+
+            # append prediction to batch prediction array, increase counter
+            batch_prediction.append(out[:, -1:, :])
+            prediction_length += 1
+
+        return batch_prediction
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
@@ -644,7 +708,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_idx, (data, target) in enumerate(train_loader):
                 self.model.train()
                 data, target = data.to(self.device), target.to(self.device)
-                output = self.model(data)
+                output = self._produce_train_output(data)
                 loss = self.criterion(output, target)
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -683,13 +747,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 elif verbose:
                     print("Training loss: {:.4f}".format(training_loss), end="\r")
 
+    def _produce_train_output(self, data):
+        return self.model(data)
+
     def _evaluate_validation_loss(self, val_loader: DataLoader):
         total_loss = 0
         self.model.eval()
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(val_loader):
                 data, target = data.to(self.device), target.to(self.device)
-                output = self.model(data)
+                output = self._produce_train_output(data)
                 loss = self.criterion(output, target)
                 total_loss += loss.item()
 
