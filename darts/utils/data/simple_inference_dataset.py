@@ -97,7 +97,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
             # isolate past covariates and add them to array
             if covariate_series.end_time() >= first_pred_time:
                 cov_past = covariate_series.drop_after(first_pred_time + int(self.model_is_recurrent)
-                                                       * covariate_series.freq())
+                                                       * covariate_series.freq)
             else:
                 cov_past = covariate_series
             cov_past = cov_past[-self.input_chunk_length:]
