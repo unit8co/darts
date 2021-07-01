@@ -390,12 +390,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              self.input_dim, self.output_dim, input_dim, output_dim
                          ))
 
+        # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
+        # least one batch no matter the chosen batch size
+
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
                                   num_workers=0,
                                   pin_memory=True,
-                                  drop_last=True)
+                                  drop_last=False)
 
         # Prepare validation data
         val_loader = None if val_dataset is None else DataLoader(torch_val_dataset,
