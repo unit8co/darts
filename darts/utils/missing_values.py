@@ -149,4 +149,4 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         interpolate_kwargs['limit_direction'] = 'both'
     interpolate_kwargs['inplace'] = True
     series_temp.interpolate(**interpolate_kwargs)
-    return TimeSeries.from_times_and_values(series.time_index, series_temp, series.freq)
+    return TimeSeries.from_dataframe(series_temp, freq=series.freq)

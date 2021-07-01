@@ -137,8 +137,8 @@ class ForecastingModel(ABC):
         if isinstance(points_preds, np.ndarray):
             return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
 
-        return TimeSeries.from_times_and_values_probabilistic(time_index, np.stack(points_preds, axis=2),
-                                                              freq=input_series.freq_str)
+        return TimeSeries.from_times_and_values(time_index, np.stack(points_preds, axis=2),
+                                                freq=input_series.freq_str)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -163,7 +163,6 @@ class ForecastingModel(ABC):
     def historical_forecasts(self,
                              series: TimeSeries,
                              covariates: Optional[TimeSeries] = None,
-                             num_samples: int = 1,
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
