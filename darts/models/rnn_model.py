@@ -71,6 +71,7 @@ class _RNNModule(nn.Module):
 
         # Defining parameters
         self.target_size = target_size
+        self.output_size = 2 * target_size if probabilistic else target_size
         self.name = name
         self.is_probabilistic = probabilistic
 
@@ -80,7 +81,7 @@ class _RNNModule(nn.Module):
         # just 1 layer so no dropout is added
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
-        self.V = nn.Linear(hidden_dim, target_size + int(probabilistic) * target_size)
+        self.V = nn.Linear(hidden_dim, self.output_size)
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
@@ -93,7 +94,7 @@ class _RNNModule(nn.Module):
         predictions = self.V(out)
 
         # predictions is of size (batch_size, input_length, target_size)
-        predictions = predictions.view(batch_size, -1, self.target_size + int(self.is_probabilistic) * self.target_size)
+        predictions = predictions.view(batch_size, -1, self.output_size)
 
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
@@ -126,7 +127,7 @@ class RNNModel(TorchForecastingModel):
           and for all other predictions it will be set to the previous prediction
         - the previous hidden state
         - the current covariates (if the model was trained with covariates)
-        
+
         For a block version using an RNN model as an encoder only, checkout `BlockRNNModel`.
 
         Parameters
