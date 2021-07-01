@@ -45,9 +45,9 @@ if TORCH_AVAILABLE:
             model_name = 'test_model'
             model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
-            # since no fit, there is no data stored for the model, hence `force` does noting
+            # since no fit, there is no data stored for the model, hence `force_reset` does noting
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force=True)
+            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
             patch_reset_model.assert_not_called()
 
         @patch('darts.models.torch_forecasting_model.TorchForecastingModel.reset_model')
@@ -61,7 +61,7 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
             model1.fit(series, epochs=1)
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force=True)
+            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
             patch_reset_model.assert_called_once()
 
         # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs

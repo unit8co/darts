@@ -117,7 +117,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
-                 force=False):
+                 force_reset=False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -166,9 +166,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
-        force
-            force model loading, even if the data does not exist. Note that you won't be able to train model initialized
-            this way until you run ``reset_model()`` [default: False]
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
         super().__init__()
 
@@ -210,17 +210,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.lr_scheduler_cls = lr_scheduler_cls
         self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
 
-        self.force = force
+        self.force_reset = force_reset
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         self.checkpoint_exists = \
             os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
 
         if self.checkpoint_exists:
-            if force:
+            if self.force_reset:
                 self.reset_model()
             else:
                 raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
-                                     " training or use `force=True` to initialize anyway to start"
+                                     " training or use `force_reset=True` to initialize anyway to start"
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
 
