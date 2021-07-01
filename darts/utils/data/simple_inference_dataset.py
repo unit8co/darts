@@ -109,7 +109,8 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 # block models need `n - output_chunk_length`
                 # recurrent models need `n`
                 last_required_future_covariate_ts = (
-                    target_series.end_time() + (self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
+                    target_series.end_time() + (
+                        self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
                     * target_series.freq
                 )
                 req_cov_string = 'n' if self.model_is_recurrent else 'n - output_chunk_length'

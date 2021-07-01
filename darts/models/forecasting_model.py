@@ -75,7 +75,7 @@ class ForecastingModel(ABC):
         Some models may not support this, if for instance the rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
-        dummy indexing and raise meaningful exception.
+        range indexing and raise meaningful exception.
         """
         return True
 

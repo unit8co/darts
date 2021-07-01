@@ -33,7 +33,9 @@ class TimeSeries:
         raise_if_not(isinstance(xa, xr.DataArray), 'Data must be provided as an xarray DataArray instance. '
                                                    'If you need to create a TimeSeries from another type '
                                                    '(e.g. a DataFrame), look at TimeSeries factory methods '
-                                                   '(e.g. TimeSeries.from_dataframe()).', logger)
+                                                   '(e.g. TimeSeries.from_dataframe(), '
+                                                   'TimeSeries.from_xarray(), TimeSeries.from_values()'
+                                                   'TimeSeries.from_times_and_values(), etc...).', logger)
         raise_if_not(xa.size > 0, 'The time series array must not be empty.', logger)
         raise_if_not(len(xa.shape) == 3, 'TimeSeries require DataArray of dimensionality 3 ({}).'.format(DIMS), logger)
 
@@ -157,7 +159,8 @@ class TimeSeries:
                     len(observed_frequencies) == 1,
                     "Could not infer explicit frequency. Observed frequencies: "
                     + ('none' if len(observed_frequencies) == 0 else str(observed_frequencies))
-                    + ". Is Series too short (n=2)?",
+                    + (". Is Series too short (n={})?".format(samples_size-1) if len(observed_frequencies) == 0
+                       else '.'),
                     logger)
 
                 freq = observed_frequencies.pop()
@@ -303,7 +306,7 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: Optional[Union[pd.DatetimeIndex, pd.RangeIndex]],
+    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
@@ -332,9 +335,12 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
 
-        idx = times if isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex) else None
-        if not idx.name:
-            idx.name = DIMS[0]
+        raise_if_not(isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex),
+                     'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
+                     'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
+
+        if not times.name:
+            times.name = DIMS[0]
 
         values = np.array(values)
         if len(values.shape) == 1:
@@ -342,12 +348,12 @@ class TimeSeries:
         if len(values.shape) == 2:
             values = np.expand_dims(values, 2)
 
-        coords = {idx.name: times}
+        coords = {times.name: times}
         if columns is not None:
             coords[DIMS[1]] = columns
 
         xa = xr.DataArray(values,
-                          dims=(idx.name,) + DIMS[-2:],
+                          dims=(times.name,) + DIMS[-2:],
                           coords=coords)
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
@@ -407,7 +413,7 @@ class TimeSeries:
 
     @property
     def n_timesteps(self):
-        return len(self._xa.time)
+        return len(self._time_index)
 
     @property
     def is_deterministic(self):
@@ -508,7 +514,7 @@ class TimeSeries:
             is_inside = self.start_time() <= ts <= self.end_time()
         else:
             if self._has_datetime_index:
-                is_inside = 0 <= ts <= self.__len__()
+                is_inside = 0 <= ts <= len(self)
             else:
                 is_inside = self.start_time() <= ts <= self.end_time()
 
@@ -538,7 +544,7 @@ class TimeSeries:
 
         Returns
         -------
-        pandas.Series
+        xarray.DataArray
             The xarray DataArray underlying this time series.
         """
         return self._xa.copy() if copy else self._xa
@@ -581,7 +587,10 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame representation of this time series
         """
-        self._assert_deterministic()
+        if not self.is_deterministic:
+            raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
+                                     'time series, and this series is not deterministic (it contains several samples). '
+                                     'Consider calling quantile_df() instead.'))
         if copy:
             return pd.DataFrame(self._xa[:, :, 0].values.copy(),
                                 index=self._time_index.copy(),
@@ -618,7 +627,7 @@ class TimeSeries:
                      'The quantile values must be expressed as fraction (between 0 and 1 inclusive).', logger)
 
         # column names
-        cnames = list(map(lambda s: s + '_{}'.format(quantile), self.columns))
+        cnames = [s + '_{}'.format(quantile) for s in self.columns]
 
         return pd.DataFrame(self._xa.quantile(q=quantile, dim=DIMS[2]),
                             index=self._time_index,
@@ -885,9 +894,9 @@ class TimeSeries:
         point_index = -1
         if isinstance(point, float):
             raise_if_not(0. <= point <= 1., 'point (float) should be between 0.0 and 1.0.', logger)
-            point_index = int((self.__len__() - 1) * point)
+            point_index = int((len(self) - 1) * point)
         elif isinstance(point, int):
-            raise_if(point not in range(self.__len__()), "point (int) should be a valid index in series", logger)
+            raise_if(point not in range(len(self)), "point (int) should be a valid index in series", logger)
             point_index = point
         elif isinstance(point, pd.Timestamp):
             raise_if_not(self._has_datetime_index,
@@ -1065,7 +1074,7 @@ class TimeSeries:
         else:
             raise_log(ValueError('start_ts must be an int or a pandas Timestamp.'), logger)
 
-    def slice_n_points_before(self, start_ts: Union[pd.Timestamp, float, int], n: int) -> 'TimeSeries':
+    def slice_n_points_before(self, end_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
         """
         Returns a new TimeSeries, ending at `start_ts` and having at most `n` points.
 
@@ -1073,7 +1082,7 @@ class TimeSeries:
 
         Parameters
         ----------
-        start_ts
+        end_ts
             The timestamp or index that indicates the splitting time.
         n
             The maximal length of the new TimeSeries.
@@ -1085,13 +1094,13 @@ class TimeSeries:
         """
 
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
-        self._raise_if_not_within(start_ts)
+        self._raise_if_not_within(end_ts)
 
-        if isinstance(start_ts, int):
-            return self[start_ts-n+1:start_ts+1]
-        elif isinstance(start_ts, pd.Timestamp):
+        if isinstance(end_ts, int):
+            return self[end_ts-n+1:end_ts+1]
+        elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
-            tss = self._get_last_timestamp_before(start_ts)
+            tss = self._get_last_timestamp_before(end_ts)
             point_index = self.get_index_at_point(tss)
             return self[max(0, point_index-n+1):point_index+1]
         else:
@@ -1113,7 +1122,7 @@ class TimeSeries:
             a new series, containing the values of this series, over the time-span common to both time series.
         """
         time_index = self.time_index.intersection(other.time_index)
-        return self.__getitem__(time_index)
+        return self[time_index]
 
     def strip(self) -> 'TimeSeries':
         """
@@ -1207,7 +1216,7 @@ class TimeSeries:
         Parameters
         ----------
         n
-            The number of time steps to shift by. Can be negative.
+            The number of time steps (in self.freq unit) to shift by. Can be negative.
 
         Returns
         -------
@@ -1293,7 +1302,7 @@ class TimeSeries:
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
         """
-        Appends another TimeSeries to this TimeSeries.
+        Appends another TimeSeries to this TimeSeries, along the time axis.
 
         Parameters
         ----------
@@ -1381,10 +1390,11 @@ class TimeSeries:
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same time index on top of
-        the current one and returns the newly formed multivariate TimeSeries that includes
+        the current one (along the component axis), and returns the newly formed multivariate TimeSeries that includes
         all the components of `self` and of `other`.
 
-        The resulting TimeSeries will have the same name for its time dimension as this TimeSeries.
+        The resulting TimeSeries will have the same name for its time dimension as this TimeSeries, and the
+        same number of samples.
 
         Parameters
         ----------
@@ -1436,7 +1446,7 @@ class TimeSeries:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
-    def add_datetime_attribute(self, attribute: str, one_hot: bool = False) -> 'TimeSeries':
+    def add_datetime_attribute(self, attribute, one_hot: bool = False) -> 'TimeSeries':
         """
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
@@ -1526,12 +1536,12 @@ class TimeSeries:
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
         Check whether a given timestamp or integer is withing the time interval of this time series.
-        If a timestamp is provided, it does not need to be *in* the time series.
+        If a timestamp is provided, it does not need to be an element of the time index of the series.
 
         Parameters
         ----------
         ts
-            The `pandas.Timestamp` or integer to check
+            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with RangeIndex) to check.
 
         Returns
         -------
@@ -1854,7 +1864,6 @@ class TimeSeries:
         elif isinstance(other, TimeSeries):
             series = self._xa < other.data_array(copy=False)
         else:
-            series = None
             raise_log(TypeError('unsupported operand type(s) for < : \'{}\' and \'{}\'.'
                                 .format(type(self).__name__, type(other).__name__)), logger)
         return series  # Note: we return a DataArray

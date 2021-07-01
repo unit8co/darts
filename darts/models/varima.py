@@ -87,7 +87,7 @@ class VARIMA(ExtendedForecastingModel):
 
     def _supports_range_index(self) -> bool:
         raise_if(self.trend and self.trend != "c",
-            "'trend' is not None. Dummy indexing is not supported in that case.",
+            "'trend' is not None. Range indexing is not supported in that case.",
             logger
         )
         return True
