@@ -27,33 +27,33 @@ if TORCH_AVAILABLE:
             shutil.rmtree(self.temp_work_dir)
 
         def test_create_instance_new_model_no_name_set(self):
-            model = RNNModel(10, 10, work_dir=self.temp_work_dir)
+            model = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir)
+            model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = 'test_model'
-            model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            model1 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
         @patch('darts.models.torch_forecasting_model.TorchForecastingModel.reset_model')
         def test_create_instance_existing_model_with_name_force(self, patch_reset_model):
             model_name = 'test_model'
-            model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            model1 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
+            model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
             patch_reset_model.assert_not_called()
 
         @patch('darts.models.torch_forecasting_model.TorchForecastingModel.reset_model')
         def test_create_instance_existing_model_with_name_force_fit_with_reset(self, patch_reset_model):
             model_name = 'test_model'
-            model1 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            model1 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
             times = pd.date_range('20130101', '20130410')
@@ -61,12 +61,12 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
             model1.fit(series, epochs=1)
 
-            model2 = RNNModel(10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
+            model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
             patch_reset_model.assert_called_once()
 
         # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel('RNN', 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -77,7 +77,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, total_epochs=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
-            model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel('RNN', 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -90,7 +90,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, total_epochs=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel('RNN', 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -104,7 +104,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=15, total_epochs=0 - train for 15 epochs
         def test_train_from_0_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel('RNN', 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -114,7 +114,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=15, total_epochs=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel(10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel('RNN', 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
