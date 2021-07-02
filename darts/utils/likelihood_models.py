@@ -50,6 +50,8 @@ class GaussianLikelihoodModel(LikelihoodModel):
 
     def __init__(self):
         self.loss = nn.GaussianNLLLoss(reduction='sum')
+        self.softplus = nn.Softplus()
+        super().__init__()
 
     def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         output_means, output_vars = self._means_and_vars_from_output(output)
@@ -64,8 +66,30 @@ class GaussianLikelihoodModel(LikelihoodModel):
         return 2
 
     def _means_and_vars_from_output(self, output):
-        softplus_activation = nn.Softplus()
         output_size = output.shape[-1]
         output_means = output[:, :, :output_size // 2]
-        output_vars = softplus_activation(output[:, :, output_size // 2:])
+        output_vars = self.softplus(output[:, :, output_size // 2:])
         return output_means, output_vars
+
+
+class PoissonLikelihoodModel(LikelihoodModel):
+
+    def __init__(self):
+        self.loss = nn.PoissonNLLLoss(log_input=False)
+        self.softplus = nn.Softplus()
+        super().__init__()
+
+    def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        model_output = self._lambda_from_output(output)
+        return self.loss(model_output, target)
+
+    def _sample(self, output: torch.Tensor) -> torch.Tensor:
+        output_lambda = self._lambda_from_output(output)
+        return torch.poisson(output_lambda)
+
+    @property
+    def _num_parameters(self) -> int:
+        return 1
+
+    def _lambda_from_output(self, output):
+        return self.softplus(output)
