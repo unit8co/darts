@@ -28,6 +28,7 @@ class _RNNModule(nn.Module):
                  name: str,
                  input_size: int,
                  hidden_dim: int,
+                 num_layers: int,
                  target_size: int = 1,
                  dropout: float = 0.,
                  likelihood_model: Optional[LikelihoodModel] = None):
@@ -47,6 +48,8 @@ class _RNNModule(nn.Module):
             The dimensionality of the input time series.
         hidden_dim
             The number of features in the hidden state `h` of the RNN module.
+        num_layers
+            The number of recurrent layers.
         target_size
             The dimensionality of the output time series.
         dropout
@@ -79,9 +82,7 @@ class _RNNModule(nn.Module):
         self.likelihood_model = likelihood_model
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(input_size, hidden_dim, 1, batch_first=True, dropout=dropout)
-        # TODO: dropout is not used currently since the pytorch module doesn't adds it to the last layer and we have
-        # just 1 layer so no dropout is added
+        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, self.output_size)
@@ -109,6 +110,7 @@ class RNNModel(TorchForecastingModel):
                  model: Union[str, nn.Module] = 'RNN',
                  input_chunk_length: int = 12,
                  hidden_dim: int = 25,
+                 n_rnn_layers: int = 1,
                  dropout: float = 0.,
                  training_length: int = 24,
                  likelihood_model: Optional[LikelihoodModel] = None,
@@ -143,6 +145,8 @@ class RNNModel(TorchForecastingModel):
             Number of past time steps that are fed to the forecasting module at prediction time.
         hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
+        n_rnn_layers
+            The number of recurrent layers.
         dropout
             Fraction of neurons afected by Dropout.
         training_length
@@ -171,6 +175,7 @@ class RNNModel(TorchForecastingModel):
         self.rnn_type_or_module = model
         self.dropout = dropout
         self.hidden_dim = hidden_dim
+        self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
         self.is_recurrent = True
         self.likelihood_model = likelihood_model
@@ -182,6 +187,7 @@ class RNNModel(TorchForecastingModel):
                                target_size=output_dim,
                                hidden_dim=self.hidden_dim,
                                dropout=self.dropout,
+                               num_layers=self.n_rnn_layers,
                                likelihood_model=self.likelihood_model)
         else:
             model = self.rnn_type_or_module
