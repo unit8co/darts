@@ -569,10 +569,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
 
-        # check that the desired number of samples for non-probabilistic models is equal to 1
-        raise_if(not self.likelihood and num_samples > 1,
-                 '`num_samples > 1` is only supported for probabilistic models.')
-
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
         pred_loader = DataLoader(TimeSeriesTorchDataset(input_series_dataset, self.device),

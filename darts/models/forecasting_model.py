@@ -79,14 +79,25 @@ class ForecastingModel(ABC):
         """
         return True
 
+    def _is_probabilistic(self) -> bool:
+        """
+        Checks if the forecasting model supports probabilistic predictions.
+        By default, returns False. Needs to be overwritten by models that do support
+        probabilistic predictions.
+        """
+        return False
+
     @abstractmethod
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
         """ Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -98,10 +109,14 @@ class ForecastingModel(ABC):
                                  'For global models, if `predict()` is called without specifying a series,'
                                  'the model must have been fit on a single training series.'), logger)
 
+        if not self._is_probabilistic() and num_samples > 1:
+            raise_log(ValueError('`num_samples > 1` is only supported for probabilistic models.'), logger)
+
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series)
 
-    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
+                         num_samples: int) -> TimeSeries:
         return self.predict(n)
 
     @property
@@ -169,6 +184,7 @@ class ForecastingModel(ABC):
     def historical_forecasts(self,
                              series: TimeSeries,
                              covariates: Optional[TimeSeries] = None,
+                             num_samples: int = 1,
                              start: Union[pd.Timestamp, float, int] = 0.5,
                              forecast_horizon: int = 1,
                              stride: int = 1,
@@ -198,7 +214,7 @@ class ForecastingModel(ABC):
         Parameters
         ----------
         series
-            The target time series to use to successively train and evaluate the historical forecasts
+            The target time series to use to successively train and evaluate the historical forecasts.
         covariates
             An optional covariate series. This applies only if the model supports covariates.
         num_samples
@@ -274,10 +290,10 @@ class ForecastingModel(ABC):
             if retrain:
                 self._fit_wrapper(series=train, covariates=train_cov)
 
-            forecast = self._predict_wrapper(forecast_horizon, train, covariates)
+            forecast = self._predict_wrapper(forecast_horizon, train, covariates, num_samples)
 
             if last_points_only:
-                last_points_values.append(forecast.values()[-1])
+                last_points_values.append(forecast.all_values()[-1])
                 last_points_times.append(forecast.end_time())
             else:
                 forecasts.append(forecast)
@@ -291,6 +307,7 @@ class ForecastingModel(ABC):
     def backtest(self,
                  series: TimeSeries,
                  covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1,
                  start: Union[pd.Timestamp, float, int] = 0.5,
                  forecast_horizon: int = 1,
                  stride: int = 1,
@@ -327,6 +344,9 @@ class ForecastingModel(ABC):
             The target time series to use to successively train and evaluate the historical forecasts
         covariates
             An optional covariate series. This applies only if the model supports covariates.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.
@@ -363,6 +383,7 @@ class ForecastingModel(ABC):
         """
         forecasts = self.historical_forecasts(series,
                                               covariates,
+                                              num_samples,
                                               start,
                                               forecast_horizon,
                                               stride,
@@ -428,6 +449,8 @@ class ForecastingModel(ABC):
         instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
         several models in parallel (when `n_jobs != 1`). If this cannot be avoided, then gridsearch should be redefined,
         forcing `n_jobs = 1`.
+
+        Currently this method only supports deterministic predictions (i.e. `num_samples == 1`).
 
         Parameters
         ----------
@@ -507,6 +530,7 @@ class ForecastingModel(ABC):
             elif val_series is None:  # expanding window mode
                 error = model.backtest(series,
                                        covariates,
+                                       1,
                                        start,
                                        forecast_horizon,
                                        metric=metric,
@@ -514,7 +538,7 @@ class ForecastingModel(ABC):
                                        last_points_only=last_points_only)
             else:  # split mode
                 model._fit_wrapper(series, covariates)
-                pred = model._predict_wrapper(len(val_series), series, covariates)
+                pred = model._predict_wrapper(len(val_series), series, covariates, num_samples=1)
                 error = metric(pred, val_series)
 
             return error
@@ -638,12 +662,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             self._expect_covariates = True
         self._fit_called = True
 
-
     @abstractmethod
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -669,6 +693,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         covariates
             One covariate time series for every input time series in `series`. They must match the
             covariates that have been used with the `fit()` function for training in terms of dimension and type.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -686,8 +713,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
 
-    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
-        return self.predict(n, series, covariates=covariates)
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
+                         num_samples: int) -> TimeSeries:
+        return self.predict(n, series, covariates=covariates, num_samples=num_samples)
 
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series, covariates=covariates)
@@ -735,7 +763,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1
                 ) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -748,6 +777,9 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         exog
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -765,7 +797,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series, exog=covariates)
 
-    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
+    def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
+                         num_samples: int) -> TimeSeries:
         if covariates is not None:
             start = series.end_time() + series.freq
             covariates = covariates[start:start + (n - 1) * series.freq]

@@ -40,10 +40,10 @@ def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
     best_model_1, _ = model_class.gridsearch(params,
-                                          series,
-                                          forecast_horizon=10,
-                                          metric=mape,
-                                          start=series.time_index[-21])
+                                             series,
+                                             forecast_horizon=10,
+                                             metric=mape,
+                                             start=series.time_index[-21])
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])

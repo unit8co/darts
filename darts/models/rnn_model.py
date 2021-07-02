@@ -217,3 +217,6 @@ class RNNModel(TorchForecastingModel):
             return self.likelihood._sample(output), hidden
         else:
             return self.model(input, last_hidden_state)
+
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is not None
