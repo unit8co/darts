@@ -339,8 +339,7 @@ class TimeSeries:
                      'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
-        if not times.name:
-            times.name = DIMS[0]
+        times_name = DIMS[0] if not times.name else times.name
 
         values = np.array(values)
         if len(values.shape) == 1:
@@ -348,12 +347,12 @@ class TimeSeries:
         if len(values.shape) == 2:
             values = np.expand_dims(values, 2)
 
-        coords = {times.name: times}
+        coords = {times_name: times}
         if columns is not None:
             coords[DIMS[1]] = columns
 
         xa = xr.DataArray(values,
-                          dims=(times.name,) + DIMS[-2:],
+                          dims=(times_name,) + DIMS[-2:],
                           coords=coords)
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
@@ -394,7 +393,7 @@ class TimeSeries:
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
 
-    """ 
+    """
     Properties
     ==========
     """

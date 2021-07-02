@@ -15,22 +15,34 @@ class LikelihoodModel(ABC):
 
     def __init__(self):
         """
-        Abstract class for a `Likelihood` model. It contains all the logic to compute the loss
+        Abstract class for a likelihood model. It contains all the logic to compute the loss
         and to sample the distribution, given the parameters of the distribution
         """
         pass
 
     @abstractmethod
-    def _compute_loss(self, output: torch.Tensor) -> torch.Tensor:
+    def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """
+        Computes a loss from a model `output`, which represents the parameters of a given probability
+        distribution for every ground truth value in `target`, and the `target` itself.
+        """
         pass
 
     @abstractmethod
-    def _sample(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def _sample(self, output: torch.Tensor) -> torch.Tensor:
+        """
+        Samples a prediction from the probability distributions defined by the specific likelihood model
+        and the parameters given in `output`.
+        """
         pass
 
     @property
     @abstractmethod
     def _num_parameters(self) -> int:
+        """
+        Returns the number of parameters that define the probability distribution for one single
+        target value.
+        """
         pass
 
 

@@ -16,9 +16,8 @@ from .torch_forecasting_model import TorchForecastingModel, TimeSeriesTorchDatas
 from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset
 from ..utils.data import ShiftedDataset
-from ..utils.likelihood_models import GaussianLikelihoodModel, LikelihoodModel
+from ..utils.likelihood_models import LikelihoodModel
 from ..utils import _build_tqdm_iterator
-from darts.utils import likelihood_models
 
 logger = get_logger(__name__)
 
@@ -54,6 +53,7 @@ class _RNNModule(nn.Module):
             The fraction of neurons that are dropped in all-but-last RNN layers.
         likelihood_model
             Optionally, the likelihood model to be used for probabilistic forecasts.
+            Expects an instance of 'darts.utils.likelihood_model.LikelihoodModel'.
 
         Inputs
         ------
