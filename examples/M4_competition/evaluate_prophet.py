@@ -63,7 +63,7 @@ if __name__ == "__main__":
                     if jump <= 0.5:
                         prophet.fit(train)
                     else:
-                        prophet.fit(train.drop_before(train.time_index()[np.argmax(derivate)+1]))
+                        prophet.fit(train.drop_before(train.time_index[np.argmax(derivate)+1]))
                 except ValueError as e:
                     raise e
                 forecast_prophet = prophet.predict(len(test))

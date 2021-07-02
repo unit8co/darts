@@ -153,8 +153,8 @@ def extract_trend_and_seasonality(ts: TimeSeries,
 
     decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model.value, extrapolate_trend='freq')
 
-    season = TimeSeries.from_times_and_values(ts.time_index(), decomp.seasonal)
-    trend = TimeSeries.from_times_and_values(ts.time_index(), decomp.trend)
+    season = TimeSeries.from_times_and_values(ts.time_index, decomp.seasonal)
+    trend = TimeSeries.from_times_and_values(ts.time_index, decomp.trend)
 
     return trend, season
 

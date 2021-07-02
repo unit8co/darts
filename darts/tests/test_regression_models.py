@@ -47,7 +47,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_exog1 = ts_periodic.stack(ts_gaussian)
     ts_exog1 = ts_exog1.pd_dataframe()
     ts_exog1.columns = ["Periodic", "Gaussian"]
-    ts_exog1 = TimeSeries(ts_exog1)
+    ts_exog1 = TimeSeries.from_dataframe(ts_exog1)
     ts_sum1 = ts_periodic + ts_gaussian
 
     ts_exog2 = ts_sum1.stack(ts_random_walk)
@@ -122,15 +122,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = RegressionModel(lags=lags)
         training_data = model._create_training_data(series=self.ts_sum1)
         self.assertEqual(len(training_data), len(self.ts_sum1)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(len(training_data.columns), lags)
         self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
 
         nan_series = self.ts_sum1.pd_dataframe()
         nan_series.iloc[[0, 2, 8, 32, 497, 499], :] = np.nan
-        nan_series = TimeSeries(nan_series)
+        nan_series = TimeSeries.from_dataframe(nan_series)
         training_data = model._create_training_data(series=nan_series)
         self.assertEqual(len(training_data), len(nan_series)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
+        self.assertEqual(len(training_data.columns), lags)
         self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
 
 
@@ -225,4 +225,4 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             prediction = model.predict(n=10)
             self.assertEqual(model.nr_exog, 0)
             self.assertEqual(len(model.prediction_data), lags)
-            self.assertEqual(len(model.prediction_data.columns()), 1)
+            self.assertEqual(len(model.prediction_data.columns), 1)

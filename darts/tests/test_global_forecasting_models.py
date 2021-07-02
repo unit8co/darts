@@ -47,7 +47,7 @@ if TORCH_AVAILABLE:
 
         # an additional noisy series
         ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(length=len(ts_pass_train),
-                                                                        freq=ts_pass_train.freq_str(),
+                                                                        freq=ts_pass_train.freq_str,
                                                                         start_ts=ts_pass_train.start_time())
 
         # an additional time series serving as covariates

@@ -130,7 +130,7 @@ def _get_values_or_raise(series_a: TimeSeries,
     raise_if_not(series_a_common.has_same_time_as(series_b_common), 'The two time series (or their intersection) '
                                                                     'must have the same time index.'
                                                                     '\nFirst series: {}\nSecond series: {}'.format(
-                                                                    series_a.time_index(), series_b.time_index()),
+                                                                    series_a.time_index, series_b.time_index),
                  logger)
 
     return series_a_common.univariate_values(), series_b_common.univariate_values()
@@ -608,7 +608,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                      "The two TimeSeries instances must have the same width.", logger)
         raise_if_not(actual_series.width == insample.width,
                      "The insample TimeSeries must have the same width as the other series.", logger)
-        raise_if_not(insample.end_time() + insample.freq() == pred_series.start_time(),
+        raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
                      "The pred_series must be the forecast of the insample series", logger)
 
         value_list = []

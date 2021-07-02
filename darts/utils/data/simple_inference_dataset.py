@@ -92,12 +92,12 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         if covariate_series is not None:
 
             # get first timestamp that lies in the future of target series
-            first_pred_time = target_series.end_time() + target_series.freq()
+            first_pred_time = target_series.end_time() + target_series.freq
 
             # isolate past covariates and add them to array
             if covariate_series.end_time() >= first_pred_time:
                 cov_past = covariate_series.drop_after(first_pred_time + int(self.model_is_recurrent)
-                                                       * covariate_series.freq())
+                                                       * covariate_series.freq)
             else:
                 cov_past = covariate_series
             cov_past = cov_past[-self.input_chunk_length:]
@@ -109,8 +109,9 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 # block models need `n - output_chunk_length`
                 # recurrent models need `n`
                 last_required_future_covariate_ts = (
-                    target_series.end_time() + (self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
-                    * target_series.freq()
+                        target_series.end_time() + (
+                            self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
+                        * target_series.freq
                 )
                 req_cov_string = 'n' if self.model_is_recurrent else 'n - output_chunk_length'
                 raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
@@ -118,7 +119,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
 
                 # isolate necessary future covariates and add them to array
                 cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.model_is_recurrent))
-                                                          * covariate_series.freq())
+                                                          * covariate_series.freq)
                 cov_future = cov_future[:self.n - self.output_chunk_length + int(self.model_is_recurrent)]
                 """
                 In the shifted dataset, for recurrent models, the covariates are shifted forward relative to the input

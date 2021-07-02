@@ -66,14 +66,15 @@ class ForecastingModel(ABC):
         self.training_series = series
         self._fit_called = True
 
-        if series.has_dummy_index:
-            self._supports_dummy_index()
+        if series.has_range_index:
+            self._supports_range_index()
 
-    def _supports_dummy_index(self) -> bool:
-        """ Checks if the forecasting model supports a dummy index.
+    def _supports_range_index(self) -> bool:
+        """ Checks if the forecasting model supports a range index.
+        Some models may not support this, if for instance the rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
-        dummy indexing and raise meaningful exception.
+        range indexing and raise meaningful exception.
         """
         return True
 
@@ -112,15 +113,20 @@ class ForecastingModel(ABC):
 
     def _generate_new_dates(self,
                             n: int,
-                            input_series: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
+                            input_series: Optional[TimeSeries] = None) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
         """
         Generates `n` new dates after the end of the specified series
         """
         input_series = input_series if input_series is not None else self.training_series
-        new_dates = [
-            (input_series.time_index()[-1] + (i * input_series.freq())) for i in range(1, n + 1)
-        ]
-        return pd.DatetimeIndex(new_dates, freq=input_series.freq_str())
+
+        if input_series.has_datetime_index:
+            time_index = input_series.time_index
+            new_dates = [
+                (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
+            ]
+            return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
+        else:
+            return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
 
     def _build_forecast_series(self,
                                points_preds: np.ndarray,
@@ -131,7 +137,7 @@ class ForecastingModel(ABC):
         """
         input_series = input_series if input_series is not None else self.training_series
         time_index = self._generate_new_dates(len(points_preds), input_series=input_series)
-        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str())
+        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -172,7 +178,7 @@ class ForecastingModel(ABC):
         the end of the training set forward by `stride` time steps.
 
         By default, this method will return a single time series made up of the last point of each
-        historical forecast. This time series will thus have a frequency of `series.freq() * stride`.
+        historical forecast. This time series will thus have a frequency of `series.freq * stride`.
         If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
 
         By default, this method always re-trains the models on the entire available history,
@@ -228,14 +234,14 @@ class ForecastingModel(ABC):
 
         # build the prediction times in advance (to be able to use tqdm)
         if overlap_end:
-            last_valid_pred_time = series.time_index()[-1]
+            last_valid_pred_time = series.time_index[-1]
         else:
-            last_valid_pred_time = series.time_index()[-forecast_horizon]
+            last_valid_pred_time = series.time_index[-forecast_horizon]
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
             # compute the next prediction time and add it to pred times
-            pred_times.append(pred_times[-1] + series.freq() * stride)
+            pred_times.append(pred_times[-1] + series.freq * stride)
 
         # the last prediction time computed might have overshot last_valid_pred_time
         if pred_times[-1] > last_valid_pred_time:
@@ -269,7 +275,7 @@ class ForecastingModel(ABC):
         if last_points_only:
             return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
                                                     np.array(last_points_values),
-                                                    freq=series.freq() * stride)
+                                                    freq=series.freq * stride)
         return forecasts
 
     def backtest(self,
@@ -486,7 +492,7 @@ class ForecastingModel(ABC):
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 model._fit_wrapper(series, covariates)
-                fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
+                fitted_values = TimeSeries.from_times_and_values(series.time_index, model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(series,
@@ -546,7 +552,7 @@ class ForecastingModel(ABC):
         series._assert_univariate()
 
         # get first index not contained in the first training set
-        first_index = series.time_index()[self.min_train_series_length]
+        first_index = series.time_index[self.min_train_series_length]
 
         # compute fitted values
         p = self.historical_forecasts(series=series,
@@ -751,6 +757,6 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
 
     def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries]) -> TimeSeries:
         if covariates is not None:
-            start = series.end_time() + series.freq()
-            covariates = covariates[start:start + (n - 1) * series.freq()]
+            start = series.end_time() + series.freq
+            covariates = covariates[start:start + (n - 1) * series.freq]
         return self.predict(n, exog=covariates)
