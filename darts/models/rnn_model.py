@@ -31,7 +31,7 @@ class _RNNModule(nn.Module):
                  num_layers: int,
                  target_size: int = 1,
                  dropout: float = 0.,
-                 likelihood_model: Optional[LikelihoodModel] = None):
+                 likelihood: Optional[LikelihoodModel] = None):
 
         """ PyTorch module implementing an RNN to be used in `RNNModel`.
 
@@ -54,7 +54,7 @@ class _RNNModule(nn.Module):
             The dimensionality of the output time series.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
-        likelihood_model
+        likelihood
             Optionally, the likelihood model to be used for probabilistic forecasts.
             Expects an instance of 'darts.utils.likelihood_model.LikelihoodModel'.
 
@@ -76,10 +76,10 @@ class _RNNModule(nn.Module):
         # Defining parameters
         self.target_size = target_size
         self.output_size = (
-            likelihood_model._num_parameters * target_size if likelihood_model is not None else target_size
+            likelihood._num_parameters * target_size if likelihood is not None else target_size
         )
         self.name = name
-        self.likelihood_model = likelihood_model
+        self.likelihood = likelihood
 
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
@@ -113,7 +113,7 @@ class RNNModel(TorchForecastingModel):
                  n_rnn_layers: int = 1,
                  dropout: float = 0.,
                  training_length: int = 24,
-                 likelihood_model: Optional[LikelihoodModel] = None,
+                 likelihood: Optional[LikelihoodModel] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -154,7 +154,7 @@ class RNNModel(TorchForecastingModel):
             training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
             because otherwise during training the RNN is never run for as many iterations as it will during
             training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
-        likelihood_model
+        likelihood
             Optionally, the likelihood model to be used for probabilistic forecasts.
             If no likelihood model is provided, forecasts will be deterministic.
         random_state
@@ -178,7 +178,7 @@ class RNNModel(TorchForecastingModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
         self.is_recurrent = True
-        self.likelihood_model = likelihood_model
+        self.likelihood = likelihood
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
@@ -188,7 +188,7 @@ class RNNModel(TorchForecastingModel):
                                hidden_dim=self.hidden_dim,
                                dropout=self.dropout,
                                num_layers=self.n_rnn_layers,
-                               likelihood_model=self.likelihood_model)
+                               likelihood=self.likelihood)
         else:
             model = self.rnn_type_or_module
         return model
@@ -206,14 +206,14 @@ class RNNModel(TorchForecastingModel):
         return self.model(data)[0]
 
     def _compute_loss(self, output, target):
-        if self.likelihood_model:
-            return self.likelihood_model._compute_loss(output, target)
+        if self.likelihood:
+            return self.likelihood._compute_loss(output, target)
         else:
             return super()._compute_loss(output, target)
 
     def _produce_predict_output(self, input, last_hidden_state=None):
-        if self.likelihood_model:
+        if self.likelihood:
             output, hidden = self.model(input, last_hidden_state)
-            return self.likelihood_model._sample(output), hidden
+            return self.likelihood._sample(output), hidden
         else:
             return self.model(input, last_hidden_state)

@@ -210,7 +210,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.is_recurrent = False
 
         # by default models are deterministic (i.e. not probabilistic)
-        self.likelihood_model = None
+        self.likelihood = None
 
     def _init_model(self) -> None:
         """
@@ -570,7 +570,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
 
         # check that the desired number of samples for non-probabilistic models is equal to 1
-        raise_if(not self.likelihood_model and num_samples > 1,
+        raise_if(not self.likelihood and num_samples > 1,
                  '`num_samples > 1` is only supported for probabilistic models.')
 
         # iterate through batches to produce predictions

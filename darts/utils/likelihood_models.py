@@ -49,7 +49,7 @@ class LikelihoodModel(ABC):
 class GaussianLikelihoodModel(LikelihoodModel):
 
     def __init__(self):
-        self.loss = nn.GaussianNLLLoss(reduction='sum')
+        self.loss = nn.GaussianNLLLoss(reduction='mean')
 
     def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         output_means, output_vars = self._means_and_vars_from_output(output)
