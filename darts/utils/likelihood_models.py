@@ -47,6 +47,9 @@ class LikelihoodModel(ABC):
 
 
 class GaussianLikelihoodModel(LikelihoodModel):
+    """
+    Gaussian Likelihood
+    """
 
     def __init__(self):
         self.loss = nn.GaussianNLLLoss(reduction='sum')
@@ -73,6 +76,10 @@ class GaussianLikelihoodModel(LikelihoodModel):
 
 
 class PoissonLikelihoodModel(LikelihoodModel):
+    """
+    Poisson Likelihood; can typically be used to model event counts in fixed intervals
+    https://en.wikipedia.org/wiki/Poisson_distribution
+    """
 
     def __init__(self):
         self.loss = nn.PoissonNLLLoss(log_input=False)
