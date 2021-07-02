@@ -127,7 +127,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 self.forecasting_horizon,
                 exog=tg.gaussian_timeseries(
                     length=self.forecasting_horizon,
-                    start_ts=self.ts_gaussian.end_time()+self.ts_gaussian.freq()
+                    start_ts=self.ts_gaussian.end_time()+self.ts_gaussian.freq
                     )
                 )
             self.assertTrue(len(prediction) == self.forecasting_horizon)
@@ -146,7 +146,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
-        ts = TimeSeries(pd.DataFrame({"V1": values}), dummy_index=True)
+        ts = TimeSeries.from_dataframe(pd.DataFrame({"V1": values}))
 
         varima = VARIMA(trend="t")
         with self.assertRaises(ValueError):
