@@ -165,7 +165,6 @@ class TimeSeries:
 
                 freq = observed_frequencies.pop()
 
-            # TODO: test this
             # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
         else:
@@ -175,7 +174,6 @@ class TimeSeries:
         components = xa_.get_index(DIMS[1])
         if len(set(components)) != len(components) or any([not isinstance(s, str) for s in components]):
 
-            # TODO: test this
             def _clean_component_list(columns) -> List[str]:
                 # return a list of string containing column names
                 # make each column name unique in case some columns have the same names
@@ -423,6 +421,10 @@ class TimeSeries:
     @property
     def is_stochastic(self):
         return not self.is_deterministic
+
+    @property
+    def is_probabilistic(self):
+        return self.is_stochastic
 
     @property
     def is_univariate(self):

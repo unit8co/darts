@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
@@ -21,6 +22,73 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
         self.assertTrue(series_test.pd_series().equals(self.pd_series1.astype(np.float)))
+
+        # Creation with a well formed array:
+        ar = xr.DataArray(np.random.randn(10, 2, 3),
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']},
+                          name='time series')
+        ts = TimeSeries(ar)
+        self.assertTrue(ts.is_stochastic)
+
+        ar = xr.DataArray(np.random.randn(10, 2, 1),
+                          dims=('time', 'component', 'sample'),
+                          coords={'time': pd.RangeIndex(0, 10, 1), 'component': ['a', 'b']},
+                          name='time series')
+        ts = TimeSeries(ar)
+        self.assertTrue(ts.is_deterministic)
+
+        # creation with ill-formed arrays
+        with self.assertRaises(ValueError):
+            ar2 = xr.DataArray(np.random.randn(10, 2, 1),
+                               dims=('time', 'wrong', 'sample'), coords={'time': self.times, 'wrong': ['a', 'b']},
+                               name='time series')
+            _ = TimeSeries(ar2)
+
+        with self.assertRaises(ValueError):
+            # duplicated column names
+            ar3 = xr.DataArray(np.random.randn(10, 2, 1),
+                               dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'a']},
+                               name='time series')
+            _ = TimeSeries(ar3)
+
+        # creation using from_xarray()
+        ar = xr.DataArray(np.random.randn(10, 2, 1),
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']},
+                          name='time series')
+        _ = TimeSeries.from_xarray(ar)
+
+    def test_column_names(self):
+        # test the column names resolution
+        columns_before = [
+            ['0', '1', '2'],
+            ['v', 'v', 'x'],
+            ['v', 'v', 'x', 'v'],
+            ['0', '0_1', '0'],
+            ['0', '0_1', '0', '0_1_1']
+        ]
+        columns_after = [
+            ['0', '1', '2'],
+            ['v', 'v_1', 'x'],
+            ['v', 'v_1', 'x', 'v_2'],
+            ['0', '0_1', '0_1_1'],
+            ['0', '0_1', '0_1_1', '0_1_1_1']
+        ]
+        for cs_before, cs_after in zip(columns_before, columns_after):
+            ar = xr.DataArray(np.random.randn(10, len(cs_before), 2),
+                              dims=('time', 'component', 'sample'),
+                              coords={'time': self.times, 'component': cs_before})
+            ts = TimeSeries.from_xarray(ar)
+            self.assertEqual(ts.columns.tolist(), cs_after)
+
+    def test_quantiles(self):
+        values = np.random.rand(10, 2, 1000)
+        ar = xr.DataArray(values,
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']})
+        ts = TimeSeries(ar)
+
+        for q in [0.01, 0.1, 0.5, 0.95]:
+            q_ts = ts.quantile_timeseries(quantile=q)
+            self.assertTrue((abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all())
 
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
