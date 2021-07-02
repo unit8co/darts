@@ -79,25 +79,14 @@ class ForecastingModel(ABC):
         """
         return True
 
-    def _is_probabilistic(self) -> bool:
-        """
-        Checks if the forecasting model supports probabilistic predictions.
-        By default, returns False. Needs to be overwritten by models that do support
-        probabilistic predictions.
-        """
-        return False
-
     @abstractmethod
-    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
+    def predict(self, n: int) -> TimeSeries:
         """ Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
 
         Returns
         -------
@@ -108,9 +97,6 @@ class ForecastingModel(ABC):
             raise_log(ValueError('The model must be fit before calling `predict()`.'
                                  'For global models, if `predict()` is called without specifying a series,'
                                  'the model must have been fit on a single training series.'), logger)
-
-        if not self._is_probabilistic() and num_samples > 1:
-            raise_log(ValueError('`num_samples > 1` is only supported for probabilistic models.'), logger)
 
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series)
@@ -712,6 +698,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if self._expect_covariates and covariates is None:
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
+        if not self._is_probabilistic() and num_samples > 1:
+            raise_log(ValueError('`num_samples > 1` is only supported for probabilistic models.'), logger)
 
     def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
@@ -719,6 +707,14 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series, covariates=covariates)
+
+    def _is_probabilistic(self) -> bool:
+        """
+        Checks if the forecasting model supports probabilistic predictions.
+        By default, returns False. Needs to be overwritten by models that do support
+        probabilistic predictions.
+        """
+        return False
 
 
 class ExtendedForecastingModel(ForecastingModel, ABC):
@@ -763,8 +759,7 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None,
-                num_samples: int = 1
+                exog: Optional[TimeSeries] = None
                 ) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -777,9 +772,6 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         exog
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
 
         Returns
         -------
