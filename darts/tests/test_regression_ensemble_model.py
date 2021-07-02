@@ -90,4 +90,4 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model2.fit(self.combined)
             forecast2 = model2.predict(10)
 
-            self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=3)
+            self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=2)
