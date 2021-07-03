@@ -21,18 +21,18 @@ class LikelihoodModel(ABC):
         pass
 
     @abstractmethod
-    def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
-        Computes a loss from a model `output`, which represents the parameters of a given probability
+        Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
         """
         pass
 
     @abstractmethod
-    def _sample(self, output: torch.Tensor) -> torch.Tensor:
+    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Samples a prediction from the probability distributions defined by the specific likelihood model
-        and the parameters given in `output`.
+        and the parameters given in `model_output`.
         """
         pass
 
@@ -52,17 +52,17 @@ class GaussianLikelihoodModel(LikelihoodModel):
     """
 
     def __init__(self):
-        self.loss = nn.GaussianNLLLoss(reduction='sum')
+        self.loss = nn.GaussianNLLLoss(reduction='mean')
         self.softplus = nn.Softplus()
         super().__init__()
 
-    def _compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        output_means, output_vars = self._means_and_vars_from_output(output)
-        return self.loss(output_means, target, output_vars)
+    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
+        return self.loss(model_output_means, target, model_output_vars)
 
-    def _sample(self, output: torch.Tensor) -> torch.Tensor:
-        output_means, output_vars = self._means_and_vars_from_output(output)
-        return torch.normal(output_means, output_vars)
+    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
+        return torch.normal(model_output_means, model_output_vars)
 
     @property
     def _num_parameters(self) -> int:

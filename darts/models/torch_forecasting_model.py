@@ -210,7 +210,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.is_recurrent = False
 
         # by default models are deterministic (i.e. not probabilistic)
-        self.likelihood_model = None
+        self.likelihood = None
 
     def _init_model(self) -> None:
         """
@@ -367,12 +367,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              self.input_dim, self.output_dim, input_dim, output_dim
                          ))
 
+        # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
+        # least one batch no matter the chosen batch size
+
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
                                   num_workers=0,
                                   pin_memory=True,
-                                  drop_last=True)
+                                  drop_last=False)
 
         # Prepare validation data
         val_loader = None if val_dataset is None else DataLoader(torch_val_dataset,
@@ -565,10 +568,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
-
-        # check that the desired number of samples for non-probabilistic models is equal to 1
-        raise_if(not self.likelihood_model and num_samples > 1,
-                 '`num_samples > 1` is only supported for probabilistic models.')
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size

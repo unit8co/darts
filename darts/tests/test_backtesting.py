@@ -40,10 +40,10 @@ def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
     best_model_1, _ = model_class.gridsearch(params,
-                                          series,
-                                          forecast_horizon=10,
-                                          metric=mape,
-                                          start=series.time_index[-21])
+                                             series,
+                                             forecast_horizon=10,
+                                             metric=mape,
+                                             start=series.time_index[-21])
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
@@ -167,13 +167,13 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
         # Using an int or float value for start
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features, start=30,
             forecast_horizon=3, metric=r2_score
         )
         self.assertGreater(score, 0.9)
 
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features, start=0.5,
             forecast_horizon=3, metric=r2_score
         )
@@ -187,18 +187,18 @@ class BacktestingTestCase(DartsBaseTestClass):
             RandomForest(lags=12).backtest(series=target, start=0.01, forecast_horizon=3)
 
         # Using RandomForest's start default value
-        score = RandomForest(lags=12).backtest(series=target, forecast_horizon=3, metric=r2_score)
-        self.assertGreater(score, 0.9)
+        score = RandomForest(lags=12, random_state=0).backtest(series=target, forecast_horizon=3, metric=r2_score)
+        self.assertGreater(score, 0.95)
 
         # multivariate feature test
-        score = RandomForest(lags=12, lags_exog=[0, 1]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0, 1], random_state=0).backtest(
             series=target, covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.9)
+        self.assertGreater(score, 0.94)
 
         # multivariate with stride
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score,
             last_points_only=True, stride=3
