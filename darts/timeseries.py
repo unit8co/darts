@@ -305,19 +305,21 @@ class TimeSeries:
 
     @staticmethod
     def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
-                              values: Union[np.ndarray, pd.DataFrame],
+                              values: np.ndarray,
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
                               columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
         """
-        Returns a deterministic TimeSeries built from an index and values.
+        Returns a TimeSeries built from an index and value array.
 
         Parameters
         ----------
         times
             A `pandas.DateTimeIndex` or `pandas.RangeIndex` representing the time axis for the time series.
         values
-            A 2-dimensional Numpy array of values for the TimeSeries. The dimensions should be (time, component).
+            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
+            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
+            should be (time, component), and in the latter case (time, component, sample).
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
@@ -333,19 +335,27 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
 
-        # TODO: make it more general, not always going via a DataFrame
         raise_if_not(isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex),
                      'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
-        df = pd.DataFrame(values, index=times)
-        if columns is not None:
-            df.columns = columns
 
-        return TimeSeries.from_dataframe(df,
-                                         time_col=None,
-                                         value_cols=None,
-                                         fill_missing_dates=fill_missing_dates,
-                                         freq=freq)
+        times_name = DIMS[0] if not times.name else times.name
+
+        values = np.array(values)
+        if len(values.shape) == 1:
+            values = np.expand_dims(values, 1)
+        if len(values.shape) == 2:
+            values = np.expand_dims(values, 2)
+
+        coords = {times_name: times}
+        if columns is not None:
+            coords[DIMS[1]] = columns
+
+        xa = xr.DataArray(values,
+                          dims=(times_name,) + DIMS[-2:],
+                          coords=coords)
+
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
 
     @staticmethod
     def from_values(values: np.ndarray,
@@ -355,22 +365,12 @@ class TimeSeries:
 
         time_index = pd.RangeIndex(0, len(values), 1)
 
-        if len(values.shape) <= 2:
-            values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
-            return TimeSeries.from_times_and_values(times=time_index,
-                                                    values=values_,
-                                                    fill_missing_dates=fill_missing_dates,
-                                                    freq=freq,
-                                                    columns=columns)
-        elif len(values.shape) == 3:
-            xa = xr.DataArray(values,
-                              dims=DIMS,
-                              coords={DIMS[0]: time_index, DIMS[1]: columns})
-            return TimeSeries.from_xarray(xa, fill_missing_dates=fill_missing_dates, freq=freq)
-        else:
-            raise_log(ValueError(
-                      'The dimensionality of the provided array must be 2 or 3 (found: {})'.format(len(values.shape))),
-                      logger)
+        values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+        return TimeSeries.from_times_and_values(times=time_index,
+                                                values=values_,
+                                                fill_missing_dates=fill_missing_dates,
+                                                freq=freq,
+                                                columns=columns)
 
     @staticmethod
     def from_json(json_str: str) -> 'TimeSeries':
@@ -393,7 +393,7 @@ class TimeSeries:
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
 
-    """ 
+    """
     Properties
     ==========
     """
