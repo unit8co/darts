@@ -79,7 +79,8 @@ class ARIMA(ExtendedForecastingModel):
         else:
             forecast = self.model.simulate(nsimulations=n,
                                            repetitions=num_samples,
-                                           initial_state=self.model.states.predicted[-1, :])
+                                           initial_state=self.model.states.predicted[-1, :],
+                                           exog=exog.values() if exog else None)
 
         return self._build_forecast_series(forecast)
 
