@@ -67,10 +67,20 @@ class ARIMA(ExtendedForecastingModel):
         )
         self.model = m.fit()
 
-    def predict(self, n: int, exog: Optional[TimeSeries] = None):
+    def predict(self, n: int,
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 500):
+
         super().predict(n, exog)
-        forecast = self.model.forecast(steps=n,
-                                       exog=exog.values() if exog else None)
+
+        if num_samples == 1:
+            forecast = self.model.forecast(steps=n,
+                                           exog=exog.values() if exog else None)
+        else:
+            forecast = self.model.simulate(nsimulations=n,
+                                           repetitions=num_samples,
+                                           initial_state=self.model.states.predicted[-1, :])
+
         return self._build_forecast_series(forecast)
 
     @property
