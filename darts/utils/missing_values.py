@@ -83,7 +83,7 @@ def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1) -> Li
 
     # Remove null values from the series extremes
     series = series.strip()
-    freq = series.freq()
+    freq = series.freq
 
     if series.pd_dataframe().isna().sum().sum() == 0:
         return [series]
@@ -117,9 +117,9 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(series.time_index(),
+    return TimeSeries.from_times_and_values(series.time_index,
                                             series.pd_dataframe().fillna(value=fill),
-                                            series.freq())
+                                            series.freq)
 
 
 def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
@@ -149,4 +149,4 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         interpolate_kwargs['limit_direction'] = 'both'
     interpolate_kwargs['inplace'] = True
     series_temp.interpolate(**interpolate_kwargs)
-    return TimeSeries.from_times_and_values(series.time_index(), series_temp, series.freq())
+    return TimeSeries.from_dataframe(series_temp, freq=series.freq)

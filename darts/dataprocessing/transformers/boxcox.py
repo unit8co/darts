@@ -15,6 +15,8 @@ from darts.logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
+# TODO: extend to stochastic series
+
 
 class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
@@ -28,7 +30,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
                  verbose: bool = False):
         """
         Box-Cox data transformer.
-        See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information
+        See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information.
 
         Parameters
         ----------
@@ -94,7 +96,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
             # a pd.core.series.Series, which is not inhering from collections.abs.Sequence
-            lmbda = series._df.apply(boxcox_normmax, method=method)
+            lmbda = series.pd_dataframe(copy=False).apply(boxcox_normmax, method=method)
         elif isinstance(lmbda, Sequence):
             raise_if(len(lmbda) != series.width,
                      "lmbda should have one value per dimension (ie. column or variable) of the time series",
@@ -109,19 +111,19 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def ts_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
 
         def _boxcox_wrapper(col):
-            idx = series._df.columns.get_loc(col.name)  # get index from col name
+            idx = series.pd_dataframe(copy=False).columns.get_loc(col.name)  # get index from col name
             return boxcox(col, lmbda[idx])
 
-        return TimeSeries.from_dataframe(series._df.apply(_boxcox_wrapper))
+        return TimeSeries.from_dataframe(series.pd_dataframe(copy=False).apply(_boxcox_wrapper))
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
 
         def _inv_boxcox_wrapper(col):
-            idx = series._df.columns.get_loc(col.name)  # get index from col name
+            idx = series.pd_dataframe(copy=False).columns.get_loc(col.name)  # get index from col name
             return inv_boxcox(col, lmbda[idx])
 
-        return TimeSeries.from_dataframe(series._df.apply(_inv_boxcox_wrapper))
+        return TimeSeries.from_dataframe(series.pd_dataframe(copy=False).apply(_inv_boxcox_wrapper))
 
     def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> 'FittableDataTransformer':
         # adding lmbda and optim_method params

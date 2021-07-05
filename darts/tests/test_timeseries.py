@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
@@ -19,11 +20,75 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     series3: TimeSeries = TimeSeries.from_series(pd_series2)
 
     def test_creation(self):
-        with self.assertRaises(ValueError):
-            # Index is dateTimeIndex
-            TimeSeries.from_series(pd.Series(range(10), range(10)))
         series_test = TimeSeries.from_series(self.pd_series1)
-        self.assertTrue(series_test.pd_series().equals(self.pd_series1))
+        self.assertTrue(series_test.pd_series().equals(self.pd_series1.astype(np.float)))
+
+        # Creation with a well formed array:
+        ar = xr.DataArray(np.random.randn(10, 2, 3),
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']},
+                          name='time series')
+        ts = TimeSeries(ar)
+        self.assertTrue(ts.is_stochastic)
+
+        ar = xr.DataArray(np.random.randn(10, 2, 1),
+                          dims=('time', 'component', 'sample'),
+                          coords={'time': pd.RangeIndex(0, 10, 1), 'component': ['a', 'b']},
+                          name='time series')
+        ts = TimeSeries(ar)
+        self.assertTrue(ts.is_deterministic)
+
+        # creation with ill-formed arrays
+        with self.assertRaises(ValueError):
+            ar2 = xr.DataArray(np.random.randn(10, 2, 1),
+                               dims=('time', 'wrong', 'sample'), coords={'time': self.times, 'wrong': ['a', 'b']},
+                               name='time series')
+            _ = TimeSeries(ar2)
+
+        with self.assertRaises(ValueError):
+            # duplicated column names
+            ar3 = xr.DataArray(np.random.randn(10, 2, 1),
+                               dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'a']},
+                               name='time series')
+            _ = TimeSeries(ar3)
+
+        # creation using from_xarray()
+        ar = xr.DataArray(np.random.randn(10, 2, 1),
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']},
+                          name='time series')
+        _ = TimeSeries.from_xarray(ar)
+
+    def test_column_names(self):
+        # test the column names resolution
+        columns_before = [
+            ['0', '1', '2'],
+            ['v', 'v', 'x'],
+            ['v', 'v', 'x', 'v'],
+            ['0', '0_1', '0'],
+            ['0', '0_1', '0', '0_1_1']
+        ]
+        columns_after = [
+            ['0', '1', '2'],
+            ['v', 'v_1', 'x'],
+            ['v', 'v_1', 'x', 'v_2'],
+            ['0', '0_1', '0_1_1'],
+            ['0', '0_1', '0_1_1', '0_1_1_1']
+        ]
+        for cs_before, cs_after in zip(columns_before, columns_after):
+            ar = xr.DataArray(np.random.randn(10, len(cs_before), 2),
+                              dims=('time', 'component', 'sample'),
+                              coords={'time': self.times, 'component': cs_before})
+            ts = TimeSeries.from_xarray(ar)
+            self.assertEqual(ts.columns.tolist(), cs_after)
+
+    def test_quantiles(self):
+        values = np.random.rand(10, 2, 1000)
+        ar = xr.DataArray(values,
+                          dims=('time', 'component', 'sample'), coords={'time': self.times, 'component': ['a', 'b']})
+        ts = TimeSeries(ar)
+
+        for q in [0.01, 0.1, 0.5, 0.95]:
+            q_ts = ts.quantile_timeseries(quantile=q)
+            self.assertTrue((abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all())
 
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
@@ -43,8 +108,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         self.assertTrue(series_test.start_time() == pd.to_datetime('20130101'))
         self.assertTrue(series_test.end_time() == pd.to_datetime('20130110'))
-        self.assertTrue(series_test.pd_series().equals(self.pd_series1))
-        self.assertTrue(series_test.freq() == self.series1.freq())
+        self.assertTrue(all(series_test.pd_series().values == self.pd_series1.values))
+        self.assertTrue(series_test.freq == self.series1.freq)
 
     # TODO test over to_dataframe when multiple features choice is decided
 
@@ -60,7 +125,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_dates(self):
         self.assertEqual(self.series1.start_time(), pd.Timestamp('20130101'))
         self.assertEqual(self.series1.end_time(), pd.Timestamp('20130110'))
-        self.assertEqual(self.series1.duration(), pd.Timedelta(days=9))
+        self.assertEqual(self.series1.duration, pd.Timedelta(days=9))
 
     @staticmethod
     def helper_test_slice(test_case, test_series: TimeSeries):
@@ -124,12 +189,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(len(seriesK), 5)
         test_case.assertEqual(len(seriesL), len(test_series) - 5)
 
-        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesC.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesE.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesG.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesI.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesK.freq_str())
+        test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesC.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesE.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesG.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesI.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesK.freq_str)
 
         # Test split points outside of range
         for value in [-5, 1.1, pd.Timestamp('21300104')]:
@@ -139,15 +204,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     @staticmethod
     def helper_test_drop(test_case, test_series: TimeSeries):
         seriesA = test_series.drop_after(pd.Timestamp('20130105'))
-        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - test_series.freq())
-        test_case.assertTrue(np.all(seriesA.time_index() < pd.Timestamp('20130105')))
+        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130105') - test_series.freq)
+        test_case.assertTrue(np.all(seriesA.time_index < pd.Timestamp('20130105')))
 
         seriesB = test_series.drop_before(pd.Timestamp('20130105'))
-        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105') + test_series.freq())
-        test_case.assertTrue(np.all(seriesB.time_index() > pd.Timestamp('20130105')))
+        test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105') + test_series.freq)
+        test_case.assertTrue(np.all(seriesB.time_index > pd.Timestamp('20130105')))
 
-        test_case.assertEqual(test_series.freq_str(), seriesA.freq_str())
-        test_case.assertEqual(test_series.freq_str(), seriesB.freq_str())
+        test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesB.freq_str)
 
     @staticmethod
     def helper_test_intersect(test_case, test_series: TimeSeries):
@@ -196,15 +261,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertTrue(seriesA == test_case.series1)
 
         seriesB = test_series.shift(1)
-        test_case.assertTrue(seriesB.time_index().equals(
-            test_series.time_index()[1:].append(
-                pd.DatetimeIndex([test_series.time_index()[-1] + test_series.freq()])
+        test_case.assertTrue(seriesB.time_index.equals(
+            test_series.time_index[1:].append(
+                pd.DatetimeIndex([test_series.time_index[-1] + test_series.freq])
             )))
 
         seriesC = test_series.shift(-1)
-        test_case.assertTrue(seriesC.time_index().equals(
-            pd.DatetimeIndex([test_series.time_index()[0] - test_series.freq()]).append(
-                test_series.time_index()[:-1])))
+        test_case.assertTrue(seriesC.time_index.equals(
+            pd.DatetimeIndex([test_series.time_index[0] - test_series.freq]).append(
+                test_series.time_index[:-1])))
 
         with test_case.assertRaises(OverflowError):
             test_series.shift(1e+6)
@@ -216,17 +281,17 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesD = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130101'), range(1),
                                                    freq='D')
         seriesE = seriesD.shift(1)
-        test_case.assertEqual(seriesE.time_index()[0], pd.Timestamp('20130102'))
+        test_case.assertEqual(seriesE.time_index[0], pd.Timestamp('20130102'))
 
     @staticmethod
     def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp('20130106'))
         test_case.assertEqual(seriesA.append(seriesB), test_series)
-        test_case.assertEqual(seriesA.append(seriesB).freq(), test_series.freq())
+        test_case.assertEqual(seriesA.append(seriesB).freq, test_series.freq)
 
         # Creating a gap is not allowed
-        seriesC = test_series.drop_before(pd.Timestamp('20130107'))
+        seriesC = test_series.drop_before(pd.Timestamp('20130108'))
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesC)
 
@@ -234,39 +299,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesM = TimeSeries.from_times_and_values(pd.date_range('20130107', '20130507', freq='30D'), range(5))
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesM)
-
-    @staticmethod
-    def helper_test_append_values(test_case, test_series: TimeSeries):
-        # reconstruct series
-        seriesA, seriesB = test_series.split_after(pd.Timestamp('20130106'))
-        test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index()), test_series)
-        test_case.assertEqual(seriesA.append_values(seriesB.values()), test_series)
-
-        # test for equality
-        test_case.assertEqual(test_series.drop_after(pd.Timestamp('20130105'))
-                              .append_values(test_series.drop_before(pd.Timestamp('20130104')).values()), test_series)
-        test_case.assertEqual(seriesA.append_values([]), seriesA)
-
-        # randomize order
-        rd_order = np.random.permutation(range(len(seriesB.values())))
-        test_case.assertEqual(seriesA.append_values(seriesB.values()[rd_order], seriesB.time_index()[rd_order]),
-                              test_series)
-
-        # add non consecutive index
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() + seriesB.freq()),
-                                  test_series)
-
-        # add existing indices
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(), seriesB.time_index() - 3 * seriesB.freq()),
-                                  test_series)
-
-        # other frequency
-        with test_case.assertRaises(ValueError):
-            test_case.assertEqual(seriesA.append_values(seriesB.values(),
-                                                        pd.date_range('20130107', '20130113', freq='2d')),
-                                  test_series)
 
     def test_slice(self):
         TimeSeriesTestCase.helper_test_slice(self, self.series1)
@@ -286,67 +318,17 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
 
-    def test_append_values(self):
-        TimeSeriesTestCase.helper_test_append_values(self, self.series1)
-
-    def test_update(self):
-        seriesA: TimeSeries = TimeSeries.from_times_and_values(self.times, [0, 1, 1, 3, 4, 5, 6, 2, 8, 0])
-        seriesB: TimeSeries = TimeSeries.from_times_and_values(self.times, range(10))
-
-        # change nothing
-        seriesC = self.series1.copy()
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times)
-        seriesC = seriesC.update(self.times, range(10))
-        self.assertEqual(seriesC, self.series1)
-
-        # different len
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, [])
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, np.arange(3))
-        with self.assertRaises(ValueError):
-            seriesA.update(self.times, np.arange(4))
-
-        # change outside
-        seriesC = seriesA.copy()
-        with self.assertRaises(ValueError):
-            seriesC.update(self.times + 100 * seriesC.freq(), range(10))
-        seriesC = seriesC.update(self.times.append(pd.date_range('20140101', '20140110')),
-                                 list(range(10)) + [0] * 10)
-        self.assertEqual(seriesC, self.series1)
-
-        # change random
-        seriesC = seriesA.copy()
-        seriesC = seriesC.update(pd.DatetimeIndex(['20130108', '20130110', '20130103']), [7, 9, 2])
-        self.assertEqual(seriesC, self.series1)
-
-        # change one of each series
-        seriesD = seriesB.copy()
-        seriesD = seriesD.update(self.times, seriesA.pd_series().values)
-        seriesA = seriesA.update(pd.DatetimeIndex(['20130103', '20130108', '20130110']), [2, 7, 9])
-        self.assertEqual(seriesA, self.series1)
-        seriesB = seriesB.update(self.times[::2], range(5))
-        self.assertNotEqual(seriesB, self.series2)
-
-        # use nan
-        new_series = np.empty(10)
-        new_series[:] = np.nan
-        new_series[[2, 7, 9]] = [2, 7, 9]
-        seriesD = seriesD.update(self.times, new_series)
-        self.assertEqual(seriesD, self.series1)
-
     def test_diff(self):
-        diff1 = TimeSeries.from_dataframe(self.series1._df.diff())
-        diff2 = TimeSeries.from_dataframe(diff1._df.diff())
-        diff1_no_na = TimeSeries.from_dataframe(diff1._df.dropna())
-        diff2_no_na = TimeSeries.from_dataframe(diff2._df.dropna())
+        diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
+        diff2 = TimeSeries.from_dataframe(diff1.pd_dataframe().diff())
+        diff1_no_na = TimeSeries.from_dataframe(diff1.pd_dataframe().dropna())
+        diff2_no_na = TimeSeries.from_dataframe(diff2.pd_dataframe().dropna())
 
-        diff_shift2 = TimeSeries.from_dataframe(self.series1._df.diff(periods=2))
-        diff_shift2_no_na = TimeSeries.from_dataframe(self.series1._df.diff(periods=2).dropna())
+        diff_shift2 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff(periods=2))
+        diff_shift2_no_na = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff(periods=2).dropna())
 
-        diff2_shift2 = TimeSeries.from_dataframe(diff_shift2._df.diff(periods=2))
-        diff2_shift2_no_na = TimeSeries.from_dataframe(diff2_shift2._df.diff(periods=2).dropna())
+        diff2_shift2 = TimeSeries.from_dataframe(diff_shift2.pd_dataframe().diff(periods=2))
+        diff2_shift2_no_na = TimeSeries.from_dataframe(diff2_shift2.pd_dataframe().diff(periods=2).dropna())
 
         with self.assertRaises(ValueError):
             self.series1.diff(n=0)
@@ -358,10 +340,10 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             self.series1.diff(periods=0.2)
 
         self.assertEqual(self.series1.diff(), diff1_no_na)
-        self.assertEqual(self.series1.diff(n=2), diff2_no_na)
+        self.assertEqual(self.series1.diff(n=2, dropna=True), diff2_no_na)
         self.assertEqual(self.series1.diff(dropna=False), diff1)
         self.assertEqual(self.series1.diff(n=2, dropna=0), diff2)
-        self.assertEqual(self.series1.diff(periods=2), diff_shift2_no_na)
+        self.assertEqual(self.series1.diff(periods=2, dropna=True), diff_shift2_no_na)
         self.assertEqual(self.series1.diff(n=2, periods=2, dropna=False), diff2_shift2)
 
     def test_ops(self):
@@ -396,11 +378,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         self.assertEqual(self.series1[pd.date_range('20130101', ' 20130104')], seriesA)
         self.assertEqual(self.series1[:4], seriesA)
-        self.assertTrue(self.series1[pd.Timestamp('20130101')] == TimeSeries(self.series1.pd_dataframe()[:1],
-                                                                             freq=self.series1.freq()))
+        self.assertTrue(self.series1[pd.Timestamp('20130101')] ==
+                        TimeSeries.from_dataframe(self.series1.pd_dataframe()[:1],
+                                                  freq=self.series1.freq))
         self.assertEqual(self.series1[pd.Timestamp('20130101'):pd.Timestamp('20130104')], seriesA)
 
-        with self.assertRaises(IndexError):
+        with self.assertRaises(KeyError):
             self.series1[pd.date_range('19990101', '19990201')]
 
         with self.assertRaises(KeyError):
@@ -422,12 +405,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
         series_test = TimeSeries.from_series(pd.Series(range(9), index=range_))
-        self.assertEqual(series_test.freq_str(), 'D')
+        self.assertEqual(series_test.freq_str, 'D')
 
         range_ = pd.date_range('20130101', '20130104', freq='2D') \
             .append(pd.date_range('20130107', '20130111', freq='2D'))
         series_test = TimeSeries.from_series(pd.Series(range(5), index=range_))
-        self.assertEqual(series_test.freq_str(), '2D')
+        self.assertEqual(series_test.freq_str, '2D')
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
@@ -438,13 +421,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         timeseries = TimeSeries.from_series(pd_series)
 
         resampled_timeseries = timeseries.resample('H')
-        self.assertEqual(resampled_timeseries.freq_str(), 'H')
+        self.assertEqual(resampled_timeseries.freq_str, 'H')
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101020000')], 0)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130102020000')], 1)
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109090000')], 8)
 
         resampled_timeseries = timeseries.resample('2D')
-        self.assertEqual(resampled_timeseries.freq_str(), '2D')
+        self.assertEqual(resampled_timeseries.freq_str, '2D')
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130101')], 0)
         with self.assertRaises(KeyError):
             resampled_timeseries.pd_series().at[pd.Timestamp('20130102')]
@@ -458,9 +441,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # test empty pandas series error
         with self.assertRaises(ValueError):
             TimeSeries.from_series(pd.Series(), freq='D')
-        # test frequency mismatch case
-        seriesA = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'), range(5), freq='M')
-        self.assertEqual(seriesA.freq(), 'D')
+        # frequency should be ignored when fill_missing_dates is False
+        seriesA = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'),
+                                                   range(5),
+                                                   fill_missing_dates=False,
+                                                   freq='M')
+        self.assertEqual(seriesA.freq, 'D')
         # test successful instantiation of TimeSeries with length 2
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
 
@@ -481,7 +467,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(data_darts1, data_darts2)
         self.assertEqual(data_darts1, data_darts3)
 
-    def test_create_dummy_index(self):
+    def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
         values1 = np.random.uniform(low=-10, high=10, size=len(times))
         values2 = np.random.uniform(low=0, high=1, size=len(times))
@@ -492,41 +478,29 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series1 = pd.Series(values1)
         series2 = pd.Series(values1, index=times)
 
-        with self.assertRaises(ValueError):
-            TimeSeries(df2, dummy_index=True) # Has DatetimeIndex
-        self.assertFalse(TimeSeries(df2).has_dummy_index)
+        ts1 = TimeSeries.from_dataframe(df1)
+        self.assertTrue(ts1.has_range_index)
 
-        with self.assertRaises(ValueError):
-            TimeSeries.from_dataframe(df3, time_col="Time", dummy_index=True)
-        with self.assertRaises(ValueError):
-            TimeSeries.from_dataframe(df3, dummy_index=True) # Has "Time" column which is not numerical
-        self.assertFalse(TimeSeries.from_dataframe(df3, time_col="Time").has_dummy_index)
+        ts2 = TimeSeries.from_dataframe(df2)
+        self.assertTrue(ts2.has_datetime_index)
 
-        ts_df1_1 = TimeSeries(df1, dummy_index=True)
-        ts_df1_2 = TimeSeries.from_dataframe(df1, dummy_index=True)
-        ts_series1 = TimeSeries.from_series(series1, dummy_index=True)
+        ts3 = TimeSeries.from_dataframe(df3, time_col='Time')
+        self.assertTrue(ts3.has_datetime_index)
 
-        self.assertTrue(ts_df1_1.has_dummy_index)
-        self.assertTrue(ts_df1_2.has_dummy_index)
-        self.assertTrue(ts_series1.has_dummy_index)
+        ts4 = TimeSeries.from_series(series1)
+        self.assertTrue(ts4.has_range_index)
 
-        self.assertEqual(ts_df1_1, ts_df1_2)
-        self.assertEqual(
-            ts_df1_1,
-            TimeSeries(pd.DataFrame(
-                {"V1": values1, "V2": values2},
-                index=pd.date_range(start="19700101", periods=len(ts_df1_1), freq="S")
-                )
-            )
-        )
+        ts5 = TimeSeries.from_series(series2)
+        self.assertTrue(ts5.has_datetime_index)
 
-        self.assertEqual(
-            ts_series1,
-            TimeSeries.from_times_and_values(
-                times=pd.date_range(start="19700101", periods=len(ts_series1), freq="S"),
-                values=values1
-            )
-        )
+        ts6 = TimeSeries.from_times_and_values(times=times, values=values1)
+        self.assertTrue(ts6.has_datetime_index)
+
+        ts7 = TimeSeries.from_times_and_values(times=times, values=df1)
+        self.assertTrue(ts7.has_datetime_index)
+
+        ts8 = TimeSeries.from_values(values1)
+        self.assertTrue(ts8.has_range_index)
 
     def test_short_series_slice(self):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130108'))
@@ -535,14 +509,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesA, seriesB = self.series1.split_after(pd.Timestamp('20130109'))
         self.assertEqual(len(seriesA), 9)
         self.assertEqual(len(seriesB), 1)
-        self.assertEqual(seriesB.time_index()[0], self.series1.time_index()[-1])
+        self.assertEqual(seriesB.time_index[0], self.series1.time_index[-1])
         seriesA, seriesB = self.series1.split_before(pd.Timestamp('20130103'))
         self.assertEqual(len(seriesA), 2)
         self.assertEqual(len(seriesB), 8)
         seriesA, seriesB = self.series1.split_before(pd.Timestamp('20130102'))
         self.assertEqual(len(seriesA), 1)
         self.assertEqual(len(seriesB), 9)
-        self.assertEqual(seriesA.time_index()[-1], self.series1.time_index()[0])
+        self.assertEqual(seriesA.time_index[-1], self.series1.time_index[0])
         seriesC = self.series1.slice(pd.Timestamp('20130105'), pd.Timestamp('20130105'))
         self.assertEqual(len(seriesC), 1)
 
@@ -560,10 +534,10 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         df_01[["0", "1"]] = df_01[["0", "1"]].applymap(fn)
         df_012 = df_012.applymap(fn)
 
-        series_0 = TimeSeries(df_0, 'D')
-        series_2 = TimeSeries(df_2, 'D')
-        series_01 = TimeSeries(df_01, 'D')
-        series_012 = TimeSeries(df_012, 'D')
+        series_0 = TimeSeries.from_dataframe(df_0, freq='D')
+        series_2 = TimeSeries.from_dataframe(df_2, freq='D')
+        series_01 = TimeSeries.from_dataframe(df_01, freq='D')
+        series_012 = TimeSeries.from_dataframe(df_012, freq='D')
 
         self.assertEqual(series_0['0'], series['0'].map(fn))
         self.assertEqual(series_2['2'], series['2'].map(fn))
