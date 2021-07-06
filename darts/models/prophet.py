@@ -10,7 +10,7 @@ from ..timeseries import TimeSeries
 from .forecasting_model import ForecastingModel
 import pandas as pd
 from ..logging import get_logger, execute_and_suppress_output
-import fbprophet
+import prophet
 
 
 logger = get_logger(__name__)
@@ -43,7 +43,7 @@ class Prophet(ForecastingModel):
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
-            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/fbprophet/forecaster.py>`_.
+            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
 
         """
 
@@ -67,7 +67,7 @@ class Prophet(ForecastingModel):
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
-        self.model = fbprophet.Prophet(**self.prophet_kwargs)
+        self.model = prophet.Prophet(**self.prophet_kwargs)
         if self.freq is not None:
             if series.freq_str in ['MS', 'M', 'ME']:
                 interval_length = 30.4375

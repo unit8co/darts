@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        flavour: ['core', 'all', 'pmdarima', 'torch', 'fbprophet']
+        flavour: ['core', 'all', 'pmdarima', 'torch', 'prophet']
 
     steps:
       - name: "1. Clone repository"
@@ -46,7 +46,7 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/prophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
 
       - name: "6. Tests"
         run: |

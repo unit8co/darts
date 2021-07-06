@@ -45,7 +45,7 @@ jobs:
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/fbprophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/prophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
 
       - name: "6. Tests"
         run: |
