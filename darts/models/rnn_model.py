@@ -211,6 +211,7 @@ class RNNModel(TorchForecastingModel):
         else:
             return super()._compute_loss(output, target)
 
+    @random_method
     def _produce_predict_output(self, input, last_hidden_state=None):
         if self.likelihood:
             output, hidden = self.model(input, last_hidden_state)
