@@ -12,6 +12,7 @@ from typing import Optional, Union, Sequence
 from ..timeseries import TimeSeries
 from ..utils.torch import random_method
 from ..utils.data import ShiftedDataset
+from ..utils.likelihood_models import LikelihoodModel
 
 from ..logging import raise_if_not, get_logger
 from .torch_forecasting_model import TorchForecastingModel  # , _TimeSeriesShiftedDataset
@@ -120,7 +121,8 @@ class _TCNModule(nn.Module):
                  weight_norm: bool,
                  target_size: int,
                  target_length: int,
-                 dropout: float):
+                 dropout: float,
+                 likelihood: Optional[LikelihoodModel] = None):
 
         """ PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
@@ -169,9 +171,12 @@ class _TCNModule(nn.Module):
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.target_length = target_length
-        self.target_size = target_size
+        self.output_size = (
+            likelihood._num_parameters * target_size if likelihood is not None else target_size
+        )
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
+        self.likelihood = likelihood
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -187,7 +192,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, self.input_size, target_size)
+                                       self.dropout, weight_norm, i, num_layers, self.input_size, self.output_size)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -200,7 +205,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_chunk_length, self.target_size)
+        x = x.view(batch_size, self.input_chunk_length, self.output_size)
 
         return x
 
@@ -216,6 +221,7 @@ class TCNModel(TorchForecastingModel):
                  dilation_base: int = 2,
                  weight_norm: bool = False,
                  dropout: float = 0.2,
+                 likelihood: Optional[LikelihoodModel] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -265,6 +271,7 @@ class TCNModel(TorchForecastingModel):
         self.dilation_base = dilation_base
         self.dropout = dropout
         self.weight_norm = weight_norm
+        self.likelihood = likelihood
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
         return _TCNModule(input_size=input_dim,
@@ -276,7 +283,8 @@ class TCNModel(TorchForecastingModel):
                           dilation_base=self.dilation_base,
                           target_length=self.output_chunk_length,
                           dropout=self.dropout,
-                          weight_norm=self.weight_norm)
+                          weight_norm=self.weight_norm,
+                          likelihood=self.likelihood)
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
@@ -285,6 +293,22 @@ class TCNModel(TorchForecastingModel):
                               covariates=covariates,
                               length=self.input_chunk_length,
                               shift=self.output_chunk_length)
+
+    def _compute_loss(self, output, target):
+        if self.likelihood:
+            return self.likelihood._compute_loss(output, target)
+        else:
+            return super()._compute_loss(output, target)
+
+    def _produce_predict_output(self, input):
+        if self.likelihood:
+            output = self.model(input)
+            return self.likelihood._sample(output)
+        else:
+            return self.model(input)
+
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is not None
 
     @property
     def first_prediction_index(self) -> int:
