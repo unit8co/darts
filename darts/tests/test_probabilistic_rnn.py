@@ -1,4 +1,3 @@
-from darts.utils import likelihood_models
 import numpy as np
 
 from .base_test_class import DartsBaseTestClass
