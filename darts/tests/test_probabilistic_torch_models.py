@@ -16,19 +16,27 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    class ProbabilisticRNNModelTestCase(DartsBaseTestClass):
+
+    models_cls_kwargs = [
+        (RNNModel, {'input_chunk_length': 2, 'training_length': 12, 'n_epochs': 10, 'random_state': 0,
+                    'likelihood': GaussianLikelihoodModel()})
+    ]
+
+    class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
         def test_fit_predict_determinism(self):
+            for model_cls, model_kwargs in models_cls_kwargs:
+                self.helper_test_fit_predict_determinism(model_cls, model_kwargs)
+
+        def helper_test_fit_predict_determinism(self, model_cls, model_kwargs):
             ts = tg.constant_timeseries(length=100, value=10)
 
             # whether the first predictions of two models initiated with the same random state are the same
-            model = RNNModel(input_chunk_length=1, n_epochs=10, training_length=10, random_state=0,
-                             likelihood=GaussianLikelihoodModel())
+            model = model_cls(**model_kwargs)
             model.fit(ts)
             pred1 = model.predict(n=10, num_samples=2).values()
 
-            model = RNNModel(input_chunk_length=1, n_epochs=10, training_length=10, random_state=0,
-                             likelihood=GaussianLikelihoodModel())
+            model = model_cls(**model_kwargs)
             model.fit(ts)
             pred2 = model.predict(n=10, num_samples=2).values()
 
