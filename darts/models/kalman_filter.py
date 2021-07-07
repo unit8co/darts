@@ -5,6 +5,7 @@ from abc import ABC
 from typing import Optional
 from filterpy.kalman import KalmanFilter as FpKalmanFilter
 from copy import deepcopy
+import numpy as np
 
 from .filtering_model import FilteringModel
 from ..timeseries import TimeSeries
@@ -85,20 +86,26 @@ class KalmanFilter(FilteringModel, ABC):
     def __str__(self):
         return 'KalmanFilter(dim_x={})'.format(self.dim_x)
 
-    def filter(self, series: TimeSeries):
+    def filter(self,
+               series: TimeSeries,
+               num_samples: int = 500):
         """
         Sequentially applies the Kalman filter on the provided series of observations.
 
         Parameters
         ----------
         series : TimeSeries
-            The series of observations used to infer the state values according to the specified Kalman process
+            The series of observations used to infer the state values according to the specified Kalman process.
+            This must be a deterministic series (containing one sample).
 
         Returns
         -------
         TimeSeries
-            A `TimeSeries` of state values, of dimension `dim_x`.
+            A stochastic `TimeSeries` of state values, of dimension `dim_x`.
         """
+
+        raise_if_not(series.is_deterministic, 'The input series for the Kalman filter must be '
+                                              'deterministic (observations).')
 
         dim_z = series.width
 
@@ -117,14 +124,20 @@ class KalmanFilter(FilteringModel, ABC):
 
         super().filter(series)
         values = series.values(copy=False)
-        filtered_values = np.zeros((len(values), self.dim_x))  # mean values
-        # covariances = ...                                    # covariance matrices; TODO
+
+        # For each time step, we'll sample "n_samples" from a multivariate Gaussian
+        # whose mean vector and covariance matrix come from the Kalman filter.
+        sampled_states = np.zeros(((len(values)), self.dim_x, num_samples))
+
+        # process_means = np.zeros((len(values), self.dim_x))  # mean values
+        # process_covariances = ...                            # covariance matrices; TODO
         for i in range(len(values)):
             obs = values[i, :]
             kf.predict()
             kf.update(obs)
-            filtered_values[i, :] = kf.x.reshape(self.dim_x,)
-            # covariances[i] = kf.P  # covariance matrix estimate for the state TODO
+            mean_vec = kf.x.reshape(self.dim_x,)
+            cov_matrix = kf.P
+            sampled_states[i, :, :] = np.random.multivariate_normal(mean_vec, cov_matrix, size=num_samples).T
 
         # TODO: later on for a forecasting model we'll have to do something like
         """
@@ -135,4 +148,4 @@ class KalmanFilter(FilteringModel, ABC):
             preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
         """
 
-        return TimeSeries.from_times_and_values(series.time_index(), filtered_values)
+        return TimeSeries.from_times_and_values(series.time_index, sampled_states)
