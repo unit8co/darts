@@ -1,4 +1,5 @@
 numpy==1.19.5
+xarray==0.18.2
 scipy==1.6.2
 statsmodels==0.12.2
 matplotlib==3.4.1

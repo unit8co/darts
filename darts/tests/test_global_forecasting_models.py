@@ -7,6 +7,7 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -46,7 +47,7 @@ if TORCH_AVAILABLE:
 
         # an additional noisy series
         ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(length=len(ts_pass_train),
-                                                                        freq=ts_pass_train.freq_str(),
+                                                                        freq=ts_pass_train.freq_str,
                                                                         start_ts=ts_pass_train.start_time())
 
         # an additional time series serving as covariates
@@ -220,7 +221,6 @@ if TORCH_AVAILABLE:
                 multiple_ts = [self.ts_pass_train] * 10
                 model.fit(multiple_ts)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -234,15 +234,12 @@ if TORCH_AVAILABLE:
 
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -257,13 +254,26 @@ if TORCH_AVAILABLE:
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+        def test_sample_smaller_than_batch_size(self):
+            """
+            Checking that the TorchForecastingModels do not crash even if the number of available samples for training
+            is strictly lower than the selected batch_size
+            """
+            # TS with 50 timestamps. TorchForecastingModels will use the SequentialDataset for producing training
+            # samples, which means we will have 50 - 22 - 2 + 1 = 27 samples, which is < 32 (batch_size). The model
+            # should still train on those samples and not crash in any way
+            ts = linear_timeseries(0, 1, 50)
+
+            model = RNNModel(input_chunk_length=20,
+                             output_chunk_length=2,
+                             n_epochs=2,
+                             batch_size=32)
+            model.fit(ts)

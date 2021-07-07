@@ -59,17 +59,17 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
     @staticmethod
     def ts_transform(series: TimeSeries, transformer) -> TimeSeries:
-        return TimeSeries.from_times_and_values(series.time_index(),
-                                                transformer.transform(series.values().
-                                                                      reshape((-1, series.width))),
-                                                series.freq())
+        return TimeSeries.from_times_and_values(times=series.time_index,
+                                                values=transformer.transform(series.values().
+                                                                             reshape((-1, series.width))),
+                                                fill_missing_dates=False)
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
-        return TimeSeries.from_times_and_values(series.time_index(),
-                                                transformer.inverse_transform(series.values().
+        return TimeSeries.from_times_and_values(times=series.time_index,
+                                                values=transformer.inverse_transform(series.values().
                                                                               reshape((-1, series.width))),
-                                                series.freq())
+                                                fill_missing_dates=False)
 
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:

@@ -17,7 +17,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-import time
+import datetime
+import warnings
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -116,7 +117,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
-                 torch_device_str: Optional[str] = None):
+                 torch_device_str: Optional[str] = None,
+                 force_reset=False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -165,6 +167,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
         super().__init__()
 
@@ -184,7 +189,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model_name is None:
-            current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
@@ -208,6 +213,36 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # by default models are block models (i.e. not recurrent)
         self.is_recurrent = False
+
+        # by default models are deterministic (i.e. not probabilistic)
+        self.likelihood = None
+
+        self.force_reset = force_reset
+        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+        self.checkpoint_exists = \
+            os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
+
+        if self.checkpoint_exists:
+            if self.force_reset:
+                self.reset_model()
+            else:
+                raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
+                                     " training or use `force_reset=True` to initialize anyway to start"
+                                     " training from scratch and remove all the model data".format(self.model_name)
+                                     )
+
+    def reset_model(self):
+        """ Resets the model object and removes all the stored data - model, checkpoints and training history.
+        """
+        shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
+        shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
+        shutil.rmtree(_get_untrained_models_folder(self.work_dir, self.model_name), ignore_errors=True)
+
+        self.checkpoint_exists = False
+        self.total_epochs = 0
+        self.model = None
+        self.input_dim = None
+        self.output_dim = None
 
     def _init_model(self) -> None:
         """
@@ -297,8 +332,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose
             Optionally, whether to print progress.
         epochs
-            If your model is already trained but you want to train it even further, you can provide here the number of
-            additional epochs.
+            If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
+            was provided to the model constructor.
         """
         super().fit(series, covariates)
 
@@ -341,12 +376,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
                  logger)
 
-        # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a
-        # training from scratch.
-        if epochs == 0 or self.total_epochs == 0:
-            shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
-            self.total_epochs = 0
-
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
 
@@ -364,12 +393,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              self.input_dim, self.output_dim, input_dim, output_dim
                          ))
 
+        # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
+        # least one batch no matter the chosen batch size
+
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
                                   num_workers=0,
                                   pin_memory=True,
-                                  drop_last=True)
+                                  drop_last=False)
 
         # Prepare validation data
         val_loader = None if val_dataset is None else DataLoader(torch_val_dataset,
@@ -380,7 +412,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
+        tb_writer = self._prepare_tensorboard_writer()
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
@@ -393,6 +425,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tb_writer.flush()
             tb_writer.close()
 
+    @random_method
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -400,7 +433,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_size: Optional[int] = None,
                 verbose: bool = False,
                 n_jobs: int = 1,
-                roll_size: Optional[int] = None
+                roll_size: Optional[int] = None,
+                num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -447,6 +481,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set `self.output_chunk_length` by default.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -480,7 +517,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
                                          self.is_recurrent)
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size)
+                                                roll_size=roll_size, num_samples=num_samples)
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
@@ -489,7 +526,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              batch_size: Optional[int] = None,
                              verbose: bool = False,
                              n_jobs: int = 1,
-                             roll_size: Optional[int] = None
+                             roll_size: Optional[int] = None,
+                             num_samples: int = 1,
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -534,6 +572,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set `self.output_chunk_length` by default.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -546,13 +587,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             roll_size = self.output_chunk_length
         else:
             raise_if_not(0 < roll_size <= self.output_chunk_length,
-                         '`roll_size` must be an integer between 1 and `self.output_chunk_length`')
+                         '`roll_size` must be an integer between 1 and `self.output_chunk_length`.')
 
         # check input data type
         raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
-                     'Only TimeSeriesInferenceDataset is accepted as input type')
+                     'Only TimeSeriesInferenceDataset is accepted as input type.')
 
-        # TODO currently we assume all forecasts fit in memory
+        # check that `num_samples` is a positive integer
+        raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
@@ -571,20 +613,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 input_series = batch_tuple[0]
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
-                if self.is_recurrent:
-                    batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
-                else:
-                    batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
+                # repeat prediction procedure for every needed sample
+                batch_predictions = []
+                for i in range(num_samples):
+                    if self.is_recurrent:
+                        batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
+                    else:
+                        batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
 
-                # bring predictions into desired format and drop unnecessary values
-                batch_prediction = torch.cat(batch_prediction, dim=1)
-                batch_prediction = batch_prediction[:, :n, :]
-                batch_prediction = batch_prediction.cpu().detach().numpy()
+                    # bring predictions into desired format and drop unnecessary values
+                    batch_prediction = torch.cat(batch_prediction, dim=1)
+                    batch_prediction = batch_prediction[:, :n, :]
+                    batch_prediction = batch_prediction.cpu().detach().numpy()
+
+                    batch_predictions.append(batch_prediction)
 
                 batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
-                        batch_prediction[batch_idx],
+                        [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                         input_series_dataset[dataset_idx][0]
                     )
                     for batch_idx, dataset_idx in enumerate(batch_indices)
@@ -601,7 +648,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                    roll_size) -> Sequence[TimeSeries]:
 
         batch_prediction = []
-        out = self.model(input_series)[:, self.first_prediction_index:, :]
+        out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
         batch_prediction.append(out[:, :roll_size, :])
         prediction_length = roll_size
 
@@ -627,7 +674,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # take only last part of the output sequence where needed
-            out = self.model(input_series)[:, self.first_prediction_index:, :]
+            out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
 
             # update predictions depending on how many data points have been predicted
             if prediction_length <= n - self.output_chunk_length - roll_size:
@@ -649,7 +696,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _predict_batch_recurrent_model(self, n, input_series, cov_future):
         batch_prediction = []
-        out, last_hidden_state = self.model(input_series)
+        out, last_hidden_state = self._produce_predict_output(input_series)
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
@@ -662,7 +709,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self.model(new_input, last_hidden_state)
+            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
 
             # append prediction to batch prediction array, increase counter
             batch_prediction.append(out[:, -1:, :])
@@ -709,7 +756,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 self.model.train()
                 data, target = data.to(self.device), target.to(self.device)
                 output = self._produce_train_output(data)
-                loss = self.criterion(output, target)
+                loss = self._compute_loss(output, target)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -750,6 +797,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _produce_train_output(self, data):
         return self.model(data)
 
+    def _compute_loss(self, output, target):
+        return self.criterion(output, target)
+
+    def _produce_predict_output(self, input):
+        return self.model(input)
+
     def _evaluate_validation_loss(self, val_loader: DataLoader):
         total_loss = 0
         self.model.eval()
@@ -757,7 +810,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_idx, (data, target) in enumerate(val_loader):
                 data, target = data.to(self.device), target.to(self.device)
                 output = self._produce_train_output(data)
-                loss = self.criterion(output, target)
+                loss = self._compute_loss(output, target)
                 total_loss += loss.item()
 
         validation_loss = total_loss / (batch_idx + 1)
@@ -813,16 +866,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self, continue_training: bool = False):
+    def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if not continue_training:
-                shutil.rmtree(runs_folder, ignore_errors=True)
+            if self.total_epochs > 0:
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
+            else:
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
         else:
             tb_writer = None
         return tb_writer
