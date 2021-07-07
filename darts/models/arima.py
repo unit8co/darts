@@ -71,6 +71,11 @@ class ARIMA(ExtendedForecastingModel):
                 exog: Optional[TimeSeries] = None,
                 num_samples: int = 500):
 
+        if num_samples > 1 and self.trend:
+            logger.warn('Trends are not well supported yet for getting probabilistic forecasts with ARIMA.'
+                        'If you run into issues, try calling fit() with num_samples=1 or removing the trend from'
+                        'your model.')
+
         super().predict(n, exog)
 
         if num_samples == 1:
