@@ -71,7 +71,8 @@ class VARIMA(ExtendedForecastingModel):
 
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None):
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1):
 
         super().predict(n, exog)
         forecast = self.model.forecast(steps=n, exog=exog.values() if exog else None)

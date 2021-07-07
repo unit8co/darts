@@ -296,7 +296,9 @@ class FourTheta(ForecastingModel):
         if self.normalization:
             self.fitted_values *= self.mean
 
-    def predict(self, n: int) -> 'TimeSeries':
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> 'TimeSeries':
         super().predict(n)
 
         # Forecast of the SES part.

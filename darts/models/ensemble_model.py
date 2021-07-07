@@ -42,7 +42,9 @@ class EnsembleModel(ForecastingModel):
         """
         super().fit(series)
 
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> TimeSeries:
         super().predict(n)
 
         predictions = self.models[0].predict(n)

@@ -33,8 +33,10 @@ class NaiveMean(ForecastingModel):
         super().fit(series)
         self.mean_val = np.mean(series.univariate_values())
 
-    def predict(self, n: int):
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1):
+        super().predict(n, num_samples)
         forecast = np.array([self.mean_val for _ in range(n)])
         return self._build_forecast_series(forecast)
 

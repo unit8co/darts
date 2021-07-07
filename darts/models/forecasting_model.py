@@ -766,7 +766,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1
                 ) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -779,13 +780,16 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         exog
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
         if exog is None:
-            super().predict(n)
+            super().predict(n, num_samples)
         if self._expect_exog and exog is None:
             raise_log(ValueError('The model has been trained with exogenous variables. Some matching '
                                  'exogenous variables have to be provided to `predict()`.'))
