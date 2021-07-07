@@ -88,7 +88,7 @@ class KalmanFilter(FilteringModel, ABC):
 
     def filter(self,
                series: TimeSeries,
-               num_samples: int = 500):
+               num_samples: int = 1):
         """
         Sequentially applies the Kalman filter on the provided series of observations.
 
@@ -127,7 +127,10 @@ class KalmanFilter(FilteringModel, ABC):
 
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
-        sampled_states = np.zeros(((len(values)), self.dim_x, num_samples))
+        if num_samples == 1:
+            sampled_states = np.zeros(((len(values)), self.dim_x, ))
+        else:
+            sampled_states = np.zeros(((len(values)), self.dim_x, num_samples))
 
         # process_means = np.zeros((len(values), self.dim_x))  # mean values
         # process_covariances = ...                            # covariance matrices; TODO
@@ -136,8 +139,13 @@ class KalmanFilter(FilteringModel, ABC):
             kf.predict()
             kf.update(obs)
             mean_vec = kf.x.reshape(self.dim_x,)
-            cov_matrix = kf.P
-            sampled_states[i, :, :] = np.random.multivariate_normal(mean_vec, cov_matrix, size=num_samples).T
+
+            if num_samples == 1:
+                # It's actually not sampled in this case
+                sampled_states[i, :] = mean_vec
+            else:
+                cov_matrix = kf.P
+                sampled_states[i, :, :] = np.random.multivariate_normal(mean_vec, cov_matrix, size=num_samples).T
 
         # TODO: later on for a forecasting model we'll have to do something like
         """

@@ -15,7 +15,6 @@ class KalmanFilterTestCase(DartsBaseTestClass):
         Creates an increasing sequence of numbers, adds noise and 
         assumes the kalman filter predicts values closer to real values
         """
-        kf = KalmanFilter(dim_x=1)
         testing_signal = np.arange(1, 5, 0.1)
 
         noise = np.random.normal(0, 0.7, testing_signal.shape)
@@ -23,7 +22,9 @@ class KalmanFilterTestCase(DartsBaseTestClass):
 
         df = pd.DataFrame(data=testing_signal_with_noise, columns=['signal'])
         testing_signal_with_noise_ts = TimeSeries.from_dataframe(df, value_cols=['signal'])
-        filtered_ts = kf.filter(testing_signal_with_noise_ts).univariate_values()
+
+        kf = KalmanFilter(dim_x=1)
+        filtered_ts = kf.filter(testing_signal_with_noise_ts, num_samples=1).univariate_values()
         
         noise_distance = testing_signal_with_noise - testing_signal
         prediction_distance = filtered_ts - testing_signal
