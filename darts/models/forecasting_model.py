@@ -585,7 +585,7 @@ class ForecastingModel(ABC):
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
-        residuals = series_trimmed - p
+        residuals = series_trimmed - (p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p)
 
         return residuals
 
