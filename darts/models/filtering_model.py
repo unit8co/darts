@@ -88,4 +88,4 @@ class MovingAverage(FilteringModel, ABC):
         filtered_df = series.pd_dataframe(copy=False).rolling(window=self.window,
                                                               min_periods=1,
                                                               center=self.centered).mean()
-        return TimeSeries(filtered_df, freq=series.freq_str(), dummy_index=series.has_dummy_index)
+        return TimeSeries.from_dataframe(filtered_df)
