@@ -425,6 +425,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tb_writer.flush()
             tb_writer.close()
 
+    @random_method
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
