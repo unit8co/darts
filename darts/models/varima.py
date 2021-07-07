@@ -73,8 +73,7 @@ class VARIMA(ExtendedForecastingModel):
                 n: int,
                 exog: Optional[TimeSeries] = None,
                 num_samples: int = 1):
-
-        super().predict(n, exog)
+        super().predict(n, exog, num_samples)
         forecast = self.model.forecast(steps=n, exog=exog.values() if exog else None)
         forecast = self._invert_transformation(forecast)
         return self._build_forecast_series(np.array(forecast))

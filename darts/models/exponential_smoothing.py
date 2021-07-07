@@ -79,7 +79,7 @@ class ExponentialSmoothing(ForecastingModel):
         self.model = hw_results
 
     def predict(self, n, num_samples=1):
-        super().predict(n)
+        super().predict(n, num_samples)
 
         if num_samples == 1:
             forecast = self.model.forecast(n)

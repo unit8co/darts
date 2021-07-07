@@ -119,7 +119,7 @@ class ForecastingModel(ABC):
 
     def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
-        return self.predict(n)
+        return self.predict(n, num_samples=num_samples)
 
     @property
     def min_train_series_length(self) -> int:
@@ -711,7 +711,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             contains the corresponding `n` points forecasts.
         """
         if series is None and covariates is None:
-            super().predict(n)
+            super().predict(n, num_samples)
         if self._expect_covariates and covariates is None:
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
@@ -805,4 +805,4 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if covariates is not None:
             start = series.end_time() + series.freq
             covariates = covariates[start:start + (n - 1) * series.freq]
-        return self.predict(n, exog=covariates)
+        return self.predict(n, exog=covariates, num_samples=num_samples)

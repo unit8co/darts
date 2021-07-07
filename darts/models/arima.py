@@ -75,7 +75,7 @@ class ARIMA(ExtendedForecastingModel):
                         'If you run into issues, try calling fit() with num_samples=1 or removing the trend from'
                         'your model.')
 
-        super().predict(n, exog)
+        super().predict(n, exog, num_samples)
 
         if num_samples == 1:
             forecast = self.model.forecast(steps=n,

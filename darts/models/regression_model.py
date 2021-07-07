@@ -239,7 +239,7 @@ class RegressionModel(ExtendedForecastingModel):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, exog)
+        super().predict(n, exog, num_samples)
 
         if self.max_lag != 0:
             prediction_data = self.prediction_data.copy()

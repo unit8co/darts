@@ -87,7 +87,7 @@ class Prophet(ForecastingModel):
     def predict(self,
                 n: int,
                 num_samples: int = 1) -> TimeSeries:
-        super().predict(n)
+        super().predict(n, num_samples)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
 
