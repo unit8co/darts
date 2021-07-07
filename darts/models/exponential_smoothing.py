@@ -88,6 +88,9 @@ class ExponentialSmoothing(ForecastingModel):
 
         return self._build_forecast_series(forecast)
 
+    def _is_probabilistic(self) -> bool:
+        return True
+
     @property
     def min_train_series_length(self) -> int:
         if (self.seasonal_periods is not None and self.seasonal_periods > 1):

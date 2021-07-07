@@ -50,7 +50,6 @@ class ARIMA(ExtendedForecastingModel):
         self.trend = trend
         self.model = None
 
-
     def __str__(self):
         if self.seasonal_order == (0, 0, 0, 0):
             return f'ARIMA{self.order}'
@@ -88,6 +87,9 @@ class ARIMA(ExtendedForecastingModel):
                                            exog=exog.values() if exog else None)
 
         return self._build_forecast_series(forecast)
+
+    def _is_probabilistic(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self) -> int:
