@@ -170,7 +170,7 @@ class _TCNModule(nn.Module):
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.target_length = target_length
-        self.output_size = target_size
+        self.target_size = target_size
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
 
@@ -188,7 +188,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, self.input_size, self.output_size)
+                                       self.dropout, weight_norm, i, num_layers, self.input_size, target_size)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -201,7 +201,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_chunk_length, self.output_size)
+        x = x.view(batch_size, self.input_chunk_length, self.target_size)
 
         return x
 
