@@ -208,6 +208,8 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
     def test_gridsearch(self):
+        np.random.seed(1)
+
         ts_length = 50
         dummy_series = (
             lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
