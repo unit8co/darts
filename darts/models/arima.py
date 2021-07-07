@@ -69,7 +69,7 @@ class ARIMA(ExtendedForecastingModel):
 
     def predict(self, n: int,
                 exog: Optional[TimeSeries] = None,
-                num_samples: int = 500):
+                num_samples: int = 1):
 
         if num_samples > 1 and self.trend:
             logger.warn('Trends are not well supported yet for getting probabilistic forecasts with ARIMA.'

@@ -78,7 +78,7 @@ class ExponentialSmoothing(ForecastingModel):
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
-    def predict(self, n, num_samples=500):
+    def predict(self, n, num_samples=1):
         super().predict(n)
 
         if num_samples == 1:
