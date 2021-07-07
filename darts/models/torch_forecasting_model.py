@@ -17,7 +17,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-import time
+import datetime
+import warnings
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -116,7 +117,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
-                 torch_device_str: Optional[str] = None):
+                 torch_device_str: Optional[str] = None,
+                 force_reset=False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -165,6 +167,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
         super().__init__()
 
@@ -184,7 +189,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model_name is None:
-            current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
@@ -211,6 +216,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
+
+        self.force_reset = force_reset
+        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+        self.checkpoint_exists = \
+            os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
+
+        if self.checkpoint_exists:
+            if self.force_reset:
+                self.reset_model()
+            else:
+                raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
+                                     " training or use `force_reset=True` to initialize anyway to start"
+                                     " training from scratch and remove all the model data".format(self.model_name)
+                                     )
+
+    def reset_model(self):
+        """ Resets the model object and removes all the stored data - model, checkpoints and training history.
+        """
+        shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
+        shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
+        shutil.rmtree(_get_untrained_models_folder(self.work_dir, self.model_name), ignore_errors=True)
+
+        self.checkpoint_exists = False
+        self.total_epochs = 0
+        self.model = None
+        self.input_dim = None
+        self.output_dim = None
 
     def _init_model(self) -> None:
         """
@@ -300,8 +332,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose
             Optionally, whether to print progress.
         epochs
-            If your model is already trained but you want to train it even further, you can provide here the number of
-            additional epochs.
+            If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
+            was provided to the model constructor.
         """
         super().fit(series, covariates)
 
@@ -344,12 +376,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
                  logger)
 
-        # if the model wasn't trained, and it was not requested to retrain for more epochs, treat it like a
-        # training from scratch.
-        if epochs == 0 or self.total_epochs == 0:
-            shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
-            self.total_epochs = 0
-
         torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
         torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
 
@@ -386,7 +412,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  drop_last=False)
 
         # Prepare tensorboard writer
-        tb_writer = self._prepare_tensorboard_writer(epochs > 0)
+        tb_writer = self._prepare_tensorboard_writer()
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
@@ -399,6 +425,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tb_writer.flush()
             tb_writer.close()
 
+    @random_method
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -839,16 +866,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(f)
         return model
 
-    def _prepare_tensorboard_writer(self, continue_training: bool = False):
+    def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
         if self.log_tensorboard:
-            if not continue_training:
-                shutil.rmtree(runs_folder, ignore_errors=True)
+            if self.total_epochs > 0:
+                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
+            else:
                 tb_writer = SummaryWriter(runs_folder)
                 dummy_input = torch.empty(self.batch_size, self.input_chunk_length, self.input_dim).to(self.device)
                 tb_writer.add_graph(self.model, dummy_input)
-            else:
-                tb_writer = SummaryWriter(runs_folder, purge_step=self.total_epochs)
         else:
             tb_writer = None
         return tb_writer
