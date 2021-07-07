@@ -26,6 +26,7 @@ from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
 from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
+from ..utils.likelihood_models import LikelihoodModel
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
@@ -937,3 +938,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
             return p['lr']
+
+class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
+    def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.likelihood = likelihood
+
+    def _is_probabilistic(self):
+        return self.likelihood is not None
+
+    def _compute_loss(self, output, target):
+        if self.likelihood:
+            return self.likelihood._compute_loss(output, target)
+        else:
+            return super()._compute_loss(output, target)
+
+    @abstractmethod
+    def _produce_predict_output(self, input):
+        pass
