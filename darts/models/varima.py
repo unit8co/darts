@@ -69,8 +69,11 @@ class VARIMA(ExtendedForecastingModel):
         m = staVARMA(endog=series.pd_dataframe(copy=False), exog=exog, order=(self.p, self.q), trend=self.trend)
         self.model = m.fit(disp=0)
 
-    def predict(self, n: int, exog: Optional[TimeSeries] = None):
-        super().predict(n, exog)
+    def predict(self,
+                n: int,
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1):
+        super().predict(n, exog, num_samples)
         forecast = self.model.forecast(steps=n, exog=exog.values() if exog else None)
         forecast = self._invert_transformation(forecast)
         return self._build_forecast_series(np.array(forecast))

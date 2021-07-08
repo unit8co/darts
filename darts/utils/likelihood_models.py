@@ -4,11 +4,8 @@ Likelihood Models
 """
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Optional, Tuple
 import torch
 import torch.nn as nn
-
-from ..timeseries import TimeSeries
 
 
 class LikelihoodModel(ABC):
@@ -50,7 +47,6 @@ class GaussianLikelihoodModel(LikelihoodModel):
     """
     Gaussian Likelihood
     """
-
     def __init__(self):
         self.loss = nn.GaussianNLLLoss(reduction='mean')
         self.softplus = nn.Softplus()
