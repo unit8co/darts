@@ -10,7 +10,7 @@ from darts.models.forecasting_model import GlobalForecastingModel
 logger = get_logger(__name__)
 
 try:
-    from ..models.rnn_model import RNNModel
+    from ..models import RNNModel, TCNModel
     from darts.utils.likelihood_models import GaussianLikelihoodModel
     TORCH_AVAILABLE = True
 except ImportError:
@@ -25,7 +25,9 @@ models_cls_kwargs_errs = [
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs = np.concatenate([models_cls_kwargs_errs, [
         (RNNModel, {'input_chunk_length': 2, 'training_length': 10, 'n_epochs': 20, 'random_state': 0,
-                    'likelihood': GaussianLikelihoodModel()}, 1.9)
+                    'likelihood': GaussianLikelihoodModel()}, 1.9),
+        (TCNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 60, 'random_state': 0,
+                    'likelihood': GaussianLikelihoodModel()}, 0.28)
     ]])
 
 
