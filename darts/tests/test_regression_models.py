@@ -3,7 +3,7 @@ import pandas as pd
 
 from .. import TimeSeries
 from ..metrics import rmse
-from ..models import RegressionModel, RandomForest, LinearRegressionModel
+from ..models import RegressionModel, RandomForest, LinearRegressionModel, GradientBoostedModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
@@ -57,7 +57,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     models = [
         RandomForest,
         LinearRegressionModel,
-        RegressionModel
+        RegressionModel,
+        GradientBoostedModel
     ]
     lags = 4
     lags_exog = [3, 4, 5]

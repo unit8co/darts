@@ -10,3 +10,4 @@ holidays==0.11.1
 scikit-learn==0.24.1
 joblib==1.0.1
 requests==2.25.1
+lightgbm==3.2.1
