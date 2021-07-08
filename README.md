@@ -16,8 +16,8 @@ It contains a variety of models, from classics such as ARIMA to deep neural netw
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models, and the neural networks can be trained
-on multiple time series.
+univariate and multivariate time series and models. The neural networks can be trained
+on multiple time series, and some of the models offer probabilistic forecasts.
 
 ## Documentation
 * [Examples & Tutorials](https://unit8co.github.io/darts/examples.html)
