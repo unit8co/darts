@@ -107,22 +107,22 @@ time series; this can for instance be used to get confidence intervals.
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.
 
-Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support | Reference(s)
---- | --- | --- | --- | --- | --- | --- | --- |
-`ARIMA` | x | | x | | | | |
-`VARIMA` | x | x | | | | | |
-`AutoARIMA` | x | | | | | | |
-`ExponentialSmoothing` | x | | x | | | | |
-`Theta` and `FourTheta` | x | | | | | | |
-`Prophet` | x | | | | | | |
-`FFT` (Fast Fourier Transform) | x | | | | | | |
-Regression Models (incl `RandomForest` and `LinearRegressionModel`) | x | | | | | | |
-`RNNModel` (incl. LSTM and GRU) | x | x | x | x | x | x | |
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | (x) | |
-`NBEATSModel` | x | x | | x | x | (x) | |
-`TCNModel` | x | x | x | x | x | (x) | |
-`TransformerModel` | x | x | | x | x | (x) | |
-Naive Baselines | x | | | | | | |
+Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support
+--- | --- | --- | --- | --- | --- | --- |
+`ARIMA` | x | | x | | | |
+`VARIMA` | x | x | | | | |
+`AutoARIMA` | x | | | | | |
+`ExponentialSmoothing` | x | | x | | | |
+`Theta` and `FourTheta` | x | | | | | |
+`Prophet` | x | | | | | |
+`FFT` (Fast Fourier Transform) | x | | | | | |
+Regression Models (incl `RandomForest` and `LinearRegressionModel`) | x | | | | | |
+`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | x | x |
+`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | (x) |
+`NBEATSModel` | x | x | | x | x | (x) |
+`TCNModel` | x | x | x | x | x | (x) |
+`TransformerModel` | x | x | | x | x | (x) |
+Naive Baselines | x | | | | | |
 
 
 ## Contribute
