@@ -214,7 +214,11 @@ class RegressionModel(ExtendedForecastingModel):
         lagged_series.drop(target_name, axis=1, inplace=True)
         return lagged_series
 
-    def predict(self, n: int, exog: Optional[TimeSeries] = None, **kwargs):
+    def predict(self,
+                n: int,
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1,
+                **kwargs):
         """ Forecasts values for `n` time steps after the end of the series.
 
         Parameters
@@ -225,6 +229,8 @@ class RegressionModel(ExtendedForecastingModel):
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training. It also must be of length `n`
             and start one time step after the end of the training series.
+        num_samples
+            Currently this parameter is ignored for regression models.
         **kwargs
             Additional keyword arguments passed to the `predict` method of the model.
 
@@ -233,7 +239,7 @@ class RegressionModel(ExtendedForecastingModel):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, exog)
+        super().predict(n, exog, num_samples)
 
         if self.max_lag != 0:
             prediction_data = self.prediction_data.copy()
@@ -272,7 +278,9 @@ class RegressionModel(ExtendedForecastingModel):
             forecasting_data = self._create_training_data(series=target_data, exog=exog_data).pd_dataframe()
             if "series" in signature(self.model.fit).parameters:
                 forecasting_data = TimeSeries.from_dataframe(forecasting_data, freq=self.training_series.freq)
-                forecast = self.model.predict(n=len(forecasting_data), exog=forecasting_data, **kwargs)
+                forecast = self.model.predict(n=len(forecasting_data),
+                                              exog=forecasting_data,
+                                              **kwargs)
                 forecast = forecast.pd_dataframe().values
             else:
                 forecast = self.model.predict(forecasting_data, **kwargs)
