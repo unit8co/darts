@@ -244,6 +244,9 @@ class TCNModel(TorchParametricProbabilisticForecastingModel):
             The number of convolutional layers.
         dropout
             The dropout rate for every convolutional layer.
+        likelihood
+            Optionally, the likelihood model to be used for probabilistic forecasts.
+            If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -290,7 +293,8 @@ class TCNModel(TorchParametricProbabilisticForecastingModel):
                               covariates=covariates,
                               length=self.input_chunk_length,
                               shift=self.output_chunk_length)
-
+    
+    @random_method
     def _produce_predict_output(self, input):
         if self.likelihood:
             output = self.model(input)

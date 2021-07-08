@@ -941,6 +941,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
+        """ Pytorch Parametric Probabilistic Forecasting Model.
+
+        This is a base class for pytroch parametric probabilistic models. "Parametric" 
+        means that these models are based on some predefined parametric distribution, say Gaussian. 
+        Make sure that subclasses contain the *likelihood* parameter in __init__ method 
+        and it is passed to the superclass via calling super().__init__. If the likelihood is not
+        provided, the model is considered as deterministic.
+
+        Parameters
+        ----------
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
+        """
         super().__init__(**kwargs)
         self.likelihood = likelihood
 
@@ -955,4 +968,7 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
 
     @abstractmethod
     def _produce_predict_output(self, input):
+        """
+        This method has to be implemented by all children.
+        """
         pass
