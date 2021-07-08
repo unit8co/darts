@@ -84,8 +84,10 @@ class Prophet(ForecastingModel):
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
 
-    def predict(self, n: int) -> TimeSeries:
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> TimeSeries:
+        super().predict(n, num_samples)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
 
