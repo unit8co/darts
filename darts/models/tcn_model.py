@@ -12,9 +12,10 @@ from typing import Optional, Union, Sequence
 from ..timeseries import TimeSeries
 from ..utils.torch import random_method
 from ..utils.data import ShiftedDataset
+from ..utils.likelihood_models import LikelihoodModel
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel  # , _TimeSeriesShiftedDataset
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
 
 logger = get_logger(__name__)
 
@@ -205,7 +206,7 @@ class _TCNModule(nn.Module):
         return x
 
 
-class TCNModel(TorchForecastingModel):
+class TCNModel(TorchParametricProbabilisticForecastingModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -216,6 +217,7 @@ class TCNModel(TorchForecastingModel):
                  dilation_base: int = 2,
                  weight_norm: bool = False,
                  dropout: float = 0.2,
+                 likelihood: Optional[LikelihoodModel] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -242,6 +244,9 @@ class TCNModel(TorchForecastingModel):
             The number of convolutional layers.
         dropout
             The dropout rate for every convolutional layer.
+        likelihood
+            Optionally, the likelihood model to be used for probabilistic forecasts.
+            If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -255,7 +260,7 @@ class TCNModel(TorchForecastingModel):
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
 
-        super().__init__(**kwargs)
+        super().__init__(likelihood=likelihood, **kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -267,9 +272,12 @@ class TCNModel(TorchForecastingModel):
         self.weight_norm = weight_norm
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        target_size = (
+            self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
+        )
         return _TCNModule(input_size=input_dim,
                           input_chunk_length=self.input_chunk_length,
-                          target_size=output_dim,
+                          target_size=target_size,
                           kernel_size=self.kernel_size,
                           num_filters=self.num_filters,
                           num_layers=self.num_layers,
@@ -285,6 +293,14 @@ class TCNModel(TorchForecastingModel):
                               covariates=covariates,
                               length=self.input_chunk_length,
                               shift=self.output_chunk_length)
+    
+    @random_method
+    def _produce_predict_output(self, input):
+        if self.likelihood:
+            output = self.model(input)
+            return self.likelihood._sample(output)
+        else:
+            return self.model(input)
 
     @property
     def first_prediction_index(self) -> int:
