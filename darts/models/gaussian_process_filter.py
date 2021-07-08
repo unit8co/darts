@@ -3,7 +3,6 @@ from typing import Optional
 from darts.timeseries import TimeSeries
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
-import numpy as np
 
 from .filtering_model import FilteringModel
 from ..utils.utils import raise_if_not
