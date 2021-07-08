@@ -608,7 +608,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     2. The input series used by `predict()` can be different from the series used to fit the model.
     3. Covariates can be supported (multivariate or univariate).
     4. They can allow for multivariate target series and covariates.
-    
+
     The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
     to a temporally contiguous, "local", time series.
 

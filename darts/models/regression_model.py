@@ -3,7 +3,7 @@ Regression Model
 ----------------
 
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of an exoneous series. They can wrap around any regression model having a `fit()`
+and possibly lags of an exogenous series. They can wrap around any regression model having a `fit()`
 and `predict()` functions (e.g. scikit-learn regression models), and are using
 `sklearn.linear_model.LinearRegression` by default.
 
@@ -14,21 +14,24 @@ import numpy as np
 import pandas as pd
 
 from inspect import signature
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 from ..timeseries import TimeSeries
+from darts.utils.data.sequential_dataset import SequentialDataset
 from sklearn.linear_model import LinearRegression
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import GlobalForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
 
 logger = get_logger(__name__)
 
 
-class RegressionModel(ExtendedForecastingModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_exog: Union[int, list] = None,
-                 model=None):
-        """ Regression Model
+class RegressionModel(GlobalForecastingModel):
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_covariates: Union[int, list] = None,
+        model=None,
+    ):
+        """Regression Model
 
         Can be used to fit any scikit-learn-like regressor class to predict the target
         time series from lagged values.
@@ -39,182 +42,181 @@ class RegressionModel(ExtendedForecastingModel):
             Number of lagged target values used to predict the next time step. If an integer is given
             the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
             The integers must be strictly positive (>0).
-        lags_exog : Union[int, list, bool]
+        lags_covariates : Union[int, list, bool]
             Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
+            the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
             The integers must be positive (>=0).
         model
             Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `exog`) with
             `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
-        raise_if((lags is None) and (lags_exog is None),
-            "At least one of `lags` or `lags_exog` must be not None."
-        )
-        raise_if_not(isinstance(lags, (int, list)) or lags is None,
-            "`lags` must be of type int or list. Given: {}.".format(type(lags))
-        )
-        raise_if_not(isinstance(lags_exog, (int, list)) or lags_exog is None,
-            "`lags_exog` must be of type int or list. Given: {}.".format(type(lags_exog))
-        )
-        raise_if(isinstance(lags, bool) or isinstance(lags_exog, bool),
-            "`lags` and `lags_exog` must be of type int or list, not bool."
-        )
+
         if model is None:
             model = LinearRegression()
 
-        if (not callable(getattr(model, "fit", None))):
-            raise_log(Exception('Provided model object must have a fit() method', logger))
-        if (not callable(getattr(model, "predict", None))):
-            raise_log(Exception('Provided model object must have a predict() method', logger))
+        if not callable(getattr(model, "fit", None)):
+            raise_log(
+                Exception("Provided model object must have a fit() method", logger)
+            )
+        if not callable(getattr(model, "predict", None)):
+            raise_log(
+                Exception("Provided model object must have a predict() method", logger)
+            )
 
         self.lags = lags
         if isinstance(self.lags, int):
-            raise_if_not(self.lags > 0, "`lags` must be strictly positive. Given: {}.".format(self.lags))
-            self.lags = list(range(1, self.lags+1))
+            raise_if_not(
+                self.lags > 0,
+                "`lags` must be strictly positive. Given: {}.".format(self.lags),
+            )
+            self.lags = list(range(1, self.lags + 1))
         elif isinstance(self.lags, list):
             for lag in self.lags:
-                raise_if(not isinstance(lag, int) or (lag <= 0), (
-                    "Every element of `lags` must be a strictly positive integer. Given: {}.".format(self.lags))
+                raise_if(
+                    not isinstance(lag, int) or (lag <= 0),
+                    (
+                        "Every element of `lags` must be a strictly positive integer. Given: {}.".format(
+                            self.lags
+                        )
+                    ),
                 )
 
-        self.lags_exog = lags_exog
-        if self.lags_exog == 0:
-            self.lags_exog = [0]
-        elif isinstance(self.lags_exog, int):
-            raise_if_not(self.lags_exog > 0, "`lags_exog` must be positive. Given: {}.".format(self.lags_exog))
-            self.lags_exog = list(range(1, self.lags_exog+1))
-        elif isinstance(self.lags_exog, list):
-            for lag in self.lags_exog:
-                raise_if(not isinstance(lag, int) or (lag < 0), (
-                    "Every element of `lags_exog` must be a positive integer. Given: {}."
-                    .format(self.lags_exog))
+        self.lags_covariates = lags_covariates
+        if self.lags_covariates == 0:
+            self.lags_covariates = [0]
+        elif isinstance(self.lags_covariates, int):
+            raise_if_not(
+                self.lags_covariates > 0,
+                "`lags_covariates` must be positive. Given: {}.".format(self.lags_covariates),
+            )
+            self.lags_covariates = list(range(1, self.lags_covariates + 1))
+        elif isinstance(self.lags_covariates, list):
+            for lag in self.lags_covariates:
+                raise_if(
+                    not isinstance(lag, int) or (lag < 0),
+                    (
+                        "Every element of `lags_covariates` must be a positive integer. Given: {}.".format(
+                            self.lags_covariates
+                        )
+                    ),
                 )
 
         self.model = model
-        if self.lags is not None and self.lags_exog is None:
+        if self.lags is not None and self.lags_covariates is None:
             self.max_lag = max(self.lags)
-        elif self.lags is None and self.lags_exog is not None:
-            self.max_lag = max(self.lags_exog)
+        elif self.lags is None and self.lags_covariates is not None:
+            self.max_lag = max(self.lags_covariates)
         else:
-            self.max_lag = max([max(self.lags), max(self.lags_exog)])
+            self.max_lag = max([max(self.lags), max(self.lags_covariates)])
+
         self._fit_called = False
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None, **kwargs) -> None:
-        """ Fits/trains the model using the provided list of features time series and the target time series.
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            **kwargs
+            ) -> None:
+        """Fits/trains the model using the provided list of features time series and the target time series.
 
         Parameters
         ----------
-        series : TimeSeries
-            TimeSeries object containing the target values.
-        exog : TimeSeries, optional
-            TimeSeries object containing the exogenous values.
+        series : Union[TimeSeries, Sequence[TimeSeries]]
+            TimeSeries or Sequence[TimeSeries] object containing the target values.
+        covariate : Union[TimeSeries, Sequence[TimeSeries]], optional
+            TimeSeries or Sequence[TimeSeries] object containing the exogenous values.
         """
-        super().fit(series, exog)
-        raise_if(exog is not None and self.lags_exog is None,
-            "`exog` not None in `fit()` method call, but `lags_exog` is None in constructor. "
-        )
-        raise_if(exog is None and self.lags_exog is not None,
-            "`exog` is None in `fit()` method call, but `lags_exog` is not None in constructor. "
-        )
-        self.exog_columns = exog.columns().values.tolist() if exog is not None else None
-        self.nr_exog = exog.width*len(self.lags_exog) if exog is not None else 0
+        super().fit(series, covariates)
 
-        # Rename column if necessary
-        target_column = str(series.columns()[0])
-        if self.exog_columns is not None and target_column in self.exog_columns:
-            series = TimeSeries(series.pd_dataframe().rename({target_column: "Target"}))
-        self.target_column = series.columns()[0]
+        raise_if(
+            covariates is not None and self.lags_covariates is None,
+            "`covariates` not None in `fit()` method call, but `lags_covariates` is None in constructor. ",
+        )
+        raise_if(
+            covariates is None and self.lags_covariates is not None,
+            "`covariates` is None in `fit()` method call, but `lags_covariates` is not None in constructor. ",
+        )
 
         # Prepare data
-        training_x = self._create_training_data(series=series, exog=exog)
-        training_y = series[training_x.time_index()]
+        training_x, training_y = self._create_training_data(series=series, covariates=covariates)
 
         # Fit model
         if "series" in signature(self.model.fit).parameters:
-            self.model.fit(
-                series=training_y,
-                exog=training_x,
-                **kwargs
-            )
+            # darts ExtendedForecastingModel
+            self.model.fit(series=training_y, exog=training_x, **kwargs)
         else:
+            # sklearn like model
             self.model.fit(
-                training_x.pd_dataframe(),
-                training_y.pd_dataframe().values.ravel(),
+                training_x,
+                training_y.values.ravel(),
                 **kwargs
             )
+
         if self.max_lag == 0:
-            self.prediction_data = pd.DataFrame(columns=series.stack(other=exog).columns())
-        elif exog is not None:
-            self.prediction_data = series.stack(other=exog)[-self.max_lag:]
+            self.prediction_data = pd.DataFrame(
+                columns=series.stack(other=covariates).columns()
+            )
+        elif covariates is not None:
+            self.prediction_data = series.stack(other=covariates)[-self.max_lag:]
         else:
             self.prediction_data = series[-self.max_lag:]
-
+        print(self.prediction_data)
         self._fit_called = True
 
-    def _create_training_data(self, series: TimeSeries, exog: TimeSeries = None):
-        """ Create dataframe of exogenous and endogenous variables containing lagged values.
+    def _create_training_data(self,
+                              series: Union[TimeSeries, Sequence[TimeSeries]],
+                              covariates: Union[TimeSeries, Sequence[TimeSeries]] = None):
+        """Create dataframe of covariates and endogenous variables containing lagged values.
 
         Parameters
         ----------
         series : TimeSeries
             Target series.
-        exog : TimeSeries, optional
-            Exogenous variables.
+        covariates : TimeSeries, optional
+            Covariates variables.
 
         Returns
         -------
         TimeSeries
             TimeSeries with lagged values of target and exogenous variables.
         """
-        raise_if(series.width > 1,
-            "Series must not be multivariate. Pass exogenous variables to 'exog' parameter.",
-            logger
+
+        sequential_dataset = SequentialDataset(
+            target_series=series,
+            covariates=covariates,
+            input_chunk_length=self.max_lag,
+            output_chunk_length=1,
+            max_samples_per_ts=None,
         )
-        training_data_list = []
 
-        if self.lags is not None:
-            lagged_data = self._create_lagged_data(series=series, lags=self.lags)
-            training_data_list.append(lagged_data)
+        X = []
+        y = []
 
-        if self.lags_exog is not None:
-            for i, col in enumerate(exog.columns()):
-                lagged_data = self._create_lagged_data(
-                    series=exog[col], lags=self.lags_exog
-                )
-                training_data_list.append(lagged_data)
+        for input_target, output_target, input_covariates in sequential_dataset:
+            if self.lags is not None:
+                lags_indices = np.array(self.lags) * (-1)
+                input_target = input_target[lags_indices]
+            if self.lags_covariates is not None:
+                exog_lags_indices = np.array(self.lags_covariates) * (-1)
+                input_covariates = input_covariates[exog_lags_indices]
 
-        training_data = pd.concat(training_data_list, axis=1)[self.max_lag:]
-        return TimeSeries(training_data, freq=series.freq())
+            if input_covariates is not None:
+                X.append(pd.DataFrame(np.concatenate((input_target, input_covariates), axis=None)))
+            else:
+                X.append(pd.DataFrame(input_target))
+            y.append(pd.DataFrame(output_target))
 
-    def _create_lagged_data(self, series: TimeSeries, lags: list):
-        """ Creates a data frame where every lag is a new column.
+        X = pd.concat(X, axis=1)
+        y = pd.concat(y, axis=1)
 
-        After creating this input it can be used in many regression models to make predictions
-        based on previous available values for both the exogenous as well as endogenous variables.
+        return X.T, y.T
 
-        Parameters
-        ----------
-        series : TimeSeries
-            Time series to be lagged.
-        lags : list
-            List if indexes.
-
-        Returns
-        -------
-        pd.DataFrame
-            Returns a data frame that contains lagged values.
-        """
-        lagged_series = series.pd_dataframe(copy=True)
-        target_name = lagged_series.columns[0]
-        for lag in lags:
-            new_column_name = target_name + "_lag{}".format(lag)
-            lagged_series[new_column_name] = lagged_series[target_name].shift(lag)
-        lagged_series.drop(target_name, axis=1, inplace=True)
-        return lagged_series
-
-    def predict(self, n: int, exog: Optional[TimeSeries] = None, **kwargs):
-        """ Forecasts values for `n` time steps after the end of the series.
+    def predict(self,
+                n: int,
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:     
+        """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
@@ -232,6 +234,7 @@ class RegressionModel(ExtendedForecastingModel):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
+        """
         super().predict(n, exog)
 
         if self.max_lag != 0:
@@ -239,37 +242,54 @@ class RegressionModel(ExtendedForecastingModel):
             dummy_row = np.zeros(shape=(1, prediction_data.width))
             prediction_data = prediction_data.append_values(dummy_row)
 
-        if exog is not None and self.lags_exog != [0]:
-            required_start = self.training_series.end_time()+self.training_series.freq()
-            raise_if_not(exog.start_time() == required_start,
-                "`exog` first date must be equal to self.training_series.end_time()+1*freq. " +
-                "Given: {}. Needed: {}.".format(exog.start_time(), required_start)
+        if exog is not None and self.lags_covariates != [0]:
+            required_start = (
+                self.training_series.end_time() + self.training_series.freq()
+            )
+            raise_if_not(
+                exog.start_time() == required_start,
+                "`exog` first date must be equal to self.training_series.end_time()+1*freq. "
+                + "Given: {}. Needed: {}.".format(exog.start_time(), required_start),
             )
         if isinstance(exog, TimeSeries):
             exog = exog.pd_dataframe(copy=False)
 
-        forecasts = list(range(n))
-        for i in range(n):
+        forecasts = [0] * n  # initializing the forecasts vector
 
+        for i in range(n):
             # Prepare prediction data if for prediction at time `t` exog at time `t` is used
-            if self.lags_exog is not None and 0 in self.lags_exog:
+            if self.lags_covariates is not None and 0 in self.lags_covariates:
                 append_row = [[0, *exog.iloc[i, :].values]]
                 if self.max_lag == 0:
                     prediction_data = pd.DataFrame(
-                        append_row, columns=self.prediction_data.columns, index=[exog.index[i]]
+                        append_row,
+                        columns=self.prediction_data.columns,
+                        index=[exog.index[i]],
                     )
-                    prediction_data = TimeSeries(prediction_data, freq=self.training_series.freq())
+                    prediction_data = TimeSeries(
+                        prediction_data, freq=self.training_series.freq()
+                    )
                 else:
-                    prediction_data = prediction_data[:-1] # Remove last dummy row
+                    prediction_data = prediction_data[:-1]  # Remove last dummy row
                     prediction_data = prediction_data.append_values(append_row)
 
             # Make prediction
             target_data = prediction_data[[self.target_column]]
-            exog_data = prediction_data[self.exog_columns] if self.exog_columns is not None else None
-            forecasting_data = self._create_training_data(series=target_data, exog=exog_data).pd_dataframe()
+            exog_data = (
+                prediction_data[self.exog_columns]
+                if self.exog_columns is not None
+                else None
+            )
+            forecasting_data, _ = self._create_training_data(
+                series=target_data, exog=exog_data
+            )
             if "series" in signature(self.model.fit).parameters:
-                forecasting_data = TimeSeries(forecasting_data, freq=self.training_series.freq())
-                forecast = self.model.predict(n=len(forecasting_data), exog=forecasting_data, **kwargs)
+                forecasting_data = TimeSeries(
+                    forecasting_data, freq=self.training_series.freq()
+                )
+                forecast = self.model.predict(
+                    n=len(forecasting_data), exog=forecasting_data, **kwargs
+                )
                 forecast = forecast.pd_dataframe().values
             else:
                 forecast = self.model.predict(forecasting_data, **kwargs)
@@ -277,14 +297,20 @@ class RegressionModel(ExtendedForecastingModel):
 
             # Prepare prediction data
             if self.max_lag > 0:
-                prediction_data = prediction_data[:-1] # Remove last dummy row
-                append_row = [[forecast[0], *exog.iloc[i, :].values]] if self.exog_columns is not None else [forecast]
+                prediction_data = prediction_data[:-1]  # Remove last dummy row
+                append_row = (
+                    [[forecast[0], *exog.iloc[i, :].values]]
+                    if self.exog_columns is not None
+                    else [forecast]
+                )
                 prediction_data = prediction_data.append_values(append_row)
                 prediction_data = prediction_data.append_values(dummy_row)[1:]
 
             # Append forecast
             forecasts[i] = forecast[0]
         return self._build_forecast_series(forecasts)
+        """
+        return
 
     def __str__(self):
         return self.model.__str__()
