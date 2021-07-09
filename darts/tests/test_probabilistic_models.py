@@ -73,7 +73,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         model.fit(noisy_ts[:100])
         pred = model.predict(n=100, num_samples=100)
 
-        # test median accuracy noiseless ts
+        # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
         self.assertLess(mae_err_median, err)
 
