@@ -16,7 +16,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Introduced new `FilteringModel` abstract class alongside `MovingAverage`, `KalmanFilter` and `GaussianProcessFilter` as concrete implementations.
 - Future covariates are now utilized by `TorchForecastingModels` when the forecasting horizon exceeds the `output_chunk_length` of the model. Before, `TorchForecastingModel` instances could only predict beyond their `output_chunk_length` if they were not trained on covariates, i.e. if they predicted all the data they need as input. This restriction has now been lifted by letting a model not only consume its own output when producing long predictions, but also utilizing the covariates known in the future, if available.
 - Added a new `RNNModel` class which utilizes and rnn module as both encoder and decoder. This new class natively supports the use of the most recent future covariates when making a forecast. See documentation for more details.
-- Introduced optional `epochs` parameter to `TorchForecastingModel` instances which, if provided, overrides the `n_epochs` attribute in that particular training session.
+- Introduced optional `epochs` parameter to the `TorchForecastingModel.predict()` method which, if provided, overrides the `n_epochs` attribute in that particular model instance and training session.
 - Added support for `TimeSeries` with a `pandas.RangeIndex` instead of just allowing `pandas.DatetimeIndex`.
 - `ForecastingModel.gridsearch` now makes use of parallel computation.
 - Introduced a new `force_reset` parameter to `TorchForecastingModel.__init__()` which, if left to False, will prevent the user from overriding model data with the same name and directory.
@@ -25,7 +25,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Fixed:**
 - Solved bug occurring when training `NBEATSModel` on a GPU.
 - Fixed crash when running `NBEATSModel` with `log_tensorboard=True`
-- Soleved bug occurring when training a `TorchForecastingModel` instance with a `batch_size` bigger than the available number of training samples.
+- Solved bug occurring when training a `TorchForecastingModel` instance with a `batch_size` bigger than the available number of training samples.
 - Some fixes in the documentation, including adding more details
 - Other minor bug fixes
 
