@@ -12,8 +12,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
-        flavour: ['core', 'all', 'pmdarima', 'torch', 'prophet']
+        python-version: [3.7, 3.9]
+        flavour: ['all']
 
     steps:
       - name: "1. Clone repository"
