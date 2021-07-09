@@ -21,6 +21,7 @@ class ExponentialSmoothing(ForecastingModel):
                  damped: Optional[bool] = False,
                  seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
                  seasonal_periods: Optional[int] = 12,
+                 random_state: int = 0,
                  **fit_kwargs):
         """ Exponential Smoothing
 
@@ -62,6 +63,7 @@ class ExponentialSmoothing(ForecastingModel):
         self.seasonal_periods = seasonal_periods
         self.fit_kwargs = fit_kwargs
         self.model = None
+        np.random.seed(random_state)
 
     def __str__(self):
         return 'Exponential smoothing'
