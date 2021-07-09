@@ -12,6 +12,7 @@ References
 
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 from typing import Optional, Tuple
+import numpy as np
 
 from .forecasting_model import ExtendedForecastingModel
 from ..timeseries import TimeSeries
@@ -23,7 +24,8 @@ class ARIMA(ExtendedForecastingModel):
     def __init__(self,
                  p: int = 12, d: int = 1, q: int = 0,
                  seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
-                 trend: Optional[str] = None):
+                 trend: Optional[str] = None,
+                 random_state: int = 0):
         """ ARIMA
         ARIMA-type models extensible with exogenous variables and seasonal components.
 
@@ -49,6 +51,7 @@ class ARIMA(ExtendedForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
+        np.random.seed(random_state)
 
     def __str__(self):
         if self.seasonal_order == (0, 0, 0, 0):
