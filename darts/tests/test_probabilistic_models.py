@@ -23,12 +23,12 @@ models_cls_kwargs_errs = [
 ]
 
 if TORCH_AVAILABLE:
-    models_cls_kwargs_errs = np.concatenate([models_cls_kwargs_errs, [
+    models_cls_kwargs_errs += [
         (RNNModel, {'input_chunk_length': 2, 'training_length': 10, 'n_epochs': 20, 'random_state': 0,
                     'likelihood': GaussianLikelihoodModel()}, 1.9),
         (TCNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 60, 'random_state': 0,
                     'likelihood': GaussianLikelihoodModel()}, 0.28)
-    ]])
+    ]
 
 
 class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
@@ -81,7 +81,6 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            print(quantile, model_cls)
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
             self.assertLess(mae_err, new_mae)
             mae_err = new_mae
@@ -90,7 +89,6 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            print(quantile, model_cls)
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
             self.assertLess(mae_err, new_mae)
             mae_err = new_mae
