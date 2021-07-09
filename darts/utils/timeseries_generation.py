@@ -206,7 +206,7 @@ def random_walk_timeseries(length: int = 10,
     return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
-def holidays_timeseries(time_index,
+def holidays_timeseries(time_index: pd.DatetimeIndex,
                         country_code: str,
                         prov: str = None,
                         state: str = None) -> TimeSeries:
@@ -218,6 +218,8 @@ def holidays_timeseries(time_index,
 
     Parameters
     ----------
+    time_index
+        The time index over which to generate the holidays
     country_code
         The country ISO code
     prov
@@ -262,7 +264,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     """
 
     if isinstance(time_index, TimeSeries):
-        time_index = time_index.time_index()
+        time_index = time_index.time_index
 
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                  'of pd.DatetimeIndex', logger)
@@ -278,7 +280,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     values = getattr(time_index, attribute)
     if one_hot:
         raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported"
-                                                   "with one-hot encoding.", logger)
+                                                   " with one-hot encoding.", logger)
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
         for i in range(1, num_values_dict[attribute] + 1):
@@ -292,4 +294,4 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     if one_hot:
         values_df.columns = [attribute + '_' + str(column_name) for column_name in values_df.columns]
 
-    return TimeSeries(values_df)
+    return TimeSeries.from_dataframe(values_df)

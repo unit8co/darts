@@ -20,14 +20,16 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
+    ARIMA
 )
+
 
 from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TCNModel
+    from ..models import TCNModel, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch models are not installed - will not be tested for backtesting')
@@ -37,25 +39,27 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
+    np.random.seed(1)
     best_model_1, _ = model_class.gridsearch(params,
-                                          series,
-                                          forecast_horizon=10,
-                                          metric=mape,
-                                          start=series.time_index()[-21])
+                                             series,
+                                             forecast_horizon=10,
+                                             metric=mape,
+                                             start=series.time_index[-21])
 
     # instantiate best model in split mode
-    train, val = series.split_before(series.time_index()[-10])
+    train, val = series.split_before(series.time_index[-10])
     best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
+    random.seed(1)
     random_param_choice = {}
     for key in params.keys():
         random_param_choice[key] = random.choice(params[key])
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_score_1 = best_model_1.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
-    random_score_1 = random_model.backtest(series, start=series.time_index()[-21], forecast_horizon=10)
+    best_score_1 = best_model_1.backtest(series, start=series.time_index[-21], forecast_horizon=10)
+    random_score_1 = random_model.backtest(series, start=series.time_index[-21], forecast_horizon=10)
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
@@ -152,8 +156,8 @@ class BacktestingTestCase(DartsBaseTestClass):
         features_multivariate = (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
         target = sine_series
 
-        features = TimeSeries(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
-        features_multivariate = TimeSeries(features_multivariate.pd_dataframe().rename(
+        features = TimeSeries.from_dataframe(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
+        features_multivariate = TimeSeries.from_dataframe(features_multivariate.pd_dataframe().rename(
             {"0": "Value0", "1": "Value1", "2": "Value2"}, axis=1)
         )
 
@@ -162,20 +166,20 @@ class BacktestingTestCase(DartsBaseTestClass):
             series=target, covariates=features, start=pd.Timestamp('20000201'),
             forecast_horizon=3, metric=r2_score, last_points_only=True
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
         # Using an int or float value for start
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features, start=30,
             forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features, start=0.5,
             forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
         # Using a too small start value
         with self.assertRaises(ValueError):
@@ -185,27 +189,27 @@ class BacktestingTestCase(DartsBaseTestClass):
             RandomForest(lags=12).backtest(series=target, start=0.01, forecast_horizon=3)
 
         # Using RandomForest's start default value
-        score = RandomForest(lags=12).backtest(series=target, forecast_horizon=3, metric=r2_score)
+        score = RandomForest(lags=12, random_state=0).backtest(series=target, forecast_horizon=3, metric=r2_score)
         self.assertGreater(score, 0.95)
 
         # multivariate feature test
-        score = RandomForest(lags=12, lags_exog=[0, 1]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0, 1], random_state=0).backtest(
             series=target, covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.94)
 
         # multivariate with stride
-        score = RandomForest(lags=12, lags_exog=[0]).backtest(
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
             series=target, covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score,
             last_points_only=True, stride=3
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
     def test_gridsearch(self):
-
         np.random.seed(1)
+
         ts_length = 50
         dummy_series = (
             lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
@@ -219,6 +223,60 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         es_params = {'seasonal_periods': list(range(5, 10))}
         self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_gridsearch_n_jobs(self):
+        '''
+        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run.
+        '''
+
+        np.random.seed(1)
+        ts_length = 100
+
+        dummy_series = (
+            lt(length=ts_length, end_value=1) + st(length=ts_length, value_y_offset=0) + rt(length=ts_length)
+        )
+
+        ts_train = dummy_series[:round(ts_length * 0.8)]
+        ts_val = dummy_series[round(ts_length * 0.8):]
+
+        test_cases = [
+            {
+                "model": ARIMA,  # ExtendedForecastingModel
+                "parameters": {
+                    'p': [18, 4, 8],
+                    'q': [1, 2, 3]
+                }
+            },
+            {
+                "model": BlockRNNModel,   # TorchForecastingModel
+                "parameters": {
+                    'input_chunk_length': [1, 3, 5, 10],
+                    'output_chunk_length': [1, 3, 5, 10],
+                    'n_epochs': [1, 5],
+                    'random_state': [42]  # necessary to avoid randomness among runs with same parameters
+                }
+            }
+        ]
+
+        for test in test_cases:
+
+            model = test["model"]
+            parameters = test["parameters"]
+
+            np.random.seed(1)
+            _, best_params1 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=1)
+
+            np.random.seed(1)
+            _, best_params2 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=-1)
+
+            self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):

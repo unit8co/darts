@@ -41,17 +41,17 @@ def train_theta_boxcox(ts, seasonality, n):
         if np.isclose(new_values, new_values[0]).all():
             lmbd = 0
             new_values = boxcox(ts.univariate_values(), lmbd)
-    ts = TimeSeries.from_times_and_values(ts.time_index(), new_values)
+    ts = TimeSeries.from_times_and_values(ts.time_index, new_values)
     theta_bc.fit(ts)
     forecast = theta_bc.predict(n)
 
     new_values = inv_boxcox(forecast.univariate_values(), lmbd)
-    forecast = TimeSeries.from_times_and_values(seasonality.time_index(), new_values)
+    forecast = TimeSeries.from_times_and_values(seasonality.time_index, new_values)
     if shiftdata > 0:
         forecast = forecast - shiftdata
     forecast = forecast * seasonality
     if (forecast.univariate_values() < 0).any():
-        indices = seasonality.time_index()[forecast < 0]
+        indices = seasonality.time_index[forecast < 0]
         forecast = forecast.update(indices, np.zeros(len(indices)), inplace=True)
     return forecast
 

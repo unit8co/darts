@@ -93,7 +93,7 @@ class MetricsTestCase(DartsBaseTestClass):
         # univariate
         non_nan_metric = metric(self.series1[:9] + 1, self.series2[:9])
         nan_series1 = self.series1.copy()
-        nan_series1._df.iloc[-1] = np.nan
+        nan_series1._xa.values[-1,:,:] = np.nan
         nan_metric = metric(nan_series1 + 1, self.series2)
         self.assertEqual(non_nan_metric, nan_metric)
         # multivariate (TODO)

@@ -5,6 +5,7 @@ Exponential Smoothing
 
 from typing import Optional
 import statsmodels.tsa.holtwinters as hw
+import numpy as np
 
 from .forecasting_model import ForecastingModel
 from ..logging import get_logger
@@ -20,6 +21,7 @@ class ExponentialSmoothing(ForecastingModel):
                  damped: Optional[bool] = False,
                  seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
                  seasonal_periods: Optional[int] = 12,
+                 random_state: int = 0,
                  **fit_kwargs):
         """ Exponential Smoothing
 
@@ -61,6 +63,7 @@ class ExponentialSmoothing(ForecastingModel):
         self.seasonal_periods = seasonal_periods
         self.fit_kwargs = fit_kwargs
         self.model = None
+        np.random.seed(random_state)
 
     def __str__(self):
         return 'Exponential smoothing'
@@ -77,10 +80,18 @@ class ExponentialSmoothing(ForecastingModel):
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
-    def predict(self, n):
-        super().predict(n)
-        forecast = self.model.forecast(n)
+    def predict(self, n, num_samples=1):
+        super().predict(n, num_samples)
+
+        if num_samples == 1:
+            forecast = self.model.forecast(n)
+        else:
+            forecast = np.expand_dims(self.model.simulate(n, repetitions=num_samples), axis=1)
+
         return self._build_forecast_series(forecast)
+
+    def _is_probabilistic(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self) -> int:

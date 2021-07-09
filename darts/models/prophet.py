@@ -62,19 +62,19 @@ class Prophet(ForecastingModel):
         series = self.training_series
 
         in_df = pd.DataFrame(data={
-            'ds': series.time_index(),
+            'ds': series.time_index,
             'y': series.univariate_values()
         })
 
         # TODO: user-provided seasonalities, or "auto" based on stepduration
         self.model = fbprophet.Prophet(**self.prophet_kwargs)
         if self.freq is not None:
-            if series.freq_str() in ['MS', 'M', 'ME']:
+            if series.freq_str in ['MS', 'M', 'ME']:
                 interval_length = 30.4375
-            elif series.freq_str() == 'Y':
+            elif series.freq_str == 'Y':
                 interval_length = 365.25
             else:
-                interval_length = pd.to_timedelta(series.freq_str()).days
+                interval_length = pd.to_timedelta(series.freq_str).days
             self.model.add_seasonality(name='custom', period=self.freq * interval_length,
                                        fourier_order=5)
 
@@ -84,8 +84,10 @@ class Prophet(ForecastingModel):
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
 
-    def predict(self, n: int) -> TimeSeries:
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> TimeSeries:
+        super().predict(n, num_samples)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
 

@@ -111,8 +111,10 @@ class Theta(ForecastingModel):
             self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
 
-    def predict(self, n: int) -> 'TimeSeries':
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> 'TimeSeries':
+        super().predict(n, num_samples)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -217,8 +219,6 @@ class FourTheta(ForecastingModel):
 
     def fit(self, series):
         super().fit(series)
-        # Check univariate time series
-        series._assert_univariate()
 
         self.length = len(series)
         # normalization of data
@@ -298,8 +298,10 @@ class FourTheta(ForecastingModel):
         if self.normalization:
             self.fitted_values *= self.mean
 
-    def predict(self, n: int) -> 'TimeSeries':
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> 'TimeSeries':
+        super().predict(n, num_samples)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -331,7 +333,8 @@ class FourTheta(ForecastingModel):
 
     @staticmethod
     def select_best_model(ts: TimeSeries, thetas: Optional[List[int]] = None,
-                          m: Optional[int] = None, normalization: bool = True) -> 'FourTheta':
+                          m: Optional[int] = None, normalization: bool = True,
+                          n_jobs: int = 1) -> 'FourTheta':
         """
         Performs a grid search over all hyper parameters to select the best model,
         using the fitted values on the training series `ts`.
@@ -349,6 +352,11 @@ class FourTheta(ForecastingModel):
             Optionally, the season used to decompose the time series.
         normalization
             If `True`, the data is normalized so that the mean is 1. Defaults to `True`.
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more theta
+            values to be evaluated. Each job will instantiate, train, and evaluate a different instance of the model.
+            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
+
         Returns
         -------
         FourTheta
@@ -375,7 +383,7 @@ class FourTheta(ForecastingModel):
                                       "trend_mode": drift_mode,
                                       "seasonality_period": [m],
                                       "normalization": [normalization]},
-                                     ts, use_fitted_values=True, metric=mae)
+                                     ts, use_fitted_values=True, metric=mae, n_jobs=n_jobs)
         return theta
 
     def __str__(self):
