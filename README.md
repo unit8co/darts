@@ -103,6 +103,10 @@ and of some external covariate series, using arbitrary regression models (e.g. s
 **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
 time series; this can for instance be used to get confidence intervals.
 
+**Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
+and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
+inferences of the underlying states/values.
+
 ## Forecasting Models
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.
