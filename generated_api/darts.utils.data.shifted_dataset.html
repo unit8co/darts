@@ -157,7 +157,15 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.utils.likelihood_models.html">Likelihood Models</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.model_selection.html">Model selection utilities</a>
                         </li>
                     
                         <li class="">
@@ -242,9 +250,14 @@ in memory), or implement your own <cite>Sequence</cite> of time series.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
 <li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing covariates. If this parameter is set,
-the provided sequence must have the same length as that of <cite>target_series</cite>.</p></li>
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in this list must be at least as long as their corresponding target series and
+must have the same starting point.</p></li>
 <li><p><strong>length</strong> – The length of the emitted input and output series.</p></li>
 <li><p><strong>shift</strong> – The number of time steps by which to shift the output relative to the input.</p></li>
+<li><p><strong>shift_covariates</strong> – Whether or not to shift the covariates forward the same way as the target.
+Block models require this parameter to be set to <cite>False</cite> In the case of recurrent
+model, this parameter should be set to <cite>True</cite>.</p></li>
 <li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
 per time series. It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset

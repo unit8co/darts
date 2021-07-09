@@ -157,7 +157,15 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.utils.likelihood_models.html">Likelihood Models</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.model_selection.html">Model selection utilities</a>
                         </li>
                     
                         <li class="">
@@ -297,13 +305,14 @@ be used as covariance matrix for a multivariate gaussian distribution.</p></li>
 
 <dl class="py function">
 <dt id="darts.utils.timeseries_generation.holidays_timeseries">
-<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">holidays_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time_index</span></em>, <em class="sig-param"><span class="n">country_code</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">prov</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.timeseries_generation.</code><code class="sig-name descname">holidays_timeseries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time_index</span><span class="p">:</span> <span class="n">pandas.core.indexes.datetimes.DatetimeIndex</span></em>, <em class="sig-param"><span class="n">country_code</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">prov</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a binary univariate TimeSeries with index <cite>time_index</cite> that equals 1 at every index that lies within
 (or equals) a selected country’s holiday, and 0 otherwise.</p>
 <p>Available countries can be found <a class="reference external" href="https://github.com/dr-prodigy/python-holidays#available-countries">here</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>time_index</strong> – The time index over which to generate the holidays</p></li>
 <li><p><strong>country_code</strong> – The country ISO code</p></li>
 <li><p><strong>prov</strong> – The province</p></li>
 <li><p><strong>state</strong> – The state</p></li>

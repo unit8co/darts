@@ -295,8 +295,8 @@
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path_to_file</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_time_column</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">dummy_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

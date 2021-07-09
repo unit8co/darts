@@ -167,6 +167,7 @@
                  <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
                  <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">shift_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (input, output, input_covariates) arrays, which all have length</span>
@@ -192,13 +193,19 @@
 <span class="sd">        ----------</span>
 <span class="sd">        target_series</span>
 <span class="sd">            One or a sequence of target `TimeSeries`.</span>
-<span class="sd">        covariates:</span>
+<span class="sd">        covariates</span>
 <span class="sd">            Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,</span>
-<span class="sd">            the provided sequence must have the same length as that of `target_series`.</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in this list must be at least as long as their corresponding target series and</span>
+<span class="sd">            must have the same starting point.</span>
 <span class="sd">        length</span>
 <span class="sd">            The length of the emitted input and output series.</span>
 <span class="sd">        shift</span>
 <span class="sd">            The number of time steps by which to shift the output relative to the input.</span>
+<span class="sd">        shift_covariates</span>
+<span class="sd">            Whether or not to shift the covariates forward the same way as the target.</span>
+<span class="sd">            Block models require this parameter to be set to `False` In the case of recurrent</span>
+<span class="sd">            model, this parameter should be set to `True`.</span>
 <span class="sd">        max_samples_per_ts</span>
 <span class="sd">            This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced</span>
 <span class="sd">            per time series. It can be used in order to have an upper bound on the total size of the dataset and</span>
@@ -216,8 +223,7 @@
                      <span class="s1">&#39;The provided sequence of target series must have the same length as &#39;</span>
                      <span class="s1">&#39;the provided sequence of covariate series.&#39;</span><span class="p">)</span>
 
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">=</span> <span class="n">length</span><span class="p">,</span> <span class="n">shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_covariates</span> <span class="o">=</span> <span class="n">length</span><span class="p">,</span> <span class="n">shift</span><span class="p">,</span> <span class="n">shift_covariates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -233,7 +239,7 @@
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
                      <span class="s2">&quot;Every target series needs to be at least `length + shift` long&quot;</span><span class="p">)</span>
-    
+
         <span class="c1"># determine the index of the time series.</span>
         <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
         <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -262,13 +268,21 @@
         <span class="c1"># optionally also produce the input covariate</span>
         <span class="n">input_covariate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:</span><span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">)]</span>
 
             <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts_covariate</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">),</span>
                          <span class="s1">&#39;The dataset contains some target/covariate series &#39;</span>
                          <span class="s1">&#39;pair that are not the same size (</span><span class="si">{}</span><span class="s1">-th)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
 
-            <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">end_of_output_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">):</span><span class="o">-</span><span class="p">(</span><span class="n">end_of_output_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_covariates</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">end_of_output_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># we need this case because &quot;-0&quot; is not supported as an indexing bound</span>
+                    <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">end_of_output_idx</span><span class="p">):</span><span class="o">-</span><span class="n">end_of_output_idx</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">end_of_output_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">):</span>
+                                               <span class="o">-</span><span class="p">(</span><span class="n">end_of_output_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">)]</span>
 
         <span class="k">return</span> <span class="n">input_series</span><span class="p">,</span> <span class="n">output_series</span><span class="p">,</span> <span class="n">input_covariate</span></div>
 </pre></div>

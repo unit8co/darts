@@ -12,10 +12,14 @@
         darts.models.arima
         darts.models.auto_arima
         darts.models.baselines
+        darts.models.block_rnn_model
         darts.models.ensemble_model
         darts.models.exponential_smoothing
         darts.models.fft
+        darts.models.filtering_model
         darts.models.forecasting_model
+        darts.models.gaussian_process_filter
+        darts.models.kalman_filter
         darts.models.linear_regression_model
         darts.models.nbeats
         darts.models.prophet

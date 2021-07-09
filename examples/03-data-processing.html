@@ -473,7 +473,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -498,14 +498,6 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
-</pre></div></div>
-</div>
 <section id="Reading-the-data-and-creating-a-time-series">
 <h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
@@ -525,22 +517,52 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-            Pounds per cow
-Month
-1962-01-01             589
-1962-02-01             561
-1962-03-01             640
-1962-04-01             656
-1962-05-01             727
-...                    ...
-1975-08-01             858
-1975-09-01             817
-1975-10-01             827
-1975-11-01             797
-1975-12-01             843
+&lt;TimeSeries (DataArray) (Month: 168, component: 1, sample: 1)&gt;
+array([[[589.]],
 
-[168 rows x 1 columns]
-Freq: MS
+       [[561.]],
+
+       [[640.]],
+
+       [[656.]],
+
+       [[727.]],
+
+       [[697.]],
+
+       [[640.]],
+
+       [[599.]],
+
+       [[568.]],
+
+       [[577.]],
+
+...
+
+       [[892.]],
+
+       [[903.]],
+
+       [[966.]],
+
+       [[937.]],
+
+       [[896.]],
+
+       [[858.]],
+
+       [[817.]],
+
+       [[827.]],
+
+       [[797.]],
+
+       [[843.]]])
+Coordinates:
+  * Month      (Month) datetime64[ns] 1962-01-01 1962-02-01 ... 1975-12-01
+  * component  (component) object &#39;Pounds per cow&#39;
+Dimensions without coordinates: sample
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -571,22 +593,52 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-                   0
-Month
-1962-01-01  0.086538
-1962-02-01  0.019231
-1962-03-01  0.209135
-1962-04-01  0.247596
-1962-05-01  0.418269
-...              ...
-1975-08-01  0.733173
-1975-09-01  0.634615
-1975-10-01  0.658654
-1975-11-01  0.586538
-1975-12-01  0.697115
+&lt;TimeSeries (DataArray) (Month: 168, component: 1, sample: 1)&gt;
+array([[[0.08653846]],
 
-[168 rows x 1 columns]
-Freq: MS
+       [[0.01923077]],
+
+       [[0.20913462]],
+
+       [[0.24759615]],
+
+       [[0.41826923]],
+
+       [[0.34615385]],
+
+       [[0.20913462]],
+
+       [[0.11057692]],
+
+       [[0.03605769]],
+
+       [[0.05769231]],
+
+...
+
+       [[0.81490385]],
+
+       [[0.84134615]],
+
+       [[0.99278846]],
+
+       [[0.92307692]],
+
+       [[0.82451923]],
+
+       [[0.73317308]],
+
+       [[0.63461538]],
+
+       [[0.65865385]],
+
+       [[0.58653846]],
+
+       [[0.69711538]]])
+Coordinates:
+  * Month      (Month) datetime64[ns] 1962-01-01 1962-02-01 ... 1975-12-01
+  * component  (component) &lt;U1 &#39;0&#39;
+Dimensions without coordinates: sample
 </pre></div></div>
 </div>
 <p>This scaling can easily be inverted too, by calling <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code></p>
@@ -605,22 +657,52 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-                0
-Month
-1962-01-01  589.0
-1962-02-01  561.0
-1962-03-01  640.0
-1962-04-01  656.0
-1962-05-01  727.0
-...           ...
-1975-08-01  858.0
-1975-09-01  817.0
-1975-10-01  827.0
-1975-11-01  797.0
-1975-12-01  843.0
+&lt;TimeSeries (DataArray) (Month: 168, component: 1, sample: 1)&gt;
+array([[[589.]],
 
-[168 rows x 1 columns]
-Freq: MS
+       [[561.]],
+
+       [[640.]],
+
+       [[656.]],
+
+       [[727.]],
+
+       [[697.]],
+
+       [[640.]],
+
+       [[599.]],
+
+       [[568.]],
+
+       [[577.]],
+
+...
+
+       [[892.]],
+
+       [[903.]],
+
+       [[966.]],
+
+       [[937.]],
+
+       [[896.]],
+
+       [[858.]],
+
+       [[817.]],
+
+       [[827.]],
+
+       [[797.]],
+
+       [[843.]]])
+Coordinates:
+  * Month      (Month) datetime64[ns] 1962-01-01 1962-02-01 ... 1975-12-01
+  * component  (component) &lt;U1 &#39;0&#39;
+Dimensions without coordinates: sample
 </pre></div></div>
 </div>
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> also allows to specify other scalers in its constructor, as long as they implement <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (typically scalers from <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>)</p>
@@ -710,7 +792,7 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7f80e986cd90&gt;
+&lt;matplotlib.legend.Legend at 0x7fd779e54820&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -748,7 +830,7 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7f80e9556a00&gt;
+&lt;matplotlib.legend.Legend at 0x7fd77a1f6b80&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -816,7 +898,7 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7f80e964ed30&gt;
+&lt;matplotlib.legend.Legend at 0x7fd77a532b50&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -827,17 +909,18 @@ Freq: MS
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Inverse the transformation</span>
+<span class="c1"># Here the forecast is stochastic; so we take the median value</span>
 <span class="n">forecast</span> <span class="o">=</span> <span class="n">toDailyAverage</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">dailyavg_forecast</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -849,12 +932,12 @@ Freq: MS
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7f80e98eae50&gt;
+&lt;matplotlib.legend.Legend at 0x7fd75c0caee0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -870,7 +953,7 @@ Freq: MS
 <h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this headline">¶</a></h2>
 <p>Now suppose that we both want to apply the above transformation (daily averaging), and rescale the dataset between 0 and 1 to use a Neural Network based forecasting model. Instead of applying these two transformations separately, and then inversing them separately, we can use a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -889,7 +972,7 @@ Freq: MS
 </div>
 <p>If all transformations in the pipeline are invertible, the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> object is too.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -907,7 +990,7 @@ Freq: MS
 </div>
 <p>Recall now the incomplete series from <code class="docutils literal notranslate"><span class="pre">monthly-milk-incomplete.csv</span></code>. Suppose that we want to encapsule all our preprocessing steps into a Pipeline, consisting of: a <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> for filling the missing values, and a <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> for scaling the dataset between 0 and 1.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -924,7 +1007,7 @@ Freq: MS
 <p>Suppose we have trained a Neural Network and produced some predictions. Now, we want to scale back out data. Unfortunately, since the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> is not an <code class="docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code> (why on Earth would someone want to insert missing values in the results!?), the inverse transformation will raise an exception: <em>ValueError: Not all transformers in the pipeline can perform inverse_transform</em>.</p>
 <p>Frustrating right? Fortunately, you don’t have to re-run everything from scratch, excluding the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> from the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>. Instead, you can just set the <code class="docutils literal notranslate"><span class="pre">partial</span></code> argument of the <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code> method to True. In this case, the inverse transformation will be performed skipping the not invertible transformers.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -937,7 +1020,7 @@ Freq: MS
 <h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Permalink to this headline">¶</a></h2>
 <p>Often, we have to deal with multiple TimeSeries. DARTS supports Sequences of TimeSeries as input to transformers and pipelines, so that you don’t have to take care of processing each sample separately. Furthermore, it will take care of storing the parameters used by each scaler while transforming different TimeSeries (e.g., with scalers).</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -965,7 +1048,7 @@ Freq: MS
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -988,13 +1071,13 @@ Freq: MS
 <p>Sometimes, we could also have to deal with huge datasets. In this cases, processing each sample sequentially can take quite a long time. DARTS can help both monitoring the transformations, and processing multiple samples in parallel, when possible.</p>
 <p>Setting the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter in each transformer or pipeline while create some progress bars:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
-<span class="n">huge_number_of_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span><span class="o">*</span><span class="mi">100000</span>
+<span class="n">huge_number_of_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span><span class="o">*</span><span class="mi">10000</span>
 
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Basic&quot;</span><span class="p">)</span>
 
@@ -1006,18 +1089,18 @@ Freq: MS
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f15ed1cab46c467d9f70aa4b638d2f3f", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7734fef99b6e47ab90882ff99928cc59", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a3e2e0ea0a8548949a24acc9a66f0c72", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "086be8ac416f4232917f84b024153dc3", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>We now know for how long we will have to wait. But since nobody loves wasting time waiting, we can leverage multiple cores of our machine to process data in parallel. We can do so by setting the <code class="docutils literal notranslate"><span class="pre">n_jobs</span></code> parameter (same usage as in <code class="docutils literal notranslate"><span class="pre">sklearn</span></code>).</p>
 <p><strong>Note</strong>: the speed-up closely depends on the number of available cores and the ‘CPU-intensiveness’ of the transformation.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1032,13 +1115,22 @@ Freq: MS
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2c7821e3425246cda9dc52e439d86e03", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1336698b91d3481d9e3979931333f390", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6176ff7a4a764865a6928bcf59e48d67", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6f0e27a83912459b886b346656a332e8", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
 </div>
 </section>
 </section>

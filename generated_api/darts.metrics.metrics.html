@@ -209,6 +209,7 @@ it is a percentage value, computed as</p>
 \[100 \cdot \text{RMSE}(y_t, \hat{y}_t) / \bar{y_t},\]</div>
 <p>where <span class="math notranslate nohighlight">\(\text{RMSE}()\)</span> denotes the root mean squared error, and
 <span class="math notranslate nohighlight">\(\bar{y_t}\)</span> is the average of <span class="math notranslate nohighlight">\(y_t\)</span>.</p>
+<p>Currently this only supports deterministic series (made of one sample).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -259,6 +260,7 @@ care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
 \[\frac{1}{T}\sum_{t=1}^T{(|y^1_t - y^2_t|)}.\]</div>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -298,6 +300,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 \[100 \cdot \frac{1}{T} \sum_{t=1}^{T}{\left| \frac{y_t - \hat{y}_t}{y_t} \right|}.\]</div>
 <p>Note that it will raise a <cite>ValueError</cite> if <span class="math notranslate nohighlight">\(y_t = 0\)</span> for some <span class="math notranslate nohighlight">\(t\)</span>. Consider using
 the Mean Absolute Scaled Error (MASE) in these cases.</p>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -339,6 +342,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <div class="math notranslate nohighlight">
 \[100 \cdot \frac{1}{T} \sum_{t=1}^{T} {\left| \frac{y_t - \hat{y}_t} {\max_t{y_t} -
 \min_t{y_t}} \right|}\]</div>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -377,6 +381,7 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 <dd><p>Mean Absolute Scaled Error (MASE).</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_scaled_error">Mean absolute scaled error wikipedia page</a>
 for details about the MASE and how it is computed.</p>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -422,6 +427,7 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
 \[\frac{1}{T}\sum_{t=1}^T{(y^1_t - y^2_t)^2}.\]</div>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -480,6 +486,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <div class="math notranslate nohighlight">
 \[100 \cdot \left| \frac{\sum_{t=1}^{T}{y_t}
 - \sum_{t=1}^{T}{\hat{y}_t}}{\sum_{t=1}^{T}{y_t}} \right|.\]</div>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -520,6 +527,7 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 for details about the <span class="math notranslate nohighlight">\(R^2\)</span> score and how it is computed.
 Please note that this metric is not symmetric, <cite>series1</cite> should correspond to the ground truth series,
 whereas <cite>series2</cite> should correspond to the predicted series.</p>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -556,6 +564,7 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 <p>For two time series <span class="math notranslate nohighlight">\(y^1\)</span> and <span class="math notranslate nohighlight">\(y^2\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as</p>
 <div class="math notranslate nohighlight">
 \[\sqrt{\frac{1}{T}\sum_{t=1}^T{(y^1_t - y^2_t)^2}}.\]</div>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -593,6 +602,7 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 <div class="math notranslate nohighlight">
 \[\sqrt{\frac{1}{T}\sum_{t=1}^T{\left(\log{(y^1_t + 1)} - \log{(y^2_t + 1)}\right)^2}},\]</div>
 <p>using the natural logarithm.</p>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -635,6 +645,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is a 
 <dt>Note that it will raise a <cite>ValueError</cite> if <span class="math notranslate nohighlight">\(\left| y_t \right| + \left| \hat{y}_t \right| = 0\)</span></dt><dd><p>for some <span class="math notranslate nohighlight">\(t\)</span>. Consider using the Mean Absolute Scaled Error (MASE) in these cases.</p>
 </dd>
 </dl>
+<p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

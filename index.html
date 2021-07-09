@@ -165,6 +165,10 @@
         </li>
     
         <li class="nav-item toc-entry toc-h3">
+            <a href="#forecasting-models" class="nav-link">Forecasting Models</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h3">
             <a href="#contribute" class="nav-link">Contribute</a>
         </li>
     
@@ -212,8 +216,8 @@ It contains a variety of models, from classics such as ARIMA to deep neural netw
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models, and the neural networks can be trained
-on multiple time series.</p>
+univariate and multivariate time series and models. The neural networks can be trained
+on multiple time series, and some of the models offer probabilistic forecasts.</p>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -242,26 +246,31 @@ on multiple time series.</p>
 <p>Create a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object from a Pandas DataFrame, and split it in train/validation series:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="c1"># Read a pandas DataFrame</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create a TimeSeries, specifying the time and value columns</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">))</span>
+
+<span class="c1"># Set aside the last 36 months as a validation series</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
 </pre></div>
 </div>
-<p>Fit an exponential smoothing model, and make a prediction over the validation series’ duration:</p>
+<p>Fit an exponential smoothing model, and make a (probabilistic) prediction over the validation series’ duration:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Plot:</p>
+<p>Plot the median, 5th and 95th percentiles:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
-<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Year&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div style="text-align:center;">
@@ -272,25 +281,25 @@ the <a class="reference external" href="https://github.com/unit8co/darts/tree/ma
 <section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
 <p>Currently, the library contains the following features:</p>
-<p><strong>Forecasting Models:</strong></p>
-<ul class="simple">
-<li><p>Exponential smoothing,</p></li>
-<li><p>ARIMA &amp; auto-ARIMA,</p></li>
-<li><p>Facebook Prophet,</p></li>
-<li><p>Theta method,</p></li>
-<li><p>FFT (Fast Fourier Transform),</p></li>
-<li><p>Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),</p></li>
-<li><p>Temporal convolutional network.</p></li>
-<li><p>Transformer</p></li>
-<li><p>N-BEATS</p></li>
-</ul>
+<p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
+ARIMA) to deep learning models (such as N-BEATS). See table of models below.</p>
 <p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)</p>
 <p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.</p>
 <p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
-<p><strong>Regressive Models:</strong> Possibility to predict a time series from several other time series
-(e.g., external regressors), using arbitrary regressive models</p>
+<p><strong>Regressive Models:</strong> Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models)</p>
 <p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p>
+<p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
+time series; this can for instance be used to get confidence intervals.</p>
+<p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">MovingAverage</span></code>, which allow to filter time series, and in some cases obtain probabilistic
+inferences of the underlying states/values.</p>
+</section>
+<section id="forecasting-models">
+<h2>Forecasting Models<a class="headerlink" href="#forecasting-models" title="Permalink to this headline">¶</a></h2>
+<p>Here’s a breakdown of the forecasting models currently implemented in Darts. We are constantly working
+on bringing more models and features.</p>
 </section>
 <section id="contribute">
 <h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>

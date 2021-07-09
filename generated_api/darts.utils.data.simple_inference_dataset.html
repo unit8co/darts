@@ -157,7 +157,15 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.utils.likelihood_models.html">Likelihood Models</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.model_selection.html">Model selection utilities</a>
                         </li>
                     
                         <li class="">
@@ -222,15 +230,38 @@
 <dt id="darts.utils.data.simple_inference_dataset.SimpleInferenceDataset">
 <em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.simple_inference_dataset.</code><code class="sig-name descname">SimpleInferenceDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/simple_inference_dataset.html#SimpleInferenceDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.simple_inference_dataset.SimpleInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset</span></code></a></p>
-<p>Abstract class for a <cite>TimeSeries</cite> inference dataset. It contains 2-tuples of
-<cite>(input_target, input_covariate)</cite> <cite>TimeSeries</cite>.
-The emitted covariates are optional and can be <cite>None</cite>.</p>
-<p>It can be used as models’ inputs, to obtain simple forecasts on each <cite>TimeSeries</cite>
-(using covariates if specified).</p>
-<p><cite>TimeSeriesInferenceDataset</cite> inherits from <cite>Sequence</cite>; meaning that the implementations have to
-provide the <cite>__len__()</cite> and <cite>__getitem__()</cite> methods.</p>
-<p>It contains <cite>TimeSeries</cite> (and not e.g. <cite>np.ndarray</cite>), because inference requires the time axes,
-and typically the performance penalty should be lower than for training datasets because there’s no slicing.</p>
+<p>Creates a dataset from lists of target series and corresponding covariate series and emits
+3-tuples of (tgt_past, cov_past, cov_future), all <cite>TimeSeries</cite> instances.
+<cite>tgt_past</cite> corresponds to the target series, which will be predicted into the future.
+<cite>cov_past</cite> is equal to the covariates with the same time index as the target series if covariates
+are provided, otherwise a value of <cite>None</cite> will be emitted.
+Both <cite>tgt_past</cite> and <cite>cov_past</cite> will be <cite>input_chunk_length</cite> long.</p>
+<p>Block models:
+If the model is required to produce the forecast over multiple iterations, i.e. if
+<cite>n &gt; self.output_chunk_length</cite>, and if covariates were provided, then <cite>cov_future</cite> will
+be equal to the future covariates up to <cite>n - self.output_chunk_length</cite> time steps into the future.</p>
+<p>Recurrent models:
+If covariates were used to train the model, <cite>n</cite> covariates have to be available into the future.
+Therefore, <cite>cov_future</cite> will be equal to the future covariates up to <cite>n</cite> time steps into the future.</p>
+<p>The parameter <cite>input_chunk_length</cite> is necessary to determine the minimum length for all <cite>tgt_past</cite>
+and <cite>cov_past</cite> time series.
+Parameters <cite>n</cite>, <cite>output_chunk_length</cite> and <cite>model_is_recurrent</cite> are necessary to determine whether
+<cite>cov_future</cite> is necessary (or can be set to <cite>None</cite>) and to determine the required length for <cite>cov_future</cite>.
+It is important for the 3 emitted time series to have the same length across data points because
+they will be cast to tensors later on.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The target series that are to be predicted into the future.</p></li>
+<li><p><strong>covariates</strong> – Optionally, the corresponding covariates that are used for predictions. This argument is required
+if the model was trained with covariates.</p></li>
+<li><p><strong>n</strong> – The number of time steps after the end of the training time series for which to produce predictions.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the time series the model takes as input.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the model predictions after one call to its <cite>forward</cite> function.</p></li>
+<li><p><strong>model_is_recurrent</strong> – Boolean indicating whether the model that uses this dataset is recurrent or not.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt id="darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.count">
 <code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span> &#x2192; integer – return number of occurrences of value<a class="headerlink" href="#darts.utils.data.simple_inference_dataset.SimpleInferenceDataset.count" title="Permalink to this definition">¶</a></dt>

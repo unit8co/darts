@@ -10,6 +10,7 @@
         
         darts.utils.data
         
+        darts.utils.likelihood_models
         darts.utils.missing_values
         darts.utils.model_selection
         darts.utils.statistics

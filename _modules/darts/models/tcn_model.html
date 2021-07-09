@@ -162,9 +162,10 @@
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">..utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
 <span class="kn">from</span> <span class="nn">..utils.data</span> <span class="kn">import</span> <span class="n">ShiftedDataset</span>
+<span class="kn">from</span> <span class="nn">..utils.likelihood_models</span> <span class="kn">import</span> <span class="n">LikelihoodModel</span>
 
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchForecastingModel</span>  <span class="c1"># , _TimeSeriesShiftedDataset</span>
+<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -355,7 +356,7 @@
         <span class="k">return</span> <span class="n">x</span>
 
 
-<div class="viewcode-block" id="TCNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.tcn_model.html#darts.models.tcn_model.TCNModel">[docs]</a><span class="k">class</span> <span class="nc">TCNModel</span><span class="p">(</span><span class="n">TorchForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="TCNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.tcn_model.html#darts.models.tcn_model.TCNModel">[docs]</a><span class="k">class</span> <span class="nc">TCNModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -366,6 +367,7 @@
                  <span class="n">dilation_base</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
                  <span class="n">weight_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LikelihoodModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
@@ -392,6 +394,9 @@
 <span class="sd">            The number of convolutional layers.</span>
 <span class="sd">        dropout</span>
 <span class="sd">            The dropout rate for every convolutional layer.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            Optionally, the likelihood model to be used for probabilistic forecasts.</span>
+<span class="sd">            If no likelihood model is provided, forecasts will be deterministic.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
@@ -405,7 +410,7 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;input_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;output_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
@@ -417,9 +422,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_norm</span> <span class="o">=</span> <span class="n">weight_norm</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="n">target_size</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_num_parameters</span> <span class="o">*</span> <span class="n">output_dim</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">output_dim</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">_TCNModule</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
                           <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                          <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+                          <span class="n">target_size</span><span class="o">=</span><span class="n">target_size</span><span class="p">,</span>
                           <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_size</span><span class="p">,</span>
                           <span class="n">num_filters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_filters</span><span class="p">,</span>
                           <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
@@ -435,6 +443,14 @@
                               <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
                               <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
                               <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
+    
+    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">first_prediction_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>

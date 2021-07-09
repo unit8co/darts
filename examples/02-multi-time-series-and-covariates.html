@@ -479,12 +479,16 @@ div.rendered_html tbody tr:hover {
 <h1>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#Multiple-Time-Series,-Pre-trained-Models-and-Covariates" title="Permalink to this headline">¶</a></h1>
 <p>This notebook serves as a tutorial for: * Training a single model on multiple time series * Using a pre-trained model to obtain forecasts for any time series unseen during training * Training and using a model using covariates</p>
 <p>First, some necessary imports:</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -500,6 +504,14 @@ div.rendered_html tbody tr:hover {
 <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># for reproducibility</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Importing plotly failed. Interactive plots will not work.
+</pre></div></div>
 </div>
 <section id="Read-Data">
 <h2>Read Data<a class="headerlink" href="#Read-Data" title="Permalink to this headline">¶</a></h2>
@@ -585,7 +597,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span></span><span class="n">model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -604,15 +616,15 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-01-20 21:09:18,336] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
-[2021-01-20 21:09:18,336] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
+[2021-07-02 14:12:36,720] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
+[2021-07-02 14:12:36,720] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "54668665ec5d45b0a176b308428baed4", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c1e562362b8b4994836ea464d55be7df", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -643,7 +655,7 @@ but all of this is done transparently behind the scenes.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE = 9.45%
+MAPE = 8.91%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -679,7 +691,7 @@ global forecasting models.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_air_milk</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span></span><span class="n">model_air_milk</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -698,22 +710,22 @@ global forecasting models.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-01-20 21:10:11,009] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
-[2021-01-20 21:10:11,009] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-07-02 14:13:45,854] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-07-02 14:13:45,854] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "52c43f9f73c44cacb2306a5defe74681", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "58e284c17bc24890a1ab4ba8916275db", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0002
+Training loss: 0.0007
 </pre></div></div>
 </div>
 </section>
@@ -741,7 +753,7 @@ Training loss: 0.0002
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE = 5.72%
+MAPE = 5.49%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -779,7 +791,7 @@ MAPE = 5.72%
 <p>This forecast isn’t good (the sine doesn’t even have a yearly seasonality), but you get the idea.</p>
 <p>Similar to what is supported by the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, we can also give a list of series in argument to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function, in which case it will return a list of forecast series. For example, we can get the forecasts for both the air traffic and the milk series in one go as follows:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -870,7 +882,7 @@ MAPE = 5.72%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_cov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span></span><span class="n">model_cov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">training_length</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -891,22 +903,22 @@ MAPE = 5.72%
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-01-20 21:11:12,009] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
-[2021-01-20 21:11:12,009] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-07-02 14:14:57,055] INFO | darts.models.torch_forecasting_model | Train dataset contains 200 samples.
+[2021-07-02 14:14:57,055] INFO | darts.models.torch_forecasting_model | Train dataset contains 200 samples.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1f301bef97444931989cde1cbdaabef2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5fce108b25824f6f88c37148c1e9140c", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0019
+Training loss: 0.0014
 </pre></div></div>
 </div>
 </section>
@@ -920,7 +932,7 @@ Training loss: 0.0019
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">pred_cov</span> <span class="o">=</span> <span class="n">model_cov</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
                              <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">,</span>
-                             <span class="n">covariates</span><span class="o">=</span><span class="n">air_train_covariates</span><span class="p">)</span>
+                             <span class="n">covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">)</span>
 
 <span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
 <span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
@@ -964,15 +976,14 @@ Training loss: 0.0019
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "278a3c95491a4d11bccee07c91e4715a", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d08158f95f76433f9376d697611d50df", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-
-MAPE (using covariates) = 8.22%
+MAPE (using covariates) = 6.09%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -985,18 +996,11 @@ MAPE (using covariates) = 8.22%
 </section>
 <section id="Current-Limitations,-Future-Covariates-and-Other-Conditioning">
 <h2>Current Limitations, Future Covariates and Other Conditioning<a class="headerlink" href="#Current-Limitations,-Future-Covariates-and-Other-Conditioning" title="Permalink to this headline">¶</a></h2>
-<p>At the moment Darts supports covariates that are themselves time series. Furthermore, these time must share the same time axes as the target series. The only real difference is that these covariates series will only be used as inputs of the model and not as outputs.</p>
-<p>However, even though the covariates and targets are required to share their time axis, the covariates can still represent known future values. For instance, if the target is influenced by some external factor (such as, say, the weather) and the weather is known 7 days in advance, then the covariates series can simply be built so that its value at time T represents the “week ahead” forecast for T+7 (this can simply be done by shifting the original series).</p>
+<p>At the moment Darts supports covariates that are themselves time series. These covariates are used as model inputs, but are never themselves subject to prediction. The covariates must start at the same time when the target series start, and they have to extend at least up to the end of the target time series. Depending on the model and the type of prediction, future covariates must also be provided. The model-specific requirements are outlined below:</p>
+<p>Block models (<code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>): Future covariates are only required if the forecast horizon is larger than the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> attribute of the model. For every forecast that goes beyond <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>, another future covariate is required.</p>
+<p>Recurrent models (<code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>): Fully recurrent models require the most recent covariates for every prediction. In other words, the number of future covariates required for a prediction is equal to the forecast horizon.</p>
+<p>However, for block models there is another way to make sue of known future covariates, even if the forecast horizon is not larger than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. For instance, if the target is influenced by some external factor (such as, say, the weather) and the weather is known 7 days in advance, then the covariates series can simply be built so that its value at time T represents the “week ahead” forecast for T+7 (this can simply be done by shifting the original series).</p>
 <p>At the time of writing, Darts does not support covariates that are not time series - such as for instance class label informations or other conditioning variables. One trivial (although likely suboptimal) way to go around this is to build time series filled with constant values encoding the class labels. Supporting more general types of conditioning is a future feature on the Darts development roadmap.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
-</div>
 </section>
 </section>
 

@@ -261,8 +261,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">SimpleExpSmoothing</span><span class="p">(</span><span class="n">new_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">initial_level</span><span class="o">=</span><span class="n">ALPHA_START</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;smoothing_level&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
         <span class="c1"># Forecast of the SES part.</span>
         <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
@@ -367,8 +369,6 @@
 
 <div class="viewcode-block" id="FourTheta.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="c1"># Check univariate time series</span>
-        <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="c1"># normalization of data</span>
@@ -448,8 +448,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalization</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fitted_values</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span></div>
 
-<div class="viewcode-block" id="FourTheta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<div class="viewcode-block" id="FourTheta.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
         <span class="c1"># Forecast of the SES part.</span>
         <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
@@ -481,7 +483,8 @@
 
 <div class="viewcode-block" id="FourTheta.select_best_model"><a class="viewcode-back" href="../../../generated_api/darts.models.theta.html#darts.models.theta.FourTheta.select_best_model">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">select_best_model</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">thetas</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                          <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">normalization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FourTheta&#39;</span><span class="p">:</span>
+                          <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">normalization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                          <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FourTheta&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Performs a grid search over all hyper parameters to select the best model,</span>
 <span class="sd">        using the fitted values on the training series `ts`.</span>
@@ -499,6 +502,11 @@
 <span class="sd">            Optionally, the season used to decompose the time series.</span>
 <span class="sd">        normalization</span>
 <span class="sd">            If `True`, the data is normalized so that the mean is 1. Defaults to `True`.</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more theta</span>
+<span class="sd">            values to be evaluated. Each job will instantiate, train, and evaluate a different instance of the model.</span>
+<span class="sd">            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        FourTheta</span>
@@ -525,7 +533,7 @@
                                       <span class="s2">&quot;trend_mode&quot;</span><span class="p">:</span> <span class="n">drift_mode</span><span class="p">,</span>
                                       <span class="s2">&quot;seasonality_period&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="p">],</span>
                                       <span class="s2">&quot;normalization&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">normalization</span><span class="p">]},</span>
-                                     <span class="n">ts</span><span class="p">,</span> <span class="n">use_fitted_values</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">)</span>
+                                     <span class="n">ts</span><span class="p">,</span> <span class="n">use_fitted_values</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">theta</span></div>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

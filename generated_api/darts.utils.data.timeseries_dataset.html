@@ -42,7 +42,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Utils for filling missing values" href="darts.utils.missing_values.html" />
+    <link rel="next" title="Likelihood Models" href="darts.utils.likelihood_models.html" />
     <link rel="prev" title="Inference Dataset" href="darts.utils.data.simple_inference_dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -157,7 +157,15 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.utils.likelihood_models.html">Likelihood Models</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.model_selection.html">Model selection utilities</a>
                         </li>
                     
                         <li class="">
@@ -222,8 +230,8 @@
 <dt id="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">
 <em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.timeseries_dataset.</code><code class="sig-name descname">TimeSeriesInferenceDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/timeseries_dataset.html#TimeSeriesInferenceDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.Sequence</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
-<p>Abstract class for a <cite>TimeSeries</cite> inference dataset. It contains 2-tuples of
-<cite>(input_target, input_covariate)</cite> <cite>TimeSeries</cite>.
+<p>Abstract class for a <cite>TimeSeries</cite> inference dataset. It contains 3-tuples of
+<cite>(input_target, past_covariate, future_covariate)</cite> <cite>TimeSeries</cite>.
 The emitted covariates are optional and can be <cite>None</cite>.</p>
 <p>It can be used as models’ inputs, to obtain simple forecasts on each <cite>TimeSeries</cite>
 (using covariates if specified).</p>
@@ -285,7 +293,7 @@ recommended.</p>
               <div class='prev-next-bottom'>
                 
     <a class='left-prev' id="prev-link" href="darts.utils.data.simple_inference_dataset.html" title="previous page">Inference Dataset</a>
-    <a class='right-next' id="next-link" href="darts.utils.missing_values.html" title="next page">Utils for filling missing values</a>
+    <a class='right-next' id="next-link" href="darts.utils.likelihood_models.html" title="next page">Likelihood Models</a>
 
               </div>
               

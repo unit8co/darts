@@ -177,6 +177,10 @@
         </li>
     
         <li class="nav-item toc-entry toc-h2">
+            <a href="#Probabilistic-Forecasts" class="nav-link">Probabilistic Forecasts</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
             <a href="#Ensembling-several-predictions" class="nav-link">Ensembling several predictions</a><ul class="nav section-nav flex-column">
                 
         <li class="nav-item toc-entry toc-h3">
@@ -464,7 +468,7 @@ div.rendered_html tbody tr:hover {
 <p>In this notebook, we will go over the main functionalities of the library: how to build and manipulate time series, train forecasting models, make predictions, evaluate metrics, backtest models and ensemble several models.</p>
 <p>As a toy example, we will use the well known <a class="reference external" href="https://github.com/jbrownlee/Datasets/blob/master/monthly-airline-passengers.csv">monthly airline passengers dataset</a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -474,8 +478,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -516,15 +520,6 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-The autoreload extension is already loaded. To reload it, use:
-  %reload_ext autoreload
-</pre></div></div>
-</div>
 <section id="Read-data-and-build-a-TimeSeries">
 <h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> simply represents a univariate or multivariate time series, with a proper time index. It is a wrapper around a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, and it can be built in a few different ways: * From an entire Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> directly * From a time index and an array of corresponding values * From a subset of Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> columns, indicating which are the time column and the values columns. This is what we will do here:</p>
@@ -551,7 +546,7 @@ The autoreload extension is already loaded. To reload it, use:
 <p>First, let’s split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a test series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -736,9 +731,9 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-model Exponential smoothing obtains MAPE: 6.50%
-model Prophet obtains MAPE: 9.72%
-model Auto-ARIMA obtains MAPE: 12.56%
+model Exponential smoothing obtains MAPE: 5.11%
+model Prophet obtains MAPE: 9.80%
+model Auto-ARIMA obtains MAPE: 11.65%
 model Theta(2) obtains MAPE: 8.15%
 </pre></div></div>
 </div>
@@ -844,66 +839,41 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9a341d725ea64207bb6c8c5b6b09424c", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c7535040f88640a8b51f7e4ae100e143", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "79aeb9d4515b4421958ea81c3e7cbb22", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-
+Average error (MAPE) over all historical forecasts: 6.133842206716315
+Median error (MAPE) over all historical forecasts: 4.205415091459073
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9710f54d626c47eab63eade761d5da44", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2a62e0dfbc1049f2bd24bfc5d5b36293", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-Average error (MAPE) over all historical forecasts: 6.194975071594859
-Median error (MAPE) over all historical forecasts: 4.289231331115143
-</pre></div></div>
+<img alt="../_images/examples_01-darts-intro_29_4.png" src="../_images/examples_01-darts-intro_29_4.png" />
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3cdb741636464e3b84f005fa60672654", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_29_6.png" src="../_images/examples_01-darts-intro_29_6.png" />
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5634bb8b561047dea1295da0a9284935", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d7c14f31755e4831bd7a665412180af3", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Let’s see what this backtest forecast looks like. You can see it produces more accurate predictions at a 3 months horizon than the one-off prediction done above, because here the model is re-fit every month.</p>
 <div class="nbinput docutils container">
@@ -964,24 +934,16 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6d8c4780f9b74b69aa71adadd66d7b52", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9c2dca9f53084889be7789a7085ad4b9", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_35_2.png" src="../_images/examples_01-darts-intro_35_2.png" />
+<img alt="../_images/examples_01-darts-intro_35_1.png" src="../_images/examples_01-darts-intro_35_1.png" />
 </div>
 </div>
-<p>This much better! We get a mean absolute percentage error of 4.08% when backtesting with a 3-months forecast horizon in this case.</p>
+<p>This much better! We get a mean absolute percentage error of about 4-5% when backtesting with a 3-months forecast horizon in this case.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
@@ -1000,6 +962,52 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 </div>
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
 </section>
+<section id="Probabilistic-Forecasts">
+<h2>Probabilistic Forecasts<a class="headerlink" href="#Probabilistic-Forecasts" title="Permalink to this headline">¶</a></h2>
+<p>Some models can produce probabilistic forecasts. At the time of writing, this is the case for <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>. For <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> (as well as other neural network based models), one has to specify a <code class="docutils literal notranslate"><span class="pre">LikelihoodModel</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.GaussianLikelihoodModel</span></code> for Gaussian likelihood) - we refer the readers to notebooks 09 and 10 for examples.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, one can simply specify a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. The returned <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> will then be composed of <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> samples describing the distribution of the time series’ values, which can for instance be used to obtain quantiles:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<span class="n">model_es</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">probabilistic_forecast</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
+<span class="n">probabilistic_forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;probabilistic forecast&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-darts-intro_39_0.png" src="../_images/examples_01-darts-intro_39_0.png" />
+</div>
+</div>
+<p>By default <code class="docutils literal notranslate"><span class="pre">TimeSeries.plot()</span></code> shows the median as well as the 5th and 95th percentiles (of the marginal distributions, if the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is multivariate). It is possible to control this:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">probabilistic_forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;1-99th percentiles&#39;</span><span class="p">)</span>
+<span class="n">probabilistic_forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;20-80th percentiles&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-darts-intro_41_0.png" src="../_images/examples_01-darts-intro_41_0.png" />
+</div>
+</div>
+</section>
 <section id="Ensembling-several-predictions">
 <h2>Ensembling several predictions<a class="headerlink" href="#Ensembling-several-predictions" title="Permalink to this headline">¶</a></h2>
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final – and hopefully better forecast.</p>
@@ -1010,7 +1018,7 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <p>A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a final forecast.</p>
 <p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1032,22 +1040,22 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "703714093633418980a798e08fc5e31f", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c11b4c2627ea454f8d87a199b600a541", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ffdf9d4c51664df783d1c83bd179b667", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f8a32b0e2708411f8ea44a03c33a4ef5", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "10653b3b0e554efda094513f23b3be15", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5934c7657913450aa21871761ccdc149", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1060,7 +1068,7 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <p>Now that we have the historical forecasts <em>that we would have obtained</em> from a couple of models, we can train a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, in order to learn in a supervised way how to best combine the features time series (our 3 forecasts) into the target series that we are trying to predict.</p>
 <p>By default the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will fit a linear regression for predicting the target series from some features series. If you want something different than linear regression, <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> can wrap around any scikit-learn regression model.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1086,11 +1094,11 @@ Median error (MAPE) over all historical forecasts: 4.289231331115143
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "cbb4e66c8ed24add8958c985bae6b15b", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4f8240abe2254c508eaa1baf58f44903", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Finally, let’s see how good the regression performs, compared to the original forecasts:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1136,7 +1144,7 @@ Learned coefficient for Naive drift model: 0.10
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_45_1.png" src="../_images/examples_01-darts-intro_45_1.png" />
+<img alt="../_images/examples_01-darts-intro_49_1.png" src="../_images/examples_01-darts-intro_49_1.png" />
 </div>
 </div>
 <p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 6.03%.</p>
@@ -1148,7 +1156,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <p>Wouldn’t it be great if there would be a way to get an ensemble prediction in fewer lines of code?</p>
 <p>Actually, there is: using the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>. It is as simple as instantiating the ensemble model, calling the method <code class="docutils literal notranslate"><span class="pre">fit</span></code> on the training set, and then, calling the method <code class="docutils literal notranslate"><span class="pre">predict</span></code> with the number of time steps to forecast:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[82]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1170,13 +1178,13 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_48_0.png" src="../_images/examples_01-darts-intro_48_0.png" />
+<img alt="../_images/examples_01-darts-intro_52_0.png" src="../_images/examples_01-darts-intro_52_0.png" />
 </div>
 </div>
 <p>Quite easy, isn’t it?</p>
 <p>Now, to get a result similar to the one obtained with the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach, just use the <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> method of your ensemble model:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[83]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1195,13 +1203,13 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "65a1a208f482432c9b9113ff36694522", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eac5a6b1ea224f39a6b502bdc0ba5468", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_01-darts-intro_50_1.png" src="../_images/examples_01-darts-intro_50_1.png" />
+<img alt="../_images/examples_01-darts-intro_54_1.png" src="../_images/examples_01-darts-intro_54_1.png" />
 </div>
 </div>
 <p>Note that the when we use <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>, by default, we are using the <code class="docutils literal notranslate"><span class="pre">LinearRegression</span></code> model from scikit-learn. To change this, you can pass to the <code class="docutils literal notranslate"><span class="pre">regression_model</span></code> argument any regression model with <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and <code class="docutils literal notranslate"><span class="pre">fit()</span></code> methods, for example <code class="docutils literal notranslate"><span class="pre">RidgeCV()</span></code>.</p>
@@ -1209,7 +1217,7 @@ individual models forecasts – that is because the regression model needs 12 da
 </section>
 <section id="FFT-and-RNNs">
 <h2>FFT and RNNs<a class="headerlink" href="#FFT-and-RNNs" title="Permalink to this headline">¶</a></h2>
-<p>If you’d like to try models based on Fast Fourier Transform or Recurrent Neural Networks, we recommend that you go over the <code class="docutils literal notranslate"><span class="pre">03-FFT-examples.ipynb</span></code> and <code class="docutils literal notranslate"><span class="pre">04-RNN-examples.ipynb</span></code> notebooks, respectively.</p>
+<p>If you’d like to try models based on Fast Fourier Transform or Recurrent Neural Networks, we recommend that you go over the <code class="docutils literal notranslate"><span class="pre">03-FFT-examples.ipynb</span></code> and <code class="docutils literal notranslate"><span class="pre">04-RNN-examples.ipynb</span></code> notebooks, respectively. Notebooks after that give more examples (essentially of neural nets based models), and notebooks 09 (DeepAR) and 10 (DeepTCN) showcase probabilistic versions of RNN and TCN models.</p>
 </section>
 <section id="A-final-word-of-caution">
 <h2>A final word of caution<a class="headerlink" href="#A-final-word-of-caution" title="Permalink to this headline">¶</a></h2>

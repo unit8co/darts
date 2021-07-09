@@ -356,7 +356,7 @@
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="holidays_timeseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.holidays_timeseries">[docs]</a><span class="k">def</span> <span class="nf">holidays_timeseries</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span>
+<div class="viewcode-block" id="holidays_timeseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.holidays_timeseries">[docs]</a><span class="k">def</span> <span class="nf">holidays_timeseries</span><span class="p">(</span><span class="n">time_index</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span>
                         <span class="n">country_code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                         <span class="n">prov</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="n">state</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
@@ -368,6 +368,8 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
+<span class="sd">    time_index</span>
+<span class="sd">        The time index over which to generate the holidays</span>
 <span class="sd">    country_code</span>
 <span class="sd">        The country ISO code</span>
 <span class="sd">    prov</span>
@@ -412,7 +414,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="n">time_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">time_index</span><span class="p">()</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">time_index</span>
 
     <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">attribute</span><span class="p">),</span> <span class="s1">&#39;&quot;attribute&quot; needs to be an attribute &#39;</span>
                  <span class="s1">&#39;of pd.DatetimeIndex&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
@@ -428,7 +430,7 @@
     <span class="n">values</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">one_hot</span><span class="p">:</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">attribute</span> <span class="ow">in</span> <span class="n">num_values_dict</span><span class="p">,</span> <span class="s2">&quot;Given datetime attribute not supported&quot;</span>
-                                                   <span class="s2">&quot;with one-hot encoding.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+                                                   <span class="s2">&quot; with one-hot encoding.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
         <span class="c1"># fill missing columns (in case not all values appear in time_index)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
@@ -442,7 +444,7 @@
     <span class="k">if</span> <span class="n">one_hot</span><span class="p">:</span>
         <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">attribute</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">column_name</span> <span class="ow">in</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">values_df</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">values_df</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

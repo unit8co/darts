@@ -54,8 +54,8 @@ It contains a variety of models, from classics such as ARIMA to deep neural netw
 The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models, and the neural networks can be trained
-on multiple time series.
+univariate and multivariate time series and models. The neural networks can be trained
+on multiple time series, and some of the models offer probabilistic forecasts.
 
 Documentation
 -------------
@@ -94,11 +94,17 @@ Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/va
 
    import pandas as pd
    from darts import TimeSeries
-   df = pd.read_csv('AirPassengers.csv', delimiter=",")
-   series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
-   train, val = series.split_after(pd.Timestamp('19580101'))
 
-Fit an exponential smoothing model, and make a prediction over the validation series' duration:
+   # Read a pandas DataFrame
+   df = pd.read_csv('AirPassengers.csv', delimiter=",")
+
+   # Create a TimeSeries, specifying the time and value columns
+   series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+
+   # Set aside the last 36 months as a validation series
+   train, val = series[:-36], series[-36:]
+
+Fit an exponential smoothing model, and make a (probabilistic) prediction over the validation series' duration:
 
 .. code-block:: python
 
@@ -106,18 +112,17 @@ Fit an exponential smoothing model, and make a prediction over the validation se
 
    model = ExponentialSmoothing()
    model.fit(train)
-   prediction = model.predict(len(val))
+   prediction = model.predict(len(val), num_samples=1000)
 
-Plot:
+Plot the median, 5th and 95th percentiles:
 
 .. code-block:: python
 
    import matplotlib.pyplot as plt
 
-   series.plot(label='actual')
-   prediction.plot(label='forecast', lw=2)
+   series.plot()
+   prediction.plot(label='forecast', low_quantile=0.05, high_quantile=0.95)
    plt.legend()
-   plt.xlabel('Year')
 
 
 .. raw:: html
@@ -135,18 +140,8 @@ Features
 
 Currently, the library contains the following features:
 
-**Forecasting Models:**
-
-
-* Exponential smoothing,
-* ARIMA & auto-ARIMA,
-* Facebook Prophet,
-* Theta method,
-* FFT (Fast Fourier Transform),
-* Recurrent neural networks (vanilla RNNs, GRU, and LSTM variants),
-* Temporal convolutional network.
-* Transformer
-* N-BEATS
+**Forecasting Models:** A large collection of forecasting models; from statistical models (such as
+ARIMA) to deep learning models (such as N-BEATS). See table of models below.
 
 **Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
 
@@ -155,10 +150,147 @@ from R2-scores to Mean Absolute Scaled Error.
 
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-**Regressive Models:** Possibility to predict a time series from several other time series
-(e.g., external regressors), using arbitrary regressive models
+**Regressive Models:** Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models)
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
+
+**Probabilistic Support:** ``TimeSeries`` objects can (optionally) represent stochastic
+time series; this can for instance be used to get confidence intervals.
+
+**Filtering Models:** Darts offers three filtering models: ``KalmanFilter``\ , ``GaussianProcessFilter``\ ,
+and ``MovingAverage``\ , which allow to filter time series, and in some cases obtain probabilistic
+inferences of the underlying states/values.
+
+Forecasting Models
+------------------
+
+Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
+on bringing more models and features.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Model
+     - Univariate
+     - Multivariate
+     - Probabilistic
+     - Multiple-series training
+     - Past-observed covariates support
+     - Future-known covariates support
+   * - ``ARIMA``
+     - x
+     - 
+     - x
+     - 
+     - 
+     - 
+     - 
+   * - ``VARIMA``
+     - x
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - ``AutoARIMA``
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - ``ExponentialSmoothing``
+     - x
+     - 
+     - x
+     - 
+     - 
+     - 
+     - 
+   * - ``Theta`` and ``FourTheta``
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - ``Prophet``
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - ``FFT`` (Fast Fourier Transform)
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - Regression Models (incl ``RandomForest`` and ``LinearRegressionModel``\ )
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
+     - x
+     - x
+     - x
+     - x
+     - x
+     - x
+     - 
+   * - ``BlockRNNModel`` (incl. LSTM and GRU)
+     - x
+     - x
+     - 
+     - x
+     - x
+     - (x)
+     - 
+   * - ``NBEATSModel``
+     - x
+     - x
+     - 
+     - x
+     - x
+     - (x)
+     - 
+   * - ``TCNModel``
+     - x
+     - x
+     - x
+     - x
+     - x
+     - (x)
+     - 
+   * - ``TransformerModel``
+     - x
+     - x
+     - 
+     - x
+     - x
+     - (x)
+     - 
+   * - Naive Baselines
+     - x
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
+
 
 Contribute
 ----------

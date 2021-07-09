@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Model selection utilities &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
@@ -69,7 +69,7 @@
             <a class="nav-link" href="../README.html">Home</a>
         </li>
         
-        <li class="nav-item ">
+        <li class="nav-item active">
             <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
@@ -121,6 +121,80 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.datasets.html">Datasets</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.models.html">Models</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.utils.html">Utils</a>
+                    <ul>
+                    
+                        <li class="">
+                            <a href="darts.utils.data.html">TimeSeries Datasets</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.likelihood_models.html">Likelihood Models</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.missing_values.html">Utils for filling missing values</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="">Model selection utilities</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.statistics.html">Utils for time series statistics</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.timeseries_generation.html">Utils for time series generation</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.torch.html">Utils for Pytorch and its usage</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.utils.utils.html">Additional util functions</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
         
         
         
@@ -150,7 +224,10 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.model_selection"></span><dl class="py class">
+  <span class="target" id="module-darts.utils.model_selection"></span><section id="model-selection-utilities">
+<h1>Model selection utilities<a class="headerlink" href="#model-selection-utilities" title="Permalink to this headline">¶</a></h1>
+<p>Utilities that help in model selection e.g. by splitting a dataset.</p>
+<dl class="py class">
 <dt id="darts.utils.model_selection.SplitTimeSeriesSequence">
 <em class="property">class </em><code class="sig-prename descclassname">darts.utils.model_selection.</code><code class="sig-name descname">SplitTimeSeriesSequence</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/model_selection.html#SplitTimeSeriesSequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.model_selection.SplitTimeSeriesSequence" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.abc.Sequence</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></p>
@@ -224,6 +301,7 @@ that may result in exceptions during sample generation. [default: False]</p></li
 </dl>
 </dd></dl>
 
+</section>
 
 
               </div>

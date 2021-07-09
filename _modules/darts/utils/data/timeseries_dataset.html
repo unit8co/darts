@@ -166,8 +166,8 @@
 <div class="viewcode-block" id="TimeSeriesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">TimeSeriesInferenceDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Abstract class for a `TimeSeries` inference dataset. It contains 2-tuples of</span>
-<span class="sd">        `(input_target, input_covariate)` `TimeSeries`.</span>
+<span class="sd">        Abstract class for a `TimeSeries` inference dataset. It contains 3-tuples of</span>
+<span class="sd">        `(input_target, past_covariate, future_covariate)` `TimeSeries`.</span>
 <span class="sd">        The emitted covariates are optional and can be `None`.</span>
 
 <span class="sd">        It can be used as models&#39; inputs, to obtain simple forecasts on each `TimeSeries`</span>
@@ -186,7 +186,7 @@
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="k">pass</span></div>
 
 
