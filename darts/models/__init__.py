@@ -44,3 +44,8 @@ from .regression_model import RegressionModel
 from .ensemble_model import EnsembleModel
 from .baselines import NaiveEnsembleModel
 from .regression_ensemble_model import RegressionEnsembleModel
+
+# Filtering
+from .filtering_model import MovingAverage
+from .kalman_filter import KalmanFilter
+from .gaussian_process_filter import GaussianProcessFilter

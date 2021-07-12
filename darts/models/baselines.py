@@ -33,8 +33,10 @@ class NaiveMean(ForecastingModel):
         super().fit(series)
         self.mean_val = np.mean(series.univariate_values())
 
-    def predict(self, n: int):
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1):
+        super().predict(n, num_samples)
         forecast = np.array([self.mean_val for _ in range(n)])
         return self._build_forecast_series(forecast)
 
@@ -68,8 +70,10 @@ class NaiveSeasonal(ForecastingModel):
         raise_if_not(len(series) >= self.K, 'The time series requires at least K={} points'.format(self.K), logger)
         self.last_k_vals = series.univariate_values()[-self.K:]
 
-    def predict(self, n: int):
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1):
+        super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
         return self._build_forecast_series(forecast)
 
@@ -92,8 +96,10 @@ class NaiveDrift(ForecastingModel):
         super().fit(series)
         series = self.training_series
 
-    def predict(self, n: int):
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1):
+        super().predict(n, num_samples)
         first, last = self.training_series.first_value(), self.training_series.last_value()
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n

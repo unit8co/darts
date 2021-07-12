@@ -62,5 +62,5 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
         with fork_rng():
             manual_seed(self._random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
-            decorated(self, *args, **kwargs)
+            return decorated(self, *args, **kwargs)
     return decorator

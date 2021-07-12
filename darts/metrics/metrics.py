@@ -118,6 +118,8 @@ def _get_values_or_raise(series_a: TimeSeries,
     """
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
+
+    For stochastic series, return the median sample value
     """
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
@@ -133,7 +135,11 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index, series_b.time_index),
                  logger)
 
-    return series_a_common.univariate_values(), series_b_common.univariate_values()
+    # TODO: we may want to change this...
+    series_a_det = series_a_common if series_a_common.is_deterministic else series_a_common.quantile_timeseries(quantile=0.5)
+    series_b_det = series_b_common if series_b_common.is_deterministic else series_b_common.quantile_timeseries(quantile=0.5)
+
+    return series_a_det.univariate_values(), series_b_det.univariate_values()
 
 
 def _remove_nan_union(array_a: np.ndarray,
@@ -162,6 +168,8 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     For two time series :math:`y^1` and :math:`y^2` of length :math:`T`, it is computed as
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(|y^1_t - y^2_t|)}.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
@@ -216,6 +224,8 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}.
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -268,6 +278,8 @@ def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y^1_t - y^2_t)^2}}.
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -318,6 +330,8 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y^1_t + 1)} - \\log{(y^2_t + 1)}\\right)^2}},
 
     using the natural logarithm.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
@@ -376,6 +390,8 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
     where :math:`\\text{RMSE}()` denotes the root mean squared error, and
     :math:`\\bar{y_t}` is the average of :math:`y_t`.
 
+    Currently this only supports deterministic series (made of one sample).
+
     Parameters
     ----------
     actual_series
@@ -429,6 +445,8 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
     the Mean Absolute Scaled Error (MASE) in these cases.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
@@ -494,6 +512,8 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
      for some :math:`t`. Consider using the Mean Absolute Scaled Error (MASE) in these cases.
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -553,6 +573,8 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
     for details about the MASE and how it is computed.
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -599,7 +621,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     def _multivariate_mase(actual_series: TimeSeries,
                            pred_series: TimeSeries,
-                           insample: Union[TimeSeries, Sequence[TimeSeries]],
+                           insample: TimeSeries,
                            m: int,
                            intersect: bool,
                            reduction: Callable[[np.ndarray], float]):
@@ -610,6 +632,8 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                      "The insample TimeSeries must have the same width as the other series.", logger)
         raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
                      "The pred_series must be the forecast of the insample series", logger)
+
+        insample_ = insample.quantile_timeseries(quantile=0.5) if insample.is_stochastic else insample
 
         value_list = []
         for i in range(actual_series.width):
@@ -624,7 +648,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                                  pred_series.univariate_component(i),
                                                  intersect)
 
-            x_t = insample.univariate_component(i).values()
+            x_t = insample_.univariate_component(i).values()
             errors = np.abs(y_true - y_hat)
             scale = np.mean(np.abs(x_t[m:] - x_t[:-m]))
             raise_if_not(not np.isclose(scale, 0), "cannot use MASE with periodical signals", logger)
@@ -690,6 +714,8 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -751,6 +777,8 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
               \\min_t{y_t}} \\right|}
 
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
     Parameters
     ----------
     actual_series
@@ -811,6 +839,8 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     for details about the :math:`R^2` score and how it is computed.
     Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,
     whereas `series2` should correspond to the predicted series.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
