@@ -23,9 +23,6 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
             f"samples, found {X.shape[0]}",
         )
 
-    def test_lags_and_lags_covariates(self):
-        pass
-
     def test_lags_and_lags_covariates_with_0_covariate(self):
         lags = [5, 3, 1]
         lags_covariates = [4, 2, 0]

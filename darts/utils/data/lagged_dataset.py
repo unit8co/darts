@@ -100,6 +100,7 @@ class LaggedDataset(MatrixTrainingDataset):
             # input target instead (in this way the covariate will be one element longer than the target input chunk,
             # which will be exactly the time 0 covariate value).
             self.max_lag += 1
+            self.lags_covariates = np.array(self.lags_covariates) + 1
 
         self.sequential_dataset = SequentialDataset(
             target_series=target_series,
@@ -136,10 +137,6 @@ class LaggedDataset(MatrixTrainingDataset):
             lags_indices = np.array(self.lags) * (-1)
             input_target = input_target[lags_indices]
         if self.lags_covariates is not None:
-            if self.using_covariate_0:
-                # one of the lags will be set to 0, increasing all by one
-                self.lags_covariates = np.array(self.lags_covariates) + 1
-
             cov_lags_indices = np.array(self.lags_covariates) * (-1)
             input_covariates = input_covariates[cov_lags_indices]
 
@@ -161,9 +158,7 @@ class LaggedDataset(MatrixTrainingDataset):
                 x.append(pd.DataFrame(input_target))
             y.append(pd.DataFrame(output_target))
 
-        print(len(x), len(y))
         x = pd.concat(x, axis=1)
         y = pd.concat(y, axis=1)
 
-        print("Shapes", x.shape, y.shape)
         return x.T, y.T
