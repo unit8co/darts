@@ -181,7 +181,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_exog2, 19)
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_exog2, 19.15)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
