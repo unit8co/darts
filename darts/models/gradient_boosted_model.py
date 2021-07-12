@@ -22,6 +22,7 @@ from ..logging import get_logger
 from typing import Union, Optional, Tuple
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
+from ..utils.data.lagged_dataset import LaggedDataset
 import lightgbm as lgb
 
 logger = get_logger(__name__)
@@ -64,15 +65,37 @@ class GradientBoostedModel(RegressionModel):
         )
 
     def fit(self,
-            series: TimeSeries, exog: Optional[TimeSeries] = None,
-            eval_set: Tuple[TimeSeries, Optional[TimeSeries]] = None,
+            series: TimeSeries,
+            exog: Optional[TimeSeries] = None,
+            eval_series: Optional[TimeSeries] = None,
+            eval_exog: Optional[TimeSeries] = None,
             **kwargs) -> None:
+        """ Fits/trains the model using the provided list of features time series and the target time series.
+            Optionally, validation dataset can be provided.
 
-        if eval_set is not None:  # TODO: clean this up
-            X_eval = eval_set[0]
-            y_eval = eval_set[1]
-            X_eval_lagged = self._create_training_data(X_eval)
-            kwargs['eval_set'] = (X_eval_lagged, y_eval)
+        Parameters
+        ----------
+        series : TimeSeries
+            TimeSeries object containing the target values.
+        exog : TimeSeries, optional
+            TimeSeries object containing the exogenous values.
+        eval_series : TimeSeries, optional
+            Evaluation TimeSeries object containing the target values.
+        eval_exog : TimeSeries, optional
+            Evaluation TimeSeries object containing the exogenous values.
+        """
+
+        if eval_series is not None:
+
+            eval_set = LaggedDataset(
+                target_series=eval_series,
+                covariates=eval_exog,
+                lags=self.lags,
+                lags_covariates=self.lags_exog
+            )
+
+            # since this is a validation dataset, it should be fairly small, hence materialization through `get_data()`
+            kwargs['eval_set'] = eval_set.get_data()  # (X, y)
 
         super().fit(series, exog, **kwargs)
 

@@ -9,6 +9,7 @@ from ..utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
 from sklearn.experimental import enable_hist_gradient_boosting # enable import of HistGradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
+from unittest.mock import patch
 
 
 def train_test_split(features, target, split_ts):
@@ -227,3 +228,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(model.nr_exog, 0)
             self.assertEqual(len(model.prediction_data), lags)
             self.assertEqual(len(model.prediction_data.columns), 1)
+
+    @patch('darts.models.gradient_boosted_model.LaggedDataset')
+    def test_gradient_boosted_model_with_eval(self, patch_ldset):
+        model = GradientBoostedModel(lags=4, lags_exog=2)
+        split_index = 450
+        model.fit(series=self.ts_sum1[:split_index],
+                  exog=self.ts_exog1[:split_index],
+                  eval_series=self.ts_sum1[split_index:],
+                  eval_exog=self.ts_exog1[split_index:]
+                  )
+        patch_ldset.assert_called_once()
