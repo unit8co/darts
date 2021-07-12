@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
+from sklearn.gaussian_process.kernels import ExpSineSquared
 
-from .base_test_class import DartsBaseTestClass
-from ..models.kalman_filter import KalmanFilter
+from ..models import GaussianProcessFilter
 from ..models.filtering_model import MovingAverage
+from ..models.kalman_filter import KalmanFilter
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
+from .base_test_class import DartsBaseTestClass
 
 
 class KalmanFilterTestCase(DartsBaseTestClass):
@@ -62,7 +64,31 @@ class MovingAverageTestCase(DartsBaseTestClass):
         self.assertGreater(np.mean(np.abs(ts.values()[:, 1])), np.mean(np.abs(ts_filtered.values()[:, 1])))
 
 
+class GaussianProcessFilterTestCase(DartsBaseTestClass):
+
+    def test_gaussian_process(self):
+        """ GaussianProcessFilter test.
+        Creates a sine wave, adds noise and assumes the GP filter
+        predicts values closer to real values
+        """
+        theta = np.radians(np.linspace(0, 360*5, 200))
+        testing_signal = TimeSeries.from_values(np.cos(theta))
+
+        noise = TimeSeries.from_values(np.random.normal(0, 0.5, len(testing_signal)) * 0.5)
+        testing_signal_with_noise = testing_signal + noise
+
+        kernel = ExpSineSquared()
+        gpf = GaussianProcessFilter(kernel=kernel, alpha=0.5, n_restarts_optimizer=100)
+        filtered_ts = gpf.filter(testing_signal_with_noise, num_samples=1)
+        
+        noise_distance = testing_signal_with_noise - testing_signal
+        prediction_distance = filtered_ts - testing_signal
+        
+        self.assertGreater(noise_distance.values().std(), prediction_distance.values().std())
+
+
 if __name__ == '__main__':
     KalmanFilterTestCase().test_kalman()
     MovingAverageTestCase().test_moving_average_univariate()
     MovingAverageTestCase().test_moving_average_multivariate()
+    GaussianProcessFilterTestCase().test_gaussian_process()
