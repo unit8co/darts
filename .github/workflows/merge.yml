@@ -39,14 +39,14 @@ jobs:
 
       - name: "4. Setup pip"
         run: |
-          ./gradlew setupPip
+          ./gradlew installPipLatest
 
       - name: "5. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/dev.txt', 'requirements/prophet.txt', 'requirements/pmdarima.txt', 'requirements/torch.txt') }}
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
 
       - name: "6. Tests"
         run: |
@@ -79,6 +79,7 @@ jobs:
           path: ~/.gradle/caches
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
 
+      # TODO: why is this a matrix? there is no pip caching, and we restart this for each item in the matrix
       - name: "4. Run examples ${{matrix.example-name}}"
         run: |
           ./gradlew checkExample -PexampleName=${{matrix.example-name}}
