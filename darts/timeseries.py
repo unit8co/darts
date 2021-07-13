@@ -60,23 +60,16 @@ class TimeSeries:
 
         self._time_dim = xa.dims[0]  # how the time dimension is named
 
-        if isinstance(xa.get_index(self._time_dim), pd.DatetimeIndex):
-            # We only sort the xarray if it's indexed by time. That is because sorting with a RangeIndex
-            # transforms the RangeIndex into Int64Index, which messes up things afterwards.
-
-            # The following sorting returns a copy, which we are relying on.
-
-            # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
-            # https://github.com/pydata/xarray/issues/5466
-            self._xa: xr.DataArray = xa.sortby(self._time_dim)
-        else:
-            self._xa = xa.copy()
+        # The following sorting returns a copy, which we are relying on.
+        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
+        # https://github.com/pydata/xarray/issues/5466
+        self._xa: xr.DataArray = xa.sortby(self._time_dim)
 
         self._time_index = self._xa.get_index(self._time_dim)
 
-        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
+        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.Int64Index):
             raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
-                                 'or with a RangeIndex.'), logger)
+                                 'or with an Int64Index (this can include a RangeIndex).'), logger)
 
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
@@ -141,7 +134,7 @@ class TimeSeries:
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
 
-        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
+        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)
         if fill_missing_dates and isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex):
             sorted_xa = xa.sortby(xa.dims[0])
             time_index = sorted_xa.get_index(xa.dims[0])
@@ -229,7 +222,7 @@ class TimeSeries:
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas RangeIndex.
+            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex).
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
             `None`, the whole DataFrame will be used.
@@ -258,9 +251,9 @@ class TimeSeries:
         if time_col:
             time_index = pd.DatetimeIndex(df[time_col])
         else:
-            raise_if_not(isinstance(df.index, pd.RangeIndex) or isinstance(df.index, pd.DatetimeIndex),
+            raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
                          'If time_col is not specified, the DataFrame must be indexed either with'
-                         'a DatetimeIndex, or with a RangeIndex.', logger)
+                         'a DatetimeIndex, or with a Int64Index (incl. RangeIndex).', logger)
             time_index = df.index
 
         if not time_index.name:
@@ -304,7 +297,7 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
+    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = True,
                               freq: Optional[str] = None,
@@ -315,7 +308,8 @@ class TimeSeries:
         Parameters
         ----------
         times
-            A `pandas.DateTimeIndex` or `pandas.RangeIndex` representing the time axis for the time series.
+            A `pandas.DateTimeIndex` or `pandas.Int64Index` (or `pandas.RangeIndex`) representing the time axis
+            for the time series.
         values
             A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
             and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
@@ -335,8 +329,8 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
 
-        raise_if_not(isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex),
-                     'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
+        raise_if_not(isinstance(times, pd.Int64Index) or isinstance(times, pd.DatetimeIndex),
+                     'the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
         times_name = DIMS[0] if not times.name else times.name
@@ -453,11 +447,11 @@ class TimeSeries:
         return self.components
 
     @property
-    def time_index(self) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    def time_index(self) -> Union[pd.DatetimeIndex, pd.Int64Index]:
         """
         Returns
         -------
-        Union[pd.DatetimeIndex, pd.RangeIndex]
+        Union[pd.DatetimeIndex, pd.Int64Index]
             The time index of this time series.
         """
         return self._time_index.copy()
@@ -465,14 +459,14 @@ class TimeSeries:
     @property
     def has_datetime_index(self) -> bool:
         """
-        Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with a RangeIndex)
+        Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an Int64Index)
         """
         return self._has_datetime_index
 
     @property
     def has_range_index(self) -> bool:
         """
-        Whether this series is indexed with a RangeIndex (otherwise it is indexed with a DatetimeIndex)
+        Whether this series is indexed with an Int64Index (otherwise it is indexed with a DatetimeIndex)
         """
         return not self._has_datetime_index
 
@@ -691,7 +685,7 @@ class TimeSeries:
         -------
         Union[pandas.Timestamp, int]
             A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
-            or an integer (if indexed by RangeIndex)
+            or an integer (if indexed by Int64Index/RangeIndex)
         """
         return self._time_index[0]
 
@@ -701,7 +695,7 @@ class TimeSeries:
         -------
         Union[pandas.Timestamp, int]
             A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
-            or an integer (if indexed by RangeIndex)
+            or an integer (if indexed by Int64Index/RangeIndex)
         """
         return self._time_index[-1]
 
@@ -1038,7 +1032,7 @@ class TimeSeries:
                                                      'same type.', logger)
         if isinstance(start_ts, pd.Timestamp):
             raise_if_not(self._has_datetime_index, 'Timestamps have been provided to slice(), but the series is '
-                                                   'indexed using an integer-based RangeIndex.', logger)
+                                                   'indexed using an integer-based Int64Index.', logger)
             idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t <= end_ts, self._time_index))
         else:
             raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
@@ -1318,7 +1312,7 @@ class TimeSeries:
             A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
         raise_if_not(other.has_datetime_index == self.has_datetime_index,
-                     'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).', logger)
+                     'Both series must have the same type of time index (either DatetimeIndex or Int64Index).', logger)
         raise_if_not(other.freq == self.freq,
                      'Appended TimeSeries must have the same frequency as the current one', logger)
         raise_if_not(other.n_components == self.n_components,
@@ -1544,7 +1538,7 @@ class TimeSeries:
         Parameters
         ----------
         ts
-            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with RangeIndex) to check.
+            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with Int64Index) to check.
 
         Returns
         -------
@@ -1569,7 +1563,7 @@ class TimeSeries:
             Either a function which takes a value and returns a value ie. `f(x) = y`
             Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`
             The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
-            or an integer otherwise (if the series is indexed with a RangeIndex).
+            or an integer otherwise (if the series is indexed with an Int64Index).
 
         Returns
         -------
@@ -1921,7 +1915,7 @@ class TimeSeries:
 
     def __getitem__(self,
                     key: Union[pd.DatetimeIndex,
-                               pd.RangeIndex,
+                               pd.Int64Index,
                                List[str],
                                List[int],
                                List[pd.Timestamp],
@@ -1936,7 +1930,7 @@ class TimeSeries:
         - str -> return a TimeSeries including the column(s) (components) specified as str.
         - int -> return a TimeSeries with the value(s) at the given row (time) index.
 
-        `pd.DatetimeIndex` and `pd.RangeIndex` are also supported and will return the corresponding value(s)
+        `pd.DatetimeIndex` and `pd.Int64Index` are also supported and will return the corresponding value(s)
         at the provided time indices.
 
         .. warning::
@@ -1944,10 +1938,10 @@ class TimeSeries:
         """
         def _check_dt():
             raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex or a timestamp, '
-                                                   'but the series uses a RangeIndex.', logger)
+                                                   'but the series uses an Int64Index.', logger)
 
         def _check_range():
-            raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
+            raise_if(self._has_datetime_index, 'Attempted indexing a series with an Int64Index, '
                                                'but the series uses a DatetimeIndex.', logger)
 
         def _set_freq_in_xa(xa_: xr.DataArray):
@@ -1958,7 +1952,7 @@ class TimeSeries:
             else:
                 xa_.get_index(self._time_dim).freq = self._freq
 
-        # handle DatetimeIndex and RangeIndex:
+        # handle DatetimeIndex and Int64Index:
         if isinstance(key, pd.DatetimeIndex):
             _check_dt()
             xa_ = self._xa.sel({self._time_dim: key})
@@ -1968,7 +1962,7 @@ class TimeSeries:
             _set_freq_in_xa(xa_)
 
             return TimeSeries(xa_)
-        elif isinstance(key, pd.RangeIndex):
+        elif isinstance(key, pd.Int64Index):
             _check_range()
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
