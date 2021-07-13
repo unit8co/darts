@@ -86,6 +86,17 @@ class GaussianProcessFilterTestCase(DartsBaseTestClass):
         
         self.assertGreater(noise_distance.values().std(), prediction_distance.values().std())
 
+    def test_gaussian_process_multivariate(self):
+        gpf = GaussianProcessFilter()
+
+        sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        noise_ts = tg.gaussian_timeseries(length=30) * 0.1
+        ts = sine_ts.stack(noise_ts)
+
+        prediction = gpf.filter(ts)
+
+        self.assertEqual(prediction.width, 2)
+
 
 if __name__ == '__main__':
     KalmanFilterTestCase().test_kalman()
