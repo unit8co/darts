@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.gaussian_process.kernels import ExpSineSquared, RBF
+from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
 from ..models import GaussianProcessFilter
 from ..models.filtering_model import MovingAverage
@@ -81,10 +81,13 @@ class GaussianProcessFilterTestCase(DartsBaseTestClass):
         gpf = GaussianProcessFilter(kernel=kernel, alpha=0.5, n_restarts_optimizer=100)
         filtered_ts = gpf.filter(testing_signal_with_noise, num_samples=1)
         
-        noise_distance = testing_signal_with_noise - testing_signal
-        prediction_distance = filtered_ts - testing_signal
-        
-        self.assertGreater(noise_distance.values().std(), prediction_distance.values().std())
+        noise_diff = testing_signal_with_noise - testing_signal
+        prediction_diff = filtered_ts - testing_signal
+        self.assertGreater(noise_diff.values().std(), prediction_diff.values().std())
+
+        filtered_ts_median = gpf.filter(testing_signal_with_noise, num_samples=100).quantile_timeseries()
+        median_prediction_diff = filtered_ts_median - testing_signal
+        self.assertGreater(noise_diff.values().std(), median_prediction_diff.values().std())
 
     def test_gaussian_process_multivariate(self):
         gpf = GaussianProcessFilter()
