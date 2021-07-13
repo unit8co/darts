@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.gaussian_process.kernels import ExpSineSquared
+from sklearn.gaussian_process.kernels import ExpSineSquared, RBF
 
 from ..models import GaussianProcessFilter
 from ..models.filtering_model import MovingAverage
@@ -96,6 +96,14 @@ class GaussianProcessFilterTestCase(DartsBaseTestClass):
         prediction = gpf.filter(ts)
 
         self.assertEqual(prediction.width, 2)
+
+    def test_gaussian_process_missing_values(self):
+        times = pd.DatetimeIndex(np.array([0,1,3,4,5]).astype('datetime64[ns]'))
+        ts = TimeSeries.from_times_and_values(times, np.ones(len(times)))
+
+        gpf = GaussianProcessFilter(RBF())
+        filtered_values = gpf.filter(ts).values()
+        np.testing.assert_allclose(filtered_values, np.ones_like(filtered_values))
 
 
 if __name__ == '__main__':
