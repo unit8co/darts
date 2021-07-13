@@ -1,11 +1,12 @@
 from typing import Optional
 
+import numpy as np
 from darts.timeseries import TimeSeries
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
 
-from .filtering_model import FilteringModel
 from ..utils.utils import raise_if_not
+from .filtering_model import FilteringModel
 
 
 class GaussianProcessFilter(FilteringModel):
@@ -55,8 +56,8 @@ class GaussianProcessFilter(FilteringModel):
                                               'deterministic (observations).')
         super().filter(series)
 
-        times = series.time_index.values.reshape(-1, 1)
         values = series.values(copy=False)
+        times = np.arange(series.n_timesteps).reshape(-1, 1)
 
         self.model.fit(times, values)
 
