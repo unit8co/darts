@@ -1622,8 +1622,8 @@ class TimeSeries:
     def plot(self,
              new_plot: bool = False,
              central_quantile: Union[float, str] = 0.5,
-             confidence_low_quantile: Optional[float] = 0.05,
-             confidence_high_quantile: Optional[float] = 0.95,
+             low_quantile: Optional[float] = 0.05,
+             high_quantile: Optional[float] = 0.95,
              *args,
              **kwargs):
         """
@@ -1638,14 +1638,14 @@ class TimeSeries:
             it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
             of the components' marginal distributions). For instance, setting `central_quantile=0.5` will plot the
             median of each component. `central_quantile` can also be set to 'mean'.
-        confidence_low_quantile
+        low_quantile
             The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `confidence_low_quantile` is None (default 0.05).
-        confidence_high_quantile
+        high_quantile
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
-            interval is shown if `confidence_high_quantile` is None (default 0.95).
+            interval is shown if `high_quantile` is None (default 0.95).
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -1658,8 +1658,8 @@ class TimeSeries:
                          'central_quantile must be either "mean", or a float between 0 and 1.',
                          logger)
 
-        if confidence_high_quantile is not None and confidence_low_quantile is not None:
-            raise_if_not(0. <= confidence_low_quantile <= 1. and 0. <= confidence_high_quantile <= 1.,
+        if high_quantile is not None and low_quantile is not None:
+            raise_if_not(0. <= low_quantile <= 1. and 0. <= high_quantile <= 1.,
                          'confidence interval low and high quantiles must be between 0 and 1.',
                          logger)
 
@@ -1704,9 +1704,9 @@ class TimeSeries:
             kwargs['alpha'] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
-            if comp.sample.size > 1 and confidence_low_quantile is not None and confidence_high_quantile is not None:
-                    low_series = comp.quantile(q=confidence_low_quantile, dim=DIMS[2])
-                    high_series = comp.quantile(q=confidence_high_quantile, dim=DIMS[2])
+            if comp.sample.size > 1 and low_quantile is not None and high_quantile is not None:
+                    low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
+                    high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                     plt.fill_between(self.time_index, low_series, high_series, color=color_used,
                                      alpha=(alpha_confidence_intvls if 'alpha' not in kwargs else kwargs['alpha']))
 

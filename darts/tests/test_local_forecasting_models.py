@@ -20,8 +20,8 @@ logger = get_logger(__name__)
 # (forecasting models, maximum error) tuples
 models = [
     (ExponentialSmoothing(), 5.6),
-    (ARIMA(0, 1, 1, trend='t'), 17.1),
-    (ARIMA(1, 1, 1, trend='t'), 18.3),
+    (ARIMA(12, 2, 1), 10),
+    (ARIMA(1, 1, 1), 40),
     (Theta(), 11.3),
     (Theta(1), 20.2),
     (Theta(-1), 9.8),
@@ -93,6 +93,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
         for model, max_mape in models:
+            np.random.seed(1)  # some models are probabilist...
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
@@ -102,6 +103,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_multivariate_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
         for model, max_mape in multivariate_models:
+            np.random.seed(1)
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
             current_mape = mape(prediction, self.ts_ice_heater_val)

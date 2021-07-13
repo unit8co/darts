@@ -5,19 +5,15 @@ Recurrent Neural Networks
 
 import torch.nn as nn
 import torch
-from torch.utils.data import DataLoader
 from numpy.random import RandomState
-from joblib import Parallel, delayed
 from typing import Sequence, Optional, Union
 from ..timeseries import TimeSeries
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel, TimeSeriesTorchDataset
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset
 from ..utils.data import ShiftedDataset
 from ..utils.likelihood_models import LikelihoodModel
-from ..utils import _build_tqdm_iterator
 
 logger = get_logger(__name__)
 
@@ -30,8 +26,7 @@ class _RNNModule(nn.Module):
                  hidden_dim: int,
                  num_layers: int,
                  target_size: int = 1,
-                 dropout: float = 0.,
-                 likelihood: Optional[LikelihoodModel] = None):
+                 dropout: float = 0.):
 
         """ PyTorch module implementing an RNN to be used in `RNNModel`.
 
@@ -75,17 +70,13 @@ class _RNNModule(nn.Module):
 
         # Defining parameters
         self.target_size = target_size
-        self.output_size = (
-            likelihood._num_parameters * target_size if likelihood is not None else target_size
-        )
         self.name = name
-        self.likelihood = likelihood
 
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
-        self.V = nn.Linear(hidden_dim, self.output_size)
+        self.V = nn.Linear(hidden_dim, target_size)
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
@@ -98,13 +89,13 @@ class _RNNModule(nn.Module):
         predictions = self.V(out)
 
         # predictions is of size (batch_size, input_length, target_size)
-        predictions = predictions.view(batch_size, -1, self.output_size)
+        predictions = predictions.view(batch_size, -1, self.target_size)
 
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
 
 
-class RNNModel(TorchForecastingModel):
+class RNNModel(TorchParametricProbabilisticForecastingModel):
     @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
@@ -164,7 +155,7 @@ class RNNModel(TorchForecastingModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = 1
-        super().__init__(**kwargs)
+        super().__init__(likelihood=likelihood, **kwargs)
 
         # check we got right model type specified:
         if model not in ['RNN', 'LSTM', 'GRU']:
@@ -178,17 +169,18 @@ class RNNModel(TorchForecastingModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
         self.is_recurrent = True
-        self.likelihood = likelihood
 
     def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+        target_size = (
+            self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
+        )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             model = _RNNModule(name=self.rnn_type_or_module,
                                input_size=input_dim,
-                               target_size=output_dim,
+                               target_size=target_size,
                                hidden_dim=self.hidden_dim,
                                dropout=self.dropout,
-                               num_layers=self.n_rnn_layers,
-                               likelihood=self.likelihood)
+                               num_layers=self.n_rnn_layers)
         else:
             model = self.rnn_type_or_module
         return model
@@ -205,18 +197,10 @@ class RNNModel(TorchForecastingModel):
     def _produce_train_output(self, data):
         return self.model(data)[0]
 
-    def _compute_loss(self, output, target):
-        if self.likelihood:
-            return self.likelihood._compute_loss(output, target)
-        else:
-            return super()._compute_loss(output, target)
-
+    @random_method
     def _produce_predict_output(self, input, last_hidden_state=None):
         if self.likelihood:
             output, hidden = self.model(input, last_hidden_state)
             return self.likelihood._sample(output), hidden
         else:
             return self.model(input, last_hidden_state)
-
-    def _is_probabilistic(self) -> bool:
-        return self.likelihood is not None

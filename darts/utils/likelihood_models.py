@@ -4,11 +4,8 @@ Likelihood Models
 """
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Optional, Tuple
 import torch
 import torch.nn as nn
-
-from ..timeseries import TimeSeries
 
 
 class LikelihoodModel(ABC):
@@ -47,13 +44,17 @@ class LikelihoodModel(ABC):
 
 
 class GaussianLikelihoodModel(LikelihoodModel):
-
+    """
+    Gaussian Likelihood
+    """
     def __init__(self):
         self.loss = nn.GaussianNLLLoss(reduction='mean')
+        self.softplus = nn.Softplus()
+        super().__init__()
 
     def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
-        return self.loss(model_output_means, target, model_output_vars)
+        return self.loss(model_output_means.contiguous(), target.contiguous(), model_output_vars.contiguous())
 
     def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
@@ -64,8 +65,34 @@ class GaussianLikelihoodModel(LikelihoodModel):
         return 2
 
     def _means_and_vars_from_model_output(self, model_output):
-        softplus_activation = nn.Softplus()
-        model_output_size = model_output.shape[-1]
-        model_output_means = model_output[:, :, :model_output_size // 2]
-        model_output_vars = softplus_activation(model_output[:, :, model_output_size // 2:])
-        return model_output_means, model_output_vars
+        output_size = model_output.shape[-1]
+        output_means = model_output[:, :, :output_size // 2]
+        output_vars = self.softplus(model_output[:, :, output_size // 2:])
+        return output_means, output_vars
+
+
+class PoissonLikelihoodModel(LikelihoodModel):
+    """
+    Poisson Likelihood; can typically be used to model event counts in fixed intervals
+    https://en.wikipedia.org/wiki/Poisson_distribution
+    """
+
+    def __init__(self):
+        self.loss = nn.PoissonNLLLoss(log_input=False)
+        self.softplus = nn.Softplus()
+        super().__init__()
+
+    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        model_output = self._lambda_from_output(model_output)
+        return self.loss(model_output, target)
+
+    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_lambda = self._lambda_from_output(model_output)
+        return torch.poisson(model_lambda)
+
+    @property
+    def _num_parameters(self) -> int:
+        return 1
+
+    def _lambda_from_output(self, model_output):
+        return self.softplus(model_output)
