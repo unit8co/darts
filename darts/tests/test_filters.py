@@ -10,7 +10,15 @@ from ..utils import timeseries_generation as tg
 from .base_test_class import DartsBaseTestClass
 
 
-class KalmanFilterTestCase(DartsBaseTestClass):
+class FilterBaseTestClass(DartsBaseTestClass):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        np.random.seed(42)
+
+
+class KalmanFilterTestCase(FilterBaseTestClass):
 
     def test_kalman(self):
         """ KalmanFilter test.
@@ -45,7 +53,7 @@ class KalmanFilterTestCase(DartsBaseTestClass):
         self.assertEqual(prediction.width, 3)
 
 
-class MovingAverageTestCase(DartsBaseTestClass):
+class MovingAverageTestCase(FilterBaseTestClass):
 
     def test_moving_average_univariate(self):
         ma = MovingAverage(window=3, centered=False)
@@ -64,7 +72,7 @@ class MovingAverageTestCase(DartsBaseTestClass):
         self.assertGreater(np.mean(np.abs(ts.values()[:, 1])), np.mean(np.abs(ts_filtered.values()[:, 1])))
 
 
-class GaussianProcessFilterTestCase(DartsBaseTestClass):
+class GaussianProcessFilterTestCase(FilterBaseTestClass):
 
     def test_gaussian_process(self):
         """ GaussianProcessFilter test.
