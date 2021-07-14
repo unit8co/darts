@@ -74,11 +74,11 @@ class GaussianProcessFilterTestCase(DartsBaseTestClass):
         theta = np.radians(np.linspace(0, 360*5, 200))
         testing_signal = TimeSeries.from_values(np.cos(theta))
 
-        noise = TimeSeries.from_values(np.random.normal(0, 0.5, len(testing_signal)) * 0.5)
+        noise = TimeSeries.from_values(np.random.normal(0, 0.4, len(testing_signal)))
         testing_signal_with_noise = testing_signal + noise
 
         kernel = ExpSineSquared()
-        gpf = GaussianProcessFilter(kernel=kernel, alpha=0.5, n_restarts_optimizer=100)
+        gpf = GaussianProcessFilter(kernel=kernel, alpha=0.2, n_restarts_optimizer=100, random_state=42)
         filtered_ts = gpf.filter(testing_signal_with_noise, num_samples=1)
         
         noise_diff = testing_signal_with_noise - testing_signal
