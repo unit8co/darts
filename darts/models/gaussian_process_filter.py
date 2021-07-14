@@ -57,14 +57,18 @@ class GaussianProcessFilter(FilteringModel):
         super().filter(series)
 
         values = series.values(copy=False)
-        times = np.arange(series.n_timesteps).reshape(-1, 1)
+        if series.has_datetime_index:
+            times = np.arange(series.n_timesteps).reshape(-1, 1)
+        else:
+            times = series.time_index.values.reshape(-1, 1)
+
         not_nan_mask = np.all(~np.isnan(values), axis=1)
 
         self.model.fit(times[not_nan_mask, :], values[not_nan_mask, :])
 
         if num_samples == 1:
-            sampled_states = self.model.predict(times)
+            filtered_values = self.model.predict(times)
         else:
-            sampled_states = self.model.sample_y(times, n_samples=num_samples)
+            filtered_values = self.model.sample_y(times, n_samples=num_samples)
         
-        return TimeSeries.from_times_and_values(series.time_index, sampled_states)
+        return TimeSeries.from_times_and_values(series.time_index, filtered_values)
