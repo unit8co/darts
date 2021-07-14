@@ -19,7 +19,7 @@ References
 """
 
 from ..logging import get_logger
-from typing import Union, Optional, Tuple
+from typing import Union, Optional
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
 from ..utils.data.lagged_dataset import LaggedDataset
