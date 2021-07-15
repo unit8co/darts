@@ -68,8 +68,8 @@ You will find below an example Jupyter notebook showcasing the usage of the TCN 
 
    examples/06-TCN-examples.ipynb
 
-Transformer Model Examples
-==========================
+Transformer Model
+=================
 
 You will find below an example Jupyter notebook showcasing the usage of the Transformer model
 
@@ -78,8 +78,8 @@ You will find below an example Jupyter notebook showcasing the usage of the Tran
 
    examples/07-Transformer-examples.ipynb
 
-N-BEATS Model Examples
-==========================
+N-BEATS Model
+=============
 
 You will find below an example Jupyter notebook showcasing the usage of the N-BEATS model
 
@@ -87,3 +87,43 @@ You will find below an example Jupyter notebook showcasing the usage of the N-BE
    :maxdepth: 1
 
    examples/08-NBEATS-examples.ipynb
+
+DeepAR Model
+============
+
+You will find below an example Jupyter notebook showcasing the usage of the DeepAR model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/09-DeepAR-examples.ipynb
+
+DeepTCN Model
+=============
+
+You will find below an example Jupyter notebook showcasing the usage of the DeepTCN model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/10-DeepTCN-examples.ipynb
+
+Kalman Filter Model
+===================
+
+You will find below an example Jupyter notebook showcasing the usage of the Kalman filter model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/11-Kalman-filter-examples.ipynb
+
+Gaussian Process Filter Model
+=============================
+
+You will find below an example Jupyter notebook showcasing the usage of the Gaussian Process filter model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/12-GP-filter-examples.ipynb
