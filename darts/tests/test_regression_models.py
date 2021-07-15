@@ -7,7 +7,9 @@ from ..models import RegressionModel, RandomForest, LinearRegressionModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
-from sklearn.experimental import enable_hist_gradient_boosting # enable import of HistGradientBoostingRegressor
+from sklearn.experimental import (
+    enable_hist_gradient_boosting,
+)  # enable import of HistGradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 
 
@@ -47,34 +49,31 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_exog1 = ts_periodic.stack(ts_gaussian)
     ts_exog1 = ts_exog1.pd_dataframe()
     ts_exog1.columns = ["Periodic", "Gaussian"]
-    ts_exog1 = TimeSeries(ts_exog1)
+    ts_exog1 = TimeSeries.from_dataframe(ts_exog1)
     ts_sum1 = ts_periodic + ts_gaussian
 
     ts_exog2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
 
     # default regression models
-    models = [
-        RandomForest,
-        LinearRegressionModel,
-        RegressionModel
-    ]
+    models = [RandomForest, LinearRegressionModel, RegressionModel]
     lags = 4
     lags_exog = [3, 4, 5]
 
     def test_model_construction(self):
+
         for model in self.models:
             model_instance = model(lags=5)
             self.assertEqual(model_instance.lags, [1, 2, 3, 4, 5])
 
-            model_instance = model(lags=None, lags_exog=3)
-            self.assertEqual(model_instance.lags_exog, [1, 2, 3])
+            model_instance = model(lags=None, lags_covariates=3)
+            self.assertEqual(model_instance.lags_covariates, [1, 2, 3])
 
-            model_instance = model(lags=5, lags_exog=[3, 6, 9, 12])
-            self.assertEqual(model_instance.lags_exog, [3, 6, 9, 12])
+            model_instance = model(lags=5, lags_covariates=[3, 6, 9, 12])
+            self.assertEqual(model_instance.lags_covariates, [3, 6, 9, 12])
 
-            model_instance = model(lags=None, lags_exog=0)
-            self.assertEqual(model_instance.lags_exog, [0])
+            model_instance = model(lags=None, lags_covariates=0)
+            self.assertEqual(model_instance.lags_covariates, [0])
 
             with self.assertRaises(ValueError):
                 model()
@@ -83,17 +82,17 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model(lags=[3, 4, 5, 0])
             with self.assertRaises(ValueError):
-                model(lags=[3, 4.0, 5, 0])
+                model(lags=[3, 4.0, 5])
             with self.assertRaises(ValueError):
                 model(lags=-5)
             with self.assertRaises(ValueError):
                 model(lags=3.6)
             with self.assertRaises(ValueError):
-                model(lags=None, lags_exog=False)
+                model(lags=None, lags_covariates=False)
             with self.assertRaises(ValueError):
                 model(lags=0)
             with self.assertRaises(ValueError):
-                model(lags=5, lags_exog=True)
+                model(lags=5, lags_covariates=True)
 
     def test_models_runnability(self):
         train_x, test_x = self.ts_exog1.split_before(0.7)
@@ -104,74 +103,68 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             prediction = model_instance.predict(n=20)
             self.assertTrue(len(prediction) == 20)
 
-            model_instance = model(lags=4, lags_exog=2)
-            model_instance.fit(series=train_y, exog=train_x)
-            prediction = model_instance.predict(n=10, exog=test_x[:10])
-            self.assertTrue(len(prediction) == 10)
+            model_instance = model(lags=4, lags_covariates=2)
+            model_instance.fit(
+                series=[train_y, train_y + 1], covariates=[train_x, train_x + 100]
+            )
+            prediction = model_instance.predict(
+                n=10,
+                series=[train_y, train_y + 1],
+                covariates=[self.ts_exog1, self.ts_exog1 + 100],
+            )
+
+            self.assertTrue(len(prediction[0]) == 10)
 
             with self.assertRaises(ValueError):
-                model_instance = model(lags=4, lags_exog=None)
-                model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+                model_instance = model(lags=4, lags_covariates=None)
+                model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
 
             with self.assertRaises(ValueError):
-                model_instance = model(lags=4, lags_exog=3)
+                model_instance = model(lags=4, lags_covariates=3)
                 model_instance.fit(series=self.ts_sum1)
-
-    def test_create_training_data(self):
-        lags = 12
-        model = RegressionModel(lags=lags)
-        training_data = model._create_training_data(series=self.ts_sum1)
-        self.assertEqual(len(training_data), len(self.ts_sum1)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
-        self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
-
-        nan_series = self.ts_sum1.pd_dataframe()
-        nan_series.iloc[[0, 2, 8, 32, 497, 499], :] = np.nan
-        nan_series = TimeSeries(nan_series)
-        training_data = model._create_training_data(series=nan_series)
-        self.assertEqual(len(training_data), len(nan_series)-lags)
-        self.assertEqual(len(training_data.columns()), lags)
-        self.assertEqual(training_data.start_time(), pd.Timestamp("2000-01-13"))
-
 
     def test_fit(self):
         for model in self.models:
             with self.assertRaises(ValueError):
-                model_instance = model(lags=4, lags_exog=4)
-                model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+                model_instance = model(lags=4, lags_covariates=4)
+                model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
                 prediction = model_instance.predict(n=10)
 
             model_instance = model(lags=12)
             model_instance.fit(series=self.ts_sum1)
-            self.assertEqual(model_instance.nr_exog, 0)
+            self.assertEqual(model_instance.lags_covariates, None)
 
-            model_instance = model(lags=12, lags_exog=12)
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
-            self.assertEqual(model_instance.nr_exog, 24)
+            model_instance = model(lags=12, lags_covariates=12)
+            model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
+            self.assertEqual(len(model_instance.lags_covariates), 12)
 
-            model_instance = model(lags=12, lags_exog=0)
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
-            self.assertEqual(model_instance.nr_exog, 2)
+            model_instance = model(lags=12, lags_covariates=0)
+            model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
+            self.assertEqual(len(model_instance.lags_covariates), 1)
 
-            model_instance = model(lags=12, lags_exog=[1, 4, 6])
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
-            self.assertEqual(model_instance.nr_exog, 6)
+            model_instance = model(lags=12, lags_covariates=[1, 4, 6])
+            model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
+            self.assertEqual(len(model_instance.lags_covariates), 3)
 
-
-    def helper_test_models_accuracy(self, series, exog, min_rmse):
+    def helper_test_models_accuracy(self, series, covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(exog, series, pd.Timestamp('20010101'))
+        train_f, train_t, test_f, test_t = train_test_split(
+            covariates, series, pd.Timestamp("20010101")
+        )
 
         for model in self.models:
-            model_instance = model(lags=12, lags_exog=2)
-            model_instance.fit(series=train_t, exog=train_f)
-            prediction = model_instance.predict(n=len(test_f), exog=test_f)
+            model_instance = model(lags=12, lags_covariates=2)
+            model_instance.fit(series=train_t, covariates=train_f)
+            prediction = model_instance.predict(n=len(test_f), covariates=covariates)
             current_rmse = rmse(prediction, test_t)
 
-            self.assertTrue(current_rmse <= min_rmse, (
-                "{} model was not able to denoise data. A rmse score of {} was recorded."
-                .format(str(model_instance), current_rmse)
-                )
+            self.assertTrue(
+                current_rmse <= min_rmse,
+                (
+                    "{} model was not able to denoise data. A rmse score of {} was recorded.".format(
+                        str(model_instance), current_rmse
+                    )
+                ),
             )
 
     def test_models_denoising(self):
@@ -193,10 +186,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             retrain=True,
             overlap_end=False,
             last_points_only=True,
-            verbose=False)
+            verbose=False,
+        )
         self.assertEqual(len(result), 51)
 
-        model = self.models[0](lags=5, lags_exog=5)
+        model = self.models[0](lags=5, lags_covariates=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
             covariates=self.ts_exog1[:100],
@@ -206,7 +200,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             retrain=True,
             overlap_end=False,
             last_points_only=True,
-            verbose=False)
+            verbose=False,
+        )
         self.assertEqual(len(result), 51)
 
     def test_regression_model(self):

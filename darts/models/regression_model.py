@@ -9,22 +9,29 @@ and `predict()` functions accepting tabularized data (e.g. scikit-learn regressi
 
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
-
-import numpy as np
-import pandas as pd
-
-from inspect import signature
 from typing import Union, Optional, Sequence
-
-from darts.utils.data import SimpleInferenceDataset
+import numpy as np
 
 from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from .forecasting_model import GlobalForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
-from darts.utils.data.lagged_dataset import LaggedDataset
+from darts.utils.data.lagged_dataset import (
+    LaggedDataset,
+    LaggedInferenceDataset,
+    _process_lags,
+)
+from darts.utils.data.matrix_dataset import MatrixTrainingDataset
+
 
 logger = get_logger(__name__)
+
+
+def _consume_column(m: np.ndarray) -> Union[None, np.ndarray]:
+    if m.shape[1] == 1:
+        return None
+    else:
+        return m[:, 1:]
 
 
 class RegressionModel(GlobalForecastingModel):
@@ -68,9 +75,15 @@ class RegressionModel(GlobalForecastingModel):
             )
 
         self.model = model
-        self.lags = lags
-        self.lags_covariates = lags_covariates
-        self._fit_called = False
+
+        # turning lags into array of int or None
+        self.lags, self.lags_covariates = _process_lags(lags, lags_covariates)
+
+        if self.lags is not None:
+            self.lags_indices = np.array(self.lags) * (-1)
+
+        if self.lags_covariates is not None:
+            self.cov_lags_indices = np.array(self.lags_covariates) * (-1)
 
     def fit(
         self,
@@ -102,28 +115,21 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         lagged_dataset = LaggedDataset(
-            self.training_series,
-            self.covariate_series,
+            series,
+            covariates,
             self.lags,
             self.lags_covariates,
             max_samples_per_ts,
         )
-        # Prepare data
-        training_x, training_y = lagged_dataset.get_data()
 
-        self.model.fit(training_x, training_y, **kwargs)
+        self.fit_from_dataset(lagged_dataset, **kwargs)
+        self.input_dim = (0 if covariates is None else covariates[0].width) + series[
+            0
+        ].width
 
-        # TODO think about prediction data
-        # if self.max_lag == 0:
-        #     self.prediction_data = pd.DataFrame(
-        #         columns=series.stack(other=covariates).columns()
-        #     )
-        # elif covariates is not None:
-        #     self.prediction_data = series.stack(other=covariates)[-self.max_lag :]
-        # else:
-        #     self.prediction_data = series[-self.max_lag :]
-        # print(self.prediction_data)
-        # self._fit_called = True
+    def fit_from_dataset(self, dataset: MatrixTrainingDataset, **kwargs):
+        training_x, training_y = dataset.get_data()
+        self.model.fit(X=training_x, y=training_y, **kwargs)
 
     def predict(
         self,
@@ -139,86 +145,142 @@ class RegressionModel(GlobalForecastingModel):
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         """
         super().predict(n, series, covariates)
-        # TODO: check if we have series or not. If so, use those, otherwise recycle the training data
+
         if series is None:
-            pass
-            # inference_data = SimpleInferenceDataset(series, covariates, n, input_chunk_length=)
+            # then there must be a single TS, and that was saved in super().fit as self.training_series
+            raise_if(
+                self.training_series is None,
+                "Input series has to be provided after fitting on multiple series.",
+            )
+            series = self.training_series
 
-        super().predict(n, series, covariates)
-        pass
+        if covariates is None and self.covariate_series is not None:
+            covariates = self.covariate_series
 
-        # if self.max_lag != 0:
-        #     prediction_data = self.prediction_data.copy()
-        #     dummy_row = np.zeros(shape=(1, prediction_data.width))
-        #     prediction_data = prediction_data.append_values(dummy_row)
-        #
-        # if covariates is not None and self.lags_covariates != [0]:
-        #     required_start = (
-        #         self.training_series.end_time() + self.training_series.freq()
-        #     )
-        #     raise_if_not(
-        #         exog.start_time() == required_start,
-        #         "`exog` first date must be equal to self.training_series.end_time()+1*freq. "
-        #         + "Given: {}. Needed: {}.".format(exog.start_time(), required_start),
-        #     )
-        # if isinstance(exog, TimeSeries):
-        #     exog = exog.pd_dataframe(copy=False)
-        #
-        # forecasts = [0] * n  # initializing the forecasts vector
-        #
-        # for i in range(n):
-        #     # Prepare prediction data if for prediction at time `t` exog at time `t` is used
-        #     if self.lags_covariates is not None and 0 in self.lags_covariates:
-        #         append_row = [[0, *exog.iloc[i, :].values]]
-        #         if self.max_lag == 0:
-        #             prediction_data = pd.DataFrame(
-        #                 append_row,
-        #                 columns=self.prediction_data.columns,
-        #                 index=[exog.index[i]],
-        #             )
-        #             prediction_data = TimeSeries(
-        #                 prediction_data, freq=self.training_series.freq()
-        #             )
-        #         else:
-        #             prediction_data = prediction_data[:-1]  # Remove last dummy row
-        #             prediction_data = prediction_data.append_values(append_row)
-        #
-        #     # Make prediction
-        #     target_data = prediction_data[[self.target_column]]
-        #     exog_data = (
-        #         prediction_data[self.exog_columns]
-        #         if self.exog_columns is not None
-        #         else None
-        #     )
-        #     forecasting_data, _ = self._create_training_data(
-        #         series=target_data, exog=exog_data
-        #     )
-        #     if "series" in signature(self.model.fit).parameters:
-        #         forecasting_data = TimeSeries(
-        #             forecasting_data, freq=self.training_series.freq()
-        #         )
-        #         forecast = self.model.predict(
-        #             n=len(forecasting_data), exog=forecasting_data, **kwargs
-        #         )
-        #         forecast = forecast.pd_dataframe().values
-        #     else:
-        #         forecast = self.model.predict(forecasting_data, **kwargs)
-        #     forecast = forecast[0] if isinstance(forecast[0], np.ndarray) else forecast
-        #
-        #     # Prepare prediction data
-        #     if self.max_lag > 0:
-        #         prediction_data = prediction_data[:-1]  # Remove last dummy row
-        #         append_row = (
-        #             [[forecast[0], *exog.iloc[i, :].values]]
-        #             if self.exog_columns is not None
-        #             else [forecast]
-        #         )
-        #         prediction_data = prediction_data.append_values(append_row)
-        #         prediction_data = prediction_data.append_values(dummy_row)[1:]
-        #
-        #     # Append forecast
-        #     forecasts[i] = forecast[0]
-        # return self._build_forecast_series(forecasts)
+        called_with_single_series = False
+        if isinstance(series, TimeSeries):
+            called_with_single_series = True
+            series = [series]
+
+        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+
+        # check that the input sizes match
+        in_dim = (0 if covariates is None else covariates[0].width) + series[0].width
+
+        raise_if_not(
+            in_dim == self.input_dim,
+            "The dimensionality of the series provided for prediction does not match the dimensionality "
+            "of the series this model has been trained on. Provided input dim = {}, "
+            "model input dim = {}".format(in_dim, self.input_dim),
+        )
+        dataset = LaggedInferenceDataset(
+            series, covariates, self.lags, self.lags_covariates, n
+        )
+
+        predictions = self.predict_from_dataset(dataset, n)
+
+        return predictions[0] if called_with_single_series else predictions
+
+    def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1):
+        # creating matrix with target matrix | covariates matrix and future covariate matrix
+        (
+            target_matrix,
+            covariates_matrix,
+            future_covariates_matrix,
+        ) = self._get_matrix_data_from_dataset(dataset)
+
+        """
+        Order if the matrix X |target-series-lags|cov_1_lags|cov_2_lags|..|cov_last_lags|
+        """
+        for i in range(n):
+            # getting training matrix
+            target_series = target_matrix[:, self.lags_indices]
+            if covariates_matrix is not None:
+                covariates = covariates_matrix[:, self.cov_lags_indices]
+                X = np.concatenate(
+                    [
+                        target_series.reshape(target_series[:-1], -1),
+                        covariates.reshape(-1, covariates.shape[0]).T,
+                    ],
+                    axis=1,
+                )
+            else:
+                X = target_series
+            # predicting
+            predictions = self.model.predict(X).reshape(-1, 1)
+            # discard oldest columns
+            target_matrix = _consume_column(target_matrix)
+            # adding predictions
+            target_matrix = np.concatenate([target_matrix, predictions], axis=1)
+            # discarding oldest covariate
+            if self._expect_covariates:
+                covariates_matrix = _consume_column(covariates_matrix)
+                # if it is the last step, then no future covariate can be added to covariates anymore
+                if future_covariates_matrix is not None:
+                    first_future = future_covariates_matrix[:, 0, :]
+                    first_future = first_future.reshape(
+                        first_future.shape[0], 1, first_future.shape[1]
+                    )
+                    covariates_matrix = np.concatenate(
+                        [
+                            covariates_matrix,
+                            first_future,
+                        ],
+                        axis=1,
+                    )
+                    future_covariates_matrix = _consume_column(future_covariates_matrix)
+
+        predictions = target_matrix[:, -n:]
+
+        pred_timeseries = [
+            self._build_forecast_series(row, input)
+            for row, (input, _, _) in zip(predictions, dataset)
+        ]
+
+        return pred_timeseries
+
+    def _get_matrix_data_from_dataset(self, dataset: LaggedInferenceDataset):
+        target_matrix = []
+        if dataset.lags_covariates is not None:
+            covariates_matrix = []
+            future_covariates_matrix = []
+        else:
+            covariates_matrix = None
+            future_covariates_matrix = None
+
+        for tgt_series, past_covariates, future_covariates in dataset:
+            tgt_series = tgt_series.values()
+            if past_covariates is not None:
+                past_covariates = past_covariates.values()
+                future_covariates = future_covariates.values()
+
+            target_matrix.append(tgt_series)
+
+            if dataset.lags_covariates is not None:
+                if 0 in self.lags_covariates:
+                    past_covariates = past_covariates.append(future_covariates[0])
+                    if len(future_covariates) > 1:
+                        future_covariates = future_covariates[1:]
+                    else:
+                        future_covariates = None
+                covariates_matrix.append(past_covariates)
+
+                future_covariates_matrix.append(future_covariates)
+
+        # evaluating indexes from the end
+
+        target_matrix = np.asarray(target_matrix)
+        if dataset.lags_covariates is not None:
+            covariates_matrix = (
+                np.asarray(covariates_matrix) if len(covariates_matrix) > 0 else None
+            )
+            future_covariates_matrix = (
+                np.asarray(future_covariates_matrix)
+                if len(future_covariates_matrix) > 0
+                else None
+            )
+
+        return target_matrix, covariates_matrix, future_covariates_matrix
 
     def __str__(self):
         return self.model.__str__()

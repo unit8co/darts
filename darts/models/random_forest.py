@@ -22,13 +22,15 @@ logger = get_logger(__name__)
 
 
 class RandomForest(RegressionModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_exog: Union[int, list, bool] = None,
-                 n_estimators: Optional[int] = 100,
-                 max_depth: Optional[int] = None,
-                 **kwargs):
-        """ Random Forest
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_covariates: Union[int, list, bool] = None,
+        n_estimators: Optional[int] = 100,
+        max_depth: Optional[int] = None,
+        **kwargs
+    ):
+        """Random Forest
 
         Parameters
         ----------
@@ -56,14 +58,11 @@ class RandomForest(RegressionModel):
 
         super().__init__(
             lags=lags,
-            lags_exog=lags_exog,
-            model=RandomForestRegressor(
-                **kwargs
-            )
+            lags_covariates=lags_covariates,
+            model=RandomForestRegressor(**kwargs),
         )
 
     def __str__(self):
-        return 'RandomForest(lags={}, lags_exog={}, n_estimators={}, max_depth={})'.format(
-            self.lags, self.lags_exog, self.n_estimators, self.max_depth
+        return "RandomForest(lags={}, lags_covariates={}, n_estimators={}, max_depth={})".format(
+            self.lags, self.covariate_series, self.n_estimators, self.max_depth
         )
-

@@ -11,13 +11,14 @@ from ...logging import raise_if_not
 
 
 class SimpleInferenceDataset(TimeSeriesInferenceDataset):
-
-    def __init__(self,
-                 series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 n: int = 1,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1):
+    def __init__(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        n: int = 1,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+    ):
         """
         Creates a dataset from lists of target series and corresponding covariate series and emits
         3-tuples of (tgt_past, cov_past, cov_future), all `TimeSeries` instances.
@@ -49,31 +50,40 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
             The length of the time series the model takes as input.
         output_chunk_length
             The length of the model predictions after one call to its `forward` function.
-    """
+        """
 
         super().__init__()
         self.series = [series] if isinstance(series, TimeSeries) else series
-        self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariates = (
+            [covariates] if isinstance(covariates, TimeSeries) else covariates
+        )
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
 
-        raise_if_not((covariates is None or len(series) == len(covariates)),
-                     'The number of target series must be equal to the number of covariates.')
+        raise_if_not(
+            (self.covariates is None or len(self.series) == len(self.covariates)),
+            "The number of target series must be equal to the number of covariates.",
+        )
 
     def __len__(self):
         return len(self.series)
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
 
         target_series = self.series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
-        raise_if_not(len(target_series) >= self.input_chunk_length,
-                     'All input series must have length >= `input_chunk_length` ({}).'.format(
-                     self.input_chunk_length))
+        raise_if_not(
+            len(target_series) >= self.input_chunk_length,
+            "All input series must have length >= `input_chunk_length` ({}).".format(
+                self.input_chunk_length
+            ),
+        )
 
-        tgt_past = target_series[-self.input_chunk_length:]
+        tgt_past = target_series[-self.input_chunk_length :]
 
         cov_past = cov_future = None
         if covariate_series is not None:
@@ -86,20 +96,25 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 cov_past = covariate_series.drop_after(first_pred_time)
             else:
                 cov_past = covariate_series
-            cov_past = cov_past[-self.input_chunk_length:]
+            cov_past = cov_past[-self.input_chunk_length :]
 
             # check whether future covariates are required
             if self.n > self.output_chunk_length:
 
                 # check that enough future covariates are available
                 last_required_future_covariate_ts = (
-                    target_series.end_time() + (self.n - self.output_chunk_length) * target_series.freq()
+                    target_series.end_time()
+                    + (self.n - self.output_chunk_length) * target_series.freq()
                 )
-                raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                             'All covariates must be known `n - output_chunk_length` time steps into the future')
+                raise_if_not(
+                    covariate_series.end_time() >= last_required_future_covariate_ts,
+                    "All covariates must be known `n - output_chunk_length` time steps into the future",
+                )
 
                 # isolate necessary future covariates and add them to array
-                cov_future = covariate_series.drop_before(first_pred_time - covariate_series.freq())
-                cov_future = cov_future[:self.n - self.output_chunk_length]
+                cov_future = covariate_series.drop_before(
+                    first_pred_time - covariate_series.freq()
+                )
+                cov_future = cov_future[: self.n - self.output_chunk_length]
 
         return tgt_past, cov_past, cov_future

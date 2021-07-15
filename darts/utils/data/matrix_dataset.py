@@ -34,19 +34,3 @@ class MatrixTrainingDataset(ABC, Sequence):
         n_features will be # lags +  # lags_covariates.
         """
         pass
-
-
-class MatrixInferenceDataset(ABC):
-    def __init__(self):
-        """
-        Dataset that
-        """
-        pass
-
-    @abstractmethod
-    def __len__(self):
-        pass
-
-    @abstractmethod
-    def get_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        pass

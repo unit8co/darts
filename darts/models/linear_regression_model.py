@@ -14,11 +14,12 @@ logger = get_logger(__name__)
 
 
 class LinearRegressionModel(RegressionModel):
-
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_exog: Union[int, list, bool] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_covariates: Union[int, list, bool] = None,
+        **kwargs
+    ):
         """
         Simple wrapper for the linear regression model in scikit-learn, LinearRegression().
 
@@ -38,10 +39,10 @@ class LinearRegressionModel(RegressionModel):
         """
         self.kwargs = kwargs
         super().__init__(
-            lags=lags,
-            lags_exog=lags_exog,
-            model=LinearRegression(**kwargs)
+            lags=lags, lags_covariates=lags_covariates, model=LinearRegression(**kwargs)
         )
 
     def __str__(self):
-        return 'LinearRegression(lags={}, lags_exog={})'.format(self.lags, self.lags_exog)
+        return "LinearRegression(lags={}, lags_exog={})".format(
+            self.lags, self.lags_covariates
+        )
