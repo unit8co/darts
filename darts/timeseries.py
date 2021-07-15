@@ -82,15 +82,17 @@ class TimeSeries:
 
         if self._has_datetime_index:
             freq_tmp = xa.get_index(self._time_dim).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = freq_tmp
+            self._freq: pd.DateOffset = (freq_tmp if freq_tmp is not None else
+                                         to_offset(self._xa.get_index(self._time_dim).inferred_freq))
             raise_if(self._freq is None,
-                     'The time index of the provided DataArray is missing the freq attribute.',
+                     'The time index of the provided DataArray is missing the freq attribute, and the '
+                     'frequency cannot be inferred.',
                      logger)
 
             self._freq_str: str = self._freq.freqstr
 
             # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = freq_tmp
+            self._xa.get_index(self._time_dim).freq = self._freq
 
             # We have to check manually if the index is complete. Another way could be to rely
             # on `inferred_freq` being present, but this fails for series of length < 3.
@@ -99,7 +101,7 @@ class TimeSeries:
                                                   freq=self._freq).difference(self._time_index)) == 0
 
             raise_if_not(is_index_complete, 'Not all timestamps seem to be present in the time index. Does '
-                                            'the series contain holes? If you are using a constructor method, '
+                                            'the series contain holes? If you are using a factory method, '
                                             'try specifying `fill_missing_dates=True` '
                                             'or specify the `freq` parameter.', logger)
         else:
@@ -147,7 +149,6 @@ class TimeSeries:
             time_index = sorted_xa.get_index(xa.dims[0])
 
             if not freq:
-                """
                 samples_size = 3
                 observed_frequencies = [
                     time_index[x:x + samples_size].inferred_freq
@@ -165,16 +166,15 @@ class TimeSeries:
                     logger)
 
                 freq = observed_frequencies.pop()
-                """
-                freq = pd.infer_freq(time_index)
-                raise_if(freq is None, "Could not infer frequency. Make sure inferred_freq is not None"
-                                       "on the provided DatetimeIndex.", logger)
 
             # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
 
-        # elif freq and isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex):
-        #     xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
+        elif isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex) and \
+                freq is not None and \
+                xa.get_index(xa.dims[0]).freq is None:
+            # The provided index does not have a freq; using the provided freq
+            xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
