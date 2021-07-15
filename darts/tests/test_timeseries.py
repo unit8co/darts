@@ -57,6 +57,21 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                           name='time series')
         _ = TimeSeries.from_xarray(ar)
 
+    def test_integer_indexing(self):
+        # sanity checks for the integer-indexed series
+        range_indexed_data = np.random.randn(50, )
+        series_int: TimeSeries = TimeSeries.from_values(range_indexed_data)
+
+        self.assertTrue(series_int[0].values().item() == range_indexed_data[0])
+        self.assertTrue(series_int[10].values().item() == range_indexed_data[10])
+
+        self.assertTrue(np.all(series_int[10:20].univariate_values() == range_indexed_data[10:20]))
+        self.assertTrue(np.all(series_int[10:].univariate_values() == range_indexed_data[10:]))
+
+        self.assertTrue(
+            np.all(series_int[pd.RangeIndex(start=10, stop=40, step=1)].univariate_values() == range_indexed_data[10:40])
+        )
+
     def test_column_names(self):
         # test the column names resolution
         columns_before = [
