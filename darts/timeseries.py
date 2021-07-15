@@ -113,7 +113,7 @@ class TimeSeries:
 
     @staticmethod
     def from_xarray(xa: xr.DataArray,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from an xarray DataArray.
@@ -147,6 +147,7 @@ class TimeSeries:
             time_index = sorted_xa.get_index(xa.dims[0])
 
             if not freq:
+                """
                 samples_size = 3
                 observed_frequencies = [
                     time_index[x:x + samples_size].inferred_freq
@@ -164,9 +165,16 @@ class TimeSeries:
                     logger)
 
                 freq = observed_frequencies.pop()
+                """
+                freq = pd.infer_freq(time_index)
+                raise_if(freq is None, "Could not infer frequency. Make sure inferred_freq is not None"
+                                       "on the provided DatetimeIndex.", logger)
 
             # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
+
+        # elif freq and isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex):
+        #     xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
@@ -215,7 +223,7 @@ class TimeSeries:
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
-                       fill_missing_dates: Optional[bool] = True,
+                       fill_missing_dates: Optional[bool] = False,
                        freq: Optional[str] = None,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -274,7 +282,7 @@ class TimeSeries:
 
     @staticmethod
     def from_series(pd_series: pd.Series,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,) -> 'TimeSeries':
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
@@ -306,7 +314,7 @@ class TimeSeries:
     @staticmethod
     def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
                               values: np.ndarray,
-                              fill_missing_dates: Optional[bool] = True,
+                              fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
                               columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
         """
@@ -359,7 +367,7 @@ class TimeSeries:
 
     @staticmethod
     def from_values(values: np.ndarray,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
 
@@ -916,7 +924,7 @@ class TimeSeries:
 
     def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> pd.Timestamp:
         """
-        Converts a point into a pandas.Timestamp in the time series
+        Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
         Parameters
         ----------
@@ -929,8 +937,6 @@ class TimeSeries:
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
-        raise_if_not(self._has_datetime_index, 'Called get_timestamp_at_point() but this series '
-                                               'is not indexed with a DatetimeIndex.', logger)
         idx = self.get_index_at_point(point)
         return self._time_index[idx]
 
@@ -1340,6 +1346,7 @@ class TimeSeries:
         if not self._has_datetime_index:
             new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
 
+        # TODO: fill_missing_dates takes a performance hit; do we need it here
         return TimeSeries.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
 
     def append_values(self, values: np.ndarray) -> 'TimeSeries':
