@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
     'nbsphinx',
-    'm2r'
+    'm2r2'
 ]
 
 autodoc_default_options = {
