@@ -23,6 +23,8 @@ class DatasetLoaderMetadata:
     # used to convert the string date to pd.Datetime
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
     format_time: str = None
+    # used to indicate the freq when we already know it
+    freq: str = None
 
 
 class DatasetLoadingException(BaseException):
@@ -145,5 +147,5 @@ class DatasetLoaderCSV(DatasetLoader):
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)
-            return TimeSeries.from_dataframe(df=df, time_col=metadata.header_time)
+            return TimeSeries.from_dataframe(df=df, time_col=metadata.header_time, freq=metadata.freq)
         return TimeSeries.from_dataframe(df)

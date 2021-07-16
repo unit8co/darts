@@ -109,8 +109,7 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
         self.assertEqual(prediction.width, 2)
 
     def test_gaussian_process_missing_values(self):
-        times = pd.DatetimeIndex(np.array([0,1,3,4,5]).astype('datetime64[ns]'))
-        ts = TimeSeries.from_times_and_values(times, np.ones(len(times)))
+        ts = TimeSeries.from_values(np.ones(6))
 
         gpf = GaussianProcessFilter(RBF())
         filtered_values = gpf.filter(ts).values()
