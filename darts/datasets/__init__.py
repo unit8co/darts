@@ -140,7 +140,8 @@ class MonthlyMilkIncompleteDataset(DatasetLoaderCSV):
             uri=_DEFAULT_PATH+"/monthly-milk-incomplete.csv",
             hash="49b275c7e2f8f28a6a05224be1a049a4",
             header_time="Month",
-            format_time="%Y-%m"
+            format_time="%Y-%m",
+            freq='M'
         ))
 
 
@@ -197,7 +198,8 @@ class TemperatureDataset(DatasetLoaderCSV):
             uri=_DEFAULT_PATH+"/temps.csv",
             hash="ce5b5e4929793ec8b6a54711110acebf",
             header_time="Date",
-            format_time="%m/%d/%Y"
+            format_time="%m/%d/%Y",
+            freq='D'
         ))
 
 
