@@ -900,7 +900,7 @@ class TimeSeries:
         if isinstance(point, float):
             raise_if_not(0. <= point <= 1., 'point (float) should be between 0.0 and 1.0.', logger)
             point_index = int((len(self) - 1) * point)
-        elif isinstance(point, int):
+        elif isinstance(point, (int, np.int64)):
             raise_if(point not in range(len(self)), "point (int) should be a valid index in series", logger)
             point_index = point
         elif isinstance(point, pd.Timestamp):
@@ -1067,7 +1067,7 @@ class TimeSeries:
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(start_ts)
 
-        if isinstance(start_ts, int):
+        if isinstance(start_ts, (int, np.int64)):
             return self[start_ts:start_ts+n]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
@@ -1099,7 +1099,7 @@ class TimeSeries:
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(end_ts)
 
-        if isinstance(end_ts, int):
+        if isinstance(end_ts, (int, np.int64)):
             return self[end_ts-n+1:end_ts+1]
         elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
@@ -1226,7 +1226,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with a shifted index.
         """
-        if not isinstance(n, int):
+        if not isinstance(n, (int, np.int64)):
             logger.warning(f"TimeSeries.shift(): converting n to int from {n} to {int(n)}")
             n = int(n)
 
@@ -1977,7 +1977,7 @@ class TimeSeries:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
-            elif isinstance(key.start, int) or isinstance(key.stop, int):
+            elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
@@ -1990,7 +1990,7 @@ class TimeSeries:
         # handle simple types:
         elif isinstance(key, str):
             return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
-        elif isinstance(key, int):
+        elif isinstance(key, (int, np.int64)):
             return TimeSeries(self._xa.isel({self._time_dim: [key]}))
         elif isinstance(key, pd.Timestamp):
             _check_dt()
@@ -2005,7 +2005,7 @@ class TimeSeries:
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
-            elif all(isinstance(i, int) for i in key):
+            elif all(isinstance(i, (int, np.int64)) for i in key):
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
