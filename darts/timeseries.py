@@ -116,6 +116,11 @@ class TimeSeries:
         dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
         respectively.
 
+        The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
+        The time must be indexed either with a pandas DatetimeIndex or a pandas Int64Index. If a DatetimeIndex is
+        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+        issues (filling holes with NaN) at a performance cost.
+
         If two components have the same name or are not strings, this method will disambiguate the components
         names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
 
@@ -126,6 +131,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -142,6 +148,9 @@ class TimeSeries:
             time_index = sorted_xa.get_index(xa.dims[0])
 
             if not freq:
+                # FIXME: This is taking long, especially on longer series
+                # FIXME: both constructing observed_frequencies, as well as resampling the DataArray are taking long
+                # FIXME: can we do better?
                 samples_size = 3
                 observed_frequencies = [
                     time_index[x:x + samples_size].inferred_freq
@@ -160,7 +169,6 @@ class TimeSeries:
 
                 freq = observed_frequencies.pop()
 
-            # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
 
         elif isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex) and \
@@ -230,13 +238,16 @@ class TimeSeries:
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex).
+            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+            issues (filling holes with NaN) at a performance cost.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
             `None`, the whole DataFrame will be used.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -280,6 +291,11 @@ class TimeSeries:
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
 
+        The series must contain an index that is
+        either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+        issues (filling holes with NaN) at a performance cost.
+
         Parameters
         ----------
         pd_series
@@ -287,6 +303,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -317,7 +334,9 @@ class TimeSeries:
         ----------
         times
             A `pandas.DateTimeIndex` or `pandas.Int64Index` (or `pandas.RangeIndex`) representing the time axis
-            for the time series.
+            for the time series. If a DatetimeIndex is
+            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+            issues (filling holes with NaN) at a performance cost.
         values
             A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
             and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
@@ -325,6 +344,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -364,6 +384,31 @@ class TimeSeries:
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+        """
+        Returns a TimeSeries built from an array of values.
+        The series will have an integer index (Int64Index).
+
+        Parameters
+        ----------
+        values
+            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
+            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
+            should be (time, component), and in the latter case (time, component, sample).
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        columns
+            Columns to be used by the underlying pandas DataFrame.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed from the inputs.
+        """
 
         time_index = pd.RangeIndex(0, len(values), 1)
 
