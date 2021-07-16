@@ -6,8 +6,7 @@ sphinx_autodoc_typehints==1.11.1
 nbsphinx==0.8.0
 pydata-sphinx-theme==0.4.1
 recommonmark==0.7.1
-# Do not change it due to https://github.com/sphinx-doc/sphinx/issues/7420
-m2r @ git+https://github.com/crossnox/m2r@dev#egg=m2r
+m2r2==0.3.0
 
 # publish
 twine==3.3.0
