@@ -305,10 +305,8 @@ class ForecastingModel(ABC):
                 return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                                                         np.array(last_points_values))
             else:
-                # return TimeSeries.from_times_and_values(pd.Int64Index(last_points_times),
-                #                                         np.array(last_points_values))
                 return TimeSeries.from_times_and_values(pd.RangeIndex(start=last_points_times[0],
-                                                                      stop=last_points_times[-1]+1,
+                                                                      stop=last_points_times[-1] + 1,
                                                                       step=1),
                                                         np.array(last_points_values))
 
