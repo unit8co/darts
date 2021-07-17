@@ -11,15 +11,16 @@ source:
 build:
   number: 0
   script: '{{ PYTHON }} -m pip install . --no-deps -vv'
+  noarch: python
 
 requirements:
   host:
     - python
   run:
-  # note that pmdarima exists in the anaconda repo but is not supported so need to reinstall it through pip
     - python
   {% for req in data.get('install_requires', []) %}
-    - {{ req }}
+    # torch is called pytorch in anaconda
+    - {{ req | replace("torch", "pytorch")}}
   {% endfor %}
 
 about:
