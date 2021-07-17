@@ -11,7 +11,7 @@ from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 class TimeSeriesTestCase(DartsBaseTestClass):
 
-    times = pd.date_range('20130101', '20130110')
+    times = pd.date_range('20130101', '20130110', freq='D')
     pd_series1 = pd.Series(range(10), index=times)
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
@@ -57,6 +57,21 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                           name='time series')
         _ = TimeSeries.from_xarray(ar)
 
+    def test_integer_indexing(self):
+        # sanity checks for the integer-indexed series
+        range_indexed_data = np.random.randn(50, )
+        series_int: TimeSeries = TimeSeries.from_values(range_indexed_data)
+
+        self.assertTrue(series_int[0].values().item() == range_indexed_data[0])
+        self.assertTrue(series_int[10].values().item() == range_indexed_data[10])
+
+        self.assertTrue(np.all(series_int[10:20].univariate_values() == range_indexed_data[10:20]))
+        self.assertTrue(np.all(series_int[10:].univariate_values() == range_indexed_data[10:]))
+
+        self.assertTrue(
+            np.all(series_int[pd.RangeIndex(start=10, stop=40, step=1)].univariate_values() == range_indexed_data[10:40])
+        )
+
     def test_column_names(self):
         # test the column names resolution
         columns_before = [
@@ -92,9 +107,10 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
-            # Series cannot be lower than three without passing frequency as argument to constructor
+            # Series cannot be lower than three without passing frequency as argument to constructor,
+            # if fill_missing_dates is True (otherwise it works)
             index = pd.date_range('20130101', '20130102')
-            TimeSeries.from_times_and_values(index, self.pd_series1.values[:2])
+            TimeSeries.from_times_and_values(index, self.pd_series1.values[:2], fill_missing_dates=True)
         with self.assertRaises(ValueError):
             # all arrays must have same length
             TimeSeries.from_times_and_values(self.pd_series1.index,
@@ -401,15 +417,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             # Main series should have explicit frequency in case of date holes
             range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110', freq='2D'))
-            TimeSeries.from_series(pd.Series(range(7), index=range_))
+            TimeSeries.from_series(pd.Series(range(7), index=range_), fill_missing_dates=True)
 
         range_ = pd.date_range('20130101', '20130104').append(pd.date_range('20130106', '20130110'))
-        series_test = TimeSeries.from_series(pd.Series(range(9), index=range_))
+        series_test = TimeSeries.from_series(pd.Series(range(9), index=range_), fill_missing_dates=True)
         self.assertEqual(series_test.freq_str, 'D')
 
         range_ = pd.date_range('20130101', '20130104', freq='2D') \
             .append(pd.date_range('20130107', '20130111', freq='2D'))
-        series_test = TimeSeries.from_series(pd.Series(range(5), index=range_))
+        series_test = TimeSeries.from_series(pd.Series(range(5), index=range_), fill_missing_dates=True)
         self.assertEqual(series_test.freq_str, '2D')
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
@@ -435,9 +451,10 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(resampled_timeseries.pd_series().at[pd.Timestamp('20130109')], 8)
 
     def test_short_series_creation(self):
-        # test missing freq argument error
+        # test missing freq argument error when filling missing dates on short time series
         with self.assertRaises(ValueError):
-            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2))
+            TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2),
+                                             fill_missing_dates=True)
         # test empty pandas series error
         with self.assertRaises(ValueError):
             TimeSeries.from_series(pd.Series(), freq='D')
