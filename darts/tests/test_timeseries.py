@@ -3,6 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tempfile import NamedTemporaryFile
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
@@ -483,6 +484,27 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         self.assertEqual(data_darts1, data_darts2)
         self.assertEqual(data_darts1, data_darts3)
+
+    def test_from_csv(self):
+        data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
+
+        data_pd1 = pd.DataFrame(data_dict)
+
+        f1 = NamedTemporaryFile()
+        f2 = NamedTemporaryFile()
+        
+        # testing two separators to check later if the arguments are passed to the `pd.read_csv`
+        data_pd1.to_csv(f1.name, sep=',', index=False)
+        data_pd1.to_csv(f2.name, sep='.', index=False)
+
+        # it should be possible to read data given either file object or file path 
+        f1.seek(0)
+        data_darts1 = TimeSeries.from_csv(filepath_or_buffer=f1, time_col="Time", sep=',')
+        data_darts2 = TimeSeries.from_csv(filepath_or_buffer=f2.name, time_col="Time", sep='.')
+
+        self.assertEqual(data_darts1, data_darts2)
 
     def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
