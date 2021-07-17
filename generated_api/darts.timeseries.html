@@ -431,7 +431,7 @@ The timestamp may not be in the TimeSeries. If it is, the timestamp will be drop
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
-or an integer (if indexed by RangeIndex)</p>
+or an integer (if indexed by Int64Index/RangeIndex)</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>Union[pandas.Timestamp, int]</p>
@@ -477,7 +477,7 @@ or an integer (if indexed by RangeIndex)</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_dataframe">
-<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
 One column (or the DataFrame index) has to represent the time,
 and a list of columns <cite>value_cols</cite> has to represent the values for this time series.</p>
@@ -487,11 +487,14 @@ and a list of columns <cite>value_cols</cite> has to represent the values for th
 <li><p><strong>df</strong> – The DataFrame</p></li>
 <li><p><strong>time_col</strong> – The time column name. If set, the column will be cast to a pandas DatetimeIndex.
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-either a pandas DatetimeIndex or a pandas RangeIndex.</p></li>
+either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+used, it is better if it has no holes; although setting <cite>fill_missing_dates</cite> can in some cases solve these
+issues (filling holes with NaN) at a performance cost.</p></li>
 <li><p><strong>value_cols</strong> – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
 <cite>None</cite>, the whole DataFrame will be used.</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.</p></li>
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
 in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
 </ul>
@@ -526,14 +529,19 @@ into a <cite>TimeSeries</cite> object</p>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_series">
-<em class="property">static </em><code class="sig-name descname">from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pd_series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_series</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pd_series</span><span class="p">:</span> <span class="n">pandas.core.series.Series</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a univariate and deterministic TimeSeries built from a pandas Series.</p>
+<p>The series must contain an index that is
+either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+used, it is better if it has no holes; although setting <cite>fill_missing_dates</cite> can in some cases solve these
+issues (filling holes with NaN) at a performance cost.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pd_series</strong> – The pandas Series instance.</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.</p></li>
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
 in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
 </ul>
@@ -549,17 +557,21 @@ in missing values if some dates are missing and <cite>fill_missing_dates</cite> 
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_times_and_values">
-<em class="property">static </em><code class="sig-name descname">from_times_and_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">times</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas.core.indexes.datetimes.DatetimeIndex<span class="p">, </span>pandas.core.indexes.range.RangeIndex<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">columns</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Collection<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_times_and_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_times_and_values" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_times_and_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">times</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas.core.indexes.datetimes.DatetimeIndex<span class="p">, </span>pandas.core.indexes.numeric.Int64Index<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">columns</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Collection<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_times_and_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_times_and_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a TimeSeries built from an index and value array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>times</strong> – A <cite>pandas.DateTimeIndex</cite> or <cite>pandas.RangeIndex</cite> representing the time axis for the time series.</p></li>
+<li><p><strong>times</strong> – A <cite>pandas.DateTimeIndex</cite> or <cite>pandas.Int64Index</cite> (or <cite>pandas.RangeIndex</cite>) representing the time axis
+for the time series. If a DatetimeIndex is
+used, it is better if it has no holes; although setting <cite>fill_missing_dates</cite> can in some cases solve these
+issues (filling holes with NaN) at a performance cost.</p></li>
 <li><p><strong>values</strong> – A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
 and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
 should be (time, component), and in the latter case (time, component, sample).</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.</p></li>
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
 in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
 <li><p><strong>columns</strong> – Columns to be used by the underlying pandas DataFrame.</p></li>
@@ -576,16 +588,43 @@ in missing values if some dates are missing and <cite>fill_missing_dates</cite> 
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_values">
-<em class="property">static </em><code class="sig-name descname">from_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">columns</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Collection<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_values" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">static </em><code class="sig-name descname">from_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">columns</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Collection<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a TimeSeries built from an array of values.
+The series will have an integer index (Int64Index).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> – A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
+and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
+should be (time, component), and in the latter case (time, component, sample).</p></li>
+<li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
+<li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>columns</strong> – Columns to be used by the underlying pandas DataFrame.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A TimeSeries constructed from the inputs.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_xarray">
-<em class="property">static </em><code class="sig-name descname">from_xarray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">xa</span><span class="p">:</span> <span class="n">xarray.core.dataarray.DataArray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_xarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_xarray" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">from_xarray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">xa</span><span class="p">:</span> <span class="n">xarray.core.dataarray.DataArray</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_xarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_xarray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a TimeSeries instance built from an xarray DataArray.
 The dimensions of the DataArray have to be (time, component, sample), in this order. The time
 dimension can have an arbitrary name, but component and sample must be named “component” and “sample”,
 respectively.</p>
+<p>The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
+The time must be indexed either with a pandas DatetimeIndex or a pandas Int64Index. If a DatetimeIndex is
+used, it is better if it has no holes; although setting <cite>fill_missing_dates</cite> can in some cases solve these
+issues (filling holes with NaN) at a performance cost.</p>
 <p>If two components have the same name or are not strings, this method will disambiguate the components
 names by appending a suffix of the form “&lt;name&gt;_N” to the N-th column with name “name”.</p>
 <dl class="field-list simple">
@@ -593,7 +632,8 @@ names by appending a suffix of the form “&lt;name&gt;_N” to the N-th column 
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>xa</strong> – The xarray DataArray</p></li>
 <li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.</p></li>
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
 <li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
 in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
 </ul>
@@ -651,7 +691,7 @@ next timestamp or the index of the previous one.</p></li>
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.get_timestamp_at_point">
 <code class="sig-name descname">get_timestamp_at_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">point</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; pandas._libs.tslibs.timestamps.Timestamp<a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.get_timestamp_at_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.get_timestamp_at_point" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts a point into a pandas.Timestamp in the time series</p>
+<dd><p>Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>point</strong> – This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
@@ -668,13 +708,13 @@ is present in the series time index, otherwise will raise a ValueError.</p>
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.has_datetime_index">
 <em class="property">property </em><code class="sig-name descname">has_datetime_index</code><a class="headerlink" href="#darts.timeseries.TimeSeries.has_datetime_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with a RangeIndex)</p>
+<dd><p>Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an Int64Index)</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.has_range_index">
 <em class="property">property </em><code class="sig-name descname">has_range_index</code><a class="headerlink" href="#darts.timeseries.TimeSeries.has_range_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether this series is indexed with a RangeIndex (otherwise it is indexed with a DatetimeIndex)</p>
+<dd><p>Whether this series is indexed with an Int64Index (otherwise it is indexed with a DatetimeIndex)</p>
 </dd></dl>
 
 <dl class="py method">
@@ -721,7 +761,7 @@ is present in the series time index, otherwise will raise a ValueError.</p>
 If a timestamp is provided, it does not need to be an element of the time index of the series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ts</strong> – The <cite>pandas.Timestamp</cite> (if indexed with DatetimeIndex) or integer (if indexed with RangeIndex) to check.</p>
+<dd class="field-odd"><p><strong>ts</strong> – The <cite>pandas.Timestamp</cite> (if indexed with DatetimeIndex) or integer (if indexed with Int64Index) to check.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Whether <cite>ts</cite> is contained within the interval of this time series.</p>
@@ -791,7 +831,7 @@ If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tup
 <dd class="field-odd"><p><strong>fn</strong> – Either a function which takes a value and returns a value ie. <cite>f(x) = y</cite>
 Or a function which takes a value and its timestamp and returns a value ie. <cite>f(timestamp, x) = y</cite>
 The type of <cite>timestamp</cite> is either <cite>pd.Timestamp</cite> (if the series is indexed with a DatetimeIndex),
-or an integer otherwise (if the series is indexed with a RangeIndex).</p>
+or an integer otherwise (if the series is indexed with an Int64Index).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A new TimeSeries instance</p>
@@ -1193,7 +1233,7 @@ same number of samples.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
-or an integer (if indexed by RangeIndex)</p>
+or an integer (if indexed by Int64Index/RangeIndex)</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>Union[pandas.Timestamp, int]</p>
@@ -1232,7 +1272,7 @@ before (and including) the last non-NaN entry are removed.</p>
 <dt id="darts.timeseries.TimeSeries.time_index">
 <em class="property">property </em><code class="sig-name descname">time_index</code><a class="headerlink" href="#darts.timeseries.TimeSeries.time_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns: The time index of this time series.
-:rtype: Union[pd.DatetimeIndex, pd.RangeIndex]</p>
+:rtype: Union[pd.DatetimeIndex, pd.Int64Index]</p>
 </dd></dl>
 
 <dl class="py method">

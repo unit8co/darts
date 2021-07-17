@@ -185,7 +185,6 @@ on bringing more models and features.
      - 
      - 
      - 
-     - 
    * - ``VARIMA``
      - x
      - x
@@ -193,10 +192,8 @@ on bringing more models and features.
      - 
      - 
      - 
-     - 
    * - ``AutoARIMA``
      - x
-     - 
      - 
      - 
      - 
@@ -209,10 +206,8 @@ on bringing more models and features.
      - 
      - 
      - 
-     - 
    * - ``Theta`` and ``FourTheta``
      - x
-     - 
      - 
      - 
      - 
@@ -225,10 +220,8 @@ on bringing more models and features.
      - 
      - 
      - 
-     - 
    * - ``FFT`` (Fast Fourier Transform)
      - x
-     - 
      - 
      - 
      - 
@@ -241,7 +234,6 @@ on bringing more models and features.
      - 
      - 
      - 
-     - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - x
      - x
@@ -249,42 +241,36 @@ on bringing more models and features.
      - x
      - x
      - x
-     - 
    * - ``BlockRNNModel`` (incl. LSTM and GRU)
      - x
      - x
      - 
      - x
      - x
-     - (x)
-     - 
+     - ( x )
    * - ``NBEATSModel``
      - x
      - x
      - 
      - x
      - x
-     - (x)
-     - 
+     - ( x )
    * - ``TCNModel``
      - x
      - x
      - x
      - x
      - x
-     - (x)
-     - 
+     - ( x )
    * - ``TransformerModel``
      - x
      - x
      - 
      - x
      - x
-     - (x)
-     - 
+     - ( x )
    * - Naive Baselines
      - x
-     - 
      - 
      - 
      - 
@@ -311,12 +297,12 @@ Installation Guide
 Preconditions
 ^^^^^^^^^^^^^
 
-Some of the models depend on ``fbprophet`` and ``torch``\ , which have non-Python dependencies.
+Some of the models depend on ``prophet`` and ``torch``\ , which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 The following steps assume running inside a conda environment.
 If that's not possible, first follow the official instructions to install
-`fbprophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
+`prophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
 and `torch <https://pytorch.org/get-started/locally/>`_\ , then skip to
 `Install darts <#install-darts>`_
 
@@ -341,7 +327,7 @@ MAC
 
 .. code-block::
 
-   conda install -c conda-forge -c pytorch pip fbprophet pytorch
+   conda install -c conda-forge -c pytorch pip prophet pytorch
 
 
 Linux and Windows
@@ -349,7 +335,7 @@ Linux and Windows
 
 .. code-block::
 
-   conda install -c conda-forge -c pytorch pip fbprophet pytorch cpuonly
+   conda install -c conda-forge -c pytorch pip prophet pytorch cpuonly
 
 
 Install darts
@@ -363,7 +349,7 @@ we also maintain the ``u8darts`` package, which provides the following alternate
 
 * Install core only (without neural networks, Prophet or AutoARIMA): ``pip install u8darts``
 * Install core + neural networks (PyTorch): ``pip install 'u8darts[torch]'``
-* Install core + Facebook Prophet: ``pip install 'u8darts[fbprophet]'``
+* Install core + Facebook Prophet: ``pip install 'u8darts[prophet]'``
 * Install core + AutoARIMA: ``pip install 'u8darts[pmdarima]'``
 
 Running the examples only, without installing:
@@ -399,7 +385,7 @@ alternatively you can run
    ./gradlew coverageTest # to run coverage
    ./gradlew lint         # to run linter
 
-To run the tests for specific flavours of the library, replace ``_all`` with ``_core``\ , ``_fbprophet``\ , ``_pmdarima`` or ``_torch``.
+To run the tests for specific flavours of the library, replace ``_all`` with ``_core``\ , ``_prophet``\ , ``_pmdarima`` or ``_torch``.
 
 Documentation
 ^^^^^^^^^^^^^

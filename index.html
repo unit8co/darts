@@ -300,6 +300,141 @@ inferences of the underlying states/values.</p>
 <h2>Forecasting Models<a class="headerlink" href="#forecasting-models" title="Permalink to this headline">¶</a></h2>
 <p>Here’s a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.</p>
+<table class="table">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Univariate</p></th>
+<th class="head"><p>Multivariate</p></th>
+<th class="head"><p>Probabilistic</p></th>
+<th class="head"><p>Multiple-series training</p></th>
+<th class="head"><p>Past-observed covariates support</p></th>
+<th class="head"><p>Future-known covariates support</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARIMA</span></code></p></td>
+<td><p>x</p></td>
+<td></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
+<td><p>x</p></td>
+<td></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Regression Models (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> and <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>)</p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>( x )</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>( x )</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>( x )</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>( x )</p></td>
+</tr>
+<tr class="row-odd"><td><p>Naive Baselines</p></td>
+<td><p>x</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="contribute">
 <h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
@@ -313,11 +448,11 @@ We welcome pull requests and issues on GitHub.</p>
 </section>
 <section id="installation-guide">
 <h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h2>
-<p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">fbprophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
+<p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
 <p>The following steps assume running inside a conda environment.
 If that’s not possible, first follow the official instructions to install
-<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">fbprophet</a>
+<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">prophet</a>
 and <a class="reference external" href="https://pytorch.org/get-started/locally/">torch</a>, then skip to
 <a class="reference external" href="#install-darts">Install darts</a></p>
 <p>To create a conda environment for Python 3.7
@@ -329,10 +464,10 @@ and <a class="reference external" href="https://pytorch.org/get-started/locally/
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">prophet</span> <span class="n">pytorch</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">fbprophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">prophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
 </pre></div>
 </div>
 <p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
@@ -341,7 +476,7 @@ we also maintain the <code class="docutils literal notranslate"><span class="pre
 <ul class="simple">
 <li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts</span></code></p></li>
 <li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[torch]'</span></code></p></li>
-<li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[fbprophet]'</span></code></p></li>
+<li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[prophet]'</span></code></p></li>
 <li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[pmdarima]'</span></code></p></li>
 </ul>
 <p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
@@ -362,7 +497,7 @@ To run the example notebooks without installing our libraries natively on your m
 ./gradlew lint         <span class="c1"># to run linter</span>
 </pre></div>
 </div>
-<p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_fbprophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
+<p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_prophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
 <p>To build documantation locally just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
 </pre></div>

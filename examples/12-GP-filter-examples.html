@@ -42,6 +42,7 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Filtering and predicting using the darts filters" href="11-Kalman-filter-examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -71,7 +72,7 @@
             <a class="nav-link" href="../generated_api/darts.html">API Reference</a>
         </li>
         
-        <li class="nav-item ">
+        <li class="nav-item active">
             <a class="nav-link" href="../examples.html">Examples</a>
         </li>
         
@@ -121,6 +122,8 @@
         
         
         
+          
+        
         
       </ul>
   
@@ -139,7 +142,19 @@
     <ul class="nav section-nav flex-column">
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#Adding-white-noise-to-the-sine-wave" class="nav-link">Adding white noise to the sine wave</a>
+            <a href="#Adding-white-noise-to-a-sine-wave" class="nav-link">Adding white noise to a sine wave</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel" class="nav-link">Infer the mean of a Gaussian Process using a periodic kernel</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Sample-from-a-Gaussian-Process" class="nav-link">Sample from a Gaussian Process</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h2">
+            <a href="#Sample-from-a-Gaussian-Process-with-missing-data-points" class="nav-link">Sample from a Gaussian Process with missing data points</a>
         </li>
     
     </ul>
@@ -405,8 +420,12 @@ div.rendered_html tbody tr:hover {
 </style>
 <section id="Filtering-and-predicting-using-the-Gaussian-Process-filter">
 <h1>Filtering and predicting using the Gaussian Process filter<a class="headerlink" href="#Filtering-and-predicting-using-the-Gaussian-Process-filter" title="Permalink to this headline">¶</a></h1>
+<p>In this notebook, we will look at filtering noisy data by fitting a Gaussian Process on it.</p>
+<p>The Gaussian Process filter, just like the Kalman filter, is a <code class="docutils literal notranslate"><span class="pre">FilteringModel</span></code> in Darts (and not a <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code>). <code class="docutils literal notranslate"><span class="pre">FilteringModel</span></code>s can be used to smooth series, or to attempt to infer the “true” data from the data corrupted by noise.</p>
+<p>In the case of the Gaussian Process, this is done by making assumptions about the shape of the underlying function on which the true data points lie. These assumptions (e.g. smoothness, periodicity, …) are encoded in the kernels.</p>
+<p>In this notebook, we’ll generate a simple periodic signal and see how the Gaussian Process filter can be used to de-noise it.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -414,38 +433,38 @@ div.rendered_html tbody tr:hover {
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.gaussian_process.kernels</span> <span class="kn">import</span> <span class="n">ExpSineSquared</span><span class="p">,</span> <span class="n">RBF</span>
+
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">GaussianProcessFilter</span>
-
-<span class="kn">from</span> <span class="nn">sklearn.gaussian_process.kernels</span> <span class="kn">import</span> <span class="n">ExpSineSquared</span><span class="p">,</span> <span class="n">RBF</span>
+<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
 </pre></div>
 </div>
 </div>
-<section id="Adding-white-noise-to-the-sine-wave">
-<h2>Adding white noise to the sine wave<a class="headerlink" href="#Adding-white-noise-to-the-sine-wave" title="Permalink to this headline">¶</a></h2>
+<section id="Adding-white-noise-to-a-sine-wave">
+<h2>Adding white noise to a sine wave<a class="headerlink" href="#Adding-white-noise-to-a-sine-wave" title="Permalink to this headline">¶</a></h2>
+<p>We create a simple sine wave signal and add Gaussian noise to it.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">NOISE_DISTANCE</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span></span><span class="n">NOISE_DISTANCE</span> <span class="o">=</span> <span class="mf">0.4</span>
 <span class="n">SAMPLE_SIZE</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="n">RESIZE_NOISE</span> <span class="o">=</span> <span class="mf">.5</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
-<span class="c1"># Prepare the drawing</span>
-<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">360</span><span class="o">*</span><span class="mi">5</span><span class="p">,</span><span class="n">SAMPLE_SIZE</span><span class="p">))</span>
-<span class="n">x_2</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+<span class="c1"># Prepare the sine wave</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">SAMPLE_SIZE</span><span class="p">,</span> <span class="n">value_frequency</span><span class="o">=</span><span class="mf">0.025</span><span class="p">)</span>
 
-<span class="c1"># add white noise (gaussian noise, can be mapped from the random distribution using rand**3)</span>
-<span class="c1"># and resize to RESIZE_NOISE</span>
-<span class="n">noise</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">NOISE_DISTANCE</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">)</span><span class="o">*</span><span class="n">RESIZE_NOISE</span><span class="p">)</span>
-<span class="n">x_2_noise</span> <span class="o">=</span> <span class="n">x_2</span> <span class="o">+</span> <span class="n">noise</span>
+<span class="c1"># Add white noise</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">SAMPLE_SIZE</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">NOISE_DISTANCE</span><span class="p">)</span>
+<span class="n">x_noise</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">noise</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">])</span>
-<span class="n">x_2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Original sine wave&#39;</span><span class="p">)</span>
-<span class="n">x_2_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Original sine wave&#39;</span><span class="p">)</span>
+<span class="n">x_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -455,86 +474,128 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-GP-filter-example_3_0.png" src="../_images/examples_12-GP-filter-example_3_0.png" />
+<img alt="../_images/examples_12-GP-filter-examples_3_0.png" src="../_images/examples_12-GP-filter-examples_3_0.png" />
 </div>
 </div>
+</section>
+<section id="Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel">
+<h2>Infer the mean of a Gaussian Process using a periodic kernel<a class="headerlink" href="#Infer-the-mean-of-a-Gaussian-Process-using-a-periodic-kernel" title="Permalink to this headline">¶</a></h2>
+<p>Next, we fit a Gaussian Process on the data using the <code class="docutils literal notranslate"><span class="pre">ExpSineSquared</span></code> kernel. This kernel encodes a periodicity assumption, which is appropriate for our data. You can try to uncomment the <code class="docutils literal notranslate"><span class="pre">kernel</span> <span class="pre">=</span> <span class="pre">RBF()</span></code> line to change the kernel to an <code class="docutils literal notranslate"><span class="pre">RBF</span></code> kernel, which only imposes smoothness of the function. See <a class="reference external" href="https://www.cs.toronto.edu/~duvenaud/cookbook/">The Kernel Cookbook</a> for more information about (Gaussian Process) kernels and how to combine them.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code> constructor takes the same arguments as scikit-learn’s <code class="docutils literal notranslate"><span class="pre">GaussianProcessRegressor</span></code> on which is relies. The kernels implemented in scikit-learn can be found <a class="reference external" href="https://scikit-learn.org/stable/modules/gaussian_process.html#kernels-for-gaussian-processes">here</a>.</p>
+<p>Here, we set a relative noise variance of <code class="docutils literal notranslate"><span class="pre">alpha=0.2</span></code> because we know exactly how much noise we added before, but in practice this will have to estimated.</p>
+<p>We see that the mean of Gaussian Process lies very close to the original signal. Bear in mind though that real data will rarely be so perfectly periodic and more experimentation with kernels and noise levels will be needed.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># kernel = RBF()</span>
-<span class="n">kernel</span> <span class="o">=</span> <span class="n">ExpSineSquared</span><span class="p">()</span>
+<span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">ExpSineSquared</span><span class="p">()</span>
+<span class="c1"># kernel = RBF()</span>
 
-<span class="n">GP</span> <span class="o">=</span> <span class="n">GaussianProcessFilter</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">n_restarts_optimizer</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">filtered_x</span> <span class="o">=</span> <span class="n">GP</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">x_2_noise</span><span class="p">)</span>
+<span class="n">gpf</span> <span class="o">=</span> <span class="n">GaussianProcessFilter</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">NOISE_DISTANCE</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_restarts_optimizer</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">filtered_x</span> <span class="o">=</span> <span class="n">gpf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">x_noise</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">])</span>
-<span class="n">x_2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Orginal sine wave&#39;</span><span class="p">)</span>
-<span class="n">x_2_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Orginal sine wave&#39;</span><span class="p">)</span>
+<span class="n">x_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
 <span class="n">filtered_x</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Filtered sine wave&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/Users/julien/anaconda3/envs/darts/lib/python3.8/site-packages/sklearn/gaussian_process/_gpr.py:509: ConvergenceWarning: lbfgs failed to converge (status=2):
-ABNORMAL_TERMINATION_IN_LNSRCH.
-
-Increase the number of iterations (max_iter) or scale the data as shown in:
-    https://scikit-learn.org/stable/modules/preprocessing.html
-  _check_optimize_result(&#34;lbfgs&#34;, opt_res)
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fcc67c990d0&gt;
+&lt;matplotlib.legend.Legend at 0x166c993a0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-GP-filter-example_4_2.png" src="../_images/examples_12-GP-filter-example_4_2.png" />
+<img alt="../_images/examples_12-GP-filter-examples_5_1.png" src="../_images/examples_12-GP-filter-examples_5_1.png" />
 </div>
 </div>
+</section>
+<section id="Sample-from-a-Gaussian-Process">
+<h2>Sample from a Gaussian Process<a class="headerlink" href="#Sample-from-a-Gaussian-Process" title="Permalink to this headline">¶</a></h2>
+<p>The Gaussian Process is a probabilistic model, meaning that the predictions of the model are distributions instead of single values.</p>
+<p>Before, we just used the mean of these distributions at the points of interest to plot a curve. Here instead, we will sample from the distributions and plot the 90% confidence interval. From this we can see that the uncertainty about the underlying data is larger around the crests and troughs than elsewhere.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">filtered_x_samples</span> <span class="o">=</span> <span class="n">GP</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">x_2_noise</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span></span><span class="n">filtered_x_samples</span> <span class="o">=</span> <span class="n">gpf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">x_noise</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">])</span>
-<span class="n">x_2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Original sine wave&#39;</span><span class="p">)</span>
-<span class="n">x_2_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
-<span class="n">filtered_x_samples</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Samples of filtered sine wave&#39;</span><span class="p">)</span>
+<span class="n">x</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Original sine wave&#39;</span><span class="p">)</span>
+<span class="n">x_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave&#39;</span><span class="p">)</span>
+<span class="n">filtered_x_samples</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Confidence interval of filtered sine wave&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fcc67748ac0&gt;
+&lt;matplotlib.legend.Legend at 0x166b2eca0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_12-GP-filter-example_5_1.png" src="../_images/examples_12-GP-filter-example_5_1.png" />
+<img alt="../_images/examples_12-GP-filter-examples_7_1.png" src="../_images/examples_12-GP-filter-examples_7_1.png" />
+</div>
+</div>
+</section>
+<section id="Sample-from-a-Gaussian-Process-with-missing-data-points">
+<h2>Sample from a Gaussian Process with missing data points<a class="headerlink" href="#Sample-from-a-Gaussian-Process-with-missing-data-points" title="Permalink to this headline">¶</a></h2>
+<p>We can even use the Gaussian Process filter on time series with missing (NaN) data points.</p>
+<p>For our periodic signal, the Gaussian Process estimates the missing data very well using the periodic kernel. You can see how this changes and the uncertainty increases when using the RBF kernel instead.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">x_missing_arr</span> <span class="o">=</span> <span class="n">x_noise</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="n">x_missing_arr</span><span class="p">[</span><span class="mi">50</span><span class="p">:</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="n">x_missing</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">x_missing_arr</span><span class="p">)</span>
+
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">ExpSineSquared</span><span class="p">()</span>
+<span class="c1"># kernel = RBF()</span>
+
+<span class="n">gpf_missing</span> <span class="o">=</span> <span class="n">GaussianProcessFilter</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">n_restarts_optimizer</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">filtered_x_missing_samples</span> <span class="o">=</span> <span class="n">gpf_missing</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">x_missing</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">8</span><span class="p">])</span>
+<span class="n">x_missing</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy sine wave with missing data&#39;</span><span class="p">)</span>
+<span class="n">filtered_x_missing_samples</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Confidence interval of filtered sine wave&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x166db4a00&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_12-GP-filter-examples_9_1.png" src="../_images/examples_12-GP-filter-examples_9_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -555,6 +616,7 @@ Increase the number of iterations (max_iter) or scale the data as shown in:
               
               <div class='prev-next-bottom'>
                 
+    <a class='left-prev' id="prev-link" href="11-Kalman-filter-examples.html" title="previous page">Filtering and predicting using the darts filters</a>
 
               </div>
               

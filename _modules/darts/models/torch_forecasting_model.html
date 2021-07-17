@@ -340,7 +340,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_epochs_val_period</span> <span class="o">=</span> <span class="n">nr_epochs_val_period</span>
 
         <span class="k">if</span> <span class="n">model_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">current_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H.%M.%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">model_name</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="s2">&quot;_torch_model_run_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
@@ -761,7 +761,7 @@
             <span class="k">for</span> <span class="n">batch_tuple</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
 
                 <span class="c1"># at this point `input_series` contains both the past target series and past covariates</span>
-                <span class="n">input_series</span> <span class="o">=</span> <span class="n">batch_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">input_series</span> <span class="o">=</span> <span class="n">batch_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
                 <span class="n">cov_future</span> <span class="o">=</span> <span class="n">batch_tuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_tuple</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="kc">None</span>
 
                 <span class="c1"># repeat prediction procedure for every needed sample</span>

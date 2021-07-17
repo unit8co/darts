@@ -160,7 +160,7 @@
 <span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">execute_and_suppress_output</span>
-<span class="kn">import</span> <span class="nn">fbprophet</span>
+<span class="kn">import</span> <span class="nn">prophet</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -193,7 +193,7 @@
 <span class="sd">        prophet_kwargs</span>
 <span class="sd">            Some optional keyword arguments for Prophet.</span>
 <span class="sd">            For information about the parameters see:</span>
-<span class="sd">            `The Prophet source code &lt;https://github.com/facebook/prophet/blob/master/python/fbprophet/forecaster.py&gt;`_.</span>
+<span class="sd">            `The Prophet source code &lt;https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py&gt;`_.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -217,7 +217,7 @@
         <span class="p">})</span>
 
         <span class="c1"># TODO: user-provided seasonalities, or &quot;auto&quot; based on stepduration</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">fbprophet</span><span class="o">.</span><span class="n">Prophet</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">prophet_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">prophet</span><span class="o">.</span><span class="n">Prophet</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">prophet_kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">freq_str</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;MS&#39;</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;ME&#39;</span><span class="p">]:</span>
                 <span class="n">interval_length</span> <span class="o">=</span> <span class="mf">30.4375</span>

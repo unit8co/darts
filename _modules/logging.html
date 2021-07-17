@@ -148,7 +148,7 @@
               <div>
                 
   <h1>Source code for logging</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Copyright 2001-2017 by Vinay Sajip. All Rights Reserved.</span>
+<span></span><span class="c1"># Copyright 2001-2019 by Vinay Sajip. All Rights Reserved.</span>
 <span class="c1">#</span>
 <span class="c1"># Permission to use, copy, modify, and distribute this software and its</span>
 <span class="c1"># documentation for any purpose and without fee is hereby granted,</span>
@@ -168,7 +168,7 @@
 <span class="sd">Logging package for Python. Based on PEP 282 and comments thereto in</span>
 <span class="sd">comp.lang.python.</span>
 
-<span class="sd">Copyright (C) 2001-2017 Vinay Sajip. All Rights Reserved.</span>
+<span class="sd">Copyright (C) 2001-2019 Vinay Sajip. All Rights Reserved.</span>
 
 <span class="sd">To use, simply &#39;import logging&#39; and log away!</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -388,11 +388,9 @@
     <span class="k">def</span> <span class="nf">_register_at_fork_reinit_lock</span><span class="p">(</span><span class="n">instance</span><span class="p">):</span>
         <span class="k">pass</span>  <span class="c1"># no-op when os.register_at_fork does not exist.</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="c1"># A collection of instances with a createLock method (logging.Handler)</span>
+    <span class="c1"># A collection of instances with a _at_fork_reinit method (logging.Handler)</span>
     <span class="c1"># to be called in the child after forking.  The weakref avoids us keeping</span>
-    <span class="c1"># discarded Handler instances alive.  A set is used to avoid accumulating</span>
-    <span class="c1"># duplicate registrations as createLock() is responsible for registering</span>
-    <span class="c1"># a new Handler instance with this set in the first place.</span>
+    <span class="c1"># discarded Handler instances alive.</span>
     <span class="n">_at_fork_reinit_lock_weakset</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_register_at_fork_reinit_lock</span><span class="p">(</span><span class="n">instance</span><span class="p">):</span>
@@ -403,16 +401,12 @@
             <span class="n">_releaseLock</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_after_at_fork_child_reinit_locks</span><span class="p">():</span>
-        <span class="c1"># _acquireLock() was called in the parent before forking.</span>
         <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">_at_fork_reinit_lock_weakset</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">handler</span><span class="o">.</span><span class="n">createLock</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-                <span class="c1"># Similar to what PyErr_WriteUnraisable does.</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ignoring exception from logging atfork&quot;</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span>
-                      <span class="s2">&quot;._reinit_lock() method:&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-        <span class="n">_releaseLock</span><span class="p">()</span>  <span class="c1"># Acquired by os.register_at_fork(before=.</span>
+            <span class="n">handler</span><span class="o">.</span><span class="n">_at_fork_reinit</span><span class="p">()</span>
 
+        <span class="c1"># _acquireLock() was called in the parent before forking.</span>
+        <span class="c1"># The lock is reinitialized to unlocked state.</span>
+        <span class="n">_lock</span><span class="o">.</span><span class="n">_at_fork_reinit</span><span class="p">()</span>
 
     <span class="n">os</span><span class="o">.</span><span class="n">register_at_fork</span><span class="p">(</span><span class="n">before</span><span class="o">=</span><span class="n">_acquireLock</span><span class="p">,</span>
                         <span class="n">after_in_child</span><span class="o">=</span><span class="n">_after_at_fork_child_reinit_locks</span><span class="p">,</span>
@@ -757,8 +751,9 @@
         <span class="k">if</span> <span class="n">datefmt</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">datefmt</span><span class="p">,</span> <span class="n">ct</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_time_format</span><span class="p">,</span> <span class="n">ct</span><span class="p">)</span>
-            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_msec_format</span> <span class="o">%</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">msecs</span><span class="p">)</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_time_format</span><span class="p">,</span> <span class="n">ct</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_msec_format</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_msec_format</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">msecs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">s</span>
 
     <span class="k">def</span> <span class="nf">formatException</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ei</span><span class="p">):</span>
@@ -1045,6 +1040,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
         <span class="n">_register_at_fork_reinit_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">_at_fork_reinit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">_at_fork_reinit</span><span class="p">()</span>
+
     <span class="k">def</span> <span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Acquire the I/O thread lock.</span>
@@ -1276,7 +1274,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A handler class which writes formatted logging records to disk files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Open the specified file and use it as the stream for logging.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1287,6 +1285,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">baseFilename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span>
         <span class="k">if</span> <span class="n">delay</span><span class="p">:</span>
             <span class="c1">#We don&#39;t open the stream, but we still need to call the</span>
@@ -1323,7 +1322,8 @@
 <span class="sd">        Open the current base file with the (original) mode and encoding.</span>
 <span class="sd">        Return the resulting stream.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseFilename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseFilename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+                    <span class="n">errors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2093,14 +2093,19 @@
 <span class="sd">              attached to the root logger are removed and closed, before</span>
 <span class="sd">              carrying out the configuration as specified by the other</span>
 <span class="sd">              arguments.</span>
+<span class="sd">    encoding  If specified together with a filename, this encoding is passed to</span>
+<span class="sd">              the created FileHandler, causing it to be used when the file is</span>
+<span class="sd">              opened.</span>
+<span class="sd">    errors    If specified together with a filename, this value is passed to the</span>
+<span class="sd">              created FileHandler, causing it to be used when the file is</span>
+<span class="sd">              opened in text mode. If not specified, the default value is</span>
+<span class="sd">              `backslashreplace`.</span>
+
 <span class="sd">    Note that you could specify a stream created using open(filename, mode)</span>
 <span class="sd">    rather than passing the filename and mode in. However, it should be</span>
 <span class="sd">    remembered that StreamHandler does not close its stream (since it may be</span>
 <span class="sd">    using sys.stdout or sys.stderr), whereas FileHandler closes its stream</span>
 <span class="sd">    when the handler is closed.</span>
-
-<span class="sd">    .. versionchanged:: 3.8</span>
-<span class="sd">       Added the ``force`` parameter.</span>
 
 <span class="sd">    .. versionchanged:: 3.2</span>
 <span class="sd">       Added the ``style`` parameter.</span>
@@ -2111,12 +2116,20 @@
 <span class="sd">       ``filename``/``filemode``, or ``filename``/``filemode`` specified</span>
 <span class="sd">       together with ``stream``, or ``handlers`` specified together with</span>
 <span class="sd">       ``stream``.</span>
+
+<span class="sd">    .. versionchanged:: 3.8</span>
+<span class="sd">       Added the ``force`` parameter.</span>
+
+<span class="sd">    .. versionchanged:: 3.9</span>
+<span class="sd">       Added the ``encoding`` and ``errors`` parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Add thread safety in case someone mistakenly calls</span>
     <span class="c1"># basicConfig() from multiple threads</span>
     <span class="n">_acquireLock</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">force</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;force&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;encoding&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span> <span class="s1">&#39;backslashreplace&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">force</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]:</span>
                 <span class="n">root</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
@@ -2135,7 +2148,10 @@
                 <span class="n">filename</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="n">mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;filemode&quot;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">filename</span><span class="p">:</span>
-                    <span class="n">h</span> <span class="o">=</span> <span class="n">FileHandler</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="s1">&#39;b&#39;</span><span class="ow">in</span> <span class="n">mode</span><span class="p">:</span>
+                        <span class="n">errors</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">h</span> <span class="o">=</span> <span class="n">FileHandler</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span>
+                                    <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">stream</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                     <span class="n">h</span> <span class="o">=</span> <span class="n">StreamHandler</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
@@ -2171,10 +2187,9 @@
 
 <span class="sd">    If no name is specified, return the root logger.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">Logger</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">name</span> <span class="o">==</span> <span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">root</span>
+    <span class="k">return</span> <span class="n">Logger</span><span class="o">.</span><span class="n">manager</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">critical</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -2312,6 +2327,9 @@
 
     <span class="k">def</span> <span class="nf">createLock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_at_fork_reinit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
 
 <span class="c1"># Warnings integration</span>
 

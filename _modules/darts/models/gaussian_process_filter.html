@@ -150,12 +150,13 @@
   <h1>Source code for darts.models.gaussian_process_filter</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">sklearn.gaussian_process</span> <span class="kn">import</span> <span class="n">GaussianProcessRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.gaussian_process.kernels</span> <span class="kn">import</span> <span class="n">Kernel</span>
 
-<span class="kn">from</span> <span class="nn">.filtering_model</span> <span class="kn">import</span> <span class="n">FilteringModel</span>
 <span class="kn">from</span> <span class="nn">..utils.utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">.filtering_model</span> <span class="kn">import</span> <span class="n">FilteringModel</span>
 
 
 <div class="viewcode-block" id="GaussianProcessFilter"><a class="viewcode-back" href="../../../generated_api/darts.models.gaussian_process_filter.html#darts.models.gaussian_process_filter.GaussianProcessFilter">[docs]</a><span class="k">class</span> <span class="nc">GaussianProcessFilter</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">):</span>
@@ -205,17 +206,22 @@
                                               <span class="s1">&#39;deterministic (observations).&#39;</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
-        <span class="n">times</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">:</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+        <span class="n">not_nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="n">not_nan_mask</span><span class="p">,</span> <span class="p">:],</span> <span class="n">values</span><span class="p">[</span><span class="n">not_nan_mask</span><span class="p">,</span> <span class="p">:])</span>
 
         <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">sampled_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+            <span class="n">filtered_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">sampled_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">sample_y</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+            <span class="n">filtered_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">sample_y</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
         
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">sampled_states</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">filtered_values</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

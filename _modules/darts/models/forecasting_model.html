@@ -451,9 +451,16 @@
                 <span class="n">forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">last_points_times</span><span class="p">),</span>
-                                                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">),</span>
-                                                    <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">stride</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">last_points_times</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">stride</span><span class="p">),</span>
+                                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">last_points_times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                                      <span class="n">stop</span><span class="o">=</span><span class="n">last_points_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                                                      <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">))</span>
+
+
         <span class="k">return</span> <span class="n">forecasts</span></div>
 
 <div class="viewcode-block" id="ForecastingModel.backtest"><a class="viewcode-back" href="../../../generated_api/darts.models.forecasting_model.html#darts.models.arima.ForecastingModel.backtest">[docs]</a>    <span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
