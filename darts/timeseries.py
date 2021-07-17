@@ -221,6 +221,50 @@ class TimeSeries:
         return TimeSeries(xa_.astype(np.float))
 
     @staticmethod
+    def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
+                 time_col: Optional[str] = None,
+                 value_cols: Optional[Union[List[str], str]] = None,
+                 fill_missing_dates: Optional[bool] = True,
+                 freq: Optional[str] = None,
+                 **kwargs,) -> 'TimeSeries':
+        """
+        Returns a deterministic TimeSeries instance built from a single csv file.
+        One column (or the DataFrame index) has to represent the time,
+        and a list of columns `value_cols` has to represent the values for this time series.
+
+        Parameters
+        ----------
+        filepath_or_buffer 
+            Consistent with argument of `pandas.read_csv` function 
+        time_col
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
+            either a pandas DatetimeIndex or a pandas RangeIndex.
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+            `None`, the whole DataFrame will be used.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        **kwargs
+            Optional arguments to be passed to `pandas.read_csv` function
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+
+        df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
+        return TimeSeries.from_dataframe(df=df, 
+                                         time_col=time_col, 
+                                         value_cols=value_cols, 
+                                         fill_missing_dates=fill_missing_dates, 
+                                         freq=freq)
+
+    @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
