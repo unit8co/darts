@@ -238,13 +238,10 @@ class TimeSeries:
             The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function 
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
-            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
-            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
-            issues (filling holes with NaN) at a performance cost.
+            If not set, the pandas Int64Index will be used. 
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
-            `None`, the whole DataFrame will be used.
+            `None`, all columns from the CSV file will be used (except for the time_col, if specified) 
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
