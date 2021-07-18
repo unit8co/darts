@@ -224,28 +224,31 @@ class TimeSeries:
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
                  time_col: Optional[str] = None,
                  value_cols: Optional[Union[List[str], str]] = None,
-                 fill_missing_dates: Optional[bool] = True,
+                 fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
                  **kwargs,) -> 'TimeSeries':
         """
-        Returns a deterministic TimeSeries instance built from a single csv file.
-        One column (or the DataFrame index) has to represent the time,
-        and a list of columns `value_cols` has to represent the values for this time series.
+        Returns a deterministic TimeSeries instance built from a single CSV file.
+        One column can be used to represent the time (if not present, the time index will be an Int64Index)
+        and a list of columns `value_cols` can be used to indicate the values for this time series.
 
         Parameters
         ----------
-        filepath_or_buffer 
-            Consistent with argument of `pandas.read_csv` function 
+        filepath_or_buffer
+            The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function 
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas RangeIndex.
+            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+            issues (filling holes with NaN) at a performance cost.
         value_cols
-            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+            A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
             `None`, the whole DataFrame will be used.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
