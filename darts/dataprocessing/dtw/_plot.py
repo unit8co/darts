@@ -38,8 +38,7 @@ def plot(self, show_series : bool = False, show_path : bool = True, show_cost : 
     if show_cost:
         cost_matrix = self.cost.to_dense()
         cost_matrix = np.transpose(cost_matrix[1:, 1:])
-        print(cost_matrix.shape)
-        warp.imshow(cost_matrix, cmap="summer", interpolation='bilinear', origin="lower")
+        warp.imshow(cost_matrix, cmap="summer", interpolation='nearest', origin="lower")
 
     if show_path:
         path = self.path()
@@ -47,15 +46,7 @@ def plot(self, show_series : bool = False, show_path : bool = True, show_cost : 
 
         i_coords = path[::2]
         j_coords = path[1::2]
-        print((len(i_coords), len(j_coords)))
         warp.plot(i_coords, j_coords)
-
-    #left.set_anchor('NW')
-    #bottom.set_anchor('SE')
-    #warp.set_anchor('TR')
-
-    #empty.axis("off")
-
 
     self.pred_series.plot(ax= left, y=self.pred_series._time_dim)
     self.actual_series.plot(ax = bottom)
@@ -109,8 +100,6 @@ def plot_alignment(self, actual_series_y_offset = 0, pred_series_y_offset = 0):
     y_coords[2::3] = np.nan
 
     arr = xr.DataArray(y_coords, dims=["value"], coords={"value": x_coords})
-
-    # Plotting
     xr.plot.line(arr, x="value")
 
     time_series1.plot()

@@ -3,6 +3,7 @@ import numpy as np
 
 from .window import Window, CRWindow
 from abc import abstractmethod
+import array
 
 Elem = Tuple[int, int]
 
@@ -30,7 +31,7 @@ class CostMatrix:
     def from_window(window: Window):
         density = len(window) / ((window.n+1)*(window.m+1))
 
-        if density < 0.5:
+        if isinstance(window, CRWindow) and density < 0.5:
             return SparseCostMatrix(window)
         else:
             return DenseCostMatrix(window.n, window.m)
@@ -47,18 +48,25 @@ class DenseCostMatrix(np.ndarray, CostMatrix):
         return self
 
 class SparseCostMatrix(CostMatrix):
-    def __init__(self, window: Window):
+    def __init__(self, window: CRWindow):
         self.n = window.n
         self.m = window.m
         self.shape = (self.n+1, self.m+1)
         self.window = window
         self.offsets = np.empty(self.n+2, dtype=int)
+        self.column_ranges = window.column_ranges
         self.offsets[0] = 0
-        self.offsets[1:] = np.cumsum(window.column_lengths())
-        self.dense = np.empty(self.offsets[-1])
+        np.cumsum(window.column_lengths(), out=self.offsets[1:])
+        #self.dense = np.empty(self.offsets[-1]+1)
+
+        len = self.offsets[-1]+1
+
+        self.offsets = array.array('i', self.offsets)
+        self.dense = array.array('f', [np.inf] * len) #todo better way
 
     def fill(self, value):
-        self.dense.fill(-1)
+        pass
+        #self.dense.fill(value)
 
     def to_dense(self) -> np.ndarray:
         matrix = np.empty((self.n+1, self.m+1))
@@ -70,7 +78,8 @@ class SparseCostMatrix(CostMatrix):
 
             # TODO express only in terms of numpy operations
             for i in range(0, self.n+1):
-                start, end = self.window.column_ranges[i]
+                start = self.window.column_ranges[i*2 + 0]
+                end = self.window.column_ranges[i*2 + 1]
                 len = lengths[i]
                 offset = self.offsets[i]
 
@@ -87,19 +96,23 @@ class SparseCostMatrix(CostMatrix):
 
         return matrix
 
-    def index(self, key: Elem):
-        column_index = self.window.column_index(key)
-        if column_index == -1: return -1
-        return self.offsets[key[0]] + column_index
+    # PERFORMANCE: hot functions, avoid calling functions
+    def __getitem__(self, elem: Elem):
+        i, j = elem
 
-    def __getitem__(self, key: Elem):
-        idx = self.index(key)
-        return self.dense[idx] if idx != -1 else np.inf
+        start = self.column_ranges[i * 2 + 0]
+        end = self.column_ranges[i * 2 + 1]
+        if start <= j < end: return self.dense[self.offsets[i] + j - start]
+        return np.inf
 
-    def __setitem__(self, key, value):
-        idx = self.index(key)
-        assert(idx != -1)
-        self.dense[idx] = value
+    def __setitem__(self, elem, value):
+        i, j = elem
+
+        start = self.column_ranges[i * 2 + 0]
+        end = self.column_ranges[i * 2 + 1]
+        #assert(start <= j < end)
+
+        self.dense[self.offsets[i] + j - start] = value
 
     def __iter__(self):
         return self.window.__iter__()
