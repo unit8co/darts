@@ -13,6 +13,7 @@ logger = get_logger(__name__)
 
 try:
     from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihoodModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -26,6 +27,7 @@ if TORCH_AVAILABLE:
     models_cls_kwargs_errs = [
         (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'training_length': 12, 'n_epochs': 10, 'likelihood': GaussianLikelihoodModel()}, 80),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -127,6 +129,8 @@ if TORCH_AVAILABLE:
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
+                if model._is_probabilistic:
+                    continue
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
                 pred1 = model.predict(1)
@@ -203,6 +207,8 @@ if TORCH_AVAILABLE:
         def test_same_result_with_different_n_jobs(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                if model._is_probabilistic():
+                    continue
                 multiple_ts = [self.ts_pass_train] * 10
 
                 model.fit(multiple_ts)
