@@ -90,11 +90,11 @@ def _dtw_exact():
 
 
 def _dtw_multigrid():
-    dtw.dtw(series1, series2, multigrid_radius=1).distance()
+    dtw.dtw(series1, series2, multigrid_radius=0).distance()
 
 
 def _benchmark_dtw():
-    size = 2 ** 5
+    size = 2 ** 10
     freq = 1 / size
     input1 = np.cos(np.arange(size) * 2 * np.pi * freq)
     input2 = np.sin(np.arange(size) * 2 * np.pi * freq) + 0.1 * np.random.random(size=size)
@@ -104,13 +104,10 @@ def _benchmark_dtw():
     series1 = _series_from_values(input1)
     series2 = _series_from_values(input2)
 
-    align = dtw.dtw(series1, series2, multigrid_radius=2)
-    align.plot()
-
-    plt.show()
     import cProfile
-    cProfile.run("_dtw_exact()", sort="tottime")
+    #cProfile.run("_dtw_exact()", sort="tottime")
     cProfile.run("_dtw_multigrid()", sort="tottime")
 
 if __name__ == '__main__':
-    unittest.main()
+    _benchmark_dtw()
+    #unittest.main()
