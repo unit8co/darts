@@ -11,7 +11,7 @@ from darts.utils import _parallel_apply, _build_tqdm_iterator
 from ..utils.statistics import check_seasonality
 from ..logging import raise_if_not, get_logger, raise_log
 from warnings import warn
-from typing import Optional, Callable, Sequence, Union, Tuple
+from typing import Optional, Callable, Sequence, Union, Tuple, Dict, List
 from inspect import signature
 from functools import wraps
 
@@ -848,3 +848,9 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
     return 1 - ss_errors / ss_tot
+
+
+# Dynamic Time Warping
+
+from scipy import sparse
+
