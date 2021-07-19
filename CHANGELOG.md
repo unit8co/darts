@@ -4,7 +4,33 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.9.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.9.1...develop)
+
+## [0.9.1](https://github.com/unit8co/darts/tree/0.9.1) (2021-07-17)
+### For users of the library:
+
+**Added:**
+- Improved `GaussianProcessFilter`, now handling missing values, and better handling
+time series indexed by datetimes.
+- Improved Gaussian Process notebook.
+
+**Fixed:**
+- `TimeSeries` now supports indexing using `pandas.Int64Index` and not just `pandas.RangeIndex`,
+which solves some indexing issues.
+- We have changed all factory methods of `TimeSeries` to have `fill_missing_dates=False` by
+default. This is because in some cases inferring the frequency for missing dates and
+resampling the series is causing significant performance overhead.
+- Fixed backtesting to make it work with integer-indexed series.
+- Fixed a bug that was causing inference to crash on GPUs for some models.
+- Fixed the default folder name, which was causing issues on Windows systems.
+- We have slightly improved the documentation rendering and fixed the titles 
+of the documentation pages for `RNNModel` and `BlockRNNModel` to distinguish them.
+
+**Changed:**
+- The dependencies are not pinned to some exact versions anymore.
+
+### For developers of the library:
+- We have fixed the building process.
 
 ## [0.9.0](https://github.com/unit8co/darts/tree/0.9.0) (2021-07-09)
 ### For users of the library:
