@@ -104,7 +104,6 @@ class RegressionModel(GlobalForecastingModel):
             # TODO describe param
         """
         super().fit(series, covariates)
-
         raise_if(
             covariates is not None and self.lags_covariates is None,
             "`covariates` not None in `fit()` method call, but `lags_covariates` is None in constructor. ",
@@ -113,7 +112,6 @@ class RegressionModel(GlobalForecastingModel):
             covariates is None and self.lags_covariates is not None,
             "`covariates` is None in `fit()` method call, but `lags_covariates` is not None in constructor. ",
         )
-
         lagged_dataset = LaggedDataset(
             series,
             covariates,
@@ -121,7 +119,6 @@ class RegressionModel(GlobalForecastingModel):
             self.lags_covariates,
             max_samples_per_ts,
         )
-
         self.fit_from_dataset(lagged_dataset, **kwargs)
         self.input_dim = (0 if covariates is None else covariates[0].width) + series[
             0
@@ -129,7 +126,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def fit_from_dataset(self, dataset: MatrixTrainingDataset, **kwargs):
         training_x, training_y = dataset.get_data()
-        self.model.fit(X=training_x, y=training_y, **kwargs)
+        self.model.fit(training_x, training_y, **kwargs)
 
     def predict(
         self,
@@ -156,7 +153,6 @@ class RegressionModel(GlobalForecastingModel):
 
         if covariates is None and self.covariate_series is not None:
             covariates = self.covariate_series
-
         called_with_single_series = False
         if isinstance(series, TimeSeries):
             called_with_single_series = True
@@ -182,7 +178,7 @@ class RegressionModel(GlobalForecastingModel):
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1):
-        # creating matrix with target matrix | covariates matrix and future covariate matrix
+
         (
             target_matrix,
             covariates_matrix,
@@ -190,30 +186,36 @@ class RegressionModel(GlobalForecastingModel):
         ) = self._get_matrix_data_from_dataset(dataset)
 
         """
-        Order if the matrix X |target-series-lags|cov_1_lags|cov_2_lags|..|cov_last_lags|
+        Target matrix will have shape (n_sample, n_lags), while covariate and future covariate will have shape
+        (n_samples, lags_covariates, covariate.width). Since sklearn regression models wants 2D matrix, we have to
+        rearrange the 2D target matrix and the 3D covariate matrix into a final 2D matrix. Furthermore, the lags must
+        be place with the same order as during training.
         """
+
+        predictions = []
+
         for i in range(n):
             # getting training matrix
             target_series = target_matrix[:, self.lags_indices]
             if covariates_matrix is not None:
                 covariates = covariates_matrix[:, self.cov_lags_indices]
                 X = np.concatenate(
-                    [
-                        target_series.reshape(target_series[:-1], -1),
-                        covariates.reshape(-1, covariates.shape[0]).T,
-                    ],
+                    [target_series, covariates.reshape(target_series.shape[0], -1)],
                     axis=1,
                 )
             else:
                 X = target_series
             # predicting
-            predictions = self.model.predict(X).reshape(-1, 1)
+            prediction = self.model.predict(X).reshape(-1, 1)
             # discard oldest columns
             target_matrix = _consume_column(target_matrix)
-            # adding predictions
-            target_matrix = np.concatenate([target_matrix, predictions], axis=1)
+            # adding new prediction to the target series
+            target_matrix = np.concatenate([target_matrix, prediction], axis=1)
+            # appending prediction to final predictions
+            predictions.append(prediction)
+
             # discarding oldest covariate
-            if self._expect_covariates:
+            if covariates_matrix is not None:
                 covariates_matrix = _consume_column(covariates_matrix)
                 # if it is the last step, then no future covariate can be added to covariates anymore
                 if future_covariates_matrix is not None:
@@ -230,8 +232,7 @@ class RegressionModel(GlobalForecastingModel):
                     )
                     future_covariates_matrix = _consume_column(future_covariates_matrix)
 
-        predictions = target_matrix[:, -n:]
-
+        predictions = np.concatenate(predictions, axis=1)
         pred_timeseries = [
             self._build_forecast_series(row, input)
             for row, (input, _, _) in zip(predictions, dataset)
@@ -240,6 +241,13 @@ class RegressionModel(GlobalForecastingModel):
         return pred_timeseries
 
     def _get_matrix_data_from_dataset(self, dataset: LaggedInferenceDataset):
+        """
+        The function get a LaggedInferenceDataset as input, and return 3 value. The first is the matrix representation
+        of the target data, a np.array with shape (n_samples, n_lags). The second, optional, is the covariate matrix,
+        with shape (n_samples, n_lags, covariate_width). The third, optional, is the future covariate matrix,
+        with shape (n_samples, n_lags, covariate_width).
+        """
+
         target_matrix = []
         if dataset.lags_covariates is not None:
             covariates_matrix = []
@@ -249,9 +257,10 @@ class RegressionModel(GlobalForecastingModel):
             future_covariates_matrix = None
 
         for tgt_series, past_covariates, future_covariates in dataset:
-            tgt_series = tgt_series.values()
+            tgt_series = tgt_series.values().T
             if past_covariates is not None:
                 past_covariates = past_covariates.values()
+            if future_covariates is not None:
                 future_covariates = future_covariates.values()
 
             target_matrix.append(tgt_series)
@@ -264,21 +273,24 @@ class RegressionModel(GlobalForecastingModel):
                     else:
                         future_covariates = None
                 covariates_matrix.append(past_covariates)
-
+            if future_covariates is not None:
                 future_covariates_matrix.append(future_covariates)
 
         # evaluating indexes from the end
 
-        target_matrix = np.asarray(target_matrix)
+        target_matrix = np.concatenate(target_matrix, axis=0)
         if dataset.lags_covariates is not None:
             covariates_matrix = (
                 np.asarray(covariates_matrix) if len(covariates_matrix) > 0 else None
             )
+        if future_covariates_matrix is not None and len(future_covariates_matrix):
             future_covariates_matrix = (
                 np.asarray(future_covariates_matrix)
                 if len(future_covariates_matrix) > 0
                 else None
             )
+        else:
+            future_covariates_matrix = None
 
         return target_matrix, covariates_matrix, future_covariates_matrix
 

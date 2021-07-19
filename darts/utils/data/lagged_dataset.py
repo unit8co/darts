@@ -160,35 +160,29 @@ class LaggedDataset(MatrixTrainingDataset):
 
     def get_data(self):
         """
-        Order if the matrix X |target-series-lags|cov_1_lags|cov_2_lags|..|cov_last_lags|
-
+        The function returns a training matrix X with shape (n_samples, lags + lags_covariates*covariates.width)
+        and y with shape (n_sample,). The order of lags in X follow the schema: lags |
         """
         x = []
         y = []
 
-        for idx in range(len(self.sequential_dataset)):
-            input_target, output_target, input_covariates = self.__getitem__(idx)
+        for input_target, output_target, input_covariates in self:
             if input_covariates is not None:
                 x.append(
                     np.concatenate(
                         (
                             input_target.T,
-                            input_covariates.T,
+                            input_covariates.reshape(1, -1),
                         ),
-                        axis=None,
+                        axis=1,
                     )
                 )
             else:
-                x.append(
-                    np.concatenate(
-                        input_target.T,
-                        axis=None,
-                    )
-                )
+                x.append(input_target.T)
             y.append(output_target)
 
-        x = np.array(x)
-        y = np.array(y)
+        x = np.concatenate(x, axis=0)
+        y = np.concatenate(y, axis=0)
 
         return x, y.ravel()
 
@@ -210,10 +204,6 @@ class LaggedInferenceDataset:
 
         self.lags, self.lags_covariates = _process_lags(lags, lags_covariates)
 
-        future_covariates_needed = n + (
-            1 if self.lags_covariates is not None and 0 in self.lags_covariates else 0
-        )
-
         if self.lags is not None and self.lags_covariates is None:
             max_lag = max(self.lags)
         elif self.lags is None and self.lags_covariates is not None:
@@ -221,11 +211,16 @@ class LaggedInferenceDataset:
         else:
             max_lag = max([max(self.lags), max(self.lags_covariates)])
 
+        # max_lag for getting the sample correctly, +1 for getting the extra covariate 0
+        input_chunk_length = max_lag + (
+            1 if self.lags_covariates is not None and 0 in self.lags_covariates else 0
+        )
+
         self.inference_dataset = SimpleInferenceDataset(
-            target_series,
-            covariates,
-            max_lag,
-            future_covariates_needed,
+            series=target_series,
+            covariates=covariates,
+            n=n,
+            input_chunk_length=input_chunk_length,
         )
 
     def __len__(self):

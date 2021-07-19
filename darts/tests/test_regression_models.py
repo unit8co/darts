@@ -101,7 +101,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance = model(lags=4)
             model_instance.fit(series=self.ts_sum1)
             prediction = model_instance.predict(n=20)
-            self.assertTrue(len(prediction) == 20)
+            self.assertTrue(
+                len(prediction) == 20,
+                f"Expected length 20, found {len(prediction)} instead",
+            )
 
             model_instance = model(lags=4, lags_covariates=2)
             model_instance.fit(
@@ -155,7 +158,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         for model in self.models:
             model_instance = model(lags=12, lags_covariates=2)
             model_instance.fit(series=train_t, covariates=train_f)
-            prediction = model_instance.predict(n=len(test_f), covariates=covariates)
+            prediction = model_instance.predict(n=len(test_t), covariates=covariates)
             current_rmse = rmse(prediction, test_t)
 
             self.assertTrue(
@@ -211,13 +214,35 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             RegressionModel(lags=lags, model=LinearRegression()),
             RegressionModel(lags=lags, model=RandomForestRegressor()),
             RegressionModel(lags=lags, model=HistGradientBoostingRegressor()),
-            RegressionModel(lags=lags, model=LinearRegressionModel(lags_exog=0)),
-            RegressionModel(lags=lags, model=RandomForest(lags_exog=0)),
         ]
 
         for model in models:
             model.fit(series=self.ts_sum1)
-            prediction = model.predict(n=10)
-            self.assertEqual(model.nr_exog, 0)
-            self.assertEqual(len(model.prediction_data), lags)
-            self.assertEqual(len(model.prediction_data.columns()), 1)
+            self.assertEqual(len(model.lags), lags)
+            model.predict(n=10)
+
+    def test_my_test(self):
+        lags = 4
+        lags_covariates = 3
+        model = RegressionModel(lags=lags, lags_covariates=lags_covariates)
+
+        target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
+        covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
+        covariates = covariates.stack(
+            tg.linear_timeseries(start_value=400, end_value=449, length=50)
+        )
+
+        target_train, target_test = target_series.split_after(0.7)
+        covariates_train, covariates_test = covariates.split_after(0.7)
+        model.fit(
+            series=[target_train, target_train + 0.5],
+            covariates=[covariates_train, covariates_train + 0.5],
+        )
+
+        predictions = model.predict(
+            10,
+            series=[target_train, target_train + 0.5],
+            covariates=[covariates, covariates + 0.5],
+        )
+
+        self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
