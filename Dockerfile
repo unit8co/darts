@@ -17,4 +17,4 @@ ADD . /home/jovyan/work
 
 WORKDIR /home/jovyan/work
 
-RUN pip install .['all']
+RUN pip install .
