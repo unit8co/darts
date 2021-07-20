@@ -83,20 +83,20 @@ class TimeSeriesTorchDataset(Dataset):
 
         if isinstance(self.ts_dataset, TimeSeriesInferenceDataset):
             # the dataset contains (input_target, input_covariate) only
-            input_tgt = torch.from_numpy(item[0].values()).float()
-            input_cov = torch.from_numpy(item[1].values()).float() if item[1] is not None else None
-            future_cov = torch.from_numpy(item[2].values()).float() if item[2] is not None else None
+            past_tgt = torch.from_numpy(item[0].values(copy=False)).float()
+            past_cov = torch.from_numpy(item[1].values(copy=False)).float() if item[1] is not None else None
+            future_cov = torch.from_numpy(item[2].values(copy=False)).float() if item[2] is not None else None
 
             if future_cov is not None:
-                return self._cat_with_optional(input_tgt, input_cov), future_cov, idx
+                return self._cat_with_optional(past_tgt, past_cov), future_cov, idx
             else:
-                return self._cat_with_optional(input_tgt, input_cov), idx
+                return self._cat_with_optional(past_tgt, past_cov), idx
 
         elif isinstance(self.ts_dataset, TrainingDataset):
             # the dataset contains (input_target, output_target, input_covariate)
-            input_tgt, output_tgt = torch.from_numpy(item[0]).float(), torch.from_numpy(item[1]).float()
-            input_cov = torch.from_numpy(item[2]).float() if item[2] is not None else None
-            return self._cat_with_optional(input_tgt, input_cov), output_tgt
+            past_tgt, output_tgt = torch.from_numpy(item[0]).float(), torch.from_numpy(item[1]).float()
+            past_cov = torch.from_numpy(item[2]).float() if item[2] is not None else None
+            return self._cat_with_optional(past_tgt, past_cov), output_tgt
 
         else:
             raise ValueError('The dataset must be of type `TrainingDataset` or `TimeSeriesInferenceDataset`')
