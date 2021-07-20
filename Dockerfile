@@ -1,4 +1,4 @@
-FROM jupyter/base-notebook:python-3.7.6
+FROM jupyter/base-notebook:python-3.9.5
 
 # By default base-notebook install latest python version and fix it in the pinned constraint
 # remove the file, change the python version and update packages
