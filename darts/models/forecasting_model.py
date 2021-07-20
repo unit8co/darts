@@ -106,26 +106,44 @@ class ForecastingModel(ABC):
 
     def _generate_new_dates(self,
                             n: int,
-                            input_series: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
+                            input_series: Optional[TimeSeries] = None,
+                            future_covariate: Optional[TimeSeries] = None) -> pd.DatetimeIndex:
         """
         Generates `n` new dates after the end of the specified series
         """
         input_series = input_series if input_series is not None else self.training_series
-        new_dates = [
-            (input_series.time_index()[-1] + (i * input_series.freq())) for i in range(1, n + 1)
-        ]
-        return pd.DatetimeIndex(new_dates, freq=input_series.freq_str())
+        if input_series is not None:
+            new_dates = [(input_series.time_index()[-1] + (i * input_series.freq())) for i in range(1, n + 1)]
+            freq = input_series.freq_str()
+
+        elif future_covariate is not None:
+            new_dates = [(future_covariate.time_index()[0] + (i * future_covariate.freq())) for i in range(n)]
+            freq = future_covariate.freq_str()
+
+        return pd.DatetimeIndex(new_dates, freq=freq)
 
     def _build_forecast_series(self,
                                points_preds: np.ndarray,
-                               input_series: Optional[TimeSeries] = None) -> TimeSeries:
+                               input_series: Optional[TimeSeries] = None,
+                               future_covariates: Optional[TimeSeries] = None) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index (or after the end of the input series, if specified).
         """
-        input_series = input_series if input_series is not None else self.training_series
-        time_index = self._generate_new_dates(len(points_preds), input_series=input_series)
-        return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str())
+        input_series = (
+            input_series if input_series is not None else self.training_series
+        )
+        if input_series is not None:
+            freq = input_series.freq_str()
+        else:
+            freq = future_covariates.freq_str()
+
+        time_index = self._generate_new_dates(
+            len(points_preds),
+            input_series=input_series,
+            future_covariate=future_covariates,
+        )
+        return TimeSeries.from_times_and_values(time_index, points_preds, freq=freq)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -147,16 +165,18 @@ class ForecastingModel(ABC):
         _historical_forecasts_general_checks(series, kwargs)
 
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
-    def historical_forecasts(self,
-                             series: TimeSeries,
-                             covariates: Optional[TimeSeries] = None,
-                             start: Union[pd.Timestamp, float, int] = 0.5,
-                             forecast_horizon: int = 1,
-                             stride: int = 1,
-                             retrain: bool = True,
-                             overlap_end: bool = False,
-                             last_points_only: bool = True,
-                             verbose: bool = False) -> Union[TimeSeries, List[TimeSeries]]:
+    def historical_forecasts(
+        self,
+        series: TimeSeries,
+        covariates: Optional[TimeSeries] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        retrain: bool = True,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+    ) -> Union[TimeSeries, List[TimeSeries]]:
 
         """
         Computes the historical forecasts the model would have produced with an expanding training window
@@ -214,17 +234,25 @@ class ForecastingModel(ABC):
             If `last_points_only` is set to False, a list of the historical forecasts.
         """
         if covariates:
-            raise_if_not(series.has_same_time_as(covariates),
-                         'The provided series and covariates must have the same time index.')
+            raise_if_not(
+                series.has_same_time_as(covariates),
+                "The provided series and covariates must have the same time index.",
+            )
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
 
+        # extra covariate needed for covariate 0
+        extra = 0
+        if "lags_covariates" in signature(self.__init__).parameters:
+            if self.lags_covariates is not None and 0 in self.lags_covariates:
+                extra = 1
+
         # build the prediction times in advance (to be able to use tqdm)
         if overlap_end:
-            last_valid_pred_time = series.time_index()[-1]
+            last_valid_pred_time = series.time_index()[-1 - extra]
         else:
-            last_valid_pred_time = series.time_index()[-forecast_horizon]
+            last_valid_pred_time = series.time_index()[-forecast_horizon - extra]
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
@@ -250,6 +278,7 @@ class ForecastingModel(ABC):
         # iterate and forecast
         for pred_time in iterator:
             train = series.drop_after(pred_time)  # build the training series
+
             if covariates:
                 train_cov = covariates.drop_after(pred_time)
 
@@ -262,22 +291,28 @@ class ForecastingModel(ABC):
                     self.fit(series=train)
 
             if covariates:
-                if 'covariates' in predict_signature.parameters:
-                    covar_argument = {"covariates": train_cov}
-                elif 'exog' in predict_signature.parameters:
-                    covar_argument = {"exog": train_cov}
+                if "covariates" in predict_signature.parameters:
+                    covar_argument = {"covariates": covariates}
                 else:
-                    raise ValueError("`covariates` is not None but model does not support `exog` or `covariates`.")
+                    raise ValueError(
+                        "`covariates` is not None but model does not support `covariates`."
+                    )
 
-                if 'series' in predict_signature.parameters:
-                    forecast = self.predict(n=forecast_horizon, series=train, **covar_argument)
+                if "series" in predict_signature.parameters:
+                    forecast = self.predict(
+                        n=forecast_horizon, series=train, **covar_argument
+                    )
                 else:
-                    if 'exog' in covar_argument: # Used for objects of type `RegressionModel`
+                    if (
+                        "exog" in covar_argument
+                    ):  # Used for objects of type `RegressionModel`
                         start = train.end_time() + train.freq()
-                        covar_argument["exog"] = covariates[start:start+(forecast_horizon-1)*train.freq()]
+                        covar_argument["exog"] = covariates[
+                            start : start + (forecast_horizon - 1) * train.freq()
+                        ]
                     forecast = self.predict(n=forecast_horizon, **covar_argument)
             else:
-                if 'series' in predict_signature.parameters:
+                if "series" in predict_signature.parameters:
                     forecast = self.predict(n=forecast_horizon, series=train)
                 else:
                     forecast = self.predict(n=forecast_horizon)
@@ -289,23 +324,27 @@ class ForecastingModel(ABC):
                 forecasts.append(forecast)
 
         if last_points_only:
-            return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
-                                                    np.array(last_points_values),
-                                                    freq=series.freq() * stride)
+            return TimeSeries.from_times_and_values(
+                pd.DatetimeIndex(last_points_times),
+                np.array(last_points_values),
+                freq=series.freq() * stride,
+            )
         return forecasts
 
-    def backtest(self,
-                 series: TimeSeries,
-                 covariates: Optional[TimeSeries] = None,
-                 start: Union[pd.Timestamp, float, int] = 0.5,
-                 forecast_horizon: int = 1,
-                 stride: int = 1,
-                 retrain: bool = True,
-                 overlap_end: bool = False,
-                 last_points_only: bool = False,
-                 metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                 reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
-                 verbose: bool = False) -> Union[float, List[float]]:
+    def backtest(
+        self,
+        series: TimeSeries,
+        covariates: Optional[TimeSeries] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        retrain: bool = True,
+        overlap_end: bool = False,
+        last_points_only: bool = False,
+        metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+        reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+        verbose: bool = False,
+    ) -> Union[float, List[float]]:
 
         """
         Computes error scores between the historical forecasts the model would have produced
@@ -367,15 +406,17 @@ class ForecastingModel(ABC):
         float or List[float]
             The error score, or the list of individual error scores if `reduction` is `None`
         """
-        forecasts = self.historical_forecasts(series,
-                                              covariates,
-                                              start,
-                                              forecast_horizon,
-                                              stride,
-                                              retrain,
-                                              overlap_end,
-                                              last_points_only,
-                                              verbose)
+        forecasts = self.historical_forecasts(
+            series,
+            covariates,
+            start,
+            forecast_horizon,
+            stride,
+            retrain,
+            overlap_end,
+            last_points_only,
+            verbose,
+        )
 
         if last_points_only:
             return metric(series, forecasts)
@@ -387,19 +428,21 @@ class ForecastingModel(ABC):
         return reduction(np.array(errors))
 
     @classmethod
-    def gridsearch(model_class,
-                   parameters: dict,
-                   series: TimeSeries,
-                   covariates: Optional[TimeSeries] = None,
-                   forecast_horizon: Optional[int] = None,
-                   start: Union[pd.Timestamp, float, int] = 0.5,
-                   last_points_only: bool = False,
-                   val_series: Optional[TimeSeries] = None,
-                   use_fitted_values: bool = False,
-                   metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
-                   reduction: Callable[[np.ndarray], float] = np.mean,
-                   verbose=False,
-                   n_jobs: int = 1) -> Tuple['ForecastingModel', Dict]:
+    def gridsearch(
+        model_class,
+        parameters: dict,
+        series: TimeSeries,
+        covariates: Optional[TimeSeries] = None,
+        forecast_horizon: Optional[int] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
+        last_points_only: bool = False,
+        val_series: Optional[TimeSeries] = None,
+        use_fitted_values: bool = False,
+        metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+        reduction: Callable[[np.ndarray], float] = np.mean,
+        verbose=False,
+        n_jobs: int = 1,
+    ) -> Tuple["ForecastingModel", Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -479,23 +522,35 @@ class ForecastingModel(ABC):
             A tuple containing an untrained 'model_class' instance created from the best-performing hyper-parameters,
             along with a dictionary containing these best hyper-parameters.
         """
-        raise_if_not((forecast_horizon is not None) + (val_series is not None) + use_fitted_values == 1,
-                     "Please pass exactly one of the arguments 'forecast_horizon', "
-                     "'val_target_series' or 'use_fitted_values'.", logger)
+        raise_if_not(
+            (forecast_horizon is not None)
+            + (val_series is not None)
+            + use_fitted_values
+            == 1,
+            "Please pass exactly one of the arguments 'forecast_horizon', "
+            "'val_target_series' or 'use_fitted_values'.",
+            logger,
+        )
 
         if use_fitted_values:
-            raise_if_not(hasattr(model_class(), "fitted_values"),
-                         "The model must have a fitted_values attribute to compare with the train TimeSeries",
-                         logger)
+            raise_if_not(
+                hasattr(model_class(), "fitted_values"),
+                "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                logger,
+            )
 
         elif val_series is not None:
-            raise_if_not(series.width == val_series.width,
-                         "Training and validation series require the same number of components.",
-                         logger)
+            raise_if_not(
+                series.width == val_series.width,
+                "Training and validation series require the same number of components.",
+                logger,
+            )
 
         if covariates is not None:
-            raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
-                                                              'same time axes.')
+            raise_if_not(
+                series.has_same_time_as(covariates),
+                "The provided series and covariates must have the " "same time axes.",
+            )
 
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
@@ -505,33 +560,44 @@ class ForecastingModel(ABC):
         predict_signature = signature(model_class.predict)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
+        iterator = _build_tqdm_iterator(
+            zip(params_cross_product), verbose, total=len(params_cross_product)
+        )
 
         def _evaluate_combination(param_combination):
-            param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
+            param_combination_dict = dict(
+                list(zip(parameters.keys(), param_combination))
+            )
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
+                if covariates is not None and "covariates" in fit_signature.parameters:
                     model.fit(series, covariates=covariates)
                 else:
                     model.fit(series)
-                fitted_values = TimeSeries.from_times_and_values(series.time_index(), model.fitted_values)
+                fitted_values = TimeSeries.from_times_and_values(
+                    series.time_index(), model.fitted_values
+                )
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
-                error = model.backtest(series,
-                                       covariates,
-                                       start,
-                                       forecast_horizon,
-                                       metric=metric,
-                                       reduction=reduction,
-                                       last_points_only=last_points_only)
+                error = model.backtest(
+                    series,
+                    covariates,
+                    start,
+                    forecast_horizon,
+                    metric=metric,
+                    reduction=reduction,
+                    last_points_only=last_points_only,
+                )
             else:  # split mode
-                if covariates is not None and 'covariates' in fit_signature.parameters:
+                if covariates is not None and "covariates" in fit_signature.parameters:
                     model.fit(series, covariates=covariates)
                 else:
                     model.fit(series)
 
-                if covariates is not None and 'covariates' in predict_signature.parameters:
+                if (
+                    covariates is not None
+                    and "covariates" in predict_signature.parameters
+                ):
                     pred = model.predict(n=len(val_series), covariates=covariates)
                 else:
                     pred = model.predict(n=len(val_series))
@@ -543,17 +609,18 @@ class ForecastingModel(ABC):
 
         min_error = min(errors)
 
-        best_param_combination = dict(list(zip(parameters.keys(), params_cross_product[errors.index(min_error)])))
+        best_param_combination = dict(
+            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
+        )
 
-        logger.info('Chosen parameters: ' + str(best_param_combination))
+        logger.info("Chosen parameters: " + str(best_param_combination))
 
         return model_class(**best_param_combination), best_param_combination
 
-    def residuals(self,
-                  series: TimeSeries,
-                  forecast_horizon: int = 1,
-                  verbose: bool = False) -> TimeSeries:
-        """ A function for computing the residuals produced by the current model on a univariate time series.
+    def residuals(
+        self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
+    ) -> TimeSeries:
+        """A function for computing the residuals produced by the current model on a univariate time series.
 
         This function computes the difference between the actual observations from `series`
         and the fitted values vector `p` obtained by training the model on `series`.
@@ -585,13 +652,15 @@ class ForecastingModel(ABC):
         first_index = series.time_index()[self.min_train_series_length]
 
         # compute fitted values
-        p = self.historical_forecasts(series=series,
-                                      start=first_index,
-                                      forecast_horizon=forecast_horizon,
-                                      stride=1,
-                                      retrain=True,
-                                      last_points_only=True,
-                                      verbose=verbose)
+        p = self.historical_forecasts(
+            series=series,
+            start=first_index,
+            forecast_horizon=forecast_horizon,
+            stride=1,
+            retrain=True,
+            last_points_only=True,
+            verbose=verbose,
+        )
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
@@ -601,7 +670,7 @@ class ForecastingModel(ABC):
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
-    """ The base class for "global" forecasting models, handling several time series and optional covariates.
+    """The base class for "global" forecasting models, handling several time series and optional covariates.
 
     Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:
     1. Models can be fitted on many series (multivariate or univariate) with different indices.
@@ -625,11 +694,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     covariate_series = None
 
     @abstractmethod
-    def fit(self,
-            series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
-            ) -> None:
-        """ Fits/trains the model on the provided series
+    def fit(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> None:
+        """Fits/trains the model on the provided series
 
         Defines behavior that should happen when calling the `fit()` method of every global forecasting model.
 
@@ -658,14 +728,14 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             self._expect_covariates = True
         self._fit_called = True
 
-
     @abstractmethod
-    def predict(self,
-                n: int,
-                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
-                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """ Forecasts values for a certain number of time steps after the end of the series.
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Forecasts values for a certain number of time steps after the end of the series.
 
         If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function
         is optional, and it will simply produce the next `horizon` time steps forecast. The `covariates` argument
@@ -703,12 +773,16 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if series is None and covariates is None:
             super().predict(n)
         if self._expect_covariates and covariates is None:
-            raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
-                                 'have to be provided to `predict()`.'))
+            raise_log(
+                ValueError(
+                    "The model has been trained with covariates. Some matching covariates "
+                    "have to be provided to `predict()`."
+                )
+            )
 
 
 class ExtendedForecastingModel(ForecastingModel, ABC):
-    """ The base class for "extended" forecasting models, handling optional exogenous variables.
+    """The base class for "extended" forecasting models, handling optional exogenous variables.
 
     Extended forecasting models expand upon the functionality of `ForecastingModel` in 2 ways:
     1. They introduce an optional `exog` time series parameter which can be used as a covariate.
@@ -722,11 +796,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     _expect_exog = False
 
     @abstractmethod
-    def fit(self,
-            series: TimeSeries,
-            exog: Optional[TimeSeries] = None
-            ) -> None:
-        """ Fits/trains the model on the provided series
+    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None) -> None:
+        """Fits/trains the model on the provided series
 
         Defines behavior that should happen when calling the `fit()` method for the forecasting models handling
         optional exogenous variables.
@@ -741,17 +812,16 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         """
 
         if exog is not None:
-            raise_if_not(series.has_same_time_as(exog),
-                         'The target series and the exogenous variables series must have the same time index.')
+            raise_if_not(
+                series.has_same_time_as(exog),
+                "The target series and the exogenous variables series must have the same time index.",
+            )
             self._expect_exog = True
         super().fit(series)
 
     @abstractmethod
-    def predict(self,
-                n: int,
-                exog: Optional[TimeSeries] = None
-                ) -> TimeSeries:
-        """ Forecasts values for a certain number of time steps after the end of the series.
+    def predict(self, n: int, exog: Optional[TimeSeries] = None) -> TimeSeries:
+        """Forecasts values for a certain number of time steps after the end of the series.
 
         If exogenous variables were specified during the training, they must also be specified here.
 
@@ -770,8 +840,16 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if exog is None:
             super().predict(n)
         if self._expect_exog and exog is None:
-            raise_log(ValueError('The model has been trained with exogenous variables. Some matching '
-                                 'exogenous variables have to be provided to `predict()`.'))
+            raise_log(
+                ValueError(
+                    "The model has been trained with exogenous variables. Some matching "
+                    "exogenous variables have to be provided to `predict()`."
+                )
+            )
         if self._expect_exog and len(exog) != n:
-            raise_log(ValueError(f'Expecting exogenous variables with the same length as the'
-                                 f' forecasting horizon ({n}).'))
+            raise_log(
+                ValueError(
+                    f"Expecting exogenous variables with the same length as the"
+                    f" forecasting horizon ({n})."
+                )
+            )

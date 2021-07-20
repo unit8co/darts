@@ -82,8 +82,10 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 self.input_chunk_length
             ),
         )
-
-        tgt_past = target_series[-self.input_chunk_length :]
+        if self.input_chunk_length == 0:
+            tgt_past = None
+        else:
+            tgt_past = target_series[-self.input_chunk_length :]
 
         cov_past = cov_future = None
         if covariate_series is not None:
@@ -93,10 +95,18 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
 
             # isolate past covariates and add them to array
             if covariate_series.end_time() >= first_pred_time:
-                cov_past = covariate_series.drop_after(first_pred_time)
+                if covariate_series.start_time() == first_pred_time:
+                    # all covariates are future covariate
+                    cov_past = None
+                else:
+                    cov_past = covariate_series.drop_after(first_pred_time)
             else:
                 cov_past = covariate_series
-            cov_past = cov_past[-self.input_chunk_length :]
+            cov_past = (
+                None
+                if cov_past is None or self.input_chunk_length == 0
+                else cov_past[-self.input_chunk_length :]
+            )
 
             # check whether future covariates are required
             if self.n > self.output_chunk_length:
@@ -112,9 +122,13 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 )
 
                 # isolate necessary future covariates and add them to array
-                cov_future = covariate_series.drop_before(
-                    first_pred_time - covariate_series.freq()
-                )
+
+                if covariate_series.start_time() == first_pred_time:
+                    cov_future = covariate_series
+                else:
+                    cov_future = covariate_series.drop_before(
+                        first_pred_time - covariate_series.freq()
+                    )
                 cov_future = cov_future[: self.n - self.output_chunk_length]
 
         return tgt_past, cov_past, cov_future

@@ -127,7 +127,11 @@ class LaggedDataset(MatrixTrainingDataset):
     def __getitem__(
         self, idx: int
     ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
-        input_target, output_target, input_covariates = self.sequential_dataset[idx]
+        arrays = self.sequential_dataset[idx]
+
+        input_target, output_target, input_covariates = [
+            ar.copy() if ar is not None else None for ar in arrays
+        ]
 
         if self.lags_covariates is not None and 0 in self.lags_covariates:
             """
@@ -143,19 +147,21 @@ class LaggedDataset(MatrixTrainingDataset):
             # shortening the input_target by one
             input_target = input_target[:-1]
 
-            # shifting so that 0 is 1 and afterwards -1
-            self.lags_covariates = np.array(self.lags_covariates) + 1
-
         # evaluating indexes from the end
         if self.lags is not None:
             lags_indices = np.array(self.lags) * (-1)
             input_target = input_target[lags_indices]
+        else:
+            input_target = None
 
         if self.lags_covariates is not None:
-
-            cov_lags_indices = np.array(self.lags_covariates) * (-1)
+            if 0 in self.lags_covariates:
+                cov_lags_indices = (np.array(self.lags_covariates) + 1) * (-1)
+            else:
+                cov_lags_indices = (np.array(self.lags_covariates)) * (-1)
             input_covariates = input_covariates[cov_lags_indices]
-
+        else:
+            input_covariates = None
         return input_target, output_target, input_covariates
 
     def get_data(self):
@@ -167,18 +173,13 @@ class LaggedDataset(MatrixTrainingDataset):
         y = []
 
         for input_target, output_target, input_covariates in self:
+            row = []
+            if input_target is not None:
+                row.append(input_target.T)
             if input_covariates is not None:
-                x.append(
-                    np.concatenate(
-                        (
-                            input_target.T,
-                            input_covariates.reshape(1, -1),
-                        ),
-                        axis=1,
-                    )
-                )
-            else:
-                x.append(input_target.T)
+                row.append(input_covariates.reshape(1, -1))
+
+            x.append(np.concatenate(row, axis=1))
             y.append(output_target)
 
         x = np.concatenate(x, axis=0)
@@ -211,15 +212,17 @@ class LaggedInferenceDataset:
         else:
             max_lag = max([max(self.lags), max(self.lags_covariates)])
 
-        # max_lag for getting the sample correctly, +1 for getting the extra covariate 0
-        input_chunk_length = max_lag + (
-            1 if self.lags_covariates is not None and 0 in self.lags_covariates else 0
-        )
+        input_chunk_length = max_lag
 
         self.inference_dataset = SimpleInferenceDataset(
             series=target_series,
             covariates=covariates,
-            n=n,
+            n=n
+            + (
+                1
+                if self.lags_covariates is not None and 0 in self.lags_covariates
+                else 0
+            ),
             input_chunk_length=input_chunk_length,
         )
 

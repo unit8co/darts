@@ -13,14 +13,17 @@ logger = get_logger(__name__)
 
 try:
     from ..models import RNNModel
+
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not available. Some tests will be skipped.')
+    logger.warning("Torch not available. Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-    sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
+    sine_series = tg.sine_timeseries(
+        value_frequency=(1 / 5), value_y_offset=10, length=50
+    )
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series
@@ -31,7 +34,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
-        regr3 = RandomForest(lags_exog=0)
+        regr3 = RandomForest(lags_covariates=0)
 
         model0 = RegressionEnsembleModel(self.get_models(), 10)
         model1 = RegressionEnsembleModel(self.get_models(), 10, regr1)
@@ -45,7 +48,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
-        regr2 = RandomForest(lags_exog=0)
+        regr2 = RandomForest(lags_covariates=0)
 
         model0 = RegressionEnsembleModel([self.get_models()[0]], 10)
         model1 = RegressionEnsembleModel([self.get_models()[0]], 10, regr1)
@@ -57,7 +60,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.predict(10)
 
     def test_train_n_points(self):
-        regr = LinearRegressionModel(lags_exog=[0])
+        regr = LinearRegressionModel(lags_covariates=[0])
 
         # same values
         ensemble = RegressionEnsembleModel(self.get_models(), 5, regr)
@@ -77,9 +80,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble.fit(self.combined)
 
     if TORCH_AVAILABLE:
+
         def test_torch_models_retrain(self):
-            model1 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
-            model2 = RNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+            model1 = RNNModel(
+                input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            )
+            model2 = RNNModel(
+                input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+            )
 
             ensemble = RegressionEnsembleModel([model1], 5)
             ensemble.fit(self.combined)
@@ -90,4 +98,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model2.fit(self.combined)
             forecast2 = model2.predict(10)
 
-            self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=3)
+            self.assertAlmostEqual(
+                sum(forecast1.values() - forecast2.values())[0], 0.0, places=3
+            )

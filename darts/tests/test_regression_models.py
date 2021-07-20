@@ -246,3 +246,30 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
+
+    def test_only_future_covariates(self):
+
+        model = RegressionModel(lags_covariates=0)
+
+        target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
+        covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
+        covariates = covariates.stack(
+            tg.linear_timeseries(start_value=400, end_value=449, length=50)
+        )
+
+        target_train, target_test = target_series.split_after(0.7)
+        covariates_train, covariates_test = covariates.split_after(0.7)
+        model.fit(
+            series=[target_train, target_train + 0.5],
+            covariates=[covariates_train, covariates_train + 0.5],
+        )
+
+        predictions = model.predict(
+            10,
+            series=[target_train, target_train + 0.5],
+            covariates=[covariates, covariates + 0.5],
+        )
+
+        self.assertEqual(
+            len(predictions[0]), 10, f"Found {len(predictions[0])} instead"
+        )
