@@ -7,12 +7,12 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TrainingDataset
+from .timeseries_dataset import TypeATrainingDataset, _get_matching_index
 
 from ..utils import raise_if_not
 
 
-class SequentialDataset(TrainingDataset):
+class SequentialDataset(TypeATrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -20,8 +20,9 @@ class SequentialDataset(TrainingDataset):
                  output_chunk_length: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (input, output, input_covariates) arrays, where "input" and
-        "input_covariates" have length `input_chunk_length`, and "output" has length `output_chunk_length`.
+        A time series dataset containing tuples of (past_target, future_target, past_covariates) arrays,
+        where "past_target" and "past_covariates" have length `input_chunk_length`,
+        and "future_target" has length `output_chunk_length`.
 
         The target and covariates series are sliced together, and therefore must have the same length.
         In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
@@ -55,7 +56,7 @@ class SequentialDataset(TrainingDataset):
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
         """
-        super().__init__()
+        super().__init__(input_chunk_length, output_chunk_length)
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
@@ -80,10 +81,12 @@ class SequentialDataset(TrainingDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
-        ts_target = self.target_series[ts_idx].values(copy=False)
+
+        ts_target = self.target_series[ts_idx]
+        target_values = ts_target.values(copy=False)
 
         # determine the actual number of possible samples in this time series
-        n_samples_in_ts = len(ts_target) - self.input_chunk_length - self.output_chunk_length + 1
+        n_samples_in_ts = len(target_values) - self.input_chunk_length - self.output_chunk_length + 1
 
         raise_if_not(n_samples_in_ts >= 1,
                      'The dataset contains some time series that are too short to contain '
@@ -97,22 +100,21 @@ class SequentialDataset(TrainingDataset):
         forecast_point_idx = self.output_chunk_length + lh_idx
 
         # select input and outputs, using the previously computed indexes
-        input_target = ts_target[-(forecast_point_idx + self.input_chunk_length):-forecast_point_idx]
+        input_target = target_values[-(forecast_point_idx + self.input_chunk_length):-forecast_point_idx]
         if forecast_point_idx == self.output_chunk_length:
             # we need this case because "-0" is not supported as an indexing bound
-            output_target = ts_target[-forecast_point_idx:]
+            output_target = target_values[-forecast_point_idx:]
         else:
-            output_target = ts_target[-forecast_point_idx:-forecast_point_idx + self.output_chunk_length]
+            output_target = target_values[-forecast_point_idx:-forecast_point_idx + self.output_chunk_length]
 
         # optionally also produce the input covariate
         input_covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx].values(copy=False)
+            ts_covariate = self.covariates[ts_idx]
+            covariate_values = ts_covariate.values(copy=False)
 
-            raise_if_not(len(ts_covariate) == len(ts_target),
-                         'The dataset contains some target/covariate series '
-                         'pair that are not the same size ({}-th)'.format(ts_idx))
+            cov_fcast_idx = _get_matching_index(ts_target, ts_covariate, forecast_point_idx)
 
-            input_covariate = ts_covariate[-(forecast_point_idx + self.input_chunk_length):-forecast_point_idx]
+            input_covariate = covariate_values[-(cov_fcast_idx + self.input_chunk_length):-cov_fcast_idx]
 
         return input_target, output_target, input_covariate
