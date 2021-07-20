@@ -8,12 +8,12 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TrainingDataset
+from .timeseries_dataset import TypeATrainingDataset, _get_matching_index
 
 logger = get_logger(__name__)
 
 
-class HorizonBasedDataset(TrainingDataset):
+class HorizonBasedDataset(TypeATrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -52,8 +52,10 @@ class HorizonBasedDataset(TrainingDataset):
         target_series
             One or a sequence of target `TimeSeries`.
         covariates:
-            Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`.
+            Optionally, one or a sequence of `TimeSeries` containing the past-observed covariates.
+            The must all start at least `lookback * output_chunk_length` before the target and they can end
+            `output_chunk_length` earlier. The slicing of the covariates and the target will be done
+            using the series' time indexes.
         output_chunk_length
             The length of the "output" series emitted by the model
         lh
@@ -64,7 +66,7 @@ class HorizonBasedDataset(TrainingDataset):
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
         """
-        super().__init__()
+        super().__init__(lookback * output_chunk_length, output_chunk_length)
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
@@ -105,31 +107,31 @@ class HorizonBasedDataset(TrainingDataset):
         assert lh_idx < (self.max_lh - self.min_lh) * self.output_chunk_length, 'bug in the Lh indexing'
 
         # select the time series
-        ts_target = self.target_series[ts_idx].values(copy=False)
+        ts_target = self.target_series[ts_idx]
+        target_values = ts_target.values(copy=False)
 
-        raise_if_not(len(ts_target) >= (self.lookback + self.max_lh) * self.output_chunk_length,
+        raise_if_not(len(target_values) >= (self.lookback + self.max_lh) * self.output_chunk_length,
                      'The dataset contains some input/target series that are shorter than '
                      '`(lookback + max_lh) * H` ({}-th)'.format(ts_idx))
 
         # select forecast point and target period, using the previously computed indexes
         if forecast_point_idx == self.output_chunk_length:
             # we need this case because "-0" is not supported as an indexing bound
-            output_series = ts_target[-forecast_point_idx:]
+            output_series = target_values[-forecast_point_idx:]
         else:
-            output_series = ts_target[-forecast_point_idx:-forecast_point_idx+self.output_chunk_length]
+            output_series = target_values[-forecast_point_idx:-forecast_point_idx+self.output_chunk_length]
 
         # select input period; look at the `lookback * output_series` points before the forecast point
-        input_series = ts_target[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
+        input_series = target_values[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
 
         # optionally also produce the input covariate
         input_covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx].values(copy=False)
+            ts_covariate = self.covariates[ts_idx]
+            covariate_values = ts_covariate.values(copy=False)
 
-            raise_if_not(len(ts_covariate) == len(ts_target),
-                         'The dataset contains some target/covariate series '
-                         'pair that are not the same size ({}-th)'.format(ts_idx))
+            cov_fcast_idx = _get_matching_index(ts_target, ts_covariate, forecast_point_idx)
 
-            input_covariate = ts_covariate[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
+            input_covariate = covariate_values[-(cov_fcast_idx + self.lookback * self.output_chunk_length):-cov_fcast_idx]
 
         return input_series, output_series, input_covariate
