@@ -13,8 +13,6 @@ RUN apt-get update \
 
 USER $NB_USER
 
-# u8ts specific deps
-RUN pip install pystan
 ADD . /home/jovyan/work
 
 WORKDIR /home/jovyan/work
