@@ -6,10 +6,10 @@ RUN conda update --all -y --quiet \
 
 USER root
 
-RUN apt-get update && apt-get -y install curl && apt-get -y install apt-utils
-
-# to build prophet
-RUN apt-get -y install build-essential libc-dev
+# to build pystan
+RUN apt-get update \
+ && apt-get -y install build-essential \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER $NB_USER
 
