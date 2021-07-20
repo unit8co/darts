@@ -24,7 +24,7 @@ class SequentialDataset(TypeATrainingDataset):
         where "past_target" and "past_covariates" have length `input_chunk_length`,
         and "future_target" has length `output_chunk_length`.
 
-        The target and covariates series are sliced together, and therefore must have the same length.
+        The covariate series must have sufficient overlap with the target series.
         In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
         series must have length at least `input_chunk_length + output_chunk_length`.
         If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
@@ -42,8 +42,9 @@ class SequentialDataset(TypeATrainingDataset):
         target_series
             One or a sequence of target `TimeSeries`.
         covariates:
-            Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`.
+            Optionally, one or a sequence of `TimeSeries` containing the past-observed covariates.
+            The must all start at least `input_chunk_length` before the target and they can end `output_chunk_length`
+            earlier. The slicing of the covariates and the target will be done using the series' time indexes.
         input_chunk_length
             The length of the emitted input series.
         output_chunk_length
