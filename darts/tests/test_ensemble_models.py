@@ -38,6 +38,17 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         self.assertTrue(np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values()))
 
+    def test_input_models_mixed(self):
+        pass
+
+    def test_fit_multivar_for_local_models(self):
+        # when local forecasting models are in ensemble, only instance of TS can be provided to fit()
+        pass
+
+    def test_fit_singlevar_with_covariates_for_local_models(self):
+        # when local forecasting models are in ensemble, no covariates should be provided
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

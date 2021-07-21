@@ -4,16 +4,16 @@ Ensemble Model Base Class
 """
 
 from abc import abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Union, Sequence
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if_not
-from ..models.forecasting_model import ForecastingModel
+from ..models.forecasting_model import ForecastingModel, GlobalForecastingModel
 
 logger = get_logger(__name__)
 
 
-class EnsembleModel(ForecastingModel):
+class EnsembleModel(GlobalForecastingModel):
     """
     Abstract base class for ensemble models.
     Ensemble models take in a list of forecasting models and ensemble their predictions
@@ -24,33 +24,55 @@ class EnsembleModel(ForecastingModel):
     models
         List of forecasting models whose predictions to ensemble
     """
-    def __init__(self, models: List[ForecastingModel]):
+    # TODO: update docs
+    def __init__(self, models: List[GlobalForecastingModel]):
         raise_if_not(isinstance(models, list) and models,
                      "Cannot instantiate EnsembleModel with an empty list of models",
                      logger)
-        raise_if_not(all(isinstance(model, ForecastingModel) for model in models),
-                     "All models must be instances of darts.models.ForecastingModel",
+
+        self.is_global_ensemble = all(isinstance(model, GlobalForecastingModel) for model in models)
+
+        raise_if_not(all(isinstance(model, ForecastingModel) for model in models) or
+                     self.is_global_ensemble,
+                     "All models must be instances of the same type, either darts.models.ForecastingModel"
+                     "or darts.models.GlobalForecastingModel",
                      logger)
         super().__init__()
         self.models = models
 
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
         """
         Fits the model on the provided series.
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
+        # TODO update docs
+        # TODO test for covariates + single-/multi- variate
         super().fit(series)
 
     def predict(self,
                 n: int,
-                num_samples: int = 1) -> TimeSeries:
-        super().predict(n, num_samples)
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                num_samples: int = 1,
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
-        predictions = self.models[0].predict(n, num_samples)
+        super().predict(n, series, covariates, num_samples)
+
+        if self.is_global_ensemble:
+            predictions = self.models[0].predict(n, series, covariates, num_samples)
+        else:
+            predictions = self.models[0].predict(n, num_samples)
+
         if len(self.models) > 1:
             for model in self.models[1:]:
-                predictions = predictions.stack(model.predict(n, num_samples))
+                if self.is_global_ensemble:
+                    prediction = model.predict(n, series, covariates, num_samples)
+                else:
+                    prediction = model.predict(n, num_samples)
+                predictions = predictions.stack(prediction)
 
         return self.ensemble(predictions)
 
