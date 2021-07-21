@@ -8,12 +8,12 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TypeATrainingDataset, _get_matching_index
+from .timeseries_dataset import PastCovariatesTrainingDataset, _get_matching_index
 
 logger = get_logger(__name__)
 
 
-class HorizonBasedDataset(TypeATrainingDataset):
+class HorizonBasedDataset(PastCovariatesTrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -66,7 +66,7 @@ class HorizonBasedDataset(TypeATrainingDataset):
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
         """
-        super().__init__(lookback * output_chunk_length, output_chunk_length)
+        super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
