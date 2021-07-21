@@ -45,12 +45,12 @@ class TrainingDataset(ABC, Sequence):
         """
         Super-class for all training datasets in Darts. These include
 
-        * Type A datasets (for Type A models): containing (past_target, future_target,
-                                                           past_covariates)
-        * Type B datasets (for Type B models): containing (past_target, future_target,
-                                                           future_covariates)
-        * Type C datasets (for Type C models): containing (past_target, future_target,
-                                                           past_covariates, future_covariates)
+        * "Past Covariates" datasets (for PastCovariatesModel): containing (past_target, future_target,
+                                                                            past_covariates)
+        * "Future Covariates" datasets (for FutureCovariatesModel): containing (past_target, future_target,
+                                                                                future_covariates)
+        * "Mixed Covariates" datasets (for MixedCovariatesModel): containing (past_target, future_target,
+                                                                              past_covariates, future_covariates)
 
         The covariates are optional and can be `None`.
 
@@ -80,12 +80,10 @@ class TrainingDataset(ABC, Sequence):
         pass
 
 
-class TypeATrainingDataset(TrainingDataset):
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int):
+class PastCovariatesTrainingDataset(TrainingDataset):
+    def __init__(self):
         """
-        Abstract class for a type A training dataset. It contains 3-tuples of
+        Abstract class for a PastCovariatesModel training dataset. It contains 3-tuples of
         `(past_target, future_target, past_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -96,11 +94,10 @@ class TypeATrainingDataset(TrainingDataset):
         pass
 
 
-class TypeBTrainingDataset(TrainingDataset):
-    def __init__(self,
-                 input_chunk_length: int):
+class FutureCovariatesTrainingDataset(TrainingDataset):
+    def __init__(self):
         """
-        Abstract class for a type B training dataset. It contains 3-tuples of
+        Abstract class for a FutureCovariatesModel training dataset. It contains 3-tuples of
         `(past_target, future_target, future_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -111,12 +108,10 @@ class TypeBTrainingDataset(TrainingDataset):
         pass
 
 
-class TypeCTrainingDataset(TrainingDataset):
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int):
+class MixedCovariatesTrainingDataset(TrainingDataset):
+    def __init__(self):
         """
-        Abstract class for a type C training dataset. It contains 4s-tuples of
+        Abstract class for a MixedCovariatesModel training dataset. It contains 4s-tuples of
         `(past_target, future_target, past_covariate, future_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -132,7 +127,8 @@ def _get_matching_index(ts_target: TimeSeries,
                         idx: int):
     """
     Given two overlapping series `ts_target` and `ts_covariate` and an index point of `ts_target`, returns the matching
-    index point in `ts_covariate`, based on the starting times of the two series.
+    index point in `ts_covariate`, based on the ending times of the two series.
+    The indexes are starting from the end of the series.
 
     This function is used to jointly slice target and covariate series in datasets. It supports both datetime and
     integer indexed series.
@@ -141,8 +137,8 @@ def _get_matching_index(ts_target: TimeSeries,
     """
     raise_if_not(ts_target.freq == ts_covariate.freq,
                  'The dataset contains some target/covariates series pair that have incompatible '
-                 'time axes (not the same "freq") and thus canno be matched')
+                 'time axes (not the same "freq") and thus cannot be matched')
 
     # compute the number of steps the covariates are in advance w.r.t. the target:
-    time_diff = int((ts_covariate.start_time() - ts_target.start_time()) / ts_target.freq)
-    return idx - time_diff
+    time_diff = int((ts_covariate.end_time() - ts_target.end_time()) / ts_target.freq)
+    return idx + time_diff
