@@ -7,12 +7,12 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
-from .timeseries_dataset import TypeATrainingDataset, _get_matching_index
+from .timeseries_dataset import PastCovariatesTrainingDataset, _get_matching_index
 
-from ..utils import raise_if_not
+from ..utils import raise_if_not, raise_log
 
 
-class SequentialDataset(TypeATrainingDataset):
+class SequentialDataset(PastCovariatesTrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -57,7 +57,7 @@ class SequentialDataset(TypeATrainingDataset):
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
         """
-        super().__init__(input_chunk_length, output_chunk_length)
+        super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
@@ -116,6 +116,9 @@ class SequentialDataset(TypeATrainingDataset):
 
             cov_fcast_idx = _get_matching_index(ts_target, ts_covariate, forecast_point_idx)
 
-            input_covariate = covariate_values[-(cov_fcast_idx + self.input_chunk_length):-cov_fcast_idx]
+            try:
+                input_covariate = covariate_values[-(cov_fcast_idx + self.input_chunk_length):-cov_fcast_idx]
+            except IndexError:
+                raise_log('TODO')
 
         return input_target, output_target, input_covariate
