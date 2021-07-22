@@ -24,16 +24,16 @@ class EnsembleModel(GlobalForecastingModel):
     models
         List of forecasting models whose predictions to ensemble
     """
-    # TODO: update docs
-    def __init__(self, models: List[GlobalForecastingModel]):
+    def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
         raise_if_not(isinstance(models, list) and models,
                      "Cannot instantiate EnsembleModel with an empty list of models",
                      logger)
 
+        is_local_ensemble = all(isinstance(model, ForecastingModel) and not isinstance(model, GlobalForecastingModel)
+                                for model in models)
         self.is_global_ensemble = all(isinstance(model, GlobalForecastingModel) for model in models)
 
-        raise_if_not(all(isinstance(model, ForecastingModel) for model in models) or
-                     self.is_global_ensemble,
+        raise_if_not(is_local_ensemble or self.is_global_ensemble,
                      "All models must be instances of the same type, either darts.models.ForecastingModel"
                      "or darts.models.GlobalForecastingModel",
                      logger)
@@ -48,9 +48,7 @@ class EnsembleModel(GlobalForecastingModel):
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
-        # TODO update docs
-        # TODO test for covariates + single-/multi- variate
-        super().fit(series)
+        super().fit(series, covariates)
 
     def predict(self,
                 n: int,
