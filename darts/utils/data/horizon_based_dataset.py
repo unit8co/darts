@@ -21,41 +21,37 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                  lh: Tuple[int, int] = (1, 3),
                  lookback: int = 3) -> None:
         """
-        A time series dataset containing tuples of (input, output, input_covariates) arrays, in a way inspired
-        by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
+        A time series dataset containing tuples of (past_target, future_target, past_covariates) arrays,
+        in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
-        The "input" and "input_covariates" have length `lookback * output_chunk_length`, and the "output" has length
+        The "past" series have length `lookback * output_chunk_length`, and the "future" series has length
         `output_chunk_length`.
 
-        Given the horizon `output_chunk_length` of a model, this dataset will compute some (input, target) splits as follows
-        (the logic for "input_covariates" is the same as for "input"):
+        Given the horizon `output_chunk_length` of a model, this dataset will compute some "past/future"
+        splits as follows:
         First a "forecast point" is selected in the the range of the last
         `(min_lh * output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
-        The target then consists in the following `output_chunk_length` points, and the data will be the preceding
+        The "future" then consists in the following `output_chunk_length` points, and the "past" will be the preceding
         `lookback * output_chunk_length` points.
 
         All the series in the provided sequence must be long enough; i.e. have length at least
         `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be at least 1
         (to have targets of length exactly `1 * output_chunk_length`).
-        The target and covariates time series are sliced together, and therefore must have the same length.
-        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
+        The target and covariates time series are sliced together using their time indexes for alignment.
 
         The sampling is uniform both over the number of time series and the number of samples per series;
         i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
         time series in the sequence.
-
-        The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit
-        in memory), or implement your own `Sequence` of time series.
 
         Parameters
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
         covariates:
-            Optionally, one or a sequence of `TimeSeries` containing the past-observed covariates.
-            The must all start at least `lookback * output_chunk_length` before the target and they can end
-            `output_chunk_length` earlier. The slicing of the covariates and the target will be done
-            using the series' time indexes.
+            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
+            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            covariates in the sequence must have a time span large enough to contain all the required slices.
+            The joint slicing of the target and covariates is relying on the time axes of both series.
         output_chunk_length
             The length of the "output" series emitted by the model
         lh
