@@ -56,12 +56,26 @@ class PastCovariatesInferenceDataset(TimeSeriesInferenceDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1):
         """
-        When relying on past covariates, we need to know n because if n > output_chunk_length and the
-        past covariates happen to also be known sufficiently in advance, we can get predictions for n
-        time steps in advance.
-        In this case, this dataset will also emmit future covariates of length `n - output_chunk_length`.
+        Contains (past_target, past_covariates, future_past_covariates).
 
-        TODO
+        "future_past_covariates" are past covariates that happen to be also known in the future - those
+        are needed for forecasting with n > output_chunk_length by PastCovariatesModels.
+
+        For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
+
+        Parameters
+        ----------
+        target_series
+            The target series that are to be predicted into the future.
+        covariates
+            Optionally, some past-observed covariates that are used for predictions. This argument is required
+            if the model was trained with past-observed covariates.
+        n
+            Forecast horizon: The number of time steps to predict after the end of the target series.
+        input_chunk_length
+            The length of the target series the model takes as input.
+        output_chunk_length
+            The length of the target series the model emmits in output.
         """
 
         super().__init__()
@@ -121,131 +135,118 @@ class PastCovariatesInferenceDataset(TimeSeriesInferenceDataset):
 
 
 class FutureCovariatesInferenceDataset(TimeSeriesInferenceDataset):
-    pass
-
-
-class MixedCovariatesInferenceDataset(TimeSeriesInferenceDataset):
-    pass
-
-
-class SimpleInferenceDataset(TimeSeriesInferenceDataset):
-
     def __init__(self,
-                 series: Union[TimeSeries, Sequence[TimeSeries]],
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 model_is_recurrent: bool = False):
+                 input_chunk_length: int = 12):
         """
-        Creates a dataset from lists of target series and corresponding covariate series and emits
-        3-tuples of (tgt_past, cov_past, cov_future), all `TimeSeries` instances.
-        `tgt_past` corresponds to the target series, which will be predicted into the future.
-        `cov_past` is equal to the covariates with the same time index as the target series if covariates
-        are provided, otherwise a value of `None` will be emitted.
-        Both `tgt_past` and `cov_past` will be `input_chunk_length` long.
-
-        Block models:
-        If the model is required to produce the forecast over multiple iterations, i.e. if
-        `n > self.output_chunk_length`, and if covariates were provided, then `cov_future` will
-        be equal to the future covariates up to `n - self.output_chunk_length` time steps into the future.
-
-        Recurrent models:
-        If covariates were used to train the model, `n` covariates have to be available into the future.
-        Therefore, `cov_future` will be equal to the future covariates up to `n` time steps into the future.
-
-        The parameter `input_chunk_length` is necessary to determine the minimum length for all `tgt_past`
-        and `cov_past` time series.
-        Parameters `n`, `output_chunk_length` and `model_is_recurrent` are necessary to determine whether
-        `cov_future` is necessary (or can be set to `None`) and to determine the required length for `cov_future`.
-        It is important for the 3 emitted time series to have the same length across data points because
-        they will be cast to tensors later on.
+        Contains (past_target, future_covariates) tuples
 
         Parameters
         ----------
-        series
+        target_series
             The target series that are to be predicted into the future.
         covariates
-            Optionally, the corresponding covariates that are used for predictions. This argument is required
-            if the model was trained with covariates.
+            Optionally, some future-known covariates that are used for predictions. This argument is required
+            if the model was trained with future-known covariates.
         n
-            The number of time steps after the end of the training time series for which to produce predictions.
+            Forecast horizon: The number of time steps to predict after the end of the target series.
         input_chunk_length
-            The length of the time series the model takes as input.
-        output_chunk_length
-            The length of the model predictions after one call to its `forward` function.
-        model_is_recurrent
-            Boolean indicating whether the model that uses this dataset is recurrent or not.
-    """
-
+            The length of the target series the model takes as input.
+        """
         super().__init__()
-        self.series = [series] if isinstance(series, TimeSeries) else series
+        self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
         self.n = n
         self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
-        self.model_is_recurrent = model_is_recurrent
 
-        raise_if(model_is_recurrent and output_chunk_length != 1,
-                 'Recurrent models require an `output_chunk_length == 1`.')
-
-        raise_if_not((covariates is None or len(series) == len(covariates)),
+        raise_if_not((covariates is None or len(target_series) == len(covariates)),
                      'The number of target series must be equal to the number of covariates.')
 
     def __len__(self):
-        return len(self.series)
+        return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
-
-        target_series = self.series[idx]
+    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries]]:
+        target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
-                     self.input_chunk_length))
+                         self.input_chunk_length))
 
         tgt_past = target_series[-self.input_chunk_length:]
 
-        cov_past = cov_future = None
+        cov_future = None
         if covariate_series is not None:
+            raise_if_not(covariate_series.freq == target_series.freq,
+                         'The dataset contains some covariate series that do not have the same freq as the '
+                         'target series ({}-th)'.format(idx))
 
-            # get first timestamp that lies in the future of target series
-            first_pred_time = target_series.end_time() + target_series.freq
+            # check that we have at least n timestamps of future covariates available
+            last_req_ts = target_series.end_time() + self.n * target_series.freq
 
-            # isolate past covariates and add them to array
-            if covariate_series.end_time() >= first_pred_time:
-                cov_past = covariate_series.drop_after(first_pred_time + int(self.model_is_recurrent)
-                                                       * covariate_series.freq)
-            else:
-                cov_past = covariate_series
-            cov_past = cov_past[-self.input_chunk_length:]
+            raise_if_not(covariate_series.end_time() >= last_req_ts,
+                         "When forecasting future values for a horizon n with models requiring future covariates, "
+                         "the future covariates need to be known n time steps in advance. "
+                         "For the dataset's {}-th sample, the last covariate timestamp is {} whereas it "
+                         "should be {}.".format(idx, covariate_series.end_time(), last_req_ts))
 
-            # check whether future covariates are required
-            if self.n > self.output_chunk_length:
+            cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
 
-                # check that enough future covariates are available
-                # block models need `n - output_chunk_length`
-                # recurrent models need `n`
-                last_required_future_covariate_ts = (
-                    target_series.end_time() + (
-                        self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
-                    * target_series.freq
-                )
-                req_cov_string = 'n' if self.model_is_recurrent else 'n - output_chunk_length'
-                raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                             'All covariates must be known `{}` time steps into the future'.format(req_cov_string))
+        return tgt_past, cov_future
 
-                # isolate necessary future covariates and add them to array
-                cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.model_is_recurrent))
-                                                          * covariate_series.freq)
-                cov_future = cov_future[:self.n - self.output_chunk_length + int(self.model_is_recurrent)]
-                """
-                In the shifted dataset, for recurrent models, the covariates are shifted forward relative to the input
-                series by one time step. This ensures that recurrent models have as input the most recent covariates
-                when making a prediction (covariates with the same timestamp as the target).
-                Because the RNN is trained that way, this shift has to be incorporated into `SimpleInferenceDataset`
-                as well, and this applies to future covariates too. This translates to the different cutoff
-                points seen at the creation of `cov_past` and `cov_future`.
-                """
 
-        return tgt_past, cov_past, cov_future
+class MixedCovariatesInferenceDataset(TimeSeriesInferenceDataset):
+    # TODO: leverage the other two
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 n: int = 1,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1):
+        """
+        Contains (past_target, past_covariates, future_past_covariates, future_covariates) tuples.
+        "future_past_covariates" are past covariates that happen to be also known in the future - those
+        are needed for forecasting with n > output_chunk_length by MixedCovariatesModels.
+
+        TODO: We could perhaps somewhat optimize here because the slicing of targets is done twice.
+        TODO: Or maybe better instead, change and return array views in all inference datasets.
+
+        Parameters
+        ----------
+        target_series
+            The target series that are to be predicted into the future.
+        past_covariates
+            Optionally, some past-observed covariates that are used for predictions. This argument is required
+            if the model was trained with past-observed covariates.
+        future_covariates
+            Optionally, some future-known covariates that are used for predictions. This argument is required
+            if the model was trained with future-known covariates.
+        n
+            Forecast horizon: The number of time steps to predict after the end of the target series.
+        input_chunk_length
+            The length of the target series the model takes as input.
+        output_chunk_length
+            The length of the target series the model emmits in output.
+        """
+        super().__init__()
+        self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
+                                                      covariates=past_covariates,
+                                                      n=n,
+                                                      input_chunk_length=input_chunk_length,
+                                                      output_chunk_length=output_chunk_length)
+
+        self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
+                                                          covariates=future_covariates,
+                                                          n=n,
+                                                          input_chunk_length=input_chunk_length)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx):
+        past_target, past_covs, future_past_covs = self.ds_past[idx]
+        _, future_covs = self.ds_future[idx]
+        return past_target, past_covs, future_past_covs, future_covs
