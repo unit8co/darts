@@ -5,6 +5,7 @@ Ensemble Model Base Class
 
 from abc import abstractmethod
 from typing import List, Optional, Union, Sequence
+from functools import reduce
 
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if_not, raise_if
@@ -58,6 +59,9 @@ class EnsembleModel(GlobalForecastingModel):
                  )
         super().fit(series, covariates)
 
+    def _ts_sequence_to_multivariate_ts(self, ts_sequence: Sequence[TimeSeries]) -> TimeSeries:
+        return reduce(lambda a, b: a.stack(b), ts_sequence)
+
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -68,16 +72,19 @@ class EnsembleModel(GlobalForecastingModel):
         super().predict(n, series, covariates, num_samples)
 
         if self.is_global_ensemble:
-            predictions = self.models[0].predict(n, series, covariates, num_samples)
+            predictions = self._ts_sequence_to_multivariate_ts(
+                self.models[0].predict(n, series, covariates, num_samples))
         else:
             predictions = self.models[0].predict(n, num_samples)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
                 if self.is_global_ensemble:
-                    prediction = model.predict(n, series, covariates, num_samples)
+                    prediction = self._ts_sequence_to_multivariate_ts(
+                        model.predict(n, series, covariates, num_samples))
                 else:
                     prediction = model.predict(n, num_samples)
+
                 predictions = predictions.stack(prediction)
 
         return self.ensemble(predictions)
