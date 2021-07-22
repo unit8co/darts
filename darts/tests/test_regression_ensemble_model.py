@@ -20,9 +20,7 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-    sine_series = tg.sine_timeseries(
-        value_frequency=(1 / 5), value_y_offset=10, length=50
-    )
+    sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series

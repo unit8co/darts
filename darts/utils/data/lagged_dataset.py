@@ -5,37 +5,37 @@ Lagged Training Dataset
 
 from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
-import pandas as pd
-from darts.logging import raise_if_not, raise_if, raise_log
+from darts.logging import raise_if_not, raise_if
 
 from darts.timeseries import TimeSeries
-from darts.utils.data.matrix_dataset import MatrixTrainingDataset
 from darts.utils.data.sequential_dataset import SequentialDataset
 from darts.utils.data.simple_inference_dataset import SimpleInferenceDataset
 
 
-def _process_lags(
-    lags: Union[int, List[int]] = None, lags_covariates: Union[int, List[int]] = None
-) -> Tuple[Union[List[int], None], Union[List[int], None]]:
+def _process_lags(lags: Union[int, List[int]] = None,
+                  lags_covariates: Union[int, List[int]] = None
+                  ) -> Tuple[Union[List[int], None], Union[List[int], None]]:
 
     raise_if(
         (lags is None) and (lags_covariates is None),
-        "At least one of `lags` or `lags_covariates` must be not None.",
+        "At least one of `lags` or `lags_covariates` must be not None."
     )
+
     raise_if_not(
         isinstance(lags, (int, list)) or lags is None,
-        "`lags` must be of type int or list. Given: {}.".format(type(lags)),
+        f"`lags` must be of type int or list. Given: {type(lags)}."
     )
+
     raise_if_not(
         isinstance(lags_covariates, (int, list)) or lags_covariates is None,
-        "`lags_covariates` must be of type int or list. Given: {}.".format(
-            type(lags_covariates)
-        ),
+        f"`lags_covariates` must be of type int or list. Given: {type(lags_covariates)}."
     )
+
     raise_if(
         isinstance(lags, bool) or isinstance(lags_covariates, bool),
         "`lags` and `lags_covariates` must be of type int or list, not bool.",
     )
+
     if isinstance(lags, int):
         raise_if_not(
             lags > 0,
@@ -43,6 +43,7 @@ def _process_lags(
         )
         # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
         lags = list(range(1, lags + 1))
+
     elif isinstance(lags, list):
         for lag in lags:
             raise_if(
@@ -52,12 +53,14 @@ def _process_lags(
     # using only the current current covariates, at position 0, which is the same timestamp as the prediction
     if isinstance(lags_covariates, int) and lags_covariates == 0:
         lags_covariates = [0]
+
     elif isinstance(lags_covariates, int):
         raise_if_not(
             lags_covariates > 0,
             f"`lags_covariates` must be positive. Given: {lags_covariates}.",
         )
         lags_covariates = list(range(1, lags_covariates + 1))
+
     elif isinstance(lags_covariates, list):
         for lag in lags_covariates:
             raise_if(
@@ -68,19 +71,14 @@ def _process_lags(
     return lags, lags_covariates
 
 
-class LaggedDataset(MatrixTrainingDataset):
-    def __init__(
-        self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        lags: Union[int, list] = None,
-        lags_covariates: Union[int, list] = None,
-        max_samples_per_ts: Optional[int] = None,
-    ):
+class LaggedDataset:
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 lags: Union[int, list] = None,
+                 lags_covariates: Union[int, list] = None,
+                 max_samples_per_ts: Optional[int] = None):
         """Lagged Dataset
-
-        A timeseries dataset wrapping around a SequentialDataset, yielding tuples of (input, output, input_covariates)
-        arrays, where "input" contains
 
         Params
         ------
@@ -219,7 +217,7 @@ class LaggedInferenceDataset:
             covariates=covariates,
             n=n,
             input_chunk_length=input_chunk_length,
-            model_is_recurrent= True if self.lags_covariates is not None and 0 in self.lags_covariates else False,
+            model_is_recurrent=True if self.lags_covariates is not None and 0 in self.lags_covariates else False,
             keep_extra_covariate=True if self.lags_covariates is not None and 0 in self.lags_covariates else False
         )
 
