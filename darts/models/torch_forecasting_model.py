@@ -979,7 +979,7 @@ in implementations.
 See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
 """
 
-class PastCovariatesModel(TorchForecastingModel):
+class PastCovariatesModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -988,7 +988,7 @@ class PastCovariatesModel(TorchForecastingModel):
         raise_if_not(future_covariates is None,
                      'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
 
-        return PastCovariatesSequentialDataset(target,
+        return PastCovariatesSequentialDataset(target_series=target,
                                                covariates=past_covariates,
                                                input_chunk_length=self.input_chunk_length,
                                                output_chunk_length=self.output_chunk_length)
@@ -1000,20 +1000,51 @@ class PastCovariatesModel(TorchForecastingModel):
         _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
 
 
-class FutureCovariatesModel(TorchForecastingModel):
-    pass
+class FutureCovariatesModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesTrainingDataset:
+        raise_if_not(past_covariates is None,
+                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
+
+        return FutureCovariatesSequentialDataset(target_series=target,
+                                                 covariates=future_covariates,
+                                                 input_chunk_length=self.input_chunk_length,
+                                                 output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, FutureCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
 
 
-class MixedCovariatesModel(TorchForecastingModel):
-    pass
+class MixedCovariatesModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesTrainingDataset:
+
+        return MixedCovariatesSequentialDataset(target_series=target,
+                                                past_covariates=past_covariates,
+                                                future_covariates=future_covariates,
+                                                input_chunk_length=self.input_chunk_length,
+                                                output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, MixedCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
 
 
-class RecurrentModel(TorchForecastingModel):
+class RecurrentModel(TorchForecastingModel, ABC):
     # TODO: extract recurrent specific logic here (override produce_block_forecast() etc).
     pass
 
 
-class TorchParametricProbabilisticForecastingModel(TorchForecastingModel):
+class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
