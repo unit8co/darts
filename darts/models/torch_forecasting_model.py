@@ -1,10 +1,21 @@
 """
-Torch Forecasting Model Base Class
-----------------------------------
-This is the super class for all PyTorch-based forecasting models.
+Torch Forecasting Model Base Classes
+------------------------------------
+This file contains several abstract classes:
+
+* TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
+
+* PastCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming past-observed covariates.
+* FutureCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming future-known covariates.
+* MixedCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming both
+  past-observed and future-known covariates.
+
+* RecurrentModel(TorchForecastingModel) is the super-class of all recurrent models.
+
+* TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
+  forecasting models.
 """
 
-from darts.utils.data.shifted_dataset import ShiftedDataset
 import numpy as np
 import os
 import re
@@ -23,9 +34,14 @@ import warnings
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
-from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TrainingDataset
-from ..utils.data.sequential_dataset import SequentialDataset
-from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
+
+from ..utils.data.training_dataset import (TrainingDataset, PastCovariatesTrainingDataset,
+                                           FutureCovariatesTrainingDataset, MixedCovariatesTrainingDataset)
+from ..utils.data.inference_dataset import (InferenceDataset, PastCovariatesInferenceDataset,
+                                            FutureCovariatesInferenceDataset, MixedCovariatesInferenceDataset)
+from ..utils.data.sequential_dataset import (PastCovariatesSequentialDataset, FutureCovariatesSequentialDataset,
+                                             MixedCovariatesSequentialDataset)
+
 from ..utils.likelihood_models import LikelihoodModel
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
@@ -51,7 +67,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: Union[TimeSeriesInferenceDataset, TrainingDataset], device):
+    def __init__(self, ts_dataset: Union[InferenceDataset, TrainingDataset], device):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
         from `TimeSeries` to torch tensors and stack target series with covariates when needed.
@@ -81,7 +97,7 @@ class TimeSeriesTorchDataset(Dataset):
         """
         item = self.ts_dataset[idx]
 
-        if isinstance(self.ts_dataset, TimeSeriesInferenceDataset):
+        if isinstance(self.ts_dataset, InferenceDataset):
             # the dataset contains (input_target, input_covariate) only
             past_tgt = torch.from_numpy(item[0].values(copy=False)).float()
             past_cov = torch.from_numpy(item[1].values(copy=False)).float() if item[1] is not None else None
@@ -99,7 +115,7 @@ class TimeSeriesTorchDataset(Dataset):
             return self._cat_with_optional(past_tgt, past_cov), output_tgt
 
         else:
-            raise ValueError('The dataset must be of type `TrainingDataset` or `TimeSeriesInferenceDataset`')
+            raise ValueError('The dataset must be of type `TrainingDataset` or `InferenceDataset`')
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
@@ -290,20 +306,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pass
 
+    @abstractmethod
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
-                             covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
-        return SequentialDataset(target_series=target,
-                                 covariates=covariates,
-                                 input_chunk_length=self.input_chunk_length,
-                                 output_chunk_length=self.output_chunk_length)
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
+        """
+        Each model must specify the default training dataset to use.
+        """
+        pass
+
+    @abstractmethod
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        pass
+
+    @abstractmethod
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        pass
 
     @random_method
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            val_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             verbose: bool = False,
             epochs: int = 0) -> None:
         """
@@ -323,12 +351,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         series
             A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
-        covariates
-            Optionally, a series or sequence of series specifying covariates
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates
         val_series
             Optionally, one or a sequence of validation target series, which will be used to compute the validation
             loss throughout training and keep track of the best performing models.
-        val_covariates
+        val_past_covariates
             Optionally, the covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
@@ -336,25 +366,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
         """
-        super().fit(series, covariates)
+        super().fit(series, past_covariates)
 
         wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
         series = wrap_fn(series)
-        covariates = wrap_fn(covariates)
+        past_covariates = wrap_fn(past_covariates)
         val_series = wrap_fn(val_series)
-        val_covariates = wrap_fn(val_covariates)
+        val_past_covariates = wrap_fn(val_past_covariates)
         # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
 
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
-            train_set_dim = (series[0].width + (0 if covariates is None else covariates[0].width))
-            val_set_dim = (val_series[0].width + (0 if val_covariates is None else val_covariates[0].width))
+            train_set_dim = (series[0].width + (0 if past_covariates is None else past_covariates[0].width))
+            val_set_dim = (val_series[0].width + (0 if val_past_covariates is None else val_past_covariates[0].width))
             raise_if_not(train_set_dim == val_set_dim, 'The dimensions of the series in the training set '
                                                        'and the validation set do not match. {} != {}'.format(
                                                         train_set_dim, val_set_dim))
 
-        train_dataset = self._build_train_dataset(series, covariates)
-        val_dataset = self._build_train_dataset(val_series, val_covariates) if val_series is not None else None
+        train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
+        val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
@@ -523,7 +553,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def predict_from_dataset(self,
                              n: int,
-                             input_series_dataset: TimeSeriesInferenceDataset,
+                             input_series_dataset: InferenceDataset,
                              batch_size: Optional[int] = None,
                              verbose: bool = False,
                              n_jobs: int = 1,
@@ -591,8 +621,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          '`roll_size` must be an integer between 1 and `self.output_chunk_length`.')
 
         # check input data type
-        raise_if_not(isinstance(input_series_dataset, TimeSeriesInferenceDataset),
-                     'Only TimeSeriesInferenceDataset is accepted as input type.')
+        raise_if_not(isinstance(input_series_dataset, InferenceDataset),
+                     'Only InferenceDataset is accepted as input type.')
 
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
@@ -939,7 +969,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         for p in self.optimizer.param_groups:
             return p['lr']
 
-class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
+
+def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
+    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
+
+"""
+Many classes inherit TorchForecastingModel. We need to be careful in the order we inherit them
+in implementations.
+See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
+"""
+
+class PastCovariatesModel(TorchForecastingModel):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesTrainingDataset:
+
+        raise_if_not(future_covariates is None,
+                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
+
+        return PastCovariatesSequentialDataset(target,
+                                               covariates=past_covariates,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, PastCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
+
+
+class FutureCovariatesModel(TorchForecastingModel):
+    pass
+
+
+class MixedCovariatesModel(TorchForecastingModel):
+    pass
+
+
+class RecurrentModel(TorchForecastingModel):
+    # TODO: extract recurrent specific logic here (override produce_block_forecast() etc).
+    pass
+
+
+class TorchParametricProbabilisticForecastingModel(TorchForecastingModel):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
@@ -970,5 +1044,7 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def _produce_predict_output(self, input):
         """
         This method has to be implemented by all children.
+
+        TODO: rename parameter as it shadows input name
         """
         pass
