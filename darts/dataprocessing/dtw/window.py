@@ -1,15 +1,27 @@
 from typing import Iterable, Tuple
 from dataclasses import dataclass
 import numpy as np
-from ...logging import raise_if_not
-from abc import abstractmethod
+from ...logging import raise_if_not, raise_if
+from abc import ABC, abstractmethod
+from math import tan, atan
 
 
-class Window:
+class Window(ABC):
     n: int
     m: int
 
     def init_size(self, n: int, m: int):
+        """
+        Called by dtw to initialize the window to a certain size.
+
+        Parameters
+        ----------
+        n
+        m
+
+        Returns
+        -------
+        """
         self.n = n
         self.m = m
 
@@ -33,13 +45,6 @@ class Window:
 
     def __contains__(self, item):
         return self.column_index(item) != -1
-
-    def raise_if_index_error(self, elem: (int,int), names: Tuple[str,str] = ("i","j")):
-        i, j = elem
-
-        if i == 0 and j == 0: return
-        if i < 1 or i > self.n: raise IndexError(f"{names[0]} >= 1 and {names[0]} <= n, got {i}")
-        if j < 1 or j > self.m: raise IndexError(f"{names[1]} >= 1 and {names[1]} <= n, got {j}")
 
     @abstractmethod
     def column_length(self, column: int) -> int:
@@ -65,14 +70,24 @@ class Window:
         The number of active grid cells in each column.
         """
 
-        return [self.column_length(i) for i in range(0, self.n + 1)]
+        return np.array(self.column_length(i) for i in range(0, self.n + 1))
 
     @abstractmethod
     def __iter__(self):
+        """
+        Iterate over all active cells in the window, yielding (i,j) tuple.
+        Expected to start with index (1,1) and end with index (n+1, m+1).
+
+        Returns
+        -------
+        """
         pass
 
 
 class NoWindow(Window):
+    """
+    Full n x m grid
+    """
     def __len__(self):
         return self.n*self.m + 1 # include (0,0) element
 
@@ -99,28 +114,45 @@ import array
 
 class CRWindow:
     """
-    Arbitrary contiguous column windows
+    Compressed row representation window.
+    Stores the range of active grid cells in each column.
+    Any window with contiguous columns can be expressed as an CRWindow.
+    Supports efficient iterative construction and updates.
     """
 
     length: int
     column_ranges: array.array #np.ndarray #2d array [start,end] for each column
 
     def __init__(self, n: int, m: int, ranges: np.ndarray = None):
+        """
+        Parameters
+        ----------
+        n: int
+        m: int
+        ranges:
+            2d array with [start,end] range for column
+            Range corresponding to entire column is [0, m]
+        """
+
         self.n = n
-        self.m = n
+        self.m = m
 
         if not ranges is None:
             raise_if_not(ranges.shape == (n, 2), f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)")
 
             ranges = np.insert(ranges, 0, [0, 1], axis=0)
-            ranges[1:] += 1
 
             ranges = ranges.reshape((-1,))
             start = ranges[0::2]
             end = ranges[1::2]
 
+            raise_if(np.any(start < 0), "Start must be >=0")
+            raise_if(np.any(end > m), "End must be <m")
+
             diff = np.maximum(end - start, 0)
             self.length = np.sum(diff)
+
+            ranges[1:] += 1
         else:
             ranges = np.zeros((n + 1) * 2, dtype=int)
             ranges[0::2] = self.m #start
@@ -134,8 +166,19 @@ class CRWindow:
         self.column_ranges = array.array('i', ranges)
 
     def add_range(self, column: int, start: int, end: int):
-        if start < 1 or start > self.n: raise IndexError(f"Start must be >=1 and <=n, got {start}")
-        if end < 1 or end > self.n+1: raise IndexError(f"End must be >=1 and <=n+1, got {end}")
+        """
+        Extends the active cells in the column by the range (start,end).
+        Ranges smaller than the current one are ignored.
+        Note (1, m+1), not (0,m) corresponds to entire column.
+
+        Parameters
+        ----------
+        column
+        start:
+        end:
+        """
+        if start < 1 or start > self.m: raise IndexError(f"Start must be >=1 and <=m, got {start}")
+        if end < 1 or end > self.m+1: raise IndexError(f"End must be >=1 and <=m+1, got {end}")
 
         start_idx = column*2 + 0
         end_idx = column*2 + 1
@@ -153,8 +196,14 @@ class CRWindow:
         self.column_ranges[end_idx] = end
 
     def add(self, elem: (int, int)):
-        self.add_range(elem[0], elem[1], elem[1]+1)
+        """
+        Mark grid cell (i,j) as active.
 
+        Parameters
+        ----------
+        elem
+        """
+        self.add_range(elem[0], elem[1], elem[1]+1)
 
     def column_length(self, column: int) -> int:
         start, end = self.column_ranges[column]
@@ -193,7 +242,28 @@ class CRWindow:
 
 class Itakura(CRWindow):
     """
-    Forms the itakura parallelogram, where max_slope determines the slope of the steeper side.
+    Forms the Itakura parallelogram, where max_slope determines the slope of the steeper side.
+
+                                         x
+                                     xxxx
+                      B           xxxxxx
+                            xxxxxxxxxxx
+                        xxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxxx
+                 xxxxxxxxxxxxxxxxxxxx     C
+               xxxxxxxxxxxxxxxxxxxxx
+              xxxxxxxxxxxxxxxxxxxxx
+             xxxxxxxxxxxxxxxxxxxxx
+        A   xxxxxxxxxxxxxxxxxxxxx
+           xxxxxxxxxxxxxxxxxxxxx
+          xxxxxxxxxxxxxxxxxxxxx
+         xxxxxxxxxxxxxxxxxxxx
+        xxxxxxxxxxxxxxxx       D
+        xxxxxxxxxxxx
+       xxxxxxxxx
+      xxxxxx
+     xxx
+    x
     """
 
     def __init__(self, max_slope: float):
@@ -204,32 +274,51 @@ class Itakura(CRWindow):
         self.m = m
 
         max_slope = self.max_slope
-        diagonal_slope = m/n #rise over run
+        diagonal_slope = m/n # rise over run
         raise_if_not(max_slope > diagonal_slope, f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram.")
 
-        diff_slope = max_slope - diagonal_slope
-        min_slope = diagonal_slope - diff_slope
+        max_slope_angle = atan(max_slope)
+        diagonal_slope_angle = atan(diagonal_slope)
 
-        first_half = self.n//2
-        second_half = self.n - first_half
+        diff_slope_angle = max_slope_angle - diagonal_slope_angle
+        min_slope = tan(diagonal_slope_angle - diff_slope_angle)
+
+        # Derivation for determining how wide the steep top sides (A) and shallow bottom (D) are
+
+        # max_slope*x + (n-x)*min_slope = m
+        # max_slope*x + n*min_slope - min_slope*x = m
+        # (max_slope - min_slope)*x = m - n*min_slope
+        # x = (m - n*min_slope) / (max_slope - min_slope)
 
         ranges = np.zeros(self.n*2, dtype=float)
-        ranges[:first_half*2] = np.repeat(np.arange(first_half), 2)
-        ranges[first_half*2:] = np.repeat(np.arange(second_half), 2)
-        ranges = ranges.reshape((-1, 2))
 
-        ranges[:first_half] *= (min_slope, max_slope)
-        ranges[first_half:] *= (max_slope, min_slope)
-        ranges[first_half:] += ranges[first_half-1]
-        ranges += [0,1]
+        shallow_bottom = int(np.round((m - n*max_slope) / (min_slope - max_slope))+1)
+        ranges[:shallow_bottom*2:2] = np.arange(shallow_bottom)
+        ranges[shallow_bottom*2::2] = np.arange(n-shallow_bottom)+1
 
-        ranges = ranges.reshape((-1,))
-        ranges[0::2] = np.maximum(0, ranges[::2])
-        ranges[1::2] = np.minimum(self.m, ranges[1::2])
+        ranges[:shallow_bottom * 2:2] *= min_slope
+        ranges[shallow_bottom * 2::2] *= max_slope
+        ranges[shallow_bottom * 2::2] += ranges[(shallow_bottom-1)*2]
+
+        steep_top = int(np.round((m - n*min_slope) / (max_slope - min_slope)))
+        ranges[1:steep_top*2:2] = np.arange(steep_top)+1
+        ranges[steep_top*2+1::2] = np.arange(n-steep_top)+1
+
+        ranges[1:steep_top * 2:2] *= max_slope
+        ranges[steep_top * 2+1::2] *= min_slope
+        ranges[steep_top * 2+1::2] += ranges[(steep_top-1)*2 + 1]
+
+        np.floor(ranges[0::2], out=ranges[0::2])
+        np.ceil(ranges[1::2], out=ranges[1::2])
+
         ranges = ranges.reshape((-1, 2))
+        ranges = np.maximum([0, 1], ranges)
+        ranges = np.minimum([self.m-1, self.m], ranges)
         ranges = ranges.astype(int)
+        ranges[0][0] = 0
 
         super().__init__(n, m, ranges)
+
 
 class SakoeChiba(CRWindow):
     """
@@ -244,7 +333,7 @@ class SakoeChiba(CRWindow):
         self.m = m
 
         diff = abs(n-m)
-        raise_if_not(diff < self.window_size, f"Window size must at least cover size difference (diff)")
+        raise_if_not(diff < self.window_size, f"Window size must at least cover size difference ({diff})")
 
         ranges = np.repeat(np.arange(n), 2)
         ranges[0::2] -= self.window_size,
@@ -255,29 +344,3 @@ class SakoeChiba(CRWindow):
         ranges = np.reshape(ranges, (-1, 2))
 
         super().__init__(n, m, ranges)
-
-
-
-"""
-    def column_range(self, i: int) -> (int,int):
-        column = i-1
-
-        min_slope = self.min_slope
-        max_slope = self.max_slope
-
-        half_way = column*2>self.n
-
-        if half_way:
-            half_column = self.n//2 if half_way else 0
-            rem_column = column - half_column
-        else:
-            half_column = column
-            rem_column = 0
-
-        start = half_column * min_slope + rem_column * max_slope
-        end = half_column * max_slope + rem_column * min_slope
-
-        start = int(max(1, np.floor(start)+1))
-        end = int(min(self.m+1, np.floor(end)+2))
-        return start, end
-"""
