@@ -60,7 +60,10 @@ class EnsembleModel(GlobalForecastingModel):
         super().fit(series, covariates)
 
     def _ts_sequence_to_multivariate_ts(self, ts_sequence: Sequence[TimeSeries]) -> TimeSeries:
-        return reduce(lambda a, b: a.stack(b), ts_sequence)
+        if isinstance(ts_sequence, Sequence):
+            return reduce(lambda a, b: a.stack(b), ts_sequence)
+        else:
+            return ts_sequence
 
     def predict(self,
                 n: int,

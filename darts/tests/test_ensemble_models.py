@@ -55,29 +55,30 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         NaiveEnsembleModel([RNNModel(), TCNModel(10, 2), NBEATSModel(10, 2)])
 
     def test_call_predict_global_models_univariate_input_no_covariates(self):
-        naive_ensemble = NaiveEnsembleModel([RNNModel(), TCNModel(10, 2), NBEATSModel(10, 2)])
+        naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
+                                             TCNModel(10, 2, n_epochs=1),
+                                             NBEATSModel(10, 2, n_epochs=1)])
         with self.assertRaises(Exception):
             naive_ensemble.predict(5)
+
         naive_ensemble.fit(self.series1)
         naive_ensemble.predict(5)
 
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
-        naive_ensemble = NaiveEnsembleModel([RNNModel(), TCNModel(10, 2), NBEATSModel(10, 2)])
+        naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
+                                             TCNModel(10, 2, n_epochs=1),
+                                             NBEATSModel(10, 2, n_epochs=1)])
         naive_ensemble.fit(self.seq1)
-        naive_ensemble.predict(5)
+        naive_ensemble.predict(n=5, series=self.seq1)
 
-    # TODO
-    def test_predict_ensemble_global_models(self):
-        naive = NaiveSeasonal(K=5)
-        theta = Theta()
-        naive_ensemble = NaiveEnsembleModel([naive, theta])
-        naive_ensemble.fit(self.series1 + self.series2)
-        forecast_naive_ensemble = naive_ensemble.predict(5)
-        naive.fit(self.series1 + self.series2)
-        theta.fit(self.series1 + self.series2)
-        forecast_mean = 0.5 * naive.predict(5) + 0.5 * theta.predict(5)
-
-        self.assertTrue(np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values()))
+    def test_call_predict_global_models_multivariate_input_with_covariates(self):
+        naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
+                                             TCNModel(10, 2, n_epochs=1),
+                                             NBEATSModel(10, 2, n_epochs=1)])
+        naive_ensemble.fit(self.seq1, self.cov1)
+        predict_series = [s[:12] for s in self.seq1]
+        predict_covariates = [c[:14] for c in self.cov1]
+        naive_ensemble.predict(n=2, series=predict_series, covariates=predict_covariates)
 
     def test_input_models_mixed(self):
         with self.assertRaises(ValueError):
