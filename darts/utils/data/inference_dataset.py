@@ -11,7 +11,7 @@ from ...timeseries import TimeSeries
 from ...logging import raise_if_not, raise_if
 
 
-class TimeSeriesInferenceDataset(ABC, Sequence):
+class InferenceDataset(ABC, Sequence):
     def __init__(self):
         """
         Abstract class for a `TimeSeries` inference dataset. It contains 3-tuples of
@@ -48,7 +48,7 @@ class TimeSeriesInferenceDataset(ABC, Sequence):
         pass
 
 
-class PastCovariatesInferenceDataset(TimeSeriesInferenceDataset):
+class PastCovariatesInferenceDataset(InferenceDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -134,7 +134,7 @@ class PastCovariatesInferenceDataset(TimeSeriesInferenceDataset):
         return tgt_past, cov_past, cov_future
 
 
-class FutureCovariatesInferenceDataset(TimeSeriesInferenceDataset):
+class FutureCovariatesInferenceDataset(InferenceDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -197,7 +197,7 @@ class FutureCovariatesInferenceDataset(TimeSeriesInferenceDataset):
         return tgt_past, cov_future
 
 
-class MixedCovariatesInferenceDataset(TimeSeriesInferenceDataset):
+class MixedCovariatesInferenceDataset(InferenceDataset):
     # TODO: leverage the other two
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
