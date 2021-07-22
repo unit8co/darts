@@ -7,8 +7,8 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
-from .timeseries_dataset import (PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset,
-                                 MixedCovariatesTrainingDataset)
+from .training_dataset import (PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset,
+                               MixedCovariatesTrainingDataset)
 from .shifted_dataset import GenericShiftedDataset
 
 

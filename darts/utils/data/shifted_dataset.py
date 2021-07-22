@@ -7,7 +7,7 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
-from .timeseries_dataset import PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset, MixedCovariatesTrainingDataset, _get_matching_index
+from .training_dataset import PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset, MixedCovariatesTrainingDataset, _get_matching_index
 from ..utils import raise_if_not
 
 
