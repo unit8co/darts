@@ -300,6 +300,11 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesE = seriesD.shift(1)
         test_case.assertEqual(seriesE.time_index[0], pd.Timestamp('20130102'))
 
+        seriesF = TimeSeries.from_times_and_values(pd.RangeIndex(2, 10), range(8))
+
+        seriesG = seriesF.shift(4)
+        test_case.assertEqual(seriesG.time_index[0], 6)
+
     @staticmethod
     def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
