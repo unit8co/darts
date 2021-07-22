@@ -30,7 +30,6 @@ class DataTransformerTestCase(unittest.TestCase):
         series1_tr2 = transformer2.fit_transform(self.series1)
         series3_tr2 = transformer2.transform(self.series3)
 
-        print(self.series1.columns[0])
         # should have the defined name above
         self.assertEqual(self.series1.columns[0], 'series1')
 
