@@ -7,7 +7,7 @@ from abc import abstractmethod
 from typing import List, Optional, Union, Sequence
 
 from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_if_not
+from ..logging import get_logger, raise_if_not, raise_if
 from ..models.forecasting_model import ForecastingModel, GlobalForecastingModel
 
 logger = get_logger(__name__)
@@ -38,7 +38,7 @@ class EnsembleModel(GlobalForecastingModel):
                      "or darts.models.GlobalForecastingModel",
                      logger)
         super().__init__()
-        self.models = models
+        self.models: Union[List[ForecastingModel], List[GlobalForecastingModel]] = models
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -48,6 +48,14 @@ class EnsembleModel(GlobalForecastingModel):
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
+        raise_if(not self.is_global_ensemble and not isinstance(series, TimeSeries),
+                 "All models are of type darts.models.ForecastingModel which do not support covariates.",
+                 logger
+                 )
+        raise_if(not self.is_global_ensemble and covariates is not None,
+                 "All models are of type darts.models.ForecastingModel which do not support covariates.",
+                 logger
+                 )
         super().fit(series, covariates)
 
     def predict(self,
