@@ -67,7 +67,7 @@ rstring = """
 rOTM = robjects.r(rstring)
 # Use example
 # outOTM = rOTM(train.values(), len(test), m)
-# forecast_otm = TimeSeries.from_times_and_values(test.time_index(), outOTM)
+# forecast_otm = TimeSeries.from_times_and_values(test.time_index, outOTM)
 
 rstring = """
     function(input, fh, fq){
@@ -81,7 +81,7 @@ rstring = """
 rDOTM = robjects.r(rstring)
 # Use example
 # outDOTM = rDOTM(train.values(), len(test), m)
-# forecast_dotm = TimeSeries.from_times_and_values(test.time_index(), outDOTM)
+# forecast_dotm = TimeSeries.from_times_and_values(test.time_index, outDOTM)
 
 rstring = """
     function(input, fq){
@@ -107,7 +107,7 @@ rETS = robjects.r(rstring)
 # Use example
 # modelETS = getETScomponent(train.values(), m)
 # out_ets = rETS(train.values(), len(test), m, modelETS)
-# forecast_ets = TimeSeries.from_times_and_values(test.time_index(), out_ets)
+# forecast_ets = TimeSeries.from_times_and_values(test.time_index, out_ets)
 
 rstring = """
     function(input, fq){
@@ -133,7 +133,7 @@ rARIMA = robjects.r(rstring)
 # Use example
 # arima_model = getARIMAcomponent(train.values(), m)
 # out_arima = rARIMA(train.values(), len(test), m, arima_model)
-# forecast_arima = TimeSeries.from_times_and_values(test.time_index(), out_arima)
+# forecast_arima = TimeSeries.from_times_and_values(test.time_index, out_arima)
 
 rstring = """
     function(input, fh, fq){
@@ -170,7 +170,7 @@ rstring = """
 rNaive2 = robjects.r(rstring)
 # Use example
 # out_naive2 = rNaive2(train.values(), len(test), m)
-# forecast_naive2 = TimeSeries.from_times_and_values(test.time_index(), out_naive2)
+# forecast_naive2 = TimeSeries.from_times_and_values(test.time_index, out_naive2)
 
 
 def groe_owa(ts: TimeSeries, model: ForecastingModel, fq: int, n1: int, m: int, p: int) -> float:
@@ -212,7 +212,7 @@ def groe_owa(ts: TimeSeries, model: ForecastingModel, fq: int, n1: int, m: int, 
         test = ts[ni:]
 
         forecast_naive2 = rNaive2(train.values(), npred, fq)
-        forecast_naive2 = TimeSeries.from_times_and_values(test.time_index(), forecast_naive2)
+        forecast_naive2 = TimeSeries.from_times_and_values(test.time_index, forecast_naive2)
         try:
             error_ase_n2 = mase_m4(train, test, forecast_naive2)
             error_sape_n2 = smape_m4(test, forecast_naive2)
@@ -319,7 +319,7 @@ if __name__ == "__main__":
             for prediction, weight in zip(model_predictions, pesos):
                 groe_ensemble = prediction * weight + groe_ensemble
             if (groe_ensemble.univariate_values() < 0).any():
-                indices = test.time_index()[groe_ensemble.univariate_values() < 0]
+                indices = test.time_index[groe_ensemble.univariate_values() < 0]
                 groe_ensemble = groe_ensemble.update(indices, np.zeros(len(indices)))
 
             mase_all.append(np.vstack([

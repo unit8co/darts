@@ -7,7 +7,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models.rnn_model import _RNNModule, RNNModel
+    from ..models.block_rnn_model import _BlockRNNModule, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. RNN tests will be skipped.')
@@ -15,31 +15,31 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    class RNNModelTestCase(DartsBaseTestClass):
+    class BlockRNNModelTestCase(DartsBaseTestClass):
         __test__ = True
         times = pd.date_range('20130101', '20130410')
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
-        module = _RNNModule('RNN', input_size=1, output_chunk_length=1, hidden_dim=25,
-                            num_layers=1, num_layers_out_fc=[], dropout=0)
+        module = _BlockRNNModule('RNN', input_size=1, output_chunk_length=1, hidden_dim=25,
+                                 num_layers=1, num_layers_out_fc=[], dropout=0)
 
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # cannot choose any string
-                RNNModel(input_chunk_length=1, output_chunk_length=1, model='UnknownRNN?')
+                BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model='UnknownRNN?')
             # can give a custom module
-            model1 = RNNModel(input_chunk_length=1, output_chunk_length=1, model=self.module)
-            model2 = RNNModel(input_chunk_length=1, output_chunk_length=1, model="RNN")
+            model1 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model=self.module)
+            model2 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model="RNN")
             self.assertEqual(model1.model.__repr__(), model2.model.__repr__())
 
         def test_fit(self):
             # Test basic fit()
-            model = RNNModel(input_chunk_length=1, output_chunk_length=1, n_epochs=2)
+            model = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, n_epochs=2)
             model.fit(self.series)
 
             # Test fit-save-load cycle
-            model2 = RNNModel(input_chunk_length=1, output_chunk_length=1,
-                              model='LSTM', n_epochs=3, model_name='unittest-model-lstm')
+            model2 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1,
+                                   model='LSTM', n_epochs=3, model_name='unittest-model-lstm')
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-lstm', best=False)
             pred1 = model2.predict(n=6)
@@ -49,7 +49,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.)
 
             # Another random model should not
-            model3 = RNNModel(input_chunk_length=1, output_chunk_length=1,
+            model3 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1,
                               model='RNN', n_epochs=2)
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
@@ -77,4 +77,4 @@ if TORCH_AVAILABLE:
             self.assertEqual(pred.width, 1)
 
         def test_pred_length(self):
-            self.helper_test_pred_length(RNNModel, self.series)
+            self.helper_test_pred_length(BlockRNNModel, self.series)

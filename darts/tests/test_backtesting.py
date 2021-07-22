@@ -30,8 +30,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TCNModel, RNNModel
-
+    from ..models import TCNModel, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -43,27 +42,27 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
-    best_model_1, _ = model_class.gridsearch(
-        params, series, forecast_horizon=10, metric=mape, start=series.time_index()[-21]
-    )
+    np.random.seed(1)
+    best_model_1, _ = model_class.gridsearch(params,
+                                             series,
+                                             forecast_horizon=10,
+                                             metric=mape,
+                                             start=series.time_index[-21])
 
     # instantiate best model in split mode
-    train, val = series.split_before(series.time_index()[-10])
+    train, val = series.split_before(series.time_index[-10])
     best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
+    random.seed(1)
     random_param_choice = {}
     for key in params.keys():
         random_param_choice[key] = random.choice(params[key])
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_score_1 = best_model_1.backtest(
-        series, start=series.time_index()[-21], forecast_horizon=10
-    )
-    random_score_1 = random_model.backtest(
-        series, start=series.time_index()[-21], forecast_horizon=10
-    )
+    best_score_1 = best_model_1.backtest(series, start=series.time_index[-21], forecast_horizon=10)
+    random_score_1 = random_model.backtest(series, start=series.time_index[-21], forecast_horizon=10)
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
@@ -82,6 +81,7 @@ def compare_best_against_random(model_class, params, series):
 class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
+        linear_series_int = TimeSeries.from_values(linear_series.values())
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
@@ -91,6 +91,11 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
+        self.assertEqual(score, 1.0)
+
+        # test that it also works for time series that are not Datetime-indexed
+        score = NaiveDrift().backtest(linear_series_int, start=0.7,
+                                      forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
         with self.assertRaises(ValueError):
@@ -212,26 +217,20 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
             last_points_only=True,
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
         # Using an int or float value for start
-        score = RandomForest(lags=12, lags_covariates=[0]).backtest(
-            series=target,
-            covariates=features,
-            start=30,
-            forecast_horizon=3,
-            metric=r2_score,
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+            series=target, covariates=features, start=30,
+            forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
-        score = RandomForest(lags=12, lags_covariates=[0]).backtest(
-            series=target,
-            covariates=features,
-            start=0.5,
-            forecast_horizon=3,
-            metric=r2_score,
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+            series=target, covariates=features, start=0.5,
+            forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
         # Using a too small start value
         with self.assertRaises(ValueError):
@@ -243,45 +242,38 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
 
         # Using RandomForest's start default value
-        score = RandomForest(lags=12).backtest(
-            series=target, forecast_horizon=3, metric=r2_score
-        )
+        score = RandomForest(lags=12, random_state=0).backtest(series=target, forecast_horizon=3, metric=r2_score)
         self.assertGreater(score, 0.95)
 
         # multivariate feature test
-        score = RandomForest(lags=12, lags_covariates=[0, 1]).backtest(
-            series=target,
-            covariates=features_multivariate,
-            start=pd.Timestamp("20000201"),
-            forecast_horizon=3,
-            metric=r2_score,
+        score = RandomForest(lags=12, lags_exog=[0, 1], random_state=0).backtest(
+            series=target, covariates=features_multivariate,
+            start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.94)
 
         # multivariate with stride
-        score = RandomForest(lags=12, lags_covariates=[0]).backtest(
-            series=target,
-            covariates=features_multivariate,
-            start=pd.Timestamp("20000201"),
-            forecast_horizon=3,
-            metric=r2_score,
-            last_points_only=True,
-            stride=3,
+        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+            series=target, covariates=features_multivariate,
+            start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score,
+            last_points_only=True, stride=3
         )
-        self.assertGreater(score, 0.95)
+        self.assertGreater(score, 0.9)
 
     def test_gridsearch(self):
-
         np.random.seed(1)
+
         ts_length = 50
         dummy_series = (
             lt(length=ts_length, end_value=10)
             + st(length=ts_length, value_y_offset=10)
             + rt(length=ts_length)
         )
+        dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
         theta_params = {"theta": list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series_int_index))
 
         fft_params = {"nr_freqs_to_keep": [10, 50, 100], "trend": [None, "poly", "exp"]}
         self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
@@ -315,7 +307,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                 "parameters": {"p": [18, 4, 8], "q": [1, 2, 3]},
             },
             {
-                "model": RNNModel,  # TorchForecastingModel
+                "model": BlockRNNModel,   # TorchForecastingModel
                 "parameters": {
                     "input_chunk_length": [1, 3, 5, 10],
                     "output_chunk_length": [1, 3, 5, 10],
@@ -332,13 +324,17 @@ class BacktestingTestCase(DartsBaseTestClass):
             model = test["model"]
             parameters = test["parameters"]
 
-            _, best_params1 = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
-            )
+            np.random.seed(1)
+            _, best_params1 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=1)
 
-            _, best_params2 = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
-            )
+            np.random.seed(1)
+            _, best_params2 = model.gridsearch(parameters=parameters,
+                                               series=ts_train,
+                                               val_series=ts_val,
+                                               n_jobs=-1)
 
             self.assertEqual(best_params1, best_params2)
 

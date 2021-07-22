@@ -7,11 +7,13 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel, TransformerModel, NBEATSModel
+    from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihoodModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -23,7 +25,9 @@ if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
     models_cls_kwargs_errs = [
-        (RNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'training_length': 12, 'n_epochs': 10, 'likelihood': GaussianLikelihoodModel()}, 80),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -45,7 +49,7 @@ if TORCH_AVAILABLE:
 
         # an additional noisy series
         ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(length=len(ts_pass_train),
-                                                                        freq=ts_pass_train.freq_str(),
+                                                                        freq=ts_pass_train.freq_str,
                                                                         start_ts=ts_pass_train.start_time())
 
         # an additional time series serving as covariates
@@ -117,14 +121,16 @@ if TORCH_AVAILABLE:
                     model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates_train)
 
                 # ... unless future covariates are provided
-                model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
+                pred = model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
 
-                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates_train)
+                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
+                if model._is_probabilistic:
+                    continue
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
                 pred1 = model.predict(1)
@@ -149,12 +155,19 @@ if TORCH_AVAILABLE:
             self.assertTrue(mape(self.target_future, long_pred_no_cov) > mape(self.target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
-            # models can predict up to self.output_chunk_length points beyond the last future covariate...
+            # block models can predict up to self.output_chunk_length points beyond the last future covariate...
             model.predict(n=165, covariates=self.covariates)
 
             # ... not more
             with self.assertRaises(ValueError):
                 model.predict(n=166, series=self.ts_pass_train)
+
+            # recurrent models can only predict data points for time steps where future covariates are available
+            model = RNNModel(n_epochs=1)
+            model.fit(series=self.target_past, covariates=self.covariates_past)
+            model.predict(n=160, covariates=self.covariates)
+            with self.assertRaises(ValueError):
+                model.predict(n=161, covariates=self.covariates)
 
         def test_batch_predictions(self):
             # predicting multiple time series at once needs to work for arbitrary batch sizes
@@ -194,6 +207,8 @@ if TORCH_AVAILABLE:
         def test_same_result_with_different_n_jobs(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                if model._is_probabilistic():
+                    continue
                 multiple_ts = [self.ts_pass_train] * 10
 
                 model.fit(multiple_ts)
@@ -212,7 +227,6 @@ if TORCH_AVAILABLE:
                 multiple_ts = [self.ts_pass_train] * 10
                 model.fit(multiple_ts)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -226,15 +240,12 @@ if TORCH_AVAILABLE:
 
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
         @patch('darts.models.torch_forecasting_model.torch.save')
@@ -249,13 +260,26 @@ if TORCH_AVAILABLE:
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
                 model.total_epochs = epochs
-                rmtree_patch.reset_mock()
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
 
-                rmtree_patch.assert_not_called()
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+
+        def test_sample_smaller_than_batch_size(self):
+            """
+            Checking that the TorchForecastingModels do not crash even if the number of available samples for training
+            is strictly lower than the selected batch_size
+            """
+            # TS with 50 timestamps. TorchForecastingModels will use the SequentialDataset for producing training
+            # samples, which means we will have 50 - 22 - 2 + 1 = 27 samples, which is < 32 (batch_size). The model
+            # should still train on those samples and not crash in any way
+            ts = linear_timeseries(0, 1, 50)
+
+            model = RNNModel(input_chunk_length=20,
+                             output_chunk_length=2,
+                             n_epochs=2,
+                             batch_size=32)
+            model.fit(ts)

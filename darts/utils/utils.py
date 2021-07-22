@@ -3,6 +3,7 @@ Additional util functions
 -------------------------
 """
 import pandas as pd
+import numpy as np
 
 from ..timeseries import TimeSeries
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
@@ -182,11 +183,11 @@ def _historical_forecasts_general_checks(series, kwargs):
     # check start parameter
     if hasattr(n, 'start'):
         if isinstance(n.start, float):
-            raise_if_not(n.start >= 0.0 and n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
+            raise_if_not(0.0 <= n.start < 1.0, '`start` should be between 0.0 and 1.0.', logger)
         elif isinstance(n.start, pd.Timestamp):
             raise_if(n.start not in series, '`start` timestamp must be an entry in the time series\' time index')
             raise_if(n.start == series.end_time(), '`start` timestamp is the last timestamp of the series', logger)
-        elif isinstance(n.start, int):
+        elif isinstance(n.start, (int, np.int64)):
             raise_if_not(n.start >= 0, logger)
             raise_if(n.start > len(series), '`start` index should be smaller than length of the series', logger)
         else:
@@ -204,7 +205,7 @@ def _historical_forecasts_general_checks(series, kwargs):
     overlap_end = n.overlap_end
 
     if not overlap_end:
-        raise_if_not(start + series.freq() * forecast_horizon in series,
+        raise_if_not(start + series.freq * forecast_horizon in series,
                      '`start` timestamp is too late in the series to make any predictions with'
                      '`overlap_end` set to `False`.', logger)
 

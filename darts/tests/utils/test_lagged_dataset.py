@@ -116,8 +116,4 @@ class LaggedInferenceDatasetTestCase(DartsBaseTestClass):
 
         model = LinearRegressionModel(lags=lags, lags_covariates=lags_covariates)
         model.fit(series=[self.target_1] * 2, covariates=[self.covariate_1[:20]] * 2)
-        predictions = model.predict(
-            n=4, series=[self.target_1] * 2, covariates=[self.covariate_1] * 2
-        )
-
-        print(predictions)
+        model.predict(n=4, series=[self.target_1] * 2, covariates=[self.covariate_1] * 2)

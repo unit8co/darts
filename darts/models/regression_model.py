@@ -188,18 +188,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1):
 
-        (
-            target_matrix,
-            covariates_matrix,
-            future_covariates_matrix,
-        ) = self._get_matrix_data_from_dataset(dataset)
-
-        """
-        Target matrix will have shape (n_sample, n_lags), while covariate and future covariate will have shape
-        (n_samples, lags_covariates, covariate.width). Since sklearn regression models wants 2D matrix, we have to
-        rearrange the 2D target matrix and the 3D covariate matrix into a final 2D matrix. Furthermore, the lags must
-        be place with the same order as during training.
-        """
+        target_matrix, covariates_matrix, future_covariates_matrix = self._get_matrix_data_from_dataset(dataset)
 
         predictions = []
 
@@ -208,22 +197,24 @@ class RegressionModel(GlobalForecastingModel):
             X = []
             if self.lags_indices is not None:
                 target_series = target_matrix[:, self.lags_indices]
+                X.append(target_series)
             else:
                 target_series = None
 
-            if target_series is not None:
-                X.append(target_series)
-
-            if covariates_matrix is not None:
-                if self.cov_lags_indices is not None:
-                    covariates = covariates_matrix[:, self.cov_lags_indices]
-                    X.append(covariates.reshape(covariates.shape[0], -1))
+            if self.cov_lags_indices is not None:
+                covariates = covariates_matrix[:, self.cov_lags_indices]
+                # reshaping since we could have multivariate covariates
+                X.append(covariates.reshape(covariates.shape[0], -1))
 
             X = np.concatenate(X, axis=1)
             # predicting
             prediction = self.model.predict(X)
             prediction = prediction.reshape(-1, 1)
-            # discard oldest columns
+            # appending prediction to final predictions
+            predictions.append(prediction)
+
+
+            # discard oldest target
             if target_matrix is not None:
                 target_matrix = _consume_column(target_matrix)
                 # adding new prediction to the target series
@@ -231,98 +222,51 @@ class RegressionModel(GlobalForecastingModel):
                     target_matrix = np.asarray([prediction])
                 else:
                     target_matrix = np.concatenate([target_matrix, prediction], axis=1)
-            # appending prediction to final predictions
-            predictions.append(prediction)
 
-            # discarding oldest covariate
-            if covariates_matrix is not None:
-                covariates_matrix = _consume_column(covariates_matrix)
-                new_cov_matrix = []
+            # shifting matrices for the next step
+            if i < n - 1:
+
+                # discarding oldest covariate
                 if covariates_matrix is not None:
-                    new_cov_matrix = [covariates_matrix]
-                # if it is the last step, then no future covariate can be added to covariates anymore
-                if future_covariates_matrix is not None:
-                    first_future = future_covariates_matrix[:, 0, :]
-                    first_future = first_future.reshape(
-                        first_future.shape[0], 1, first_future.shape[1]
-                    )
-                    new_cov_matrix.append(first_future)
+                    covariates_matrix = _consume_column(covariates_matrix)
+                    new_cov_matrix = []
+                    if covariates_matrix is not None:
+                        new_cov_matrix = [covariates_matrix]
 
-                    covariates_matrix = np.concatenate(
-                        new_cov_matrix,
-                        axis=1,
-                    )
-                    future_covariates_matrix = _consume_column(future_covariates_matrix)
-                    raise_if(
-                        future_covariates_matrix is None and i != n - 2,
-                        "future covariates not sufficiently long",
-                    )
+                    if future_covariates_matrix is not None:
+                        first_future = future_covariates_matrix[:, 0, :]
+                        first_future = first_future.reshape(first_future.shape[0], 1, first_future.shape[1])
+                        new_cov_matrix.append(first_future)
+
+                        covariates_matrix = np.concatenate(new_cov_matrix,axis=1)
+                        future_covariates_matrix = _consume_column(future_covariates_matrix)
+
+                        # TODO move this to a check
+                        raise_if( future_covariates_matrix is None and i != n - 2, "future covariates not "
+                                                                                   "sufficiently long")
 
         predictions = np.concatenate(predictions, axis=1)
-        pred_timeseries = [
-            self._build_forecast_series(
-                row, input_series=input, future_covariates=fut_cov
-            )
-            for row, (input, _, fut_cov) in zip(predictions, dataset)
-        ]
-
-        return pred_timeseries
+        return [self._build_forecast_series(row, input) for row, (input, _, _) in zip(predictions, dataset)]
 
     def _get_matrix_data_from_dataset(self, dataset: LaggedInferenceDataset):
-        """
-        The function get a LaggedInferenceDataset as input, and return 3 value. The first is the matrix representation
-        of the target data, a np.array with shape (n_samples, n_lags). The second, optional, is the covariate matrix,
-        with shape (n_samples, n_lags, covariate_width). The third, optional, is the future covariate matrix,
-        with shape (n_samples, n_lags, covariate_width).
-        """
 
         target_matrix = []
         covariates_matrix = []
         future_covariates_matrix = []
 
-        for _tgt_series, _past_covariates, _future_covariates in dataset:
-            tgt_series, past_covariates, future_covariates = None, None, None
-            if _tgt_series is not None:
-                tgt_series = _tgt_series.values(copy=True).T
-            if _past_covariates is not None:
-                past_covariates = _past_covariates.values(copy=True)
-            if _future_covariates is not None:
-                future_covariates = _future_covariates.values(copy=True)
+        for tgt_series, past_covariates, future_covariates in dataset:
+            target_matrix.append(tgt_series)
 
-            if tgt_series is not None:
-                target_matrix.append(tgt_series)
+            if past_covariates is not None:
+                covariates_matrix.append(past_covariates)
 
-            if dataset.lags_covariates is not None:
-                if 0 in self.lags_covariates and future_covariates is not None:
-                    if past_covariates is None:
-                        past_covariates = [future_covariates[0]]
-                    else:
-                        el = np.asarray([future_covariates[0]])
-                        past_covariates = np.append(past_covariates, el, axis=0)
-                    if future_covariates is not None and len(future_covariates) > 1:
-                        future_covariates = future_covariates[1:]
-                    else:
-                        future_covariates = None
-                if past_covariates is not None:
-                    covariates_matrix.append(past_covariates)
             if future_covariates is not None:
                 future_covariates_matrix.append(future_covariates)
 
-        # evaluating indexes from the end
-        if len(target_matrix) > 0:
-            target_matrix = np.concatenate(target_matrix, axis=0)
-        else:
-            target_matrix = None
 
-        if len(covariates_matrix) > 0:
-            covariates_matrix = np.asarray(covariates_matrix)
-        else:
-            covariates_matrix = None
-
-        if len(future_covariates_matrix) > 0:
-            future_covariates_matrix = np.asarray(future_covariates_matrix)
-        else:
-            future_covariates_matrix = None
+        target_matrix = np.concatenate(target_matrix, axis=0)
+        covariates_matrix = None if len(covariates_matrix) == 0 else np.asarray(covariates_matrix)
+        future_covariates_matrix = None if len(future_covariates_matrix) == 0 else np.asarray(future_covariates_matrix)
 
         return target_matrix, covariates_matrix, future_covariates_matrix
 

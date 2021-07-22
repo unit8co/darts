@@ -12,8 +12,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel
-
+    from ..models import BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning("Torch not available. Some tests will be skipped.")
@@ -82,12 +81,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     if TORCH_AVAILABLE:
 
         def test_torch_models_retrain(self):
-            model1 = RNNModel(
-                input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
-            )
-            model2 = RNNModel(
-                input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
-            )
+            model1 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+            model2 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
 
             ensemble = RegressionEnsembleModel([model1], 5)
             ensemble.fit(self.combined)
@@ -98,6 +93,4 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model2.fit(self.combined)
             forecast2 = model2.predict(10)
 
-            self.assertAlmostEqual(
-                sum(forecast1.values() - forecast2.values())[0], 0.0, places=3
-            )
+            self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=2)

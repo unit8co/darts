@@ -217,13 +217,9 @@ class LaggedInferenceDataset:
         self.inference_dataset = SimpleInferenceDataset(
             series=target_series,
             covariates=covariates,
-            n=n
-            + (
-                1
-                if self.lags_covariates is not None and 0 in self.lags_covariates
-                else 0
-            ),
+            n=n,
             input_chunk_length=input_chunk_length,
+            model_is_recurrent= True if lags_covariates is not None and 0 in self.lags_covariates else False
         )
 
     def __len__(self):
