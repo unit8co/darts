@@ -2,13 +2,21 @@ from typing import Tuple, Dict
 import numpy as np
 
 from .window import Window, CRWindow
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import array
 from itertools import repeat
 
 Elem = Tuple[int, int]
 
-class CostMatrix:
+
+class CostMatrix(ABC):
+    """
+    (n+1) x (m+1) Matrix
+    Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1, j-1) in series1 and series2.
+
+    Row 0 and column 0, are typically set to infinity, to prevent matching before the first element
+    """
+
     n: int
     m: int
 
@@ -26,12 +34,33 @@ class CostMatrix:
 
     @abstractmethod
     def to_dense(self) -> np.ndarray:
+        """
+
+        Returns
+        -------
+        Dense n x m numpy array, where empty cells are set to np.inf
+        """
         pass
 
     @staticmethod
     def from_window(window: Window):
+        """
+        Creates a cost matrix from a window function.
+        Depending on the density of the active cells in the window,
+        will select either a dense or sparse storage representation.
+
+        Parameters
+        ----------
+        window: `Window`
+        Returns
+        -------
+        CostMatrix
+        """
         density = len(window) / ((window.n+1)*(window.m+1))
 
+        # In the future it might be worth implementing
+        # a sparse cost matrix based on column_index/column_length
+        # that will work even for non-contiguous windows
         if isinstance(window, CRWindow) and density < 0.5:
             return SparseCostMatrix(window)
         else:
@@ -45,14 +74,13 @@ class DenseCostMatrix(np.ndarray, CostMatrix):
         return super().__new__(self, (n+1, m+1), np.float)
 
     def to_dense(self) -> np.ndarray:
-        return self
+        return self[1:, 1:]
 
 
 class SparseCostMatrix(CostMatrix):
     def __init__(self, window: CRWindow):
         self.n = window.n
         self.m = window.m
-        self.shape = (self.n+1, self.m+1)
         self.window = window
         self.offsets = np.empty(self.n+2, dtype=int)
         self.column_ranges = window.column_ranges
@@ -70,7 +98,7 @@ class SparseCostMatrix(CostMatrix):
                 self.dense[i] = value
 
     def to_dense(self) -> np.ndarray:
-        matrix = np.empty((self.n+1, self.m+1))
+        matrix = np.empty((self.n, self.m))
         matrix.fill(np.inf)
 
         if isinstance(self.window, CRWindow):
@@ -78,26 +106,26 @@ class SparseCostMatrix(CostMatrix):
             lengths = self.window.column_lengths()
 
             # TODO express only in terms of numpy operations
-            for i in range(0, self.n+1):
-                start = self.window.column_ranges[i*2 + 0]
-                end = self.window.column_ranges[i*2 + 1]
+            for i in range(1, self.n+1):
+                start = self.window.column_ranges[i*2 + 0]-1
+                end = self.window.column_ranges[i*2 + 1]-1
                 len = lengths[i]
                 offset = self.offsets[i]
 
-                matrix[i][start:end] = self.dense[offset:offset + len]
+                matrix[i-1][start:end] = self.dense[offset:offset + len]
         else:
-            for i in range(0, self.n+1):
+            for i in range(1, self.n+1):
                 column_start = self.offsets[i]
 
-                for j in range(0, self.m+1):
+                for j in range(1, self.m+1):
                     column_idx = self.window.column_index(i)
                     if column_idx == -1: continue
 
-                    matrix[i,j] = self.dense[column_start + column_idx]
+                    matrix[i-1,j-1] = self.dense[column_start + column_idx]
 
         return matrix
 
-    # PERFORMANCE: hot functions, avoid calling functions
+    # PERFORMANCE: hot functions, avoid calling functions/excessive checking
     def __getitem__(self, elem: Elem):
         i, j = elem
 
@@ -111,7 +139,6 @@ class SparseCostMatrix(CostMatrix):
 
         start = self.column_ranges[i * 2 + 0]
         end = self.column_ranges[i * 2 + 1]
-        #assert(start <= j < end)
 
         self.dense[self.offsets[i] + j - start] = value
 
