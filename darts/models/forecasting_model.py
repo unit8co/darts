@@ -1,9 +1,13 @@
 """
 Forecasting Model Base Classes
 ------------------------------
+
 A forecasting model captures the future values of a time series as a function of the past as follows:
+
 .. math:: y_{t+1} = f(y_t, y_{t-1}, ..., y_1),
+
 where :math:`y_t` represents the time series' value(s) at time :math:`t`.
+
 The main functions are `fit()` and `predict()`. `fit()` learns the function `f()`, over the history of
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
@@ -49,6 +53,7 @@ class ForecastingModel(ABC):
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
         """ Trains the model on the provided univariate series.
+
         Parameters
         ----------
         series
@@ -68,6 +73,7 @@ class ForecastingModel(ABC):
     def _supports_range_index(self) -> bool:
         """ Checks if the forecasting model supports a range index.
         Some models may not support this, if for instance the rely on underlying dates.
+
         By default, returns True. Needs to be overwritten by models that do not support
         range indexing and raise meaningful exception.
         """
@@ -86,6 +92,7 @@ class ForecastingModel(ABC):
                 n: int,
                 num_samples: int = 1) -> TimeSeries:
         """ Forecasts values for `n` time steps after the end of the series.
+
         Parameters
         ----------
         n
@@ -93,6 +100,7 @@ class ForecastingModel(ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+
         Returns
         -------
         TimeSeries
@@ -157,12 +165,14 @@ class ForecastingModel(ABC):
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
+
         Parameters
         ----------
         args
             The args parameter(s) provided to the historical_forecasts function.
         kwargs
             The kwargs paramter(s) provided to the historical_forecasts function.
+
         Raises
         ------
         ValueError
@@ -191,15 +201,18 @@ class ForecastingModel(ABC):
         To this end, it repeatedly builds a training set from the beginning of `series`. It trains the
         current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
         the end of the training set forward by `stride` time steps.
+
         By default, this method will return a single time series made up of the last point of each
         historical forecast. This time series will thus have a frequency of `series.freq * stride`.
         If `last_points_only` is set to False, it will instead return a list of the historical forecasts.
+
         By default, this method always re-trains the models on the entire available history,
         corresponding to an expanding window strategy.
         If `retrain` is set to False (useful for models for which training might be time-consuming, such as
         deep learning models), the model will only be trained on the initial training window
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
+
         Parameters
         ----------
         series
@@ -322,15 +335,18 @@ class ForecastingModel(ABC):
         training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
         on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
         of all these metric scores.
+
         By default, this method will use each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical
         forecast. In this case, no reduction is used.
+
         By default, this method always re-trains the models on the entire available history,
         corresponding to an expanding window strategy.
         If `retrain` is set to False (useful for models for which training might be time-consuming, such as
         deep learning models), the model will only be trained on the initial training window
         (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
         newly expanded input sequence will be fed to the model to produce the new output.
+
         Parameters
         ----------
         series
@@ -416,28 +432,35 @@ class ForecastingModel(ABC):
         of ForecastingModel with each combination, and returning the best-performing model with regards
         to the `metric` function. The `metric` function is expected to return an error value,
         thus the model resulting in the smallest `metric` output will be chosen.
+
         The relationship of the training data and test data depends on the mode of operation.
+
         Expanding window mode (activated when `forecast_horizon` is passed):
         For every hyperparameter combination, the model is repeatedly trained and evaluated on different
         splits of `training_series` and `target_series`. This process is accomplished by using
         the `backtest` function as a subroutine to produce historic forecasts starting from `start`
         that are compared against the ground truth values of `training_series` or `target_series`, if
         specified. Note that the model is retrained for every single prediction, thus this mode is slower.
+
         Split window mode (activated when `val_series` is passed):
         This mode will be used when the `val_series` argument is passed.
         For every hyper-parameter combination, the model is trained on `series` and
         evaluated on `val_series`.
+
         Fitted value mode (activated when `use_fitted_values` is set to `True`):
         For every hyper-parameter combination, the model is trained on `series`
         and evaluated on the resulting fitted values.
         Not all models have fitted values, and this method raises an error if the model doesn't have a `fitted_values`
         member. The fitted values are the result of the fit of the model on `series`. Comparing with the
         fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.
+
         Derived classes must ensure that a single instance of a model will not share parameters with the other
         instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
         several models in parallel (when `n_jobs != 1`). If this cannot be avoided, then gridsearch should be redefined,
         forcing `n_jobs = 1`.
+
         Currently this method only supports deterministic predictions (i.e. `num_samples == 1`).
+
         Parameters
         ----------
         model_class
@@ -475,6 +498,7 @@ class ForecastingModel(ABC):
             The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
+
         Returns
         -------
         ForecastingModel, Dict
@@ -543,6 +567,7 @@ class ForecastingModel(ABC):
                   forecast_horizon: int = 1,
                   verbose: bool = False) -> TimeSeries:
         """ A function for computing the residuals produced by the current model on a univariate time series.
+
         This function computes the difference between the actual observations from `series`
         and the fitted values vector `p` obtained by training the model on `series`.
         For every index `i` in `series`, `p[i]` is computed by training the model on
@@ -551,8 +576,10 @@ class ForecastingModel(ABC):
         The vector of residuals will be shorter than `series` due to the minimum
         training series length required by the model and the gap introduced by `forecast_horizon`.
         Most commonly, unless otherwise specified, the term "residuals" implies a value for `forecast_horizon` of 1.
+
         This method works only on univariate series and does not currently support covariates. It uses the median
         prediction (when dealing with stochastic forecasts having num_samples > 1).
+
         Parameters
         ----------
         series
@@ -589,17 +616,20 @@ class ForecastingModel(ABC):
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """ The base class for "global" forecasting models, handling several time series and optional covariates.
+
     Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:
     1. Models can be fitted on many series (multivariate or univariate) with different indices.
     2. The input series used by `predict()` can be different from the series used to fit the model.
     3. Covariates can be supported (multivariate or univariate).
     4. They can allow for multivariate target series and covariates.
-
+    
     The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
     to a temporally contiguous, "local", time series.
+
     All implementations have to implement the `fit()` and `predict()` methods defined below.
     The `fit()` method is meant to train the model on one or several training time series, along with optional
     covariates.
+
     If `fit()` has been called with only one training and covariate series as argument, then calling `predict()` will
     forecast the future of this series. Otherwise, the user has to provide to `predict()` the series they want
     to forecast, as well as covariates, if needed.
@@ -614,11 +644,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
             ) -> None:
         """ Fits/trains the model on the provided series
+
         Defines behavior that should happen when calling the `fit()` method of every global forecasting model.
+
         Some models support training only on one time series, while others can handle a sequence.
         Similarly, some models can handle covariates.
+
         Some covariates are known in the future, and others aren't. This is a property of the `TimeSeries`, which
         may or may not be exploited by the models.
+
         Parameters
         ----------
         series
@@ -646,15 +680,20 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """ Forecasts values for a certain number of time steps after the end of the series.
+
         If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function
         is optional, and it will simply produce the next `horizon` time steps forecast. The `covariates` argument
         also does not have to be provided again in this case.
+
         If `fit()` has been called with `series` specified as a `Sequence[TimeSeries]`, the `series` argument must
         be specified.
+
         When the `series` argument is specified, this function will compute the next `n` time steps forecasts
         for the simple series (or for each series in the sequence) given by `series`.
+
         If multiple covariates were specified during the training, covariates must also be specified here. For every
         input in `series` a matching covariate time series has to be provided.
+
         Parameters
         ----------
         n
@@ -667,6 +706,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
@@ -693,9 +733,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
 class ExtendedForecastingModel(ForecastingModel, ABC):
     """ The base class for "extended" forecasting models, handling optional exogenous variables.
+
     Extended forecasting models expand upon the functionality of `ForecastingModel` in 2 ways:
     1. They introduce an optional `exog` time series parameter which can be used as a covariate.
     2. Multivariate time series are supported, both as target and exogenous series.
+
     All implementations have to implement the `fit()` and `predict()` methods defined below.
     The `fit()` method is meant to train the model on a time series, along with optional
     exogenous variables.
@@ -709,8 +751,10 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
             exog: Optional[TimeSeries] = None
             ) -> None:
         """ Fits/trains the model on the provided series
+
         Defines behavior that should happen when calling the `fit()` method for the forecasting models handling
         optional exogenous variables.
+
         Parameters
         ----------
         series
@@ -733,7 +777,9 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
                 num_samples: int = 1
                 ) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
+
         If exogenous variables were specified during the training, they must also be specified here.
+
         Parameters
         ----------
         n
@@ -744,6 +790,7 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
