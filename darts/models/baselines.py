@@ -5,10 +5,10 @@ Baseline Models
 A collection of simple benchmark models for univariate series.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union, Sequence
 import numpy as np
 
-from .forecasting_model import ForecastingModel
+from .forecasting_model import ForecastingModel, GlobalForecastingModel
 from .ensemble_model import EnsembleModel
 from ..timeseries import TimeSeries
 from ..logging import raise_if_not, get_logger
@@ -109,7 +109,7 @@ class NaiveDrift(ForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
 
-    def __init__(self, models: List[ForecastingModel]):
+    def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
         """ Naive combination model
 
         Naive implementation of `EnsembleModel`
@@ -117,11 +117,17 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         super().__init__(models)
 
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        super().fit(training_series)
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
+
+        super().fit(series, covariates)
 
         for model in self.models:
-            model.fit(self.training_series)
+            if self.is_global_ensemble:
+                model.fit(series=self.training_series, covariates=self.covariate_series)
+            else:
+                model.fit(series=self.training_series)
 
     def ensemble(self, predictions: TimeSeries):
         return TimeSeries.from_series(predictions.pd_dataframe().sum(axis=1) / len(self.models))
