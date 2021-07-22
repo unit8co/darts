@@ -22,8 +22,8 @@ logger = get_logger(__name__)
 
 """
 Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
-the `series1` and `series2` parameters, and not having other `Sequence` as args (since these decorators
-don't “unpack“ parameters different from `series1` and `series2`). In those cases, the new metric must take
+the `actual_series` and `pred_series` parameters, and not having other `Sequence` as args (since these decorators
+don't “unpack“ parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 """
 
@@ -41,8 +41,8 @@ def multi_ts_support(func):
 
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
-        actual_series = kwargs['series1'] if 'series1' in kwargs else args[0]
-        pred_series = kwargs['series2'] if 'series2' in kwargs else args[0] if 'series1' in kwargs \
+        actual_series = kwargs['actual_series'] if 'actual_series' in kwargs else args[0]
+        pred_series = kwargs['pred_series'] if 'pred_series' in kwargs else args[0] if 'actual_series' in kwargs \
             else args[1]
 
         n_jobs = kwargs.pop('n_jobs', signature(func).parameters['n_jobs'].default)
@@ -57,9 +57,9 @@ def multi_ts_support(func):
         raise_if_not(len(actual_series) == len(pred_series),
                      "The two TimeSeries sequences must have the same length.", logger)
 
-        num_series_in_args = int('series1' not in kwargs) + int('series2' not in kwargs)
-        kwargs.pop('series1', 0)
-        kwargs.pop('series2', 0)
+        num_series_in_args = int('actual_series' not in kwargs) + int('pred_series' not in kwargs)
+        kwargs.pop('actual_series', 0)
+        kwargs.pop('pred_series', 0)
 
         iterator = _build_tqdm_iterator(iterable=zip(actual_series, pred_series),
                                         verbose=verbose,
@@ -583,7 +583,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series
         The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
     insample
-        The training series used to forecast `series2` .
+        The training series used to forecast `pred_series` .
         This series serves to compute the scale of the error obtained by a naive forecaster on the training data.
     m
         Optionally, the seasonality to use for differencing.
@@ -632,7 +632,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         raise_if_not(actual_series.width == insample.width,
                      "The insample TimeSeries must have the same width as the other series.", logger)
         raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
-                     "The series2 must be the forecast of the insample series", logger)
+                     "The pred_series must be the forecast of the insample series", logger)
 
         insample_ = insample.quantile_timeseries(quantile=0.5) if insample.is_stochastic else insample
 
@@ -658,7 +658,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         return reduction(value_list)
 
     if isinstance(actual_series, TimeSeries):
-        raise_if_not(isinstance(pred_series, TimeSeries), "Expecting series2 to be TimeSeries")
+        raise_if_not(isinstance(pred_series, TimeSeries), "Expecting pred_series to be TimeSeries")
         raise_if_not(isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries")
         return _multivariate_mase(actual_series=actual_series,
                                   pred_series=pred_series,
@@ -670,7 +670,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     elif isinstance(actual_series, Sequence) and isinstance(actual_series[0], TimeSeries):
 
         raise_if_not(isinstance(pred_series, Sequence) and isinstance(pred_series[0], TimeSeries),
-                     "Expecting series2 to be a Sequence[TimeSeries]")
+                     "Expecting pred_series to be a Sequence[TimeSeries]")
         raise_if_not(isinstance(insample, Sequence) and isinstance(insample[0], TimeSeries),
                      "Expecting insample to be a Sequence[TimeSeries]")
         raise_if_not(len(pred_series) == len(actual_series) and len(pred_series) == len(insample),
@@ -838,8 +838,8 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
     for details about the :math:`R^2` score and how it is computed.
-    Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,
-    whereas `series2` should correspond to the predicted series.
+    Please note that this metric is not symmetric, `actual_series` should correspond to the ground truth series,
+    whereas `pred_series` should correspond to the predicted series.
 
     If any of the series is stochastic (containing several samples), the median sample value is considered.
 
