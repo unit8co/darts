@@ -926,6 +926,6 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                ):
 
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
-    warped_actual_series, warped_pred_series = alignment.warped(take_dates=True, unique_dates=True)
+    warped_actual_series, warped_pred_series = alignment.warped()
 
     return metric(warped_actual_series, warped_pred_series)

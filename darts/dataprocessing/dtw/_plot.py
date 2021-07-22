@@ -1,3 +1,5 @@
+from typing import Union, Tuple
+
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
@@ -69,9 +71,9 @@ def plot(self, show_series: bool = False, show_cost: bool = True):
     warp.set_aspect('auto')
 
 
-def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, component=0):
+def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, components: Union[Tuple[Union[str, int], Union[str, int]]] = (0,0)):
     """
-    Plots the two series,
+    Plots the uni-variate component of each series,
     with lines between them indicating the alignment selected by the DTW algorithm.
 
     Parameters
@@ -82,15 +84,20 @@ def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, component=0):
     series1_y_offset
         Offset series2 vertically for ease of viewing.
 
-    component
-        Which component of a multi-variate series to draw the alignment for.
+    components
+        Tuple of component index for series1 and component index for series2.
+
     Returns
     -------
-
     """
 
     series1 = self.series1
     series2 = self.series2
+
+    (component1, component2) = components
+
+    if not series1.is_univariate: series1 = series1.univariate_component(component1)
+    if not series2.is_univariate: series2 = series2.univariate_component(component2)
 
     series1 += series1_y_offset
     series2 += series2_y_offset
@@ -101,12 +108,16 @@ def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, component=0):
     path = self.path()
     n = len(path)
 
-    path = path.reshape((2 * len(path),))
+    path = path.reshape((-1,))
 
-    x_coords1 = xa1[xa1._time_dim][path[::2]]
-    x_coords2 = np.array(xa2[xa2._time_dim], dtype="datetime64[s]")[path[1::2]]
-    y_coords1 = np.array(xa1[xa1.components[component]], dtype=np.float)[path[::2]]
-    y_coords2 = np.array(xa1[xa2.components[component]], dtype=np.float)[path[1::2]]
+    time_dim1 = series1._time_dim
+    time_dim2 = series2._time_dim
+
+    x_coords1 = np.array(xa1[time_dim1], dtype="datetime64[s]")[path[::2]]
+    x_coords2 = np.array(xa2[time_dim2], dtype="datetime64[s]")[path[1::2]]
+
+    y_coords1 = series1.univariate_values()[path[0::2]]
+    y_coords2 = series2.univariate_values()[path[1::2]]
 
     x_coords = np.empty(n * 3, dtype="datetime64[s]")
     y_coords = np.empty(n * 3, dtype=np.float)

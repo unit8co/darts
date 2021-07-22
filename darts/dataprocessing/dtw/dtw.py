@@ -197,60 +197,49 @@ class DTWAlignment:
 
     def warped(self, take_dates: Union[None,bool] = None, range_index: Union[None,bool] =None) -> (TimeSeries, TimeSeries):
         """
-        Warps the two time series according to the alignment that minimizes the pair-wise distance.
-
-        Defaults to indexing the two warped time series with a range index.
+        Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.
         This will bring two time series that are out-of-phase back into phase.
-
-        If neither take_dates or range_index are enabled,
-        the warped series will have the same time-index as the input series.
-        In which case only comparing the values of the two warped series directly makes sense,
-        as they have different time axes.
-
-        Parameters
-        ----------
-        take_dates
-            Boolean indicating whether to apply time index from series1 to the warped series.
-            Requires DatetimeIndex time index for series1.
-
-        range_index
-            Boolean indicating whether to assign a pd.RangeIndex to the warped series.
 
         Returns
         -------
-        Two new time series of the same length, which may contained repeated values.
+        Two new `TimeSeries` of the same length, indexed by RangeIndex.
         """
 
         series1 = self.series1
         series2 = self.series2
-
-        raise_if(take_dates and range_index, "take_dates and range_index are mutually exclusive, set only one to true")
-        raise_if(take_dates and isinstance(self.series1.time_index, pd.RangeIndex), "take_dates requires datetime index for series1")
-
-        if take_dates is None and range_index is None:
-            range_index = True
 
         path = self.path().reshape((-1,))
 
         xa1 = series1.data_array(copy=False)
         xa2 = series2.data_array(copy=False)
 
-        warped_actual_series_xa = xa1[path[0::2]]
-        warped_pred_series_xa = xa2[path[1::2]]
+        warped_series1 = xa1[path[0::2]]
+        warped_series2 = xa2[path[1::2]]
 
-        actual_time_dim = warped_actual_series_xa.dims[0]
-        pred_time_dim = warped_pred_series_xa.dims[0]
+        time_dim1 = series1._time_dim
+        time_dim2 = series2._time_dim
+
+        range_index = True
 
         if range_index:
-            warped_actual_series_xa = warped_actual_series_xa.reset_index(dims_or_levels=actual_time_dim)
-            warped_pred_series_xa = warped_pred_series_xa.reset_index(dims_or_levels=pred_time_dim)
+            warped_series1 = warped_series1.reset_index(dims_or_levels=time_dim1)
+            warped_series2 = warped_series2.reset_index(dims_or_levels=time_dim2)
 
-        elif take_dates:
-            time_index = warped_actual_series_xa[actual_time_dim]
-            time_index = time_index.rename({actual_time_dim: pred_time_dim})
-            warped_pred_series_xa[pred_time_dim] = time_index
+        # todo: prevent time information being lost after warping
+        # Applying time index from series1 to series2 is disabled for consistency reasons
+        # Applying the warp path to the dates directly will result in duplicate dates
+        # and hence values being lost when converting back to a TimeSeries.
+        # As a result series1 will not be warped, whereas series2 will be.
+        # It could also cause the two series to have different lengths, if len(series1) < len(series2)
+        # One could generate intermediate dates, but then the series would not have a consistent frequency
 
-        return TimeSeries.from_xarray(warped_actual_series_xa), TimeSeries.from_xarray(warped_pred_series_xa)
+        take_dates = False
+        if take_dates:
+            time_index = warped_series1[time_dim1]
+            time_index = time_index.rename({time_dim1: time_dim2})
+            warped_series2[time_dim2] = time_index
+
+        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(warped_series2)
 
 
 def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
