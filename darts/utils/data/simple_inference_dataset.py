@@ -18,7 +18,8 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                  n: int = 1,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 model_is_recurrent: bool = False):
+                 model_is_recurrent: bool = False,
+                 keep_extra_covariate: bool = False):
         """
         Creates a dataset from lists of target series and corresponding covariate series and emits
         3-tuples of (tgt_past, cov_past, cov_future), all `TimeSeries` instances.
@@ -26,23 +27,19 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         `cov_past` is equal to the covariates with the same time index as the target series if covariates
         are provided, otherwise a value of `None` will be emitted.
         Both `tgt_past` and `cov_past` will be `input_chunk_length` long.
-
         Block models:
         If the model is required to produce the forecast over multiple iterations, i.e. if
         `n > self.output_chunk_length`, and if covariates were provided, then `cov_future` will
         be equal to the future covariates up to `n - self.output_chunk_length` time steps into the future.
-
         Recurrent models:
         If covariates were used to train the model, `n` covariates have to be available into the future.
         Therefore, `cov_future` will be equal to the future covariates up to `n` time steps into the future.
-
         The parameter `input_chunk_length` is necessary to determine the minimum length for all `tgt_past`
         and `cov_past` time series.
         Parameters `n`, `output_chunk_length` and `model_is_recurrent` are necessary to determine whether
         `cov_future` is necessary (or can be set to `None`) and to determine the required length for `cov_future`.
         It is important for the 3 emitted time series to have the same length across data points because
         they will be cast to tensors later on.
-
         Parameters
         ----------
         series
@@ -56,9 +53,12 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
             The length of the time series the model takes as input.
         output_chunk_length
             The length of the model predictions after one call to its `forward` function.
-
         model_is_recurrent
             Boolean indicating whether the model that uses this dataset is recurrent or not.
+        keep_extra_covariate
+            Boolean indicating whether, in case of a recurrent dataset (the covariate at prediction time is stored in
+            cov_past), should be one timestamp longer or not. If `False`, the oldest covariate timestamp is discarded,
+            freeing space for the current covariate. If `True`, `len(cov_past) = len(tgt_past) + 1.
     """
 
         super().__init__()
@@ -68,12 +68,17 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.model_is_recurrent = model_is_recurrent
+        self.keep_extra_covariate = keep_extra_covariate
+
+        raise_if(self.keep_extra_covariate == True and model_is_recurrent is False,
+                 "keep _extra_covariate can be only used when model_is_recurrent=True`")
+
 
         raise_if(model_is_recurrent and output_chunk_length != 1,
                  'Recurrent models require an `output_chunk_length == 1`.')
 
-        raise_if_not(self.covariates is None or len(self.series) == len(self.covariates),
-            "The number of target series must be equal to the number of covariates.",)
+        raise_if_not((covariates is None or len(series) == len(covariates)),
+                     'The number of target series must be equal to the number of covariates.')
 
     def __len__(self):
         return len(self.series)
@@ -84,13 +89,10 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
-            f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).")
+                     'All input series must have length >= `input_chunk_length` ({}).'.format(
+                     self.input_chunk_length))
 
-        # case in which we need only future covariates for prediction, e.g., regression model with lags_covariates = 0
-        if self.input_chunk_length == 0:
-            tgt_past = None
-        else:
-            tgt_past = target_series[-self.input_chunk_length :]
+        tgt_past = target_series[-self.input_chunk_length:]
 
         cov_past = cov_future = None
         if covariate_series is not None:
@@ -104,12 +106,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                                                        * covariate_series.freq)
             else:
                 cov_past = covariate_series
-
-            if self.input_chunk_length == 0:
-                cov_past = None
-
-            if cov_past is not None:
-                cov_past = cov_past[-self.input_chunk_length:]
+            cov_past = cov_past[-self.input_chunk_length - int(self.keep_extra_covariate):]
 
             # check whether future covariates are required
             if self.n > self.output_chunk_length:
@@ -117,15 +114,14 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                 # check that enough future covariates are available
                 # block models need `n - output_chunk_length`
                 # recurrent models need `n`
-
-                last_required_future_covariate_ts = ( target_series.end_time() + (
+                last_required_future_covariate_ts = (
+                    target_series.end_time() + (
                         self.n - self.output_chunk_length * (1 - int(self.model_is_recurrent)))
                     * target_series.freq
                 )
-
                 req_cov_string = 'n' if self.model_is_recurrent else 'n - output_chunk_length'
                 raise_if_not(covariate_series.end_time() >= last_required_future_covariate_ts,
-                             f'All covariates must be known `{req_cov_string}` time steps into the future')
+                             'All covariates must be known `{}` time steps into the future'.format(req_cov_string))
 
                 # isolate necessary future covariates and add them to array
                 cov_future = covariate_series.drop_before(first_pred_time - (1 - int(self.model_is_recurrent))

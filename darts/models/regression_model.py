@@ -127,9 +127,11 @@ class RegressionModel(GlobalForecastingModel):
             max_samples_per_ts,
         )
         self.fit_from_dataset(lagged_dataset, **kwargs)
-        self.input_dim = (0 if covariates is None else covariates[0].width) + series[
-            0
-        ].width
+
+        series = [series] if isinstance(series, TimeSeries) else series
+        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+
+        self.input_dim = (0 if covariates is None else covariates[0].width) + series[0].width
 
     def fit_from_dataset(self, dataset: MatrixTrainingDataset, **kwargs):
         training_x, training_y = dataset.get_data()
@@ -140,15 +142,21 @@ class RegressionModel(GlobalForecastingModel):
         n: int,
         series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        num_samples: int = 1,
+        **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
         n : int
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        # TODO add doc
+        num_samples
+            Currently this parameter is ignored for regression models.
+        **kwargs
+            Additional keyword arguments passed to the `predict` method of the model.
         """
-        super().predict(n, series, covariates)
+        super().predict(n, series, covariates, num_samples)
 
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
@@ -182,11 +190,11 @@ class RegressionModel(GlobalForecastingModel):
             series, covariates, self.lags, self.lags_covariates, n
         )
 
-        predictions = self.predict_from_dataset(dataset, n)
+        predictions = self.predict_from_dataset(dataset, n, **kwargs)
 
         return predictions[0] if called_with_single_series else predictions
 
-    def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1):
+    def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1, **kwargs):
 
         target_matrix, covariates_matrix, future_covariates_matrix = self._get_matrix_data_from_dataset(dataset)
 
@@ -198,8 +206,6 @@ class RegressionModel(GlobalForecastingModel):
             if self.lags_indices is not None:
                 target_series = target_matrix[:, self.lags_indices]
                 X.append(target_series)
-            else:
-                target_series = None
 
             if self.cov_lags_indices is not None:
                 covariates = covariates_matrix[:, self.cov_lags_indices]
@@ -208,7 +214,7 @@ class RegressionModel(GlobalForecastingModel):
 
             X = np.concatenate(X, axis=1)
             # predicting
-            prediction = self.model.predict(X)
+            prediction = self.model.predict(X, **kwargs)
             prediction = prediction.reshape(-1, 1)
             # appending prediction to final predictions
             predictions.append(prediction)
@@ -219,7 +225,7 @@ class RegressionModel(GlobalForecastingModel):
                 target_matrix = _consume_column(target_matrix)
                 # adding new prediction to the target series
                 if target_matrix is None:
-                    target_matrix = np.asarray([prediction])
+                    target_matrix = np.asarray(prediction)
                 else:
                     target_matrix = np.concatenate([target_matrix, prediction], axis=1)
 
@@ -255,13 +261,13 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates_matrix = []
 
         for tgt_series, past_covariates, future_covariates in dataset:
-            target_matrix.append(tgt_series)
+            target_matrix.append(tgt_series.values().T)
 
             if past_covariates is not None:
-                covariates_matrix.append(past_covariates)
+                covariates_matrix.append(past_covariates.values())
 
             if future_covariates is not None:
-                future_covariates_matrix.append(future_covariates)
+                future_covariates_matrix.append(future_covariates.values())
 
 
         target_matrix = np.concatenate(target_matrix, axis=0)

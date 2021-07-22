@@ -212,14 +212,15 @@ class LaggedInferenceDataset:
         else:
             max_lag = max([max(self.lags), max(self.lags_covariates)])
 
-        input_chunk_length = max_lag
+        input_chunk_length = max(max_lag, 1)
 
         self.inference_dataset = SimpleInferenceDataset(
             series=target_series,
             covariates=covariates,
             n=n,
             input_chunk_length=input_chunk_length,
-            model_is_recurrent= True if lags_covariates is not None and 0 in self.lags_covariates else False
+            model_is_recurrent= True if self.lags_covariates is not None and 0 in self.lags_covariates else False,
+            keep_extra_covariate=True if self.lags_covariates is not None and 0 in self.lags_covariates else False
         )
 
     def __len__(self):
