@@ -122,12 +122,11 @@ class NaiveEnsembleModel(EnsembleModel):
             covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
 
         super().fit(series, covariates)
-
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(series=self.training_series, covariates=self.covariate_series)
+                model.fit(series=series, covariates=covariates)
             else:
-                model.fit(series=self.training_series)
+                model.fit(series=series)
 
-    def ensemble(self, predictions: TimeSeries):
+    def ensemble(self, predictions: TimeSeries) -> TimeSeries:
         return TimeSeries.from_series(predictions.pd_dataframe().sum(axis=1) / len(self.models))
