@@ -218,7 +218,7 @@ class LaggedInferenceDataset:
             n=n,
             input_chunk_length=input_chunk_length,
             model_is_recurrent=True if self.lags_covariates is not None and 0 in self.lags_covariates else False,
-            keep_extra_covariate=True if self.lags_covariates is not None and 0 in self.lags_covariates else False
+            add_prediction_covariate=True if self.lags_covariates is not None and 0 in self.lags_covariates else False
         )
 
     def __len__(self):

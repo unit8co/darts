@@ -21,7 +21,6 @@ from darts.utils.data.lagged_dataset import (
     LaggedInferenceDataset,
     _process_lags,
 )
-from darts.utils.data.matrix_dataset import MatrixTrainingDataset
 
 
 logger = get_logger(__name__)
@@ -133,17 +132,16 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = (0 if covariates is None else covariates[0].width) + series[0].width
 
-    def fit_from_dataset(self, dataset: MatrixTrainingDataset, **kwargs):
+    def fit_from_dataset(self, dataset: LaggedDataset, **kwargs):
         training_x, training_y = dataset.get_data()
         self.model.fit(training_x, training_y, **kwargs)
 
-    def predict(
-        self,
-        n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        num_samples: int = 1,
-        **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def predict(self,
+                n: int,
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                num_samples: int = 1,
+                **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
@@ -219,7 +217,6 @@ class RegressionModel(GlobalForecastingModel):
             # appending prediction to final predictions
             predictions.append(prediction)
 
-
             # discard oldest target
             if target_matrix is not None:
                 target_matrix = _consume_column(target_matrix)
@@ -244,12 +241,12 @@ class RegressionModel(GlobalForecastingModel):
                         first_future = first_future.reshape(first_future.shape[0], 1, first_future.shape[1])
                         new_cov_matrix.append(first_future)
 
-                        covariates_matrix = np.concatenate(new_cov_matrix,axis=1)
+                        covariates_matrix = np.concatenate(new_cov_matrix, axis=1)
                         future_covariates_matrix = _consume_column(future_covariates_matrix)
 
                         # TODO move this to a check
-                        raise_if( future_covariates_matrix is None and i != n - 2, "future covariates not "
-                                                                                   "sufficiently long")
+                        raise_if(future_covariates_matrix is None and i != n - 2, "future covariates not sufficiently"
+                                 "long")
 
         predictions = np.concatenate(predictions, axis=1)
         return [self._build_forecast_series(row, input) for row, (input, _, _) in zip(predictions, dataset)]
@@ -268,8 +265,7 @@ class RegressionModel(GlobalForecastingModel):
 
             if future_covariates is not None:
                 future_covariates_matrix.append(future_covariates.values())
-
-
+ 
         target_matrix = np.concatenate(target_matrix, axis=0)
         covariates_matrix = None if len(covariates_matrix) == 0 else np.asarray(covariates_matrix)
         future_covariates_matrix = None if len(future_covariates_matrix) == 0 else np.asarray(future_covariates_matrix)

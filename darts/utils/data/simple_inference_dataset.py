@@ -19,7 +19,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
                  model_is_recurrent: bool = False,
-                 keep_extra_covariate: bool = False):
+                 add_prediction_covariate: bool = False):
         """
         Creates a dataset from lists of target series and corresponding covariate series and emits
         3-tuples of (tgt_past, cov_past, cov_future), all `TimeSeries` instances.
@@ -55,7 +55,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
             The length of the model predictions after one call to its `forward` function.
         model_is_recurrent
             Boolean indicating whether the model that uses this dataset is recurrent or not.
-        keep_prediction_covariate
+        add_prediction_covariate
             Boolean indicating whether, in case of a recurrent dataset (the covariate at prediction time is stored in
             cov_past), should be one timestamp longer or not. If `False`, the oldest covariate timestamp is discarded,
             freeing space for the current covariate. If `True`, `len(cov_past) = len(tgt_past) + 1.
@@ -68,9 +68,9 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.model_is_recurrent = model_is_recurrent
-        self.keep_extra_covariate = keep_extra_covariate
+        self.add_prediction_covariate = add_prediction_covariate
 
-        raise_if(self.keep_prediction_covariate is True and model_is_recurrent is False,
+        raise_if(self.add_prediction_covariate is True and model_is_recurrent is False,
                  "keep _extra_covariate can be only used when model_is_recurrent=True`")
 
         raise_if(model_is_recurrent and output_chunk_length != 1,
@@ -105,7 +105,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
                                                        * covariate_series.freq)
             else:
                 cov_past = covariate_series
-            cov_past = cov_past[-self.input_chunk_length - int(self.keep_prediction_covariate):]
+            cov_past = cov_past[-self.input_chunk_length - int(self.add_prediction_covariate):]
 
             # check whether future covariates are required
             if self.n > self.output_chunk_length:
