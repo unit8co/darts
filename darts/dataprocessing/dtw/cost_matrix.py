@@ -35,7 +35,6 @@ class CostMatrix(ABC):
     @abstractmethod
     def to_dense(self) -> np.ndarray:
         """
-
         Returns
         -------
         Dense n x m numpy array, where empty cells are set to np.inf
@@ -43,15 +42,17 @@ class CostMatrix(ABC):
         pass
 
     @staticmethod
-    def from_window(window: Window):
+    def _from_window(window: Window):
         """
-        Creates a cost matrix from a window function.
+        Creates a cost matrix from a window.
         Depending on the density of the active cells in the window,
         will select either a dense or sparse storage representation.
 
         Parameters
         ----------
-        window: `Window`
+        window
+            Takes a `Window` defining which cells are active and which are empty
+
         Returns
         -------
         CostMatrix
@@ -75,6 +76,11 @@ class DenseCostMatrix(np.ndarray, CostMatrix):
 
     def to_dense(self) -> np.ndarray:
         return self[1:, 1:]
+
+    def __iter__(self):
+        for n in range(1, self.n):
+            for m in range(1, self.m):
+                yield n, m
 
 
 class SparseCostMatrix(CostMatrix):

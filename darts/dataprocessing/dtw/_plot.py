@@ -8,26 +8,48 @@ from matplotlib import transforms
 from ...logging import raise_if_not
 
 
-def plot(self, show_series: bool = False, show_cost: bool = True):
+def plot(self,
+         new_plot: bool = False,
+         show_series: bool = False,
+         show_cost: bool = True,
+         cost_cmap: str = "summer",
+         args_path: dict = {},
+         args_cost: dict = {},
+         args_series1: dict = {},
+         args_series2: dict = {}
+         ):
     """
     Plot the warp path.
 
     Parameters
     ----------
-    show_series:
-        Boolean indicating whether to plot the two time series.
+    new_plot
+        whether to spawn a new Figure
+    show_series
+        Boolean value indicating whether to additionally lot the two time series.
         Series1 will be plotted below the cost matrix and series2 to the left of the cost matrix.
-
-    show_cost:
-        Boolean indicating whether to plot the cost matrix.
+    show_cost
+        Boolean value indicating whether to additionally plot the cost matrix.
+        Cost Matrix will be displayed as a heatmap.
         Useful for visualizing the effect of the window function.
-
-    Returns
-    -------
+    cost_cmap
+        Colormap style for cost matrix plot
+    args_path
+        Some keyword arguments to pass to `plot()` function for warp path
+    args_cost
+        Some keyword arguments to pass to `imshow` function for cost matrix
+    args_series1
+        Some keyword arguments to pass to `plot()` method for series1
+    args_series2
+        Some keyword arguments to pass to `plot()` method for series2
     """
 
-    if show_series:
+    if new_plot:
         fig = plt.figure()
+    else:
+        fig = plt.gcf()
+
+    if show_series:
         gs = fig.add_gridspec(2, 2, width_ratios=[0.4, 0.6], height_ratios=[0.6, 0.4])
 
         warp = fig.add_subplot(gs[0, 1])
@@ -35,7 +57,7 @@ def plot(self, show_series: bool = False, show_cost: bool = True):
         bottom = fig.add_subplot(gs[1, 1])
 
     else:
-        fig, warp = plt.subplots()
+        warp = plt.gca()
 
     warp.title.set_text("Cost Matrix")
     warp.set_xlim([0, self.n])
@@ -45,20 +67,20 @@ def plot(self, show_series: bool = False, show_cost: bool = True):
     if show_cost:
         cost_matrix = self.cost.to_dense()
         cost_matrix = np.transpose(cost_matrix[1:, 1:])
-        warp.imshow(cost_matrix, cmap="summer", interpolation='none', origin="lower", extent=[0, self.n, 0, self.m])
+        warp.imshow(cost_matrix, cmap=cost_cmap, interpolation='none',
+                    origin="lower", extent=[0, self.n, 0, self.m], **args_cost)
 
     show_path = True
     if show_path:
         path = self.path()
-        path = path.reshape((-1,))
 
-        i_coords = path[::2] + 0.5
-        j_coords = path[1::2] + 0.5
-        warp.plot(i_coords, j_coords)
+        i_coords = path[:,0] + 0.5
+        j_coords = path[:,1] + 0.5
+        warp.plot(i_coords, j_coords, **args_path)
 
     if show_series:
-        self.series1.plot(ax=bottom)
-        self.series2.plot(ax=left, y=self.series2._time_dim)
+        self.series1.plot(ax=bottom, **args_series1)
+        self.series2.plot(ax=left, y=self.series2._time_dim, **args_series2)
 
         bottom.set_xlim([self.series1.start_time(), self.series1.end_time()])
         left.set_ylim([self.series2.start_time(), self.series2.end_time()])
@@ -71,24 +93,35 @@ def plot(self, show_series: bool = False, show_cost: bool = True):
     warp.set_aspect('auto')
 
 
-def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, components: Union[Tuple[Union[str, int], Union[str, int]]] = (0,0)):
+def plot_alignment(self,
+                   new_plot: bool = False,
+                   series1_y_offset: float = 0,
+                   series2_y_offset: float = 0,
+                   components: Union[Tuple[Union[str, int], Union[str, int]]] = (0,0),
+                   args_line: dict = {},
+                   args_series1: dict = {},
+                   args_series2: dict = {}
+                   ):
     """
     Plots the uni-variate component of each series,
     with lines between them indicating the alignment selected by the DTW algorithm.
 
     Parameters
     ----------
+    new_plot
+        whether to spawn a new Figure
     series2_y_offset
-        Offset series1 vertically for ease of viewing.
-
+        offset series1 vertically for ease of viewing.
     series1_y_offset
-        Offset series2 vertically for ease of viewing.
-
+        offset series2 vertically for ease of viewing.
     components
         Tuple of component index for series1 and component index for series2.
-
-    Returns
-    -------
+    args_line
+        Some keywords arguments to pass to `plot()` method for line
+    args_series1
+        Some keyword arguments to pass to `plot()` method for series1
+    args_series2
+        Some keyword arguments to pass to `plot()` method for series2
     """
 
     series1 = self.series1
@@ -108,16 +141,14 @@ def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, components: Uni
     path = self.path()
     n = len(path)
 
-    path = path.reshape((-1,))
-
     time_dim1 = series1._time_dim
     time_dim2 = series2._time_dim
 
-    x_coords1 = np.array(xa1[time_dim1], dtype="datetime64[s]")[path[::2]]
-    x_coords2 = np.array(xa2[time_dim2], dtype="datetime64[s]")[path[1::2]]
+    x_coords1 = np.array(xa1[time_dim1], dtype="datetime64[s]")[path[:, 0]]
+    x_coords2 = np.array(xa2[time_dim2], dtype="datetime64[s]")[path[:, 1]]
 
-    y_coords1 = series1.univariate_values()[path[0::2]]
-    y_coords2 = series2.univariate_values()[path[1::2]]
+    y_coords1 = series1.univariate_values()[path[:, 0]]
+    y_coords2 = series2.univariate_values()[path[:, 1]]
 
     x_coords = np.empty(n * 3, dtype="datetime64[s]")
     y_coords = np.empty(n * 3, dtype=np.float)
@@ -131,7 +162,7 @@ def plot_alignment(self, series1_y_offset=0, series2_y_offset=0, components: Uni
     y_coords[2::3] = np.nan
 
     arr = xr.DataArray(y_coords, dims=["value"], coords={"value": x_coords})
-    xr.plot.line(arr, x="value")
+    xr.plot.line(arr, x="value", **args_line)
 
-    series1.plot()
-    series2.plot()
+    series1.plot(**args_series1)
+    series2.plot(**args_series2)

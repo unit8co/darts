@@ -20,7 +20,7 @@ def _dtw_cost_matrix(x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: W
     n = len(x)
     m = len(y)
 
-    dtw = CostMatrix.from_window(window)
+    dtw = CostMatrix._from_window(window)
 
     dtw.fill(np.inf)
     dtw[0, 0] = 0
@@ -167,54 +167,58 @@ class DTWAlignment:
         """
         Returns
         -------
-        An array of indices [(i0,j0), ...], corresponding to the alignment between series1 and series2 respectively.
-        Indices are in monotonic order, path[n] >= path[n-1]
+        np.ndarray of shape `(len(path), 2)`
+            An array of indices [[i0,j0], [i1,j1], [i2,j2], ...], where i indexes into series1 and j indexes into series2.
+            Indices are in monotonic order, path[n] >= path[n-1]
         """
 
         if hasattr(self, "_path"): return self._path
         self._path = _dtw_path(self.cost)
         return self._path
 
-    def distance(self):
+    def distance(self) -> float:
         """
         Returns
         -------
-        The total distance between pair-wise elements in the two series after warping.
+        float
+            The total distance between pair-wise elements in the two series after warping.
         """
         return self.cost[(self.n, self.m)]
 
-    def mean_distance(self):
+    def mean_distance(self) -> float:
         """
         Returns
         -------
-        The mean distance between pair-wise elements in the two series after warping.
+        float
+            The mean distance between pair-wise elements in the two series after warping.
         """
-        if hasattr(self, "_normalized_distance"): return self._normalized_distance
+        if hasattr(self, "_mean_distance"): return self._mean_distance
 
         path = self.path()
-        self._normalized_distance = self.distance() / len(path)
-        return self._normalized_distance
+        self._mean_distance = self.distance() / len(path)
+        return self._mean_distance
 
-    def warped(self, take_dates: Union[None,bool] = None, range_index: Union[None,bool] =None) -> (TimeSeries, TimeSeries):
+    def warped(self) -> (TimeSeries, TimeSeries):
         """
         Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.
         This will bring two time series that are out-of-phase back into phase.
 
         Returns
         -------
-        Two new `TimeSeries` of the same length, indexed by RangeIndex.
+        (TimeSeries, TimeSeries)
+            Two new TimeSeries instances of the same length, indexed by pd.RangeIndex.
         """
 
         series1 = self.series1
         series2 = self.series2
 
-        path = self.path().reshape((-1,))
-
         xa1 = series1.data_array(copy=False)
         xa2 = series2.data_array(copy=False)
 
-        warped_series1 = xa1[path[0::2]]
-        warped_series2 = xa2[path[1::2]]
+        path = self.path()
+
+        warped_series1 = xa1[path[:, 0]]
+        warped_series2 = xa2[path[:, 1]]
 
         time_dim1 = series1._time_dim
         time_dim2 = series2._time_dim
@@ -226,7 +230,7 @@ class DTWAlignment:
             warped_series2 = warped_series2.reset_index(dims_or_levels=time_dim2)
 
         # todo: prevent time information being lost after warping
-        # Applying time index from series1 to series2 is disabled for consistency reasons
+        # Applying time index from series1 to series2 (take_dates = True) is disabled for consistency reasons
         # Applying the warp path to the dates directly will result in duplicate dates
         # and hence values being lost when converting back to a TimeSeries.
         # As a result series1 will not be warped, whereas series2 will be.
@@ -255,7 +259,7 @@ def dtw(series1: TimeSeries,
         window: Window = NoWindow(),
         distance: Union[DistanceFunc, None] = None,
         multi_grid_radius: int = -1
-        ) -> [(int, int)]:
+        ) -> DTWAlignment:
     """
     Determines the optimal alignment between two time series series1 and series2, according to the Dynamic Time Warping algorithm.
     The alignment minimizes the distance between pair-wise elements after warping. All elements in the two series are matched
@@ -266,35 +270,32 @@ def dtw(series1: TimeSeries,
 
     Parameters
     ----------
-    series1:
+    series1
         `TimeSeries`
-
-    series2:
-        `TimeSeries`
-
-    window:
+    series2
+        A `TimeSeries`
+    window
         Used to constrain the search for the optimal alignment: see SakoeChiba and Itakura.
         Default considers all possible alignments.
-
-    distance:
+    distance
         Function taking as input either two `floats` for univariate series or two `np.ndarray`,
         and returning the distance between them.
 
         Defaults to the abs difference for univariate-data and the
         sum of the abs difference for multi-variate series.
-
-    multi_grid_radius: int
+    multi_grid_radius
         Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
         Without constraints DTW runs in O(nxm) time where n,m are the size of the series. Exact evaluation with no constraints,
         will result in a performance warning on large datasets.
 
-        Setting multigrid_radius to a value other than -1, will enable the approximate multi-grid solver,
+        Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
         which executes in linear time, vs quadratic time for exact evaluation.
         Increasing radius trades solution accuracy for performance.
 
     Returns
     -------
-    `DTWAlignment`
+    DTWAlignment
+        Helper object for getting warp path, mean_distance, distance and warped time series
     """
 
     if multi_grid_radius == -1 and type(window) is NoWindow and len(series1) * len(series2) > 10 ** 6:

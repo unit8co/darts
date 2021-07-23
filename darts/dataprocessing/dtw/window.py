@@ -4,6 +4,7 @@ import numpy as np
 from ...logging import raise_if_not, raise_if
 from abc import ABC, abstractmethod
 from math import tan, atan
+import array
 
 
 class Window(ABC):
@@ -17,10 +18,9 @@ class Window(ABC):
         Parameters
         ----------
         n
+            The width of the window, must be equal to the length of series1
         m
-
-        Returns
-        -------
+            The height of the window, must be equal to the length of series2
         """
         self.n = n
         self.m = m
@@ -34,13 +34,14 @@ class Window(ABC):
         """
         Parameters
         ----------
-        self
-        elem: (i,j) index
+        elem
+            (i,j) index, where i indexes columns and j rows
 
         Returns
         -------
-        The number of active grid cells before row element j, in column i,
-        If (i,j) is not an active grid cell returns -1
+        int
+            The number of active grid cells before row element j, in column i,
+            If (i,j) is not an active grid cell returns -1
         """
 
     def __contains__(self, item):
@@ -51,12 +52,13 @@ class Window(ABC):
         """
         Parameters
         ----------
-        self
-        column: int
+        column
+            A column in the window, must be within 0 < column < n+1
 
         Returns
         -------
-        The number of active grid cells in a column.
+        int
+            The number of active grid cells in a column.
         """
 
     def column_lengths(self) -> np.ndarray:
@@ -67,7 +69,8 @@ class Window(ABC):
 
         Returns
         -------
-        The number of active grid cells in each column.
+        np.ndarray of shape (n+1,)
+            Containing The number of active grid cells in each column.
         """
 
         return np.array(self.column_length(i) for i in range(0, self.n + 1))
@@ -75,18 +78,19 @@ class Window(ABC):
     @abstractmethod
     def __iter__(self):
         """
-        Iterate over all active cells in the window, yielding (i,j) tuple.
-        Expected to start with index (1,1) and end with index (n+1, m+1).
-
         Returns
         -------
+        Iterator
+            Iterate over all active cells in the window, yielding (i,j) tuple.
+            Expected to start with index (1,1) and end with index (n+1, m+1).
         """
         pass
 
 
 class NoWindow(Window):
     """
-    Full n x m grid
+    Window covers the entire grid,
+    meaning every possible alignment between series1 and series2 is considered.
     """
     def __len__(self):
         return self.n*self.m + 1 # include (0,0) element
@@ -107,10 +111,10 @@ class NoWindow(Window):
             for j in range(1, self.m+1):
                 yield i, j
 
+
 def gtz(value): # greater than zero
     return value if value > 0 else 0
 
-import array
 
 class CRWindow:
     """
@@ -121,30 +125,30 @@ class CRWindow:
     """
 
     length: int
-    column_ranges: array.array #np.ndarray #2d array [start,end] for each column
+    column_ranges: array.array
 
     def __init__(self, n: int, m: int, ranges: np.ndarray = None):
         """
         Parameters
         ----------
-        n: int
-        m: int
-        ranges:
-            2d array with [start,end] range for column
-            Range corresponding to entire column is [0, m]
+        n
+            The width of the window, must be equal to the length of series1
+        m
+            The height of the window, must be equal to the length of series2
+        ranges
+            Ranges of active cells within a column [[start_column0, end_column0], ...]
+            with shape (n, 2) and where start >= 0 and end <= m.
         """
 
         self.n = n
         self.m = m
 
-        if not ranges is None:
+        if ranges is not None:
             raise_if_not(ranges.shape == (n, 2), f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)")
 
             ranges = np.insert(ranges, 0, [0, 1], axis=0)
-
-            ranges = ranges.reshape((-1,))
-            start = ranges[0::2]
-            end = ranges[1::2]
+            start = ranges[:, 0]
+            end = ranges[:, 1]
 
             raise_if(np.any(start < 0), "Start must be >=0")
             raise_if(np.any(end > m), "End must be <m")
@@ -153,6 +157,7 @@ class CRWindow:
             self.length = np.sum(diff)
 
             ranges[1:] += 1
+            ranges = ranges.flatten()
         else:
             ranges = np.zeros((n + 1) * 2, dtype=int)
             ranges[0::2] = self.m #start
@@ -169,16 +174,22 @@ class CRWindow:
         """
         Extends the active cells in the column by the range (start,end).
         Ranges smaller than the current one are ignored.
-        Note (1, m+1), not (0,m) corresponds to entire column.
+        Note (1, m+1), not (0,m) corresponds to an entire column.
 
         Parameters
         ----------
         column
-        start:
+            Column int index
+        start
+            Row element int index where start >= 1 and start <= end
         end:
+            Row element int index where end >= 1 and end <= m+1
         """
-        if start < 1 or start > self.m: raise IndexError(f"Start must be >=1 and <=m, got {start}")
-        if end < 1 or end > self.m+1: raise IndexError(f"End must be >=1 and <=m+1, got {end}")
+
+        if start < 1 or start > self.m:
+            raise IndexError(f"Start must be >=1 and <=m, got {start}")
+        if end < 1 or end > self.m+1:
+            raise IndexError(f"End must be >=1 and <=m+1, got {end}")
 
         start_idx = column*2 + 0
         end_idx = column*2 + 1
@@ -197,12 +208,14 @@ class CRWindow:
 
     def add(self, elem: (int, int)):
         """
-        Mark grid cell (i,j) as active.
+        Mark grid cell as active.
 
         Parameters
         ----------
         elem
+            Tuple of grid cell index (column, row)
         """
+
         self.add_range(elem[0], elem[1], elem[1]+1)
 
     def column_length(self, column: int) -> int:
@@ -290,28 +303,27 @@ class Itakura(CRWindow):
         # (max_slope - min_slope)*x = m - n*min_slope
         # x = (m - n*min_slope) / (max_slope - min_slope)
 
-        ranges = np.zeros(self.n*2, dtype=float)
+        ranges = np.zeros((self.n, 2), dtype=float)
 
         shallow_bottom = int(np.round((m - n*max_slope) / (min_slope - max_slope))+1)
-        ranges[:shallow_bottom*2:2] = np.arange(shallow_bottom)
-        ranges[shallow_bottom*2::2] = np.arange(n-shallow_bottom)+1
+        ranges[:shallow_bottom, 0] = np.arange(shallow_bottom)
+        ranges[shallow_bottom:, 0] = np.arange(n-shallow_bottom)+1
 
-        ranges[:shallow_bottom * 2:2] *= min_slope
-        ranges[shallow_bottom * 2::2] *= max_slope
-        ranges[shallow_bottom * 2::2] += ranges[(shallow_bottom-1)*2]
+        ranges[:shallow_bottom, 0] *= min_slope
+        ranges[shallow_bottom:, 0] *= max_slope
+        ranges[shallow_bottom:, 0] += ranges[shallow_bottom-1, 0]
 
         steep_top = int(np.round((m - n*min_slope) / (max_slope - min_slope)))
-        ranges[1:steep_top*2:2] = np.arange(steep_top)+1
-        ranges[steep_top*2+1::2] = np.arange(n-steep_top)+1
+        ranges[:steep_top, 1] = np.arange(steep_top)+1
+        ranges[steep_top:, 1] = np.arange(n-steep_top)+1
 
-        ranges[1:steep_top * 2:2] *= max_slope
-        ranges[steep_top * 2+1::2] *= min_slope
-        ranges[steep_top * 2+1::2] += ranges[(steep_top-1)*2 + 1]
+        ranges[:steep_top:, 1] *= max_slope
+        ranges[steep_top:, 1] *= min_slope
+        ranges[steep_top:, 1] += ranges[steep_top-1, 1]
 
-        np.floor(ranges[0::2], out=ranges[0::2])
-        np.ceil(ranges[1::2], out=ranges[1::2])
+        np.floor(ranges[:, 0], out=ranges[:, 0])
+        np.ceil(ranges[:, 1], out=ranges[:, 1])
 
-        ranges = ranges.reshape((-1, 2))
         ranges = np.maximum([0, 1], ranges)
         ranges = np.minimum([self.m-1, self.m], ranges)
         ranges = ranges.astype(int)
