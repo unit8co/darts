@@ -1,6 +1,8 @@
 import unittest
+from numpy.lib.arraysetops import isin
 import pandas as pd
 
+from ....timeseries import TimeSeries
 from darts.dataprocessing.transformers.mappers import Mapper, InvertibleMapper
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
@@ -65,6 +67,17 @@ class MappersTestCase(unittest.TestCase):
 
         for to_transform, expected_output in test_cases:
             transformed = self.subtract_month.transform(to_transform)
+            if isinstance(to_transform, list):
+                tmp_t = []
+                tmp_o = []
+                for t, o in zip(transformed, expected_output):
+                    o = o.with_column_renamed(o.components[0], t.components[0])
+                    tmp_t.append(t)
+                    tmp_o.append(o)
+                transformed = tmp_t
+                expected_output = tmp_o
+            else:
+                expected_output = expected_output.with_column_renamed(expected_output.components[0], transformed.components[0])
             self.assertEqual(transformed, expected_output)
 
     def test_invertible_mapper_with_timestamp(self):

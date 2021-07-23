@@ -14,6 +14,7 @@ from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
+from xarray.core import dataarray
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -1802,6 +1803,26 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name);
+
+    def with_column_renamed(self, col_name: str, col_name_new: str) -> 'TimeSeries':
+        """
+        Changes a ts column name and returns a new TimeSeries instance
+        -------
+        TimeSeries
+            A new TimeSeries instance
+        """
+
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={
+                self._xa.dims[0]: self.time_index, 
+                DIMS[1]: pd.Index([col_name_new if (c==col_name) else c for c in self.components])
+                }
+        )
+        
+        return TimeSeries(new_xa)
+
 
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.

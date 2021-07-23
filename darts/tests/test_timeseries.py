@@ -590,6 +590,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
         zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
 
+        zeroes = zeroes.with_column_renamed('constant', 'linear')
+        
         def function(ts, x):
             return x - ts.month
 
