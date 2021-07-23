@@ -215,7 +215,7 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
                         country_code: str,
                         prov: str = None,
                         state: str = None,
-                        column_name: Optional[str] = 'holydays') -> TimeSeries:
+                        column_name: Optional[str] = 'holidays') -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
