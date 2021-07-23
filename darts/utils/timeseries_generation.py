@@ -11,7 +11,7 @@ import pandas as pd
 import holidays
 
 from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger
+from ..logging import raise_if_not, get_logger, raise_log, raise_if
 
 logger = get_logger(__name__)
 
@@ -206,10 +206,42 @@ def random_walk_timeseries(length: int = 10,
     return TimeSeries.from_times_and_values(times, values, freq=freq)
 
 
+def _extend_time_index_until(time_index:pd.DatetimeIndex,
+                             until: Union[int, str, pd.Timestamp],
+                             ) -> pd.DatetimeIndex:
+    if until == 0: return time_index
+
+    end = time_index[-1]
+    freq = time_index.freq
+
+    if isinstance(until, int):
+        raise_if_not(until >= 0, "until, indicating the number of time points to extend into the future by, must be positive")
+
+        try:
+            end += until*freq
+        except pd.errors.OutOfBoundsDatetime:
+            raise_log(f"the add operation between {end} and {until * freq} will overflow", logger)
+    else:
+        raise_if_not(isinstance(until, (str, pd.Timestamp)), f"Expected valid timestamp or integer, got {type(end)}", logger)
+        timestamp = pd.Timestamp(until)
+
+        raise_if_not(timestamp > end, f"Expected until, {timestamp} to lie past end of time index {end}")
+
+        ahead = timestamp - end
+        raise_if_not((ahead % freq) == pd.Timedelta(0), f"End date must correspond with frequency {freq} of the time axis", logger)
+
+        end = timestamp
+
+    new_time_index = pd.date_range(start= time_index[0], end=end, freq= freq)
+    return new_time_index
+
+
 def holidays_timeseries(time_index: pd.DatetimeIndex,
                         country_code: str,
                         prov: str = None,
-                        state: str = None) -> TimeSeries:
+                        state: str = None,
+                        until: Union[int, str, pd.Timestamp] = 0
+                        ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
@@ -226,12 +258,16 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
         The province
     state
         The state
+    until
+        Extend the time_index into the future either by `int` time points or until timestamp (`str`, `pd.Timestamp`).
 
     Returns
     -------
     TimeSeries
         A new binary holiday TimeSeries instance.
     """
+
+    time_index = _extend_time_index_until(time_index, until)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
     country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state, years=scope)
     index_series = pd.Series(time_index, index=time_index)
@@ -241,10 +277,12 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
 
 def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries],
                                   attribute: str,
-                                  one_hot: bool = False) -> TimeSeries:
+                                  one_hot: bool = False,
+                                  cyclic: bool = False,
+                                  until: Union[int, str, pd.Timestamp] = 0) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
-    (optionally one-hot encoded) pd.DatatimeIndex attribute information derived from the index.
+    (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
 
     Parameters
     ----------
@@ -256,6 +294,11 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
+    cyclic
+        Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+        (adds 2 columns, corresponding to sin and cos transformation)
+    until
+        Extend the time_index into the future either by 'int' time points or until timestamp(`str` or `pd.Timestamp`).
 
     Returns
     -------
@@ -266,8 +309,12 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     if isinstance(time_index, TimeSeries):
         time_index = time_index.time_index
 
+    time_index = _extend_time_index_until(time_index, until)
+
     raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
                  'of pd.DatetimeIndex', logger)
+
+    raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
 
     num_values_dict = {
         'month': 12,
@@ -278,15 +325,26 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     }
 
     values = getattr(time_index, attribute)
-    if one_hot:
+
+    if one_hot or cyclic:
         raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported"
-                                                   " with one-hot encoding.", logger)
+                                                   " with one-hot or cyclical encoding.", logger)
+
+    if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
         for i in range(1, num_values_dict[attribute] + 1):
             if not (i in values_df.columns):
                 values_df[i] = 0
         values_df = values_df[range(1, num_values_dict[attribute] + 1)]
+    elif cyclic:
+        period = num_values_dict[attribute]
+        freq = 2*np.pi/period
+
+        values_df = pd.DataFrame({
+            attribute+"_sin": np.sin(freq * values),
+            attribute+"_cos": np.cos(freq * values)
+        })
     else:
         values_df = pd.DataFrame(values)
     values_df.index = time_index
