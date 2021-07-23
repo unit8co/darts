@@ -895,7 +895,7 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                n_jobs: int = 1,
                verbose: bool = False,
                **kwargs
-               ):
+               ) -> float:
     """
     Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
     Enables comparison between series of different lengths, phases and time indices.
@@ -930,12 +930,14 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     Returns
     -------
-
+    float
+        Result of calling metric(warped_series1, warped_series2)
     """
+
     alignment = dtw.dtw(actual_series, pred_series, **kwargs)
     if metric == mae and not "distance" in kwargs:
         return alignment.mean_distance()
 
-    warped_actual_series, warped_pred_series = alignment.warped(range_index=True)
+    warped_actual_series, warped_pred_series = alignment.warped()
 
     return metric(warped_actual_series, warped_pred_series)
