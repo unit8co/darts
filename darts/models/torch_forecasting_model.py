@@ -482,9 +482,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
-        Block models:
-        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
-        recurrent way, by iteratively feeding the last `roll_size` forecast points as
+        TODO: update doc
+
+        Models relying on past covariates:
+        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
+        auto-regressive way, by iteratively feeding the last `roll_size` forecast points as
         inputs to the model until a forecast of length `n` is obtained. If the model was trained with
         covariates, all of the covariate time series need to have a time index that extends at least
         `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
@@ -567,9 +569,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates)
 
-        # dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
-        #                                  self.is_recurrent)
-
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size, num_samples=num_samples)
         return predictions[0] if called_with_single_series else predictions
@@ -587,6 +586,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Predicts values for a certain number of time steps after the end of the series appearing in the specified
         `input_series_dataset`.
+
+        TODO: update doc
 
         Block models:
         If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
@@ -654,7 +655,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
-        pred_loader = DataLoader(TimeSeriesTorchDataset(input_series_dataset, self.device),
+        torch_dataset = input_series_dataset.to_torch_dataset()  # TODO: self.device?
+
+        pred_loader = DataLoader(torch_dataset,
                                  batch_size=batch_size,
                                  shuffle=False,
                                  num_workers=0,
@@ -1003,7 +1006,7 @@ See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-wit
 
 def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
     raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
-    
+
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,

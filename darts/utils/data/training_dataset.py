@@ -5,6 +5,8 @@ TimeSeries Dataset Base Classes
 
 from abc import ABC, abstractmethod
 import numpy as np
+import torch
+from torch import Tensor
 from torch.utils.data import Dataset
 
 from typing import Sequence, Tuple, Optional
@@ -54,12 +56,33 @@ class TrainingDataset(ABC, Sequence):
         pass
 
     @abstractmethod
-    def to_torch_dataset(self) -> Dataset:
+    def torch_tensors(self, idx: int):
         """
-        Each dataset knows how to concatenate the past/future targets with past/future covariates
-        into tensors for training
+        Returns the i-th (input, output) training sample.
+        Note that some datasets may return several inputs (past_{target,covariates} + future_covariates)
         """
         pass
+
+    def to_torch_dataset(self) -> Dataset:
+        return TorchTrainingDataset(self)
+
+
+def _cat_with_optional(tsr1: Tensor, tsr2: Optional[Tensor]):
+    if tsr2 is None:
+        return tsr1
+    else:
+        return torch.cat([tsr1, tsr2], dim=1)
+
+
+class TorchTrainingDataset(Dataset):
+    def __init__(self, ds: TrainingDataset):
+        self.ds = ds
+
+    def __len__(self):
+        return len(self.ds)
+
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor]:
+        return self.ds.torch_tensors(idx)
 
 
 class PastCovariatesTrainingDataset(TrainingDataset):
@@ -75,6 +98,17 @@ class PastCovariatesTrainingDataset(TrainingDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         pass
 
+    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor]:
+        """
+        Returns the i-th (input, output) training sample.
+        Here "input" is the concatenation of past_target with past_covariates and "output" is future_target.
+        """
+        item = self[idx]
+        past_tgt, future_tgt, past_cov = item
+        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
+        past_cov = torch.from_numpy(past_cov).float() if past_cov is not None else None
+        return _cat_with_optional(past_tgt, past_cov), future_tgt
+
 
 class FutureCovariatesTrainingDataset(TrainingDataset):
     def __init__(self):
@@ -89,6 +123,16 @@ class FutureCovariatesTrainingDataset(TrainingDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         pass
 
+    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+        """
+        Returns the i-th (past_target, future_target (output), future_covariate) training sample.
+        """
+        item = self[idx]
+        past_tgt, future_tgt, future_cov = item
+        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
+        future_cov = torch.from_numpy(future_cov).float() if future_cov is not None else None
+        return past_tgt, future_tgt, future_cov
+
 
 class MixedCovariatesTrainingDataset(TrainingDataset):
     def __init__(self):
@@ -102,6 +146,18 @@ class MixedCovariatesTrainingDataset(TrainingDataset):
     @abstractmethod
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         pass
+
+    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+        """
+        Returns the i-th (past_input, future_target (output), future_covariate) training sample.
+        Here "past_input" is the concatenation of past_target with some possible past_covariates
+        """
+        item = self[idx]
+        past_tgt, future_tgt, past_cov, future_cov = item
+        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
+        past_cov = torch.from_numpy(past_cov).float() if past_cov is not None else None
+        future_cov = torch.from_numpy(future_cov).float() if future_cov is not None else None
+        return _cat_with_optional(past_tgt, past_cov), future_tgt, future_cov
 
 
 def _get_matching_index(ts_target: TimeSeries,
