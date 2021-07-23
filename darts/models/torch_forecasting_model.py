@@ -979,7 +979,7 @@ in implementations.
 See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
 """
 
-class PastCovariatesModel(TorchForecastingModel, ABC):
+class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1000,7 +1000,7 @@ class PastCovariatesModel(TorchForecastingModel, ABC):
         _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
 
 
-class FutureCovariatesModel(TorchForecastingModel, ABC):
+class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1020,7 +1020,7 @@ class FutureCovariatesModel(TorchForecastingModel, ABC):
         _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
 
 
-class MixedCovariatesModel(TorchForecastingModel, ABC):
+class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
