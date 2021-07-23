@@ -20,7 +20,7 @@ def constant_timeseries(value: float = 1,
                         length: int = 10,
                         freq: str = 'D',
                         start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
-                        column_name: Optional[str] = '0') -> TimeSeries:
+                        column_name: Optional[str] = 'constant') -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length, start date and frequency.
 
@@ -53,7 +53,7 @@ def linear_timeseries(start_value: float = 0,
                       length: int = 10,
                       freq: str = 'D',
                       start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
-                      column_name: Optional[str] = '0') -> TimeSeries:
+                      column_name: Optional[str] = 'linear') -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
     it takes on the value `end_value` at the last entry of the TimeSeries. This means that
@@ -91,7 +91,7 @@ def sine_timeseries(value_frequency: float = 0.1,
                     length: int = 10,
                     freq: str = 'D',
                     start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
-                    column_name: Optional[str] = '0') -> TimeSeries:
+                    column_name: Optional[str] = 'sine') -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
     phase and y offset.
@@ -134,7 +134,7 @@ def gaussian_timeseries(length: int = 10,
                         mean: Union[float, np.ndarray] = 0.,
                         std: Union[float, np.ndarray] = 1.,
                         start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
-                        column_name: Optional[str] = '0') -> TimeSeries:
+                        column_name: Optional[str] = 'gaussian') -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
     from a gaussian distribution with mean `mean` and standard deviation `std`.
@@ -182,7 +182,7 @@ def random_walk_timeseries(length: int = 10,
                            mean: float = 0.,
                            std: float = 1.,
                            start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
-                           column_name: Optional[str] = '0') -> TimeSeries:
+                           column_name: Optional[str] = 'random_walk') -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
     with mean `mean` and standard deviation `std`.
@@ -215,7 +215,7 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
                         country_code: str,
                         prov: str = None,
                         state: str = None,
-                        column_name: Optional[str] = '0') -> TimeSeries:
+                        column_name: Optional[str] = 'holydays') -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
