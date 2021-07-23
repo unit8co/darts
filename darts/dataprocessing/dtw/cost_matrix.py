@@ -4,7 +4,6 @@ import numpy as np
 from .window import Window, CRWindow
 from abc import abstractmethod
 import array
-from itertools import repeat
 
 Elem = Tuple[int, int]
 
@@ -38,6 +37,7 @@ class CostMatrix:
             return DenseCostMatrix(window.n, window.m)
 
 
+
 class DenseCostMatrix(np.ndarray, CostMatrix):
     def __new__(self, n, m):
         self.n = n
@@ -46,7 +46,6 @@ class DenseCostMatrix(np.ndarray, CostMatrix):
 
     def to_dense(self) -> np.ndarray:
         return self
-
 
 class SparseCostMatrix(CostMatrix):
     def __init__(self, window: CRWindow):
@@ -58,16 +57,16 @@ class SparseCostMatrix(CostMatrix):
         self.column_ranges = window.column_ranges
         self.offsets[0] = 0
         np.cumsum(window.column_lengths(), out=self.offsets[1:])
+        #self.dense = np.empty(self.offsets[-1]+1)
 
-        len = self.offsets[-1]
+        len = self.offsets[-1]+1
 
         self.offsets = array.array('i', self.offsets)
-        self.dense = array.array('f', repeat(np.inf, len))
+        self.dense = array.array('f', [np.inf] * len) #todo better way
 
     def fill(self, value):
-        if value != np.inf: # should already be cleared to np.inf
-            for i in range(len(self.dense)):
-                self.dense[i] = value
+        pass
+        #self.dense.fill(value)
 
     def to_dense(self) -> np.ndarray:
         matrix = np.empty((self.n+1, self.m+1))
