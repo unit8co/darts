@@ -84,8 +84,8 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
         time_index_3 = pd.date_range(periods=10, freq='Y', start=pd.Timestamp('1950-01-01')) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
-        def test_routine(time_index, country_code):
-            ts = holidays_timeseries(time_index, country_code)
+        def test_routine(time_index, country_code, until=0):
+            ts = holidays_timeseries(time_index, country_code, until=until)
             self.assertTrue(
                 all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
             )
@@ -94,3 +94,15 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             for country_code in ['US', 'CH', 'AR']:
                 test_routine(time_index, country_code)
 
+        # test until parameter
+        test_routine(time_index_1, 'US',  until= 365)
+        test_routine(time_index_1, 'CH',  until='2016-01-01')
+        test_routine(time_index_1, 'CH',  until='20160101')
+        test_routine(time_index_1, 'AR',  until=pd.Timestamp('2016-01-01'))
+
+        # test overflow
+        with self.assertRaises(ValueError):
+            test_routine(time_index_1, 'US', until=99999)
+
+        with self.assertRaises(ValueError):
+            test_routine(time_index_2, 'US', until='2016-01-01')
