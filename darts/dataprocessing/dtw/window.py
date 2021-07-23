@@ -95,15 +95,13 @@ class NoWindow(Window):
 def gtz(value): # greater than zero
     return value if value > 0 else 0
 
-import array
-
 class CRWindow:
     """
     Arbitrary contiguous column windows
     """
 
     length: int
-    column_ranges: array.array #np.ndarray #2d array [start,end] for each column
+    column_ranges: np.ndarray #2d array [start,end] for each column
 
     def __init__(self, n: int, m: int, ranges: np.ndarray = None):
         self.n = n
@@ -112,45 +110,36 @@ class CRWindow:
         if not ranges is None:
             raise_if_not(ranges.shape == (n, 2), f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)")
 
-            ranges = np.insert(ranges, 0, [0, 1], axis=0)
+            ranges = np.insert(ranges, 0, [0,1], axis=0)
             ranges[1:] += 1
 
-            ranges = ranges.reshape((-1,))
-            start = ranges[0::2]
-            end = ranges[1::2]
+            flatten = ranges.reshape((-1))
+            start = flatten[0::2]
+            end = flatten[1::2]
 
             diff = np.maximum(end - start, 0)
             self.length = np.sum(diff)
+            self.column_ranges = ranges
         else:
-            ranges = np.zeros((n + 1) * 2, dtype=int)
-            ranges[0::2] = self.m #start
-            ranges[1::2] = 0 #end
-            ranges = array.array('i', ranges)
-
-            ranges[0] = 0
-            ranges[1] = 1
+            self.column_ranges = np.zeros((n + 1) * 2, dtype=int)
+            self.column_ranges[0::2] = self.m #start
+            self.column_ranges[1::2] = 0 #end
+            self.column_ranges = np.reshape(self.column_ranges, (-1,2))
+            self.column_ranges[0] = (0, 1)
             self.length = 1
-
-        self.column_ranges = array.array('i', ranges)
 
     def add_range(self, column: int, start: int, end: int):
         if start < 1 or start > self.n: raise IndexError(f"Start must be >=1 and <=n, got {start}")
         if end < 1 or end > self.n+1: raise IndexError(f"End must be >=1 and <=n+1, got {end}")
 
-        start_idx = column*2 + 0
-        end_idx = column*2 + 1
-
-        orig_start = self.column_ranges[start_idx]
-        orig_end = self.column_ranges[end_idx]
-
+        orig_start, orig_end = self.column_ranges[column]
         start, end = min(orig_start, start), max(orig_end, end)
 
         orig_row_length = gtz(orig_end - orig_start)
         row_length = gtz(end - start)
 
         self.length += row_length - orig_row_length
-        self.column_ranges[start_idx] = start
-        self.column_ranges[end_idx] = end
+        self.column_ranges[column] = (start, end)
 
     def add(self, elem: (int, int)):
         self.add_range(elem[0], elem[1], elem[1]+1)
@@ -167,25 +156,18 @@ class CRWindow:
         if j < start or j >= end: return -1
         else: return j - start
 
-    def __contains__(self, elem: (int,int)) -> bool:
-        i, j = elem
-        start, end = self.column_ranges[i]
-        return start <= j < end
-
     def __iter__(self):
         for i in range(1, self.n+1):
-            start = self.column_ranges[i*2 + 0]
-            end = self.column_ranges[i*2 + 1]
-
+            start, end = self.column_ranges[i]
             for j in range(start, end):
                 yield i, j
 
     def column_lengths(self) -> np.ndarray:
-        ranges = self.column_ranges
+        ranges = self.column_ranges.reshape((-1,))
         start = ranges[::2]
         end = ranges[1::2]
 
-        return np.maximum(np.subtract(end, start), 0)
+        return np.maximum(end-start, 0)
 
     def __len__(self):
         return self.length
@@ -196,7 +178,7 @@ class Itakura(CRWindow):
     Forms the itakura parallelogram, where max_slope determines the slope of the steeper side.
     """
 
-    def __init__(self, max_slope: float):
+    def __init__(self, max_slope: int):
         self.max_slope = max_slope
 
     def init_size(self, n: int, m: int):

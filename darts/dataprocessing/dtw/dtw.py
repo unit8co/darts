@@ -1,6 +1,5 @@
 import numpy as np
 import xarray as xr
-import pandas as pd
 from typing import Callable, Union, Tuple
 import copy
 
@@ -73,7 +72,7 @@ def _downsample(high_res: np.ndarray):
 def _expand_window(low_res_path: np.ndarray,
                    n: int,
                    m: int,
-                   radius: int) -> CRWindow:
+                   radius: int) -> Window:
     high_res_grid = CRWindow(n, m)
 
     def is_valid(cell):
@@ -91,25 +90,30 @@ def _expand_window(low_res_path: np.ndarray,
     # X X             X X X
     # X X             X X
 
-    pattern = [(0,0,2),(1,0,3), (2,1,2)]
+    # TODO: optimize by using add_range instead of individually adding each element
+    pattern = [(0, 0), (0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]
 
     for i,j in low_res_path:
-        for column, start, end in pattern:
+        for a, b in pattern:
             # +1 offset since x[0], y[0] maps to DTW[1][1]
+            cell = (i*2 + 1 + a, j*2 + 1 + b)
+            if is_valid(cell):
+                high_res_grid.add(cell)
 
-            column += i*2 + 1
+    # keeps track of path border
+    outer = list(high_res_grid)
+    next_outer = []
+    for it in range(radius):
+        for i, j in outer:
+            # expand 1x1 to 3x3 block
+            for b in range(-1, 2):
+                cell = (i + a, j + b)
+                if is_valid(cell) and not cell in high_res_grid:
+                    high_res_grid[cell] = it
+                    next_outer.append(cell)
 
-            # ensure no out of bounds
-            # enlarge vertically by radius is O(1), due to compressed row representation
-            start = max(1, min(m + 1, start + j * 2 - radius))
-            end = max(1, min(m + 1, end + j * 2 + 1 + radius))
-
-            # to create an nxn block, add (0-n) range n times
-            # ensure no out of bounds
-            #   if column is too large m-column -> 0
-            #   if column-k is too small, column < radius+1
-            for k in range(0, min(radius+1, column, m-column+1)):
-                high_res_grid.add_range(column-k, start, end)
+        outer, next_outer = next_outer, outer
+        next_outer.clear()
 
     return high_res_grid
 
@@ -205,6 +209,8 @@ class DTWAlignment:
         actual_series_xa = actual_series.data_array(copy=False)
         pred_series_xa = pred_series.data_array(copy=False)
 
+
+
         warped_actual_series_xa = actual_series_xa[path[0::2]]
         warped_pred_series_xa = pred_series_xa[path[1::2]]
 
@@ -276,6 +282,7 @@ def dtw(actual_series: TimeSeries,
         raise_if_not(isinstance(window, NoWindow), "Multi-grid solver does not currently support windows")
         cost_matrix = _fast_dtw(values_x, values_y, distance, multigrid_radius)
     else:
+        print(len(window))
         cost_matrix = _dtw_cost_matrix(values_x, values_y, distance, window)
 
     return DTWAlignment(actual_series, pred_series, cost_matrix)

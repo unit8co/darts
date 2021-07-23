@@ -14,7 +14,6 @@ from warnings import warn
 from typing import Optional, Callable, Sequence, Union, Tuple, Dict, List
 from inspect import signature
 from functools import wraps
-from darts.dataprocessing import dtw
 
 
 logger = get_logger(__name__)
@@ -852,50 +851,6 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
 
 # Dynamic Time Warping
-@multi_ts_support
-def dtw_mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-            pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-            *,
-            reduction: Callable[[np.ndarray], float] = np.mean,
-            inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
-            n_jobs: int = 1,
-            verbose: bool = False,
-            **kwargs):
-    """
-    Mean Absolute Error (MAE) after applying Dynamic Time Warping.
-    See darts.dataprocessing.dtw.dtw for more supported parameters.
 
-    Parameters
-    ----------
-    actual_series
-    pred_series
-    kwargs
+from scipy import sparse
 
-    Returns
-    -------
-    float
-
-    """
-    alignment = dtw.dtw(actual_series, pred_series, **kwargs)
-    return alignment.normalized_distance()
-
-
-@multi_ts_support
-def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-               pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-               metric: Callable[[
-                    Union[TimeSeries, Sequence[TimeSeries]],
-                    Union[TimeSeries, Sequence[TimeSeries]]
-               ], Union[float, np.ndarray]],
-               *,
-               reduction: Callable[[np.ndarray], float] = np.mean,
-               inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
-               n_jobs: int = 1,
-               verbose: bool = False,
-               **kwargs
-               ):
-
-    alignment = dtw.dtw(actual_series, pred_series, **kwargs)
-    warped_actual_series, warped_pred_series = alignment.warped(take_dates=True, unique_dates=True)
-
-    return metric(warped_actual_series, warped_pred_series)
