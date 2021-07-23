@@ -137,6 +137,11 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(sum(seriesD.values()[:, 1 + 3]), 30)
         self.assertEqual(sum(seriesD.values()[:, 1 + 1]), 23)
 
+        # test cyclic
+        seriesE = self.series1.add_datetime_attribute('day', cyclic=True)
+        self.assertTrue(np.allclose(seriesE.values()[:, 3], np.sin((2*np.pi/31) * self.series1.time_index.day)))
+        self.assertTrue(np.allclose(seriesE.values()[:, 4], np.cos((2*np.pi/31) * self.series1.time_index.day)))
+
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp('20201201'), periods=30, freq='D')
         seriesA = TimeSeries.from_times_and_values(times, range(len(times)))
@@ -174,3 +179,4 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(self.series3.last_values().tolist(), [10, 20])
         self.assertEqual(self.series1.univariate_component(1).first_values().tolist(), [5])
         self.assertEqual(self.series3.univariate_component(1).last_values().tolist(), [20])
+
