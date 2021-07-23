@@ -2,11 +2,11 @@
 Regression ensemble model
 -------------------------
 """
-from typing import Optional, List
+from typing import Optional, List, Union, Sequence, Tuple
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
-from darts.models.forecasting_model import ForecastingModel
+from darts.models.forecasting_model import ForecastingModel, GlobalForecastingModel
 from darts.models import (
     EnsembleModel, LinearRegressionModel, RegressionModel,
     RandomForest
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(self,
-                 forecasting_models: List[ForecastingModel],
+                 forecasting_models: Union[List[ForecastingModel], List[GlobalForecastingModel]],
                  regression_train_n_points: int,
                  regression_model=None):
         """
@@ -51,25 +51,65 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
-    def fit(self, series: TimeSeries) -> None:
-        super().fit(series)
+    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
+                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        left = [ts[:-n] for ts in ts_sequence]
+        right = [ts[-n:] for ts in ts_sequence]
+        return left, right
+
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+            ) -> None:
+
+        super().fit(series, covariates)
 
         # spare train_n_points points to serve as regression target
         raise_if(len(self.training_series) <= self.train_n_points,
                  "regression_train_n_points parameter too big (must be smaller or equal" +
                  " to the number of points in training_series)",
                  logger)
-        forecast_training = self.training_series[:-self.train_n_points]
-        regression_target = self.training_series[-self.train_n_points:]
+
+        if isinstance(series, TimeSeries):
+            forecast_training = self.training_series[:-self.train_n_points]
+            regression_target = self.training_series[-self.train_n_points:]
+        else:
+            forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
+
+        if covariates is not None:
+            if isinstance(covariates, TimeSeries):
+                forecast_covariates = self.covariate_series[:-self.train_n_points]
+                # regression_covariates = self.covariate_series[-self.train_n_points:]
+            else:
+                forecast_covariates, regression_covariates = \
+                    self._split_multi_ts_sequence(-self.train_n_points, covariates) # TODO <<<< here
+        else:
+            forecast_covariates=None
+            # regression_covariates=None
 
         # fit the forecasting models
         for model in self.models:
-            model.fit(forecast_training)
+            if self.is_global_ensemble:
+                model.fit(forecast_training, forecast_covariates)
+            else:
+                model.fit(forecast_training)
 
         # predict train_n_points points for each model
-        predictions = self.models[0].predict(self.train_n_points)
-        for model in self.models[1:]:
-            predictions = predictions.stack(model.predict(self.train_n_points))
+        if self.is_global_ensemble:
+            predictions = self._ts_sequence_to_multivariate_ts(
+                self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=forecast_covariates))
+        else:
+            predictions = self.models[0].predict(self.train_n_points)
+
+        if len(self.models) > 1:
+            for model in self.models[1:]:
+                if self.is_global_ensemble:
+                    prediction = self._ts_sequence_to_multivariate_ts(
+                        model.predict(n=self.train_n_points, series=forecast_training, covariates=forecast_covariates))
+                else:
+                    prediction = model.predict(self.train_n_points)
+
+                predictions = predictions.stack(prediction)
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, exog=predictions)

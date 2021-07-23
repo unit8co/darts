@@ -8,6 +8,7 @@ from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal
 from ..models import RegressionEnsembleModel, LinearRegressionModel, RandomForest
 from ..logging import get_logger
+from .test_ensemble_models import _make_ts
 
 logger = get_logger(__name__)
 
@@ -24,6 +25,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series
+
+    seq1 = [_make_ts(0), _make_ts(10), _make_ts(20)]
+    cov1 = [_make_ts(5), _make_ts(15), _make_ts(25)]
 
     def get_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
