@@ -11,7 +11,7 @@ from darts.utils import _parallel_apply, _build_tqdm_iterator
 from ..utils.statistics import check_seasonality
 from ..logging import raise_if_not, get_logger, raise_log
 from warnings import warn
-from typing import Optional, Callable, Sequence, Union, Tuple, Dict, List
+from typing import Optional, Callable, Sequence, Union, Tuple
 from inspect import signature
 from functools import wraps
 from darts.dataprocessing import dtw
@@ -879,6 +879,7 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
     return 1 - ss_errors / ss_tot
+<<<<<<< HEAD
 
 
 # Dynamic Time Warping
@@ -929,3 +930,5 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     warped_actual_series, warped_pred_series = alignment.warped(take_dates=True, unique_dates=True)
 
     return metric(warped_actual_series, warped_pred_series)
+=======
+>>>>>>> parent of b0cdb3a... Dynamic Time Warping Module
