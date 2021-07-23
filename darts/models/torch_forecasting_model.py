@@ -29,7 +29,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-import warnings
 
 from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
@@ -67,7 +66,7 @@ def _get_runs_folder(work_dir, model_name):
 
 
 class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: Union[InferenceDataset, TrainingDataset], device):
+    def __init__(self, ts_dataset: Union[InferenceDataset, TrainingDataset]):
         """
         Wraps around `TimeSeriesDataset`, in order to provide translation
         from `TimeSeries` to torch tensors and stack target series with covariates when needed.
@@ -79,7 +78,6 @@ class TimeSeriesTorchDataset(Dataset):
             the `TimeSeriesDataset` or `TrainingDataset` underlying this torch Dataset.
         """
         self.ts_dataset = ts_dataset
-        self.device = device
 
     @staticmethod
     def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
@@ -317,6 +315,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pass
 
     @abstractmethod
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> InferenceDataset:
+        """
+        Each model must specify the default training dataset to use.
+        """
+        pass
+
+    @abstractmethod
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         pass
 
@@ -371,17 +379,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
         series = wrap_fn(series)
         past_covariates = wrap_fn(past_covariates)
+        future_covariates = wrap_fn(future_covariates)
         val_series = wrap_fn(val_series)
         val_past_covariates = wrap_fn(val_past_covariates)
-        # TODO - if one covariate is provided, we could repeat it N times for each of the N target series
+        val_future_covariates = wrap_fn(val_future_covariates)
 
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
-            train_set_dim = (series[0].width + (0 if past_covariates is None else past_covariates[0].width))
-            val_set_dim = (val_series[0].width + (0 if val_past_covariates is None else val_past_covariates[0].width))
-            raise_if_not(train_set_dim == val_set_dim, 'The dimensions of the series in the training set '
-                                                       'and the validation set do not match. {} != {}'.format(
-                                                        train_set_dim, val_set_dim))
+            match = (series[0].width == val_series[0].width and
+                     (past_covariates[0].width if past_covariates is not None else None) ==
+                     (val_past_covariates[0].width if val_past_covariates is not None else None) and
+                     (future_covariates[0].width if future_covariates is not None else None) ==
+                     (val_future_covariates[0].width if val_future_covariates is not None else None))
+            raise_if_not(match, 'The dimensions of the series in the training set '
+                                'and the validation set do not match.')
 
         train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
         val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
@@ -397,18 +408,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          verbose: bool = False,
                          epochs: int = 0) -> None:
 
+        self._verify_train_dataset_type(train_dataset)
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)
         raise_if(val_dataset is not None and len(val_dataset) == 0,
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
-        raise_if(self.is_recurrent and not isinstance(train_dataset, ShiftedDataset),
-                 'Recurrent models require the training set to be an instance of `ShiftedDataset`.',
-                 logger)
 
-        torch_train_dataset = TimeSeriesTorchDataset(train_dataset, self.device)
-        torch_val_dataset = TimeSeriesTorchDataset(val_dataset, self.device)
+        # torch_train_dataset = TimeSeriesTorchDataset(train_dataset)
+        # torch_val_dataset = TimeSeriesTorchDataset(val_dataset)
+        torch_train_dataset = train_dataset.to_torch_dataset()  # TODO: move to self.device there?
+        torch_val_dataset = val_dataset.to_torch_dataset()
 
         input_dim, output_dim = torch_train_dataset[0][0].shape[1], torch_train_dataset[0][1].shape[1]
         if self.model is None:
@@ -426,7 +437,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
-
         train_loader = DataLoader(torch_train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
@@ -460,7 +470,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 batch_size: Optional[int] = None,
                 verbose: bool = False,
                 n_jobs: int = 1,
@@ -498,9 +509,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, one or several input `TimeSeries`, representing the history of the target series whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
-        covariates
-            Optionally, the covariates series needed as inputs for the model. They must match the covariates used
-            for training in terms of dimension and type.
+        past_covariates
+            Optionally, the past-observed covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        future_covariates
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
         batch_size
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
@@ -522,31 +536,40 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of `series`, or the forecast of the training series
             if `series` is not specified and the model has been trained on a single series.
         """
-        super().predict(n, series, covariates)
+        super().predict(n, series, past_covariates, future_covariates)
 
         if series is None:
             raise_if(self.training_series is None, "Input series has to be provided after fitting on multiple series.")
             series = self.training_series
 
-        if covariates is None and self.covariate_series is not None:
-            covariates = self.covariate_series
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = self.past_covariate_series
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = self.future_covariate_series
 
         called_with_single_series = False
         if isinstance(series, TimeSeries):
             called_with_single_series = True
             series = [series]
 
-        covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        past_covariates = [past_covariates] if isinstance(past_covariates, TimeSeries) else past_covariates
+        future_covariates = [future_covariates] if isinstance(future_covariates, TimeSeries) else future_covariates
 
         # check that the input sizes match
-        in_dim = (0 if covariates is None else covariates[0].width) + series[0].width
-        raise_if_not(in_dim == self.input_dim,
-                     'The dimensionality of the series provided for prediction does not match the dimensionality '
-                     'of the series this model has been trained on. Provided input dim = {}, '
-                     'model input dim = {}'.format(in_dim, self.input_dim))
+        # TODO: move this check in predict_from_dataset() by checking index 0 of torch dataset
+        # in_dim = (0 if covariates is None else covariates[0].width) + series[0].width
+        # raise_if_not(in_dim == self.input_dim,
+        #              'The dimensionality of the series provided for prediction does not match the dimensionality '
+        #              'of the series this model has been trained on. Provided input dim = {}, '
+        #              'model input dim = {}'.format(in_dim, self.input_dim))
 
-        dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
-                                         self.is_recurrent)
+        dataset = self._build_inference_dataset(target=series,
+                                                past_covariates=past_covariates,
+                                                future_covariates=future_covariates)
+
+        # dataset = SimpleInferenceDataset(series, covariates, n, self.input_chunk_length, self.output_chunk_length,
+        #                                  self.is_recurrent)
+
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size, num_samples=num_samples)
         return predictions[0] if called_with_single_series else predictions
@@ -612,6 +635,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
         """
+        self._verify_inference_dataset_type(input_series_dataset)
+
         self.model.eval()
 
         if roll_size is None:
@@ -970,14 +995,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return p['lr']
 
 
-def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
-    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
-
 """
 Many classes inherit TorchForecastingModel. We need to be careful in the order we inherit them
 in implementations.
 See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
 """
+
+def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
+    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
+    
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
@@ -992,6 +1018,19 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
                                                covariates=past_covariates,
                                                input_chunk_length=self.input_chunk_length,
                                                output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesInferenceDataset:
+
+        raise_if_not(future_covariates is None,
+                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
+
+        return PastCovariatesInferenceDataset(target_series=target,
+                                              covariates=past_covariates,
+                                              input_chunk_length=self.input_chunk_length,
+                                              output_chunk_length=self.output_chunk_length)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         _raise_if_wrong_type(train_dataset, PastCovariatesTrainingDataset)
@@ -1013,6 +1052,17 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
                                                  input_chunk_length=self.input_chunk_length,
                                                  output_chunk_length=self.output_chunk_length)
 
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesInferenceDataset:
+        raise_if_not(past_covariates is None,
+                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
+
+        return FutureCovariatesInferenceDataset(target_series=target,
+                                                covariates=future_covariates,
+                                                input_chunk_length=self.input_chunk_length)
+
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         _raise_if_wrong_type(train_dataset, FutureCovariatesTrainingDataset)
 
@@ -1031,6 +1081,17 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
+
+        return MixedCovariatesInferenceDataset(target_series=target,
+                                               past_covariates=past_covariates,
+                                               future_covariates=future_covariates,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         _raise_if_wrong_type(train_dataset, MixedCovariatesTrainingDataset)
