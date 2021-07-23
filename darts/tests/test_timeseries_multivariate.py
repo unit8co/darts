@@ -136,6 +136,9 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(sum(seriesD.values().flatten()), sum(range(84)) + 84)
         self.assertEqual(sum(seriesD.values()[:, 1 + 3]), 30)
         self.assertEqual(sum(seriesD.values()[:, 1 + 1]), 23)
+        seriesE = self.series1.add_datetime_attribute('day', cyclic=True)
+        self.assertTrue(np.allclose(seriesE.values()[:, 3], np.sin((2*np.pi/31) * self.series1.time_index.day)))
+        self.assertTrue(np.allclose(seriesE.values()[:, 4], np.cos((2*np.pi/31) * self.series1.time_index.day)))
 
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp('20201201'), periods=30, freq='D')
