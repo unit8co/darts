@@ -65,7 +65,12 @@ class RegressionEnsembleModel(EnsembleModel):
         super().fit(series, covariates)
 
         # spare train_n_points points to serve as regression target
-        raise_if(len(self.training_series) <= self.train_n_points,
+        if isinstance(series, TimeSeries):
+            train_n_points_too_big = len(self.training_series) <= self.train_n_points
+        else:
+            train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
+
+        raise_if(train_n_points_too_big,
                  "regression_train_n_points parameter too big (must be smaller or equal" +
                  " to the number of points in training_series)",
                  logger)
@@ -79,13 +84,13 @@ class RegressionEnsembleModel(EnsembleModel):
         if covariates is not None:
             if isinstance(covariates, TimeSeries):
                 forecast_covariates = self.covariate_series[:-self.train_n_points]
-                # regression_covariates = self.covariate_series[-self.train_n_points:]
+                regression_covariates = self.covariate_series[-self.train_n_points:]  # TODO do we need it at all?
             else:
                 forecast_covariates, regression_covariates = \
-                    self._split_multi_ts_sequence(-self.train_n_points, covariates) # TODO <<<< here
+                    self._split_multi_ts_sequence(-self.train_n_points, covariates)  # TODO do we need it at all?
         else:
             forecast_covariates=None
-            # regression_covariates=None
+            regression_covariates=None  # TODO do we need it at all?
 
         # fit the forecasting models
         for model in self.models:
