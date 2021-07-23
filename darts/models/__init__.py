@@ -23,7 +23,7 @@ try:
     from .prophet import Prophet
 except ModuleNotFoundError:
     logger.warning("Support Facebook Prophet is not available. "
-                   "To enable it, install u8darts[fbprophet] or u8darts[all].")
+                   "To enable it, install u8darts[prophet] or u8darts[all].")
 
 try:
     from .block_rnn_model import BlockRNNModel
@@ -44,3 +44,8 @@ from .regression_model import RegressionModel
 from .ensemble_model import EnsembleModel
 from .baselines import NaiveEnsembleModel
 from .regression_ensemble_model import RegressionEnsembleModel
+
+# Filtering
+from .filtering_model import MovingAverage
+from .kalman_filter import KalmanFilter
+from .gaussian_process_filter import GaussianProcessFilter

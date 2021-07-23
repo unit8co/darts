@@ -39,6 +39,7 @@ except ImportError:
 def compare_best_against_random(model_class, params, series):
 
     # instantiate best model in expanding window mode
+    np.random.seed(1)
     best_model_1, _ = model_class.gridsearch(params,
                                              series,
                                              forecast_horizon=10,
@@ -50,6 +51,7 @@ def compare_best_against_random(model_class, params, series):
     best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
+    random.seed(1)
     random_param_choice = {}
     for key in params.keys():
         random_param_choice[key] = random.choice(params[key])
@@ -76,10 +78,16 @@ def compare_best_against_random(model_class, params, series):
 class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
+        linear_series_int = TimeSeries.from_values(linear_series.values())
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
         score = NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000201'),
+                                      forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
+
+        # test that it also works for time series that are not Datetime-indexed
+        score = NaiveDrift().backtest(linear_series_int, start=0.7,
                                       forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
@@ -206,15 +214,17 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
     def test_gridsearch(self):
-
         np.random.seed(1)
+
         ts_length = 50
         dummy_series = (
             lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
         )
+        dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
         theta_params = {'theta': list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series_int_index))
 
         fft_params = {'nr_freqs_to_keep': [10, 50, 100], 'trend': [None, 'poly', 'exp']}
         self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
@@ -262,11 +272,13 @@ class BacktestingTestCase(DartsBaseTestClass):
             model = test["model"]
             parameters = test["parameters"]
 
+            np.random.seed(1)
             _, best_params1 = model.gridsearch(parameters=parameters,
                                                series=ts_train,
                                                val_series=ts_val,
                                                n_jobs=1)
 
+            np.random.seed(1)
             _, best_params2 = model.gridsearch(parameters=parameters,
                                                series=ts_train,
                                                val_series=ts_val,

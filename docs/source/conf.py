@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../../..'))
 project = 'darts'
 copyright = '2021, Unit8 SA'
 author = 'Unit8 SA'
-version = '0.8.1'
+version = '0.9.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages',
     'nbsphinx',
-    'm2r'
+    'm2r2'
 ]
 
 autodoc_default_options = {

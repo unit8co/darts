@@ -79,14 +79,27 @@ class ForecastingModel(ABC):
         """
         return True
 
+    def _is_probabilistic(self) -> bool:
+        """
+        Checks if the forecasting model supports probabilistic predictions.
+        By default, returns False. Needs to be overwritten by models that do support
+        probabilistic predictions.
+        """
+        return False
+
     @abstractmethod
-    def predict(self, n: int) -> TimeSeries:
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> TimeSeries:
         """ Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
@@ -98,12 +111,15 @@ class ForecastingModel(ABC):
                                  'For global models, if `predict()` is called without specifying a series,'
                                  'the model must have been fit on a single training series.'), logger)
 
+        if not self._is_probabilistic() and num_samples > 1:
+            raise_log(ValueError('`num_samples > 1` is only supported for probabilistic models.'), logger)
+
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series)
 
     def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
-        return self.predict(n)
+        return self.predict(n, num_samples=num_samples)
 
     @property
     def min_train_series_length(self) -> int:
@@ -285,9 +301,16 @@ class ForecastingModel(ABC):
                 forecasts.append(forecast)
 
         if last_points_only:
-            return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times),
-                                                    np.array(last_points_values),
-                                                    freq=series.freq * stride)
+            if series.has_datetime_index:
+                return TimeSeries.from_times_and_values(pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
+                                                        np.array(last_points_values))
+            else:
+                return TimeSeries.from_times_and_values(pd.RangeIndex(start=last_points_times[0],
+                                                                      stop=last_points_times[-1] + 1,
+                                                                      step=1),
+                                                        np.array(last_points_values))
+
+
         return forecasts
 
     def backtest(self,
@@ -554,7 +577,8 @@ class ForecastingModel(ABC):
         training series length required by the model and the gap introduced by `forecast_horizon`.
         Most commonly, unless otherwise specified, the term "residuals" implies a value for `forecast_horizon` of 1.
 
-        This method works only on univariate series and does not currently support covariates.
+        This method works only on univariate series and does not currently support covariates. It uses the median
+        prediction (when dealing with stochastic forecasts having num_samples > 1).
 
         Parameters
         ----------
@@ -585,7 +609,7 @@ class ForecastingModel(ABC):
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
-        residuals = series_trimmed - p
+        residuals = series_trimmed - (p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p)
 
         return residuals
 
@@ -694,12 +718,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             contains the corresponding `n` points forecasts.
         """
         if series is None and covariates is None:
-            super().predict(n)
+            super().predict(n, num_samples)
         if self._expect_covariates and covariates is None:
             raise_log(ValueError('The model has been trained with covariates. Some matching covariates '
                                  'have to be provided to `predict()`.'))
-        if not self._is_probabilistic() and num_samples > 1:
-            raise_log(ValueError('`num_samples > 1` is only supported for probabilistic models.'), logger)
 
     def _predict_wrapper(self, n: int, series: TimeSeries, covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
@@ -707,14 +729,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(self, series: TimeSeries, covariates: Optional[TimeSeries]):
         self.fit(series, covariates=covariates)
-
-    def _is_probabilistic(self) -> bool:
-        """
-        Checks if the forecasting model supports probabilistic predictions.
-        By default, returns False. Needs to be overwritten by models that do support
-        probabilistic predictions.
-        """
-        return False
 
 
 class ExtendedForecastingModel(ForecastingModel, ABC):
@@ -759,7 +773,8 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None
+                exog: Optional[TimeSeries] = None,
+                num_samples: int = 1
                 ) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -772,13 +787,16 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         exog
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training, and it must be of length `n`.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
 
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
         if exog is None:
-            super().predict(n)
+            super().predict(n, num_samples)
         if self._expect_exog and exog is None:
             raise_log(ValueError('The model has been trained with exogenous variables. Some matching '
                                  'exogenous variables have to be provided to `predict()`.'))
@@ -794,4 +812,4 @@ class ExtendedForecastingModel(ForecastingModel, ABC):
         if covariates is not None:
             start = series.end_time() + series.freq
             covariates = covariates[start:start + (n - 1) * series.freq]
-        return self.predict(n, exog=covariates)
+        return self.predict(n, exog=covariates, num_samples=num_samples)

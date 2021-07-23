@@ -4,8 +4,62 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.8.1...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.9.1...develop)
 
+## [0.9.1](https://github.com/unit8co/darts/tree/0.9.1) (2021-07-17)
+### For users of the library:
+
+**Added:**
+- Improved `GaussianProcessFilter`, now handling missing values, and better handling
+time series indexed by datetimes.
+- Improved Gaussian Process notebook.
+
+**Fixed:**
+- `TimeSeries` now supports indexing using `pandas.Int64Index` and not just `pandas.RangeIndex`,
+which solves some indexing issues.
+- We have changed all factory methods of `TimeSeries` to have `fill_missing_dates=False` by
+default. This is because in some cases inferring the frequency for missing dates and
+resampling the series is causing significant performance overhead.
+- Fixed backtesting to make it work with integer-indexed series.
+- Fixed a bug that was causing inference to crash on GPUs for some models.
+- Fixed the default folder name, which was causing issues on Windows systems.
+- We have slightly improved the documentation rendering and fixed the titles 
+of the documentation pages for `RNNModel` and `BlockRNNModel` to distinguish them.
+
+**Changed:**
+- The dependencies are not pinned to some exact versions anymore.
+
+### For developers of the library:
+- We have fixed the building process.
+
+## [0.9.0](https://github.com/unit8co/darts/tree/0.9.0) (2021-07-09)
+### For users of the library:
+
+**Added:**
+- Multiple forecasting models can now produce probabilistic forecasts by specifying a `num_samples` parameter when calling `predict()`. Stochastic forecasts are stored by utilizing the new `samples` dimension in the refactored `TimeSeries` class (see 'Changed' section). Models supporting probabilistic predictions so far are `ARIMA`, `ExponentialSmoothing`, `RNNModel` and `TCNModel`.
+- Introduced `LikelihoodModel` class which is used by probabilistic `TorchForecastingModel` classes in order to make predictions in the form of parametrized distributions of different types.
+- Added new abstract class `TorchParametricProbabilisticForecastingModel` to serve as parent class for probabilistic models.
+- Introduced new `FilteringModel` abstract class alongside `MovingAverage`, `KalmanFilter` and `GaussianProcessFilter` as concrete implementations.
+- Future covariates are now utilized by `TorchForecastingModels` when the forecasting horizon exceeds the `output_chunk_length` of the model. Before, `TorchForecastingModel` instances could only predict beyond their `output_chunk_length` if they were not trained on covariates, i.e. if they predicted all the data they need as input. This restriction has now been lifted by letting a model not only consume its own output when producing long predictions, but also utilizing the covariates known in the future, if available.
+- Added a new `RNNModel` class which utilizes and rnn module as both encoder and decoder. This new class natively supports the use of the most recent future covariates when making a forecast. See documentation for more details.
+- Introduced optional `epochs` parameter to the `TorchForecastingModel.predict()` method which, if provided, overrides the `n_epochs` attribute in that particular model instance and training session.
+- Added support for `TimeSeries` with a `pandas.RangeIndex` instead of just allowing `pandas.DatetimeIndex`.
+- `ForecastingModel.gridsearch` now makes use of parallel computation.
+- Introduced a new `force_reset` parameter to `TorchForecastingModel.__init__()` which, if left to False, will prevent the user from overriding model data with the same name and directory.
+
+
+**Fixed:**
+- Solved bug occurring when training `NBEATSModel` on a GPU.
+- Fixed crash when running `NBEATSModel` with `log_tensorboard=True`
+- Solved bug occurring when training a `TorchForecastingModel` instance with a `batch_size` bigger than the available number of training samples.
+- Some fixes in the documentation, including adding more details
+- Other minor bug fixes
+
+**Changed:**
+- &#x1F534; The `TimeSeries` class has been refactored to support stochastic time series representation by adding an additional dimension to a time series, namely `samples`. A time series is now based on a 3-dimensional `xarray.DataArray` with shape `(n_timesteps, n_components, n_samples)`. This overhaul also includes a change of the constructor which is incompatible with the old one. However, factory methods have been added to create a `TimeSeries` instance from a variety of data types, including `pd.DataFrame`. Please refer to the documentation of `TimeSeries` for more information.
+- &#x1F534; The old version of `RNNModel` has been renamed to `BlockRNNModel`.
+- The `historical_forecast()` and `backtest()` methods of `ForecastingModel` have been reorganized a bit by making use of new wrapper methods to fit and predict models.
+- Updated `README.md` to reflect the new additions to the library.
 
 ## [0.8.1](https://github.com/unit8co/darts/tree/0.8.1) (2021-05-22)
 **Fixed:**

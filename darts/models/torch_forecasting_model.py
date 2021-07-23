@@ -26,6 +26,7 @@ from ..utils.torch import random_method
 from ..utils.data.timeseries_dataset import TimeSeriesInferenceDataset, TrainingDataset
 from ..utils.data.sequential_dataset import SequentialDataset
 from ..utils.data.simple_inference_dataset import SimpleInferenceDataset
+from ..utils.likelihood_models import LikelihoodModel
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
 from .forecasting_model import GlobalForecastingModel
 
@@ -189,7 +190,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model_name is None:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
@@ -610,7 +611,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_tuple in iterator:
 
                 # at this point `input_series` contains both the past target series and past covariates
-                input_series = batch_tuple[0]
+                input_series = batch_tuple[0].to(self.device)
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
                 # repeat prediction procedure for every needed sample
@@ -937,3 +938,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _get_learning_rate(self):
         for p in self.optimizer.param_groups:
             return p['lr']
+
+class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
+    def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
+        """ Pytorch Parametric Probabilistic Forecasting Model.
+
+        This is a base class for pytroch parametric probabilistic models. "Parametric" 
+        means that these models are based on some predefined parametric distribution, say Gaussian. 
+        Make sure that subclasses contain the *likelihood* parameter in __init__ method 
+        and it is passed to the superclass via calling super().__init__. If the likelihood is not
+        provided, the model is considered as deterministic.
+
+        Parameters
+        ----------
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
+        """
+        super().__init__(**kwargs)
+        self.likelihood = likelihood
+
+    def _is_probabilistic(self):
+        return self.likelihood is not None
+
+    def _compute_loss(self, output, target):
+        if self.likelihood:
+            return self.likelihood._compute_loss(output, target)
+        else:
+            return super()._compute_loss(output, target)
+
+    @abstractmethod
+    def _produce_predict_output(self, input):
+        """
+        This method has to be implemented by all children.
+        """
+        pass

@@ -42,13 +42,15 @@ class EnsembleModel(ForecastingModel):
         """
         super().fit(series)
 
-    def predict(self, n: int) -> TimeSeries:
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> TimeSeries:
+        super().predict(n, num_samples)
 
-        predictions = self.models[0].predict(n)
+        predictions = self.models[0].predict(n, num_samples)
         if len(self.models) > 1:
             for model in self.models[1:]:
-                predictions = predictions.stack(model.predict(n))
+                predictions = predictions.stack(model.predict(n, num_samples))
 
         return self.ensemble(predictions)
 

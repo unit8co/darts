@@ -275,8 +275,10 @@ class FFT(ForecastingModel):
         # precompute all possible predicted values using inverse dft
         self.predicted_values = np.fft.ifft(self.fft_values_filtered).real
 
-    def predict(self, n: int):
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1):
+        super().predict(n, num_samples)
         trend_forecast = np.array([self.trend_function(i + len(self.training_series)) for i in range(n)])
         periodic_forecast = np.array([self.predicted_values[i % len(self.predicted_values)] for i in range(n)])
         return self._build_forecast_series(periodic_forecast + trend_forecast)
