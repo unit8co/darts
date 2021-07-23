@@ -133,7 +133,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
 
     def test_plot(self):
         align = dtw.dtw(self.series2, self.series1)
-        align.plot(show_series=True)
+        align.plot()
         align.plot_alignment()
 
     def test_multivariate(self):
