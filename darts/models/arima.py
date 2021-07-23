@@ -14,13 +14,13 @@ from statsmodels.tsa.arima.model import ARIMA as staARIMA
 from typing import Optional, Tuple
 import numpy as np
 
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import FutureCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 
-class ARIMA(ExtendedForecastingModel):
+class ARIMA(FutureCovariatesForecastingModel):
     def __init__(self,
                  p: int = 12, d: int = 1, q: int = 0,
                  seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
@@ -58,11 +58,11 @@ class ARIMA(ExtendedForecastingModel):
             return f'ARIMA{self.order}'
         return f'SARIMA{self.order}x{self.seasonal_order}'
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
-        super().fit(series, exog)
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super().fit(series, future_covariates)
         m = staARIMA(
             self.training_series.values(),
-            exog=exog.values() if exog else None,
+            exog=future_covariates.values() if future_covariates else None,
             order=self.order,
             seasonal_order=self.seasonal_order,
             trend=self.trend
@@ -70,7 +70,7 @@ class ARIMA(ExtendedForecastingModel):
         self.model = m.fit()
 
     def predict(self, n: int,
-                exog: Optional[TimeSeries] = None,
+                future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1):
 
         if num_samples > 1 and self.trend:
@@ -78,16 +78,16 @@ class ARIMA(ExtendedForecastingModel):
                         'If you run into issues, try calling fit() with num_samples=1 or removing the trend from'
                         'your model.')
 
-        super().predict(n, exog, num_samples)
+        super().predict(n, future_covariates, num_samples)
 
         if num_samples == 1:
             forecast = self.model.forecast(steps=n,
-                                           exog=exog.values() if exog else None)
+                                           exog=future_covariates.values() if future_covariates else None)
         else:
             forecast = self.model.simulate(nsimulations=n,
                                            repetitions=num_samples,
                                            initial_state=self.model.states.predicted[-1, :],
-                                           exog=exog.values() if exog else None)
+                                           exog=future_covariates.values() if future_covariates else None)
 
         return self._build_forecast_series(forecast)
 

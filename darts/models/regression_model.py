@@ -17,13 +17,13 @@ from inspect import signature
 from typing import Union, Optional
 from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import FutureCovariatesForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
 
 logger = get_logger(__name__)
 
 
-class RegressionModel(ExtendedForecastingModel):
+class RegressionModel(FutureCovariatesForecastingModel):
     def __init__(self,
                  lags: Union[int, list] = None,
                  lags_exog: Union[int, list] = None,
@@ -44,7 +44,7 @@ class RegressionModel(ExtendedForecastingModel):
             the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
             The integers must be positive (>=0).
         model
-            Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `exog`) with
+            Typically a scikit-learn model or a Darts `ExtendedForecastingModel` (models accepting `future_covariates`) with
             `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
@@ -100,25 +100,25 @@ class RegressionModel(ExtendedForecastingModel):
             self.max_lag = max([max(self.lags), max(self.lags_exog)])
         self._fit_called = False
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None, **kwargs) -> None:
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None, **kwargs) -> None:
         """ Fits/trains the model using the provided list of features time series and the target time series.
 
         Parameters
         ----------
         series : TimeSeries
             TimeSeries object containing the target values.
-        exog : TimeSeries, optional
+        future_covariates : TimeSeries, optional
             TimeSeries object containing the exogenous values.
         """
-        super().fit(series, exog)
-        raise_if(exog is not None and self.lags_exog is None,
-            "`exog` not None in `fit()` method call, but `lags_exog` is None in constructor. "
+        super().fit(series, future_covariates)
+        raise_if(future_covariates is not None and self.lags_exog is None,
+            "`future_covariates` not None in `fit()` method call, but `lags_exog` is None in constructor. "
         )
-        raise_if(exog is None and self.lags_exog is not None,
-            "`exog` is None in `fit()` method call, but `lags_exog` is not None in constructor. "
+        raise_if(future_covariates is None and self.lags_exog is not None,
+            "`future_covariates` is None in `fit()` method call, but `lags_exog` is not None in constructor. "
         )
-        self.exog_columns = exog.columns.values.tolist() if exog is not None else None
-        self.nr_exog = exog.width*len(self.lags_exog) if exog is not None else 0
+        self.exog_columns = future_covariates.columns.values.tolist() if future_covariates is not None else None
+        self.nr_exog = future_covariates.width*len(self.lags_exog) if future_covariates is not None else 0
 
         # Rename column if necessary
         target_column = str(series.columns[0])
@@ -127,7 +127,7 @@ class RegressionModel(ExtendedForecastingModel):
         self.target_column = series.columns[0]
 
         # Prepare data
-        training_x = self._create_training_data(series=series, exog=exog)
+        training_x = self._create_training_data(series=series, future_covariates=future_covariates)
         training_y = series[training_x.time_index]
 
         # Fit model
@@ -145,22 +145,22 @@ class RegressionModel(ExtendedForecastingModel):
             )
 
         if self.max_lag == 0:
-            self.prediction_data = pd.DataFrame(columns=series.stack(other=exog).columns)
-        elif exog is not None:
-            self.prediction_data = series.stack(other=exog)[-self.max_lag:]
+            self.prediction_data = pd.DataFrame(columns=series.stack(other=future_covariates).columns)
+        elif future_covariates is not None:
+            self.prediction_data = series.stack(other=future_covariates)[-self.max_lag:]
         else:
             self.prediction_data = series[-self.max_lag:]
 
         self._fit_called = True
 
-    def _create_training_data(self, series: TimeSeries, exog: TimeSeries = None):
+    def _create_training_data(self, series: TimeSeries, future_covariates: TimeSeries = None):
         """ Create dataframe of exogenous and endogenous variables containing lagged values.
 
         Parameters
         ----------
         series : TimeSeries
             Target series.
-        exog : TimeSeries, optional
+        future_covariates : TimeSeries, optional
             Exogenous variables.
 
         Returns
@@ -169,7 +169,7 @@ class RegressionModel(ExtendedForecastingModel):
             TimeSeries with lagged values of target and exogenous variables.
         """
         raise_if(series.width > 1,
-            "Series must not be multivariate. Pass exogenous variables to 'exog' parameter.",
+            "Series must not be multivariate. Pass exogenous variables to 'future_covariates' parameter.",
             logger
         )
         training_data_list = []
@@ -179,9 +179,9 @@ class RegressionModel(ExtendedForecastingModel):
             training_data_list.append(lagged_data)
 
         if self.lags_exog is not None:
-            for i, col in enumerate(exog.columns):
+            for i, col in enumerate(future_covariates.columns):
                 lagged_data = self._create_lagged_data(
-                    series=exog[col], lags=self.lags_exog
+                    series=future_covariates[col], lags=self.lags_exog
                 )
                 training_data_list.append(lagged_data)
 
@@ -216,7 +216,7 @@ class RegressionModel(ExtendedForecastingModel):
 
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None,
+                future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1,
                 **kwargs):
         """ Forecasts values for `n` time steps after the end of the series.
@@ -225,7 +225,7 @@ class RegressionModel(ExtendedForecastingModel):
         ----------
         n : int
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        exog : Optional[TimeSeries], optional
+        future_covariates : Optional[TimeSeries], optional
             The time series of exogenous variables which can be fed as input to the model. It must correspond to the
             exogenous time series that has been used with the `fit()` method for training. It also must be of length `n`
             and start one time step after the end of the training series.
@@ -239,31 +239,31 @@ class RegressionModel(ExtendedForecastingModel):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, exog, num_samples)
+        super().predict(n, future_covariates, num_samples)
 
         if self.max_lag != 0:
             prediction_data = self.prediction_data.copy()
             dummy_row = np.zeros(shape=(1, prediction_data.width))
             prediction_data = prediction_data.append_values(dummy_row)
 
-        if exog is not None and self.lags_exog != [0]:
+        if future_covariates is not None and self.lags_exog != [0]:
             required_start = self.training_series.end_time()+self.training_series.freq
-            raise_if_not(exog.start_time() == required_start,
-                "`exog` first date must be equal to self.training_series.end_time()+1*freq. " +
-                "Given: {}. Needed: {}.".format(exog.start_time(), required_start)
-            )
-        if isinstance(exog, TimeSeries):
-            exog = exog.pd_dataframe(copy=False)
+            raise_if_not(future_covariates.start_time() == required_start,
+                "`future_covariates` first date must be equal to self.training_series.end_time()+1*freq. " +
+                "Given: {}. Needed: {}.".format(future_covariates.start_time(), required_start)
+                         )
+        if isinstance(future_covariates, TimeSeries):
+            future_covariates = future_covariates.pd_dataframe(copy=False)
 
         forecasts = list(range(n))
         for i in range(n):
 
-            # Prepare prediction data if for prediction at time `t` exog at time `t` is used
+            # Prepare prediction data if for prediction at time `t` future_covariates at time `t` is used
             if self.lags_exog is not None and 0 in self.lags_exog:
-                append_row = [[0, *exog.iloc[i, :].values]]
+                append_row = [[0, *future_covariates.iloc[i, :].values]]
                 if self.max_lag == 0:
                     prediction_data = pd.DataFrame(
-                        append_row, columns=self.prediction_data.columns, index=[exog.index[i]]
+                        append_row, columns=self.prediction_data.columns, index=[future_covariates.index[i]]
                     )
                     prediction_data = TimeSeries.from_dataframe(prediction_data,
                                                                 fill_missing_dates=True,
@@ -275,7 +275,7 @@ class RegressionModel(ExtendedForecastingModel):
             # Make prediction
             target_data = prediction_data[[self.target_column]]
             exog_data = prediction_data[self.exog_columns] if self.exog_columns is not None else None
-            forecasting_data = self._create_training_data(series=target_data, exog=exog_data).pd_dataframe()
+            forecasting_data = self._create_training_data(series=target_data, future_covariates=exog_data).pd_dataframe()
             if "series" in signature(self.model.fit).parameters:
                 forecasting_data = TimeSeries.from_dataframe(forecasting_data, freq=self.training_series.freq)
                 forecast = self.model.predict(n=len(forecasting_data),
@@ -289,7 +289,7 @@ class RegressionModel(ExtendedForecastingModel):
             # Prepare prediction data
             if self.max_lag > 0:
                 prediction_data = prediction_data[:-1] # Remove last dummy row
-                append_row = [[forecast[0], *exog.iloc[i, :].values]] if self.exog_columns is not None else [forecast]
+                append_row = [[forecast[0], *future_covariates.iloc[i, :].values]] if self.exog_columns is not None else [forecast]
                 prediction_data = prediction_data.append_values(append_row)
                 prediction_data = prediction_data.append_values(dummy_row)[1:]
 
