@@ -18,7 +18,7 @@ generate:
 	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
 
 readme:
-	@m2r ../README.md; mv ../README.rst "$(SOURCEDIR)"
+	@m2r2 ../README.md; mv ../README.rst "$(SOURCEDIR)"
 
 copy-examples:
 	@cp -r ../examples "$(SOURCEDIR)/examples"

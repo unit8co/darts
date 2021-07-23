@@ -78,10 +78,16 @@ def compare_best_against_random(model_class, params, series):
 class BacktestingTestCase(DartsBaseTestClass):
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
+        linear_series_int = TimeSeries.from_values(linear_series.values())
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
         score = NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000201'),
+                                      forecast_horizon=3, metric=r2_score)
+        self.assertEqual(score, 1.0)
+
+        # test that it also works for time series that are not Datetime-indexed
+        score = NaiveDrift().backtest(linear_series_int, start=0.7,
                                       forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
@@ -214,9 +220,11 @@ class BacktestingTestCase(DartsBaseTestClass):
         dummy_series = (
             lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
         )
+        dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
         theta_params = {'theta': list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series_int_index))
 
         fft_params = {'nr_freqs_to_keep': [10, 50, 100], 'trend': [None, 'poly', 'exp']}
         self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
