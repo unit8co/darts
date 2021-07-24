@@ -687,6 +687,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     batch_predictions.append(batch_prediction)
 
+                # TODO: this isn't very good as here we are calling again the input_series_dataset (which
+                # TODO: causes some slicing again). Instead, we should return Tensors only in the __getitem__()
+                # TODO: of the dataset, and offer a get_past_target(idx) method to return the past_target.
                 batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(

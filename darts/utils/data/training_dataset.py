@@ -4,36 +4,43 @@ TimeSeries Dataset Base Classes
 """
 
 from abc import ABC, abstractmethod
-import numpy as np
-import torch
-from torch import Tensor
 from torch.utils.data import Dataset
+from torch import Tensor
 
-from typing import Sequence, Tuple, Optional
+from typing import Tuple, Optional
+# from .timeseries_dataset import TimeSeriesDataset
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class TrainingDataset(ABC, Sequence):
+class TrainingDataset(ABC, Dataset):
     def __init__(self):
         """
-        Super-class for all training datasets in Darts. These include
+        Super-class for all training datasets for torch models in Darts. These include
 
-        * "Past Covariates" datasets (for PastCovariatesModel): containing (past_target, future_target,
-                                                                            past_covariates)
-        * "Future Covariates" datasets (for FutureCovariatesModel): containing (past_target, future_target,
+        * "PastCovariates" datasets (for PastCovariatesTorchModel): containing (past_target, future_target,
+                                                                                past_covariates)
+        * "FutureCovariates" datasets (for FutureCovariatesTorchModel): containing (past_target, future_target,
+                                                                                    future_covariates)
+        * "DualCovariates" datasets (for DualCovariatesTorchModel): containing (past_target, future_target,
+                                                                                historic_future_covariates,
                                                                                 future_covariates)
-        * "Mixed Covariates" datasets (for MixedCovariatesModel): containing (past_target, future_target,
-                                                                              past_covariates, future_covariates)
+        * "MixedCovariates" datasets (for MixedCovariatesTorchModel): containing (past_target, future_target,
+                                                                                  past_covariates,
+                                                                                  historic_future_covariates,
+                                                                                  future_covariates)
+        * "SplitCovariates" datasets (for SplitCovariatesTorchModel): containing (past_target, future_target,
+                                                                                  past_covariates,
+                                                                                  future_covariates)
 
         The covariates are optional and can be `None`.
 
         This is meant to be used for training (or validation), all data except `future_target` represents model
-        inputs and `output_target` represent model outputs.
+        inputs (`future_target` is the output the model are trained to predict).
 
-        Darts `GlobalForecastingModel`s can be fit from instances of `TrainingDataset` using the
+        Darts `TorchForecastingModel`s can be fit from instances of `TrainingDataset` using the
         `fit_from_dataset()` method.
 
         `TrainingDataset` inherits from `Sequence`; meaning that the implementations have to
@@ -44,120 +51,75 @@ class TrainingDataset(ABC, Sequence):
         """
         pass
 
-    @abstractmethod
-    def __len__(self):
-        pass
 
-    @abstractmethod
-    def __getitem__(self, idx: int):
-        """
-        The data returned by this method will vary for types A, B and C models.
-        """
-        pass
-
-    @abstractmethod
-    def torch_tensors(self, idx: int):
-        """
-        Returns the i-th (input, output) training sample.
-        Note that some datasets may return several inputs (past_{target,covariates} + future_covariates)
-        """
-        pass
-
-    def to_torch_dataset(self) -> Dataset:
-        return TorchTrainingDataset(self)
-
-
-def _cat_with_optional(tsr1: Tensor, tsr2: Optional[Tensor]):
-    if tsr2 is None:
-        return tsr1
-    else:
-        return torch.cat([tsr1, tsr2], dim=1)
-
-
-class TorchTrainingDataset(Dataset):
-    def __init__(self, ds: TrainingDataset):
-        self.ds = ds
-
-    def __len__(self):
-        return len(self.ds)
-
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor]:
-        return self.ds.torch_tensors(idx)
-
-
-class PastCovariatesTrainingDataset(TrainingDataset):
+class PastCovariatesTrainingDataset(ABC, TrainingDataset):
     def __init__(self):
         """
-        Abstract class for a PastCovariatesModel training dataset. It contains 3-tuples of
+        Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
         `(past_target, future_target, past_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         pass
 
-    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor]:
-        """
-        Returns the i-th (input, output) training sample.
-        Here "input" is the concatenation of past_target with past_covariates and "output" is future_target.
-        """
-        item = self[idx]
-        past_tgt, future_tgt, past_cov = item
-        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
-        past_cov = torch.from_numpy(past_cov).float() if past_cov is not None else None
-        return _cat_with_optional(past_tgt, past_cov), future_tgt
 
-
-class FutureCovariatesTrainingDataset(TrainingDataset):
+class FutureCovariatesTrainingDataset(ABC, TrainingDataset):
     def __init__(self):
         """
-        Abstract class for a FutureCovariatesModel training dataset. It contains 3-tuples of
+        Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
         `(past_target, future_target, future_covariate)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         pass
 
-    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
-        """
-        Returns the i-th (past_target, future_target (output), future_covariate) training sample.
-        """
-        item = self[idx]
-        past_tgt, future_tgt, future_cov = item
-        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
-        future_cov = torch.from_numpy(future_cov).float() if future_cov is not None else None
-        return past_tgt, future_tgt, future_cov
 
-
-class MixedCovariatesTrainingDataset(TrainingDataset):
+class DualCovariatesTrainingDataset(ABC, TrainingDataset):
     def __init__(self):
         """
-        Abstract class for a MixedCovariatesModel training dataset. It contains 4s-tuples of
-        `(past_target, future_target, past_covariate, future_covariate)` `np.ndarray`.
+        Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
+        `(past_target, future_target, historic_future_covariates, future_covariates)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
         pass
 
-    def torch_tensors(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+
+class MixedCovariatesTrainingDataset(ABC, TrainingDataset):
+    def __init__(self):
         """
-        Returns the i-th (past_input, future_target (output), future_covariate) training sample.
-        Here "past_input" is the concatenation of past_target with some possible past_covariates
+        Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
+        `(past_target, future_target, past_covariates, historic_future_covariates, future_covariates)` `np.ndarray`.
+        The covariates are optional and can be `None`.
         """
-        item = self[idx]
-        past_tgt, future_tgt, past_cov, future_cov = item
-        past_tgt, future_tgt = torch.from_numpy(past_tgt).float(), torch.from_numpy(future_tgt).float()
-        past_cov = torch.from_numpy(past_cov).float() if past_cov is not None else None
-        future_cov = torch.from_numpy(future_cov).float() if future_cov is not None else None
-        return _cat_with_optional(past_tgt, past_cov), future_tgt, future_cov
+        super().__init__()
+
+    @abstractmethod
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+        pass
+
+
+class SplitCovariatesTrainingDataset(ABC, TrainingDataset):
+    def __init__(self):
+        """
+        Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
+        `(past_target, future_target, past_covariates, future_covariates)` `np.ndarray`.
+        The covariates are optional and can be `None`.
+        """
+        super().__init__()
+
+    @abstractmethod
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+        pass
 
 
 def _get_matching_index(ts_target: TimeSeries,

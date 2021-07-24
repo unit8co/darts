@@ -5,18 +5,18 @@ Inference Dataset
 
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
+import torch
+from torch import Tensor
 from torch.utils.data import Dataset
 
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not, raise_if
 
 
-class InferenceDataset(ABC, Sequence):
+class InferenceDataset(ABC, Dataset):
     def __init__(self):
         """
-        Abstract class for a `TimeSeries` inference dataset. It contains 3-tuples of
-        `(input_target, past_covariate, future_covariate)` `TimeSeries`.
-        The emitted covariates are optional and can be `None`.
+        Abstract class for all darts torch inference dataset.
 
         It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
         (using covariates if specified).
@@ -32,18 +32,9 @@ class InferenceDataset(ABC, Sequence):
         pass
 
     @abstractmethod
-    def __len__(self):
-        pass
-
-    @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
-        pass
-
-    @abstractmethod
-    def to_torch_dataset(self) -> Dataset:
+    def get_target(self, idx: int) -> TimeSeries:
         """
-        Each dataset knows how to concatenate the past/future targets with past/future covariates
-        into tensors for inference
+        This is needed in order to build the final forecast TimeSeries (we need the time axis).
         """
         pass
 
@@ -59,7 +50,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         Contains (past_target, past_covariates, future_past_covariates).
 
         "future_past_covariates" are past covariates that happen to be also known in the future - those
-        are needed for forecasting with n > output_chunk_length by PastCovariatesModels.
+        are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
         For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
 
@@ -91,7 +82,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries], Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -131,7 +122,14 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
                 cov_future = covariate_series[last_req_ts-(nr_timestamps_needed-1)*target_series.freq:last_req_ts+target_series.freq]
 
-        return tgt_past, cov_past, cov_future
+        # TODO: change and slice numpy views instead of TimeSeries in the logic above
+        tgt_past_tsr = torch.from_numpy(tgt_past.values(copy=False))
+        cov_past_tsr = torch.from_numpy(cov_past.values(copy=False))
+        cov_future_tsr = torch.from_numpy(cov_future.values(copy=False))
+        return tgt_past_tsr, cov_past_tsr, cov_future_tsr
+
+    def get_target(self, idx: int) -> TimeSeries:
+        return self.target_series[idx]
 
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
@@ -167,7 +165,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[TimeSeries, Optional[TimeSeries]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Optional[Tensor]]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -194,11 +192,62 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
 
             cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
 
-        return tgt_past, cov_future
+        # TODO: slice numpy views instead of TimeSeries...
+        return torch.from_numpy(tgt_past.values(copy=False)), torch.from_numpy(cov_future.values(copy=False))
+
+    def get_target(self, idx: int) -> TimeSeries:
+        return self.target_series[idx]
+
+
+class DualCovariatesInferenceDataset(InferenceDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 n: int = 1,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1):
+        """
+        Contains (past_target, historic_future_covariates, future_covariates) tuples.
+
+        Parameters
+        ----------
+        target_series
+            The target series that are to be predicted into the future.
+        covariates
+            Optionally, some future-known covariates that are used for predictions. This argument is required
+            if the model was trained with future-known covariates.
+        n
+            Forecast horizon: The number of time steps to predict after the end of the target series.
+        input_chunk_length
+            The length of the target series the model takes as input.
+        output_chunk_length
+            The length of the target series the model emmits in output.
+        """
+        super().__init__()
+        self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
+                                                      covariates=covariates,
+                                                      n=n,
+                                                      input_chunk_length=input_chunk_length,
+                                                      output_chunk_length=output_chunk_length)
+
+        self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
+                                                          covariates=covariates,
+                                                          n=n,
+                                                          input_chunk_length=input_chunk_length)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx):
+        past_target, historic_future_covs, _ = self.ds_past[idx]
+        _, future_covs = self.ds_future[idx]
+        return past_target, historic_future_covs, future_covs
+
+    def get_target(self, idx: int) -> TimeSeries:
+        return self.ds_past.get_target(idx)
 
 
 class MixedCovariatesInferenceDataset(InferenceDataset):
-    # TODO: leverage the other two
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -207,12 +256,64 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1):
         """
-        Contains (past_target, past_covariates, future_past_covariates, future_covariates) tuples.
+        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates) tuples.
         "future_past_covariates" are past covariates that happen to be also known in the future - those
-        are needed for forecasting with n > output_chunk_length by MixedCovariatesModels.
+        are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
-        TODO: We could perhaps somewhat optimize here because the slicing of targets is done twice.
-        TODO: Or maybe better instead, change and return array views in all inference datasets.
+        Parameters
+        ----------
+        target_series
+            The target series that are to be predicted into the future.
+        past_covariates
+            Optionally, some past-observed covariates that are used for predictions. This argument is required
+            if the model was trained with past-observed covariates.
+        future_covariates
+            Optionally, some future-known covariates that are used for predictions. This argument is required
+            if the model was trained with future-known covariates.
+        n
+            Forecast horizon: The number of time steps to predict after the end of the target series.
+        input_chunk_length
+            The length of the target series the model takes as input.
+        output_chunk_length
+            The length of the target series the model emmits in output.
+        """
+        super().__init__()
+        self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
+                                                      covariates=past_covariates,
+                                                      n=n,
+                                                      input_chunk_length=input_chunk_length,
+                                                      output_chunk_length=output_chunk_length)
+
+        self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
+                                                        covariates=future_covariates,
+                                                        n=n,
+                                                        input_chunk_length=input_chunk_length,
+                                                        output_chunk_length=output_chunk_length)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx):
+        past_target, past_covs, future_past_covs = self.ds_past[idx]
+        _, historic_future_covs, future_covs = self.ds_future[idx]
+        return past_target, past_covs, historic_future_covs, future_covs, future_past_covs
+
+    def get_target(self, idx: int) -> TimeSeries:
+        return self.ds_past.get_target(idx)
+
+
+class SkipCovariatesInferenceDataset(InferenceDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 n: int = 1,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1):
+        """
+        Contains (past_target, past_covariates, future_covariates, future_past_covariates) tuples.
+        "future_past_covariates" are past covariates that happen to be also known in the future - those
+        are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
         Parameters
         ----------
@@ -249,4 +350,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
     def __getitem__(self, idx):
         past_target, past_covs, future_past_covs = self.ds_past[idx]
         _, future_covs = self.ds_future[idx]
-        return past_target, past_covs, future_past_covs, future_covs
+        return past_target, past_covs, future_covs, future_past_covs
+
+    def get_target(self, idx: int) -> TimeSeries:
+        return self.ds_past.get_target(idx)
