@@ -4,11 +4,14 @@ Sequential Training Dataset
 """
 
 from typing import Union, Sequence, Optional, Tuple
-import numpy as np
+from torch import Tensor
 
 from ...timeseries import TimeSeries
-from .training_dataset import (PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset,
-                               MixedCovariatesTrainingDataset)
+from .training_dataset import (PastCovariatesTrainingDataset,
+                               FutureCovariatesTrainingDataset,
+                               DualCovariatesTrainingDataset,
+                               MixedCovariatesTrainingDataset,
+                               SplitCovariatesTrainingDataset)
 from .shifted_dataset import GenericShiftedDataset
 
 
@@ -70,7 +73,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         return self.ds[idx]
 
 
@@ -132,11 +135,86 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         return self.ds[idx]
 
 
+class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1,
+                 max_samples_per_ts: Optional[int] = None):
+        """
+        TODO: doc
+        """
+
+        super().__init__()
+
+        self.ds_past = GenericShiftedDataset(target_series=target_series,
+                                             covariates=covariates,
+                                             input_chunk_length=input_chunk_length,
+                                             output_chunk_length=output_chunk_length,
+                                             shift=input_chunk_length,
+                                             shift_covariates=False,
+                                             max_samples_per_ts=max_samples_per_ts)
+
+        self.ds_future = GenericShiftedDataset(target_series=target_series,
+                                               covariates=covariates,
+                                               input_chunk_length=input_chunk_length,
+                                               output_chunk_length=output_chunk_length,
+                                               shift=input_chunk_length,
+                                               shift_covariates=True,
+                                               max_samples_per_ts=max_samples_per_ts)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+        past_target, future_target, past_covariate = self.ds_past[idx]
+        _, _, future_covariate = self.ds_future[idx]
+        return past_target, future_target, past_covariate, future_covariate
+
+
 class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1,
+                 max_samples_per_ts: Optional[int] = None):
+        """
+        TODO: doc
+        """
+
+        super().__init__()
+
+        self.ds_past = GenericShiftedDataset(target_series=target_series,
+                                             covariates=past_covariates,
+                                             input_chunk_length=input_chunk_length,
+                                             output_chunk_length=output_chunk_length,
+                                             shift=input_chunk_length,
+                                             shift_covariates=False,
+                                             max_samples_per_ts=max_samples_per_ts)
+
+        self.ds_dual = DualCovariatesSequentialDataset(target_series=target_series,
+                                                       covariates=future_covariates,
+                                                       input_chunk_length=input_chunk_length,
+                                                       output_chunk_length=output_chunk_length,
+                                                       max_samples_per_ts=max_samples_per_ts)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+        past_target, future_target, past_covariate = self.ds_past[idx]
+        _, _, historic_future_covariate, future_covariate = self.ds_dual[idx]
+        return past_target, future_target, past_covariate, historic_future_covariate, future_covariate
+
+
+class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -205,7 +283,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate

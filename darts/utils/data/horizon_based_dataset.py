@@ -4,7 +4,8 @@ Horizon-Based Training Dataset
 """
 
 from typing import Union, Optional, Sequence, Tuple
-import numpy as np
+import torch
+from torch import Tensor
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
@@ -88,7 +89,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
 
@@ -130,4 +131,4 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
             input_covariate = covariate_values[-(cov_fcast_idx + self.lookback * self.output_chunk_length):-cov_fcast_idx]
 
-        return input_series, output_series, input_covariate
+        return torch.from_numpy(input_series), torch.from_numpy(output_series), torch.from_numpy(input_covariate)

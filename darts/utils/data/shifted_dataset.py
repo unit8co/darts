@@ -4,7 +4,6 @@ Shifted Training Dataset
 """
 
 from typing import Union, Sequence, Optional, Tuple
-import numpy as np
 import torch
 from torch import Tensor
 
