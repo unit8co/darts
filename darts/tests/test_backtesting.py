@@ -167,18 +167,14 @@ class BacktestingTestCase(DartsBaseTestClass):
             .with_column_renamed(features.components[0], "Value0")
             .with_column_renamed(features.components[1], "Value1")
         )
-        print('test')
-        # features = TimeSeries.from_dataframe(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
+
         features_multivariate = (
             features_multivariate
             .with_column_renamed(features_multivariate.components[0], "Value0")
             .with_column_renamed(features_multivariate.components[1], "Value1")
             .with_column_renamed(features_multivariate.components[2], "Value2")
-            
-            #TimeSeries.from_dataframe(features_multivariate.pd_dataframe().rename(
-           # {"0": "Value0", "1": "Value1", "2": "Value2"}, axis=1)
         )
-        print('test')
+        
         # univariate feature test
         score = LinearRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
             series=target, covariates=features, start=pd.Timestamp('20000201'),

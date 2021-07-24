@@ -2,7 +2,6 @@ import unittest
 from numpy.lib.arraysetops import isin
 import pandas as pd
 
-from ....timeseries import TimeSeries
 from darts.dataprocessing.transformers.mappers import Mapper, InvertibleMapper
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
