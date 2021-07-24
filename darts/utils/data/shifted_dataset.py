@@ -5,9 +5,16 @@ Shifted Training Dataset
 
 from typing import Union, Sequence, Optional, Tuple
 import numpy as np
+import torch
+from torch import Tensor
 
 from ...timeseries import TimeSeries
-from .training_dataset import PastCovariatesTrainingDataset, FutureCovariatesTrainingDataset, MixedCovariatesTrainingDataset, _get_matching_index
+from .training_dataset import (PastCovariatesTrainingDataset,
+                               FutureCovariatesTrainingDataset,
+                               DualCovariatesTrainingDataset,
+                               MixedCovariatesTrainingDataset,
+                               SplitCovariatesTrainingDataset,
+                               _get_matching_index)
 from ..utils import raise_if_not
 
 
@@ -68,7 +75,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         return self.ds[idx]
 
 
@@ -132,8 +139,46 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         return self.ds[idx]
+
+
+class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 length: int = 12,
+                 shift: int = 1,
+                 max_samples_per_ts: Optional[int] = None):
+        """
+        TODO: doc
+        """
+
+        super().__init__()
+
+        self.ds_past = GenericShiftedDataset(target_series=target_series,
+                                             covariates=covariates,
+                                             input_chunk_length=length,
+                                             output_chunk_length=length,
+                                             shift=shift,
+                                             shift_covariates=False,
+                                             max_samples_per_ts=max_samples_per_ts)
+
+        self.ds_future = GenericShiftedDataset(target_series=target_series,
+                                               covariates=covariates,
+                                               input_chunk_length=length,
+                                               output_chunk_length=length,
+                                               shift=shift,
+                                               shift_covariates=True,
+                                               max_samples_per_ts=max_samples_per_ts)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+        past_target, future_target, past_covariate = self.ds_past[idx]
+        _, _, future_covariate = self.ds_future[idx]
+        return past_target, future_target, past_covariate, future_covariate
 
 
 class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
@@ -145,7 +190,8 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (past_target, future_target, past_covariates, future_covariates)
+        A time series dataset containing tuples of (past_target, future_target, past_covariates,
+                                                    historic_future_covariates, future_covariates)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
@@ -196,6 +242,43 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts)
 
+        self.ds_dual = DualCovariatesShiftedDataset(target_series=target_series,
+                                                    covariates=future_covariates,
+                                                    length=length,
+                                                    shift=shift,
+                                                    max_samples_per_ts=max_samples_per_ts)
+
+    def __len__(self):
+        return len(self.ds_past)
+
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+        past_target, future_target, past_covariate = self.ds_past[idx]
+        _, _, historic_future_covariate, future_covariate = self.ds_dual[idx]
+        return past_target, future_target, past_covariate, historic_future_covariate, future_covariate
+
+
+class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
+    def __init__(self,
+                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                 length: int = 12,
+                 shift: int = 1,
+                 max_samples_per_ts: Optional[int] = None):
+        """
+        TODO: doc
+        """
+
+        super().__init__()
+
+        self.ds_past = GenericShiftedDataset(target_series=target_series,
+                                             covariates=past_covariates,
+                                             input_chunk_length=length,
+                                             output_chunk_length=length,
+                                             shift=shift,
+                                             shift_covariates=False,
+                                             max_samples_per_ts=max_samples_per_ts)
+
         self.ds_future = GenericShiftedDataset(target_series=target_series,
                                                covariates=future_covariates,
                                                input_chunk_length=length,
@@ -207,7 +290,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate
@@ -279,7 +362,7 @@ class GenericShiftedDataset:
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
@@ -337,4 +420,4 @@ class GenericShiftedDataset:
                          "The dataset contains some covariate series whose time axis doesn't allow to "
                          "obtain the input (or output) chunk relative to the target series.")
 
-        return past_target, future_target, covariate
+        return torch.from_numpy(past_target), torch.from_numpy(future_target), torch.from_numpy(covariate)
