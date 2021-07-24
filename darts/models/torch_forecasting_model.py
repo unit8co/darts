@@ -34,12 +34,23 @@ from ..timeseries import TimeSeries
 from ..utils import _build_tqdm_iterator
 from ..utils.torch import random_method
 
-from ..utils.data.training_dataset import (TrainingDataset, PastCovariatesTrainingDataset,
-                                           FutureCovariatesTrainingDataset, MixedCovariatesTrainingDataset)
-from ..utils.data.inference_dataset import (InferenceDataset, PastCovariatesInferenceDataset,
-                                            FutureCovariatesInferenceDataset, MixedCovariatesInferenceDataset)
-from ..utils.data.sequential_dataset import (PastCovariatesSequentialDataset, FutureCovariatesSequentialDataset,
-                                             MixedCovariatesSequentialDataset)
+from ..utils.data.training_dataset import (TrainingDataset,
+                                           PastCovariatesTrainingDataset,
+                                           FutureCovariatesTrainingDataset,
+                                           DualCovariatesTrainingDataset,
+                                           MixedCovariatesTrainingDataset,
+                                           SplitCovariatesTrainingDataset)
+from ..utils.data.inference_dataset import (InferenceDataset,
+                                            PastCovariatesInferenceDataset,
+                                            FutureCovariatesInferenceDataset,
+                                            DualCovariatesInferenceDataset,
+                                            MixedCovariatesInferenceDataset,
+                                            SplitCovariatesInferenceDataset)
+from ..utils.data.sequential_dataset import (PastCovariatesSequentialDataset,
+                                             FutureCovariatesSequentialDataset,
+                                             DualCovariatesSequentialDataset,
+                                             MixedCovariatesSequentialDataset,
+                                             SplitCovariatesSequentialDataset)
 
 from ..utils.likelihood_models import LikelihoodModel
 from ..logging import raise_if_not, get_logger, raise_log, raise_if
@@ -1010,6 +1021,8 @@ See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-wit
 def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
     raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
 
+
+# TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,

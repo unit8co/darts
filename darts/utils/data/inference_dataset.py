@@ -302,7 +302,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         return self.ds_past.get_target(idx)
 
 
-class SkipCovariatesInferenceDataset(InferenceDataset):
+class SplitCovariatesInferenceDataset(InferenceDataset):
     def __init__(self,
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
