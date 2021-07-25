@@ -6,7 +6,7 @@ Inference Dataset
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
 import torch
-from torch import Tensor
+import numpy as np
 from torch.utils.data import Dataset
 
 from ...timeseries import TimeSeries
@@ -82,7 +82,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -123,10 +123,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                 cov_future = covariate_series[last_req_ts-(nr_timestamps_needed-1)*target_series.freq:last_req_ts+target_series.freq]
 
         # TODO: change and slice numpy views instead of TimeSeries in the logic above
-        tgt_past_tsr = torch.from_numpy(tgt_past.values(copy=False))
-        cov_past_tsr = torch.from_numpy(cov_past.values(copy=False))
-        cov_future_tsr = torch.from_numpy(cov_future.values(copy=False))
-        return tgt_past_tsr, cov_past_tsr, cov_future_tsr
+        return tgt_past.values(copy=False), cov_past.values(copy=False), cov_future.values(copy=False)
 
     def get_target(self, idx: int) -> TimeSeries:
         return self.target_series[idx]
@@ -165,7 +162,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -193,7 +190,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
 
         # TODO: slice numpy views instead of TimeSeries...
-        return torch.from_numpy(tgt_past.values(copy=False)), torch.from_numpy(cov_future.values(copy=False))
+        return tgt_past.values(copy=False), cov_future.values(copy=False)
 
     def get_target(self, idx: int) -> TimeSeries:
         return self.target_series[idx]

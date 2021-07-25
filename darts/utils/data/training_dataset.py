@@ -5,7 +5,7 @@ TimeSeries Dataset Base Classes
 
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
-from torch import Tensor
+import numpy as np
 
 from typing import Tuple, Optional
 from ...logging import get_logger, raise_if_not
@@ -69,7 +69,7 @@ class PastCovariatesTrainingDataset(ABC, TrainingDataset):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         pass
 
 
@@ -83,7 +83,7 @@ class FutureCovariatesTrainingDataset(ABC, TrainingDataset):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         pass
 
 
@@ -97,7 +97,7 @@ class DualCovariatesTrainingDataset(ABC, TrainingDataset):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         pass
 
 
@@ -111,7 +111,7 @@ class MixedCovariatesTrainingDataset(ABC, TrainingDataset):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
         pass
 
 
@@ -125,7 +125,7 @@ class SplitCovariatesTrainingDataset(ABC, TrainingDataset):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         pass
 
 

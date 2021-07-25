@@ -4,7 +4,7 @@ Sequential Training Dataset
 """
 
 from typing import Union, Sequence, Optional, Tuple
-from torch import Tensor
+import numpy as np
 
 from ...timeseries import TimeSeries
 from .training_dataset import (PastCovariatesTrainingDataset,
@@ -73,7 +73,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         return self.ds[idx]
 
 
@@ -135,7 +135,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         return self.ds[idx]
 
 
@@ -171,7 +171,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate
@@ -208,7 +208,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, historic_future_covariate, future_covariate = self.ds_dual[idx]
         return past_target, future_target, past_covariate, historic_future_covariate, future_covariate
@@ -283,7 +283,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate

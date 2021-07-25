@@ -5,7 +5,7 @@ Shifted Training Dataset
 
 from typing import Union, Sequence, Optional, Tuple
 import torch
-from torch import Tensor
+import numpy as np
 
 from ...timeseries import TimeSeries
 from .training_dataset import (PastCovariatesTrainingDataset,
@@ -74,7 +74,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         return self.ds[idx]
 
 
@@ -138,7 +138,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         return self.ds[idx]
 
 
@@ -174,7 +174,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate
@@ -250,7 +250,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, historic_future_covariate, future_covariate = self.ds_dual[idx]
         return past_target, future_target, past_covariate, historic_future_covariate, future_covariate
@@ -289,7 +289,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
         past_target, future_target, past_covariate = self.ds_past[idx]
         _, _, future_covariate = self.ds_future[idx]
         return past_target, future_target, past_covariate, future_covariate
@@ -361,7 +361,7 @@ class GenericShiftedDataset:
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
@@ -419,4 +419,4 @@ class GenericShiftedDataset:
                          "The dataset contains some covariate series whose time axis doesn't allow to "
                          "obtain the input (or output) chunk relative to the target series.")
 
-        return torch.from_numpy(past_target), torch.from_numpy(future_target), torch.from_numpy(covariate)
+        return past_target, future_target, covariate
