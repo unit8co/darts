@@ -30,6 +30,7 @@ from joblib import Parallel, delayed
 from typing import Optional, Dict, Tuple, Union, Sequence
 from abc import ABC, abstractmethod
 import torch
+from torch import Tensor
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
@@ -179,7 +180,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer.
         loss_fn
-            PyTorch loss function used for training (default: `torch.nn.MSELoss()`).
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: `torch.nn.MSELoss()`.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
@@ -211,8 +214,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # We will fill these dynamically, upon first call of fit_from_dataset():
         self.model = None
-        self.input_dim = None
-        self.output_dim = None
+        self.train_sample = None
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -272,8 +274,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.checkpoint_exists = False
         self.total_epochs = 0
         self.model = None
-        self.input_dim = None
-        self.output_dim = None
+        self.train_sample = None
 
     def _init_model(self) -> None:
         """
@@ -282,7 +283,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         # the tensors have shape (chunk_length, nr_dimensions)
-        model = self._create_model(self.input_dim, self.output_dim)
+        model = self._create_model(self.train_sample)
         self.model = model.to(self.device)
 
         # A utility function to create optimizer and lr scheduler from desired classes
@@ -313,7 +314,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @abstractmethod
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
         """
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
@@ -433,23 +434,23 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  'The provided validation time series dataset is too short for obtaining even one training point.',
                  logger)
 
-        # torch_train_dataset = TimeSeriesTorchDataset(train_dataset)
-        # torch_val_dataset = TimeSeriesTorchDataset(val_dataset)
-        torch_train_dataset = train_dataset.to_torch_dataset()  # TODO: move to self.device there?
-        torch_val_dataset = val_dataset.to_torch_dataset()
-
-        input_dim, output_dim = torch_train_dataset[0][0].shape[1], torch_train_dataset[0][1].shape[1]
+        train_sample = train_dataset[0]
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
-            self.input_dim, self.output_dim = input_dim, output_dim
+            self.train_sample = train_sample
             self._init_model()
         else:
-            # Check existing model has input/output dim matching what's provided in the training set.
-            raise_if_not(input_dim == self.input_dim and output_dim == self.output_dim,
+            # Check existing model has input/output dims matching what's provided in the training set.
+            raise_if_not(len(train_sample) == len(self.train_sample),
+                         'The size of the training set samples (tuples) does not match what the model has been '
+                         'previously trained one. Trained on tuples of length {}, received tuples of length {}.'.format(
+                             len(self.train_sample), len(train_sample)
+                         ))
+            raise_if_not((s.shape[1] for s in train_sample) == (s.shape[1] for s in self.train_sample),
                          'The dimensionality of the series in the training set do not match the dimensionality'
                          ' of the series the model has previously been trained on. '
-                         'Model input/output dimensions = {}/{}, provided input/ouptput dimensions = {}/{}'.format(
-                             self.input_dim, self.output_dim, input_dim, output_dim
+                         'Model input/output dimensions = {}, provided input/ouptput dimensions = {}'.format(
+                             (s.shape[1] for s in self.train_sample), (s.shape[1] for s in train_sample)
                          ))
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at

@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
-from typing import Optional, Union, Sequence
+from typing import Optional, Union, Sequence, Tuple
 from ..timeseries import TimeSeries
 from ..utils.torch import random_method
 from ..utils.data import PastCovariatesShiftedDataset
@@ -271,7 +271,11 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, future_target, past_covariates)
+        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
+        output_dim = train_sample[1].shape[1]
+
         target_size = (
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
         )

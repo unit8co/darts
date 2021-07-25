@@ -3,7 +3,7 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Optional
+from typing import NewType, Union, List, Optional, Tuple
 from enum import Enum
 import numpy as np
 from numpy.random import RandomState
@@ -439,7 +439,10 @@ class NBEATSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * num_stacks
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, future_target, past_covariates)
+        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
+        output_dim = train_sample[1].shape[1]
 
         return _NBEATSModule(
             input_dim=input_dim,

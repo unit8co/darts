@@ -7,7 +7,7 @@ from numpy.random import RandomState
 import math
 import torch
 import torch.nn as nn
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 from ..utils.torch import random_method
 from ..logging import get_logger
@@ -268,7 +268,11 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, future_target, past_covariates)
+        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
+        output_dim = train_sample[1].shape[1]
+
         return _TransformerModule(input_chunk_length=self.input_chunk_length,
                                   output_chunk_length=self.output_chunk_length,
                                   input_size=input_dim,

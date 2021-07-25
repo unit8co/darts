@@ -8,7 +8,6 @@ from torch.utils.data import Dataset
 from torch import Tensor
 
 from typing import Tuple, Optional
-# from .timeseries_dataset import TimeSeriesDataset
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
@@ -49,6 +48,14 @@ class TrainingDataset(ABC, Dataset):
         It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
         and so we can get big performance gains when slicing by returning only numpy views of the data.
         """
+        pass
+
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __getitem__(self, idx: int):
         pass
 
 

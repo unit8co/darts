@@ -6,7 +6,7 @@ Recurrent Neural Networks
 import torch.nn as nn
 import torch
 from numpy.random import RandomState
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
 from ..logging import raise_if_not, get_logger
@@ -172,7 +172,11 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         self.training_length = training_length
         self.is_recurrent = True
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, future_target, historic_future_covariates, future_covariates)
+        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
+        output_dim = train_sample[1].shape[1]
+
         target_size = (
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
         )
