@@ -10,7 +10,7 @@ from typing import List, Optional, Union
 
 from ..logging import raise_if_not, get_logger
 from ..utils.torch import random_method
-from .torch_forecasting_model import TorchForecastingModel
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -111,7 +111,7 @@ class _BlockRNNModule(nn.Module):
         return predictions
 
 
-class BlockRNNModel(TorchForecastingModel):
+class BlockRNNModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,

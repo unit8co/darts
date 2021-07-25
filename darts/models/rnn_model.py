@@ -10,9 +10,11 @@ from typing import Sequence, Optional, Union
 from ..timeseries import TimeSeries
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
+from .torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
+                                      DualCovariatesTorchModel,
+                                      RecurrentModel)
 from ..utils.torch import random_method
-from ..utils.data import ShiftedDataset
+from ..utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from ..utils.likelihood_models import LikelihoodModel
 
 logger = get_logger(__name__)
@@ -95,7 +97,7 @@ class _RNNModule(nn.Module):
         return predictions, last_hidden_state
 
 
-class RNNModel(TorchParametricProbabilisticForecastingModel):
+class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel, RecurrentModel):
     @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
@@ -187,12 +189,18 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
-                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
-        return ShiftedDataset(target_series=target,
-                              covariates=covariates,
-                              length=self.training_length,
-                              shift_covariates=True,
-                              shift=1)
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesShiftedDataset:
+
+        return DualCovariatesShiftedDataset(target_series=target,
+                                            covariates=future_covariates,
+                                            length=self.training_length,
+                                            shift=1)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
+                     'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
+        raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
 
     def _produce_train_output(self, data):
         return self.model(data)[0]

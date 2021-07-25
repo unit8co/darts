@@ -3,17 +3,22 @@ Torch Forecasting Model Base Classes
 ------------------------------------
 This file contains several abstract classes:
 
-* TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
+    * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
 
-* PastCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming past-observed covariates.
-* FutureCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming future-known covariates.
-* MixedCovariatesModel(TorchForecastingModel) is the super-class of all forecasting models consuming both
-  past-observed and future-known covariates.
+    * PastCovariatesTorchModel(TorchForecastingModel) for torch models consuming only past-observed covariates.
+    * FutureCovariatesTorchModel(TorchForecastingModel) for torch models consuming only future values of
+      future covariates.
+    * DualCovariatesTorchModel(TorchForecastingModel) for torch models consuming past and future values of some single
+      future covariates.
+    * MixedCovariatesTorchModel(TorchForecastingModel) for torch models consuming both past-observed
+      as well as past and future values of some future covariates.
+    * SplitCovariatesTorchModel(TorchForecastingModel) for torch models consuming past-observed as well as future
+      values of some future covariates.
 
-* RecurrentModel(TorchForecastingModel) is the super-class of all recurrent models.
+    * RecurrentModel(TorchForecastingModel) is the super-class of all recurrent models.
 
-* TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
-  forecasting models.
+    * TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
+      forecasting models.
 """
 
 import numpy as np
@@ -328,6 +333,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @abstractmethod
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
+                                 n: int,
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> InferenceDataset:
         """
@@ -577,6 +583,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         #              'model input dim = {}'.format(in_dim, self.input_dim))
 
         dataset = self._build_inference_dataset(target=series,
+                                                n=n,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates)
 
@@ -1012,113 +1019,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return p['lr']
 
 
-"""
-Many classes inherit TorchForecastingModel. We need to be careful in the order we inherit them
-in implementations.
-See: https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
-"""
-
-def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
-    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
-
-
-# TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
-
-class PastCovariatesTorchModel(TorchForecastingModel, ABC):
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesTrainingDataset:
-
-        raise_if_not(future_covariates is None,
-                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
-
-        return PastCovariatesSequentialDataset(target_series=target,
-                                               covariates=past_covariates,
-                                               input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
-
-    def _build_inference_dataset(self,
-                                 target: Sequence[TimeSeries],
-                                 past_covariates: Optional[Sequence[TimeSeries]],
-                                 future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesInferenceDataset:
-
-        raise_if_not(future_covariates is None,
-                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
-
-        return PastCovariatesInferenceDataset(target_series=target,
-                                              covariates=past_covariates,
-                                              input_chunk_length=self.input_chunk_length,
-                                              output_chunk_length=self.output_chunk_length)
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, PastCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
-
-
-class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesTrainingDataset:
-        raise_if_not(past_covariates is None,
-                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
-
-        return FutureCovariatesSequentialDataset(target_series=target,
-                                                 covariates=future_covariates,
-                                                 input_chunk_length=self.input_chunk_length,
-                                                 output_chunk_length=self.output_chunk_length)
-
-    def _build_inference_dataset(self,
-                                 target: Sequence[TimeSeries],
-                                 past_covariates: Optional[Sequence[TimeSeries]],
-                                 future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesInferenceDataset:
-        raise_if_not(past_covariates is None,
-                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
-
-        return FutureCovariatesInferenceDataset(target_series=target,
-                                                covariates=future_covariates,
-                                                input_chunk_length=self.input_chunk_length)
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, FutureCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
-
-
-class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesTrainingDataset:
-
-        return MixedCovariatesSequentialDataset(target_series=target,
-                                                past_covariates=past_covariates,
-                                                future_covariates=future_covariates,
-                                                input_chunk_length=self.input_chunk_length,
-                                                output_chunk_length=self.output_chunk_length)
-
-    def _build_inference_dataset(self,
-                                 target: Sequence[TimeSeries],
-                                 past_covariates: Optional[Sequence[TimeSeries]],
-                                 future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
-
-        return MixedCovariatesInferenceDataset(target_series=target,
-                                               past_covariates=past_covariates,
-                                               future_covariates=future_covariates,
-                                               input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, MixedCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
-
-
 class RecurrentModel(TorchForecastingModel, ABC):
     # TODO: extract recurrent specific logic here (override produce_block_forecast() etc).
     pass
@@ -1128,9 +1028,9 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
-        This is a base class for pytroch parametric probabilistic models. "Parametric" 
-        means that these models are based on some predefined parametric distribution, say Gaussian. 
-        Make sure that subclasses contain the *likelihood* parameter in __init__ method 
+        This is a base class for pytroch parametric probabilistic models. "Parametric"
+        means that these models are based on some predefined parametric distribution, say Gaussian.
+        Make sure that subclasses contain the *likelihood* parameter in __init__ method
         and it is passed to the superclass via calling super().__init__. If the likelihood is not
         provided, the model is considered as deterministic.
 
@@ -1159,3 +1059,181 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         TODO: rename parameter as it shadows input name
         """
         pass
+
+
+def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
+    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
+
+
+"""
+Below we define the 5 torch model types:
+    * PastCovariatesTorchModel
+    * FutureCovariatesTorchModel
+    * DualCovariatesTorchModel
+    * MixedCovariatesTorchModel
+    * SplitCovariatesTorchModel
+"""
+# TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
+
+
+class PastCovariatesTorchModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesTrainingDataset:
+
+        raise_if_not(future_covariates is None,
+                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
+
+        return PastCovariatesSequentialDataset(target_series=target,
+                                               covariates=past_covariates,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesInferenceDataset:
+
+        raise_if_not(future_covariates is None,
+                     'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
+
+        return PastCovariatesInferenceDataset(target_series=target,
+                                              covariates=past_covariates,
+                                              n=n,
+                                              input_chunk_length=self.input_chunk_length,
+                                              output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, PastCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
+
+
+class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesTrainingDataset:
+        raise_if_not(past_covariates is None,
+                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
+
+        return FutureCovariatesSequentialDataset(target_series=target,
+                                                 covariates=future_covariates,
+                                                 input_chunk_length=self.input_chunk_length,
+                                                 output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesInferenceDataset:
+        raise_if_not(past_covariates is None,
+                     'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
+
+        return FutureCovariatesInferenceDataset(target_series=target,
+                                                covariates=future_covariates,
+                                                n=n,
+                                                input_chunk_length=self.input_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, FutureCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
+
+
+class DualCovariatesTorchModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesTrainingDataset:
+
+        return DualCovariatesSequentialDataset(target_series=target,
+                                               covariates=future_covariates,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesInferenceDataset:
+
+        return DualCovariatesInferenceDataset(target_series=target,
+                                              covariates=future_covariates,
+                                              n=n,
+                                              input_chunk_length=self.input_chunk_length,
+                                              output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, DualCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, DualCovariatesInferenceDataset)
+
+
+class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesTrainingDataset:
+
+        return MixedCovariatesSequentialDataset(target_series=target,
+                                                past_covariates=past_covariates,
+                                                future_covariates=future_covariates,
+                                                input_chunk_length=self.input_chunk_length,
+                                                output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
+
+        return MixedCovariatesInferenceDataset(target_series=target,
+                                               past_covariates=past_covariates,
+                                               future_covariates=future_covariates,
+                                               n=n,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, MixedCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
+
+
+class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> SplitCovariatesTrainingDataset:
+
+        return SplitCovariatesSequentialDataset(target_series=target,
+                                                past_covariates=past_covariates,
+                                                future_covariates=future_covariates,
+                                                input_chunk_length=self.input_chunk_length,
+                                                output_chunk_length=self.output_chunk_length)
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> SplitCovariatesInferenceDataset:
+
+        return SplitCovariatesInferenceDataset(target_series=target,
+                                               past_covariates=past_covariates,
+                                               future_covariates=future_covariates,
+                                               n=n,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        _raise_if_wrong_type(train_dataset, SplitCovariatesTrainingDataset)
+
+    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)

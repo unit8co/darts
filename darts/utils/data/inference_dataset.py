@@ -10,7 +10,7 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 from ...timeseries import TimeSeries
-from ...logging import raise_if_not, raise_if
+from ...logging import raise_if_not
 
 
 class InferenceDataset(ABC, Dataset):

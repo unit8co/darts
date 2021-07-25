@@ -12,7 +12,7 @@ import torch.nn as nn
 
 from ..logging import get_logger, raise_log, raise_if_not
 from ..utils.torch import random_method
-from .torch_forecasting_model import TorchForecastingModel
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -357,7 +357,7 @@ class _NBEATSModule(nn.Module):
         return y
 
 
-class NBEATSModel(TorchForecastingModel):
+class NBEATSModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,

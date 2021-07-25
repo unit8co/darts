@@ -11,11 +11,11 @@ from numpy.random import RandomState
 from typing import Optional, Union, Sequence
 from ..timeseries import TimeSeries
 from ..utils.torch import random_method
-from ..utils.data import ShiftedDataset
+from ..utils.data import PastCovariatesShiftedDataset
 from ..utils.likelihood_models import LikelihoodModel
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -206,7 +206,7 @@ class _TCNModule(nn.Module):
         return x
 
 
-class TCNModel(TorchParametricProbabilisticForecastingModel):
+class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -288,11 +288,13 @@ class TCNModel(TorchParametricProbabilisticForecastingModel):
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
-                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
-        return ShiftedDataset(target_series=target,
-                              covariates=covariates,
-                              length=self.input_chunk_length,
-                              shift=self.output_chunk_length)
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesShiftedDataset:
+
+        return PastCovariatesShiftedDataset(target_series=target,
+                                            covariates=past_covariates,
+                                            length=self.input_chunk_length,
+                                            shift=self.output_chunk_length)
     
     @random_method
     def _produce_predict_output(self, input):

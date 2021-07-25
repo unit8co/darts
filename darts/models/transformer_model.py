@@ -10,8 +10,8 @@ import torch.nn as nn
 from typing import Optional, Union
 
 from ..utils.torch import random_method
-from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel
+from ..logging import get_logger
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -179,7 +179,7 @@ class _TransformerModule(nn.Module):
         return predictions
 
 
-class TransformerModel(TorchForecastingModel):
+class TransformerModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
