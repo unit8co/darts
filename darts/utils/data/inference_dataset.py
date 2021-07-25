@@ -5,7 +5,6 @@ Inference Dataset
 
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
-import torch
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -21,21 +20,17 @@ class InferenceDataset(ABC, Dataset):
         It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
         (using covariates if specified).
 
-        `TimeSeriesInferenceDataset` inherits from `Sequence`; meaning that the implementations have to
-        provide the `__len__()` and `__getitem__()` methods.
-
-        It contains `TimeSeries` (and not e.g. `np.ndarray`), because inference requires the time axes,
-        and typically the performance penalty should be lower than for training datasets because there's no slicing.
-
-        TODO for speed: return nd.arrays and rebuild the time axes of the forecasted series separately?
+        The first elements of the tuples it contains are numpy arrays (which will be translated to torch tensors
+        by the torch DataLoader). The last elements of the tuples are the (past) target TimeSeries, which is
+        needed in order to properly construct the time axis of the forecast series.
         """
+
+    @abstractmethod
+    def __len__(self) -> int:
         pass
 
     @abstractmethod
-    def get_target(self, idx: int) -> TimeSeries:
-        """
-        This is needed in order to build the final forecast TimeSeries (we need the time axis).
-        """
+    def __getitem__(self, idx: int):
         pass
 
 
@@ -82,7 +77,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -123,10 +118,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                 cov_future = covariate_series[last_req_ts-(nr_timestamps_needed-1)*target_series.freq:last_req_ts+target_series.freq]
 
         # TODO: change and slice numpy views instead of TimeSeries in the logic above
-        return tgt_past.values(copy=False), cov_past.values(copy=False), cov_future.values(copy=False)
-
-    def get_target(self, idx: int) -> TimeSeries:
-        return self.target_series[idx]
+        return tgt_past.values(copy=False), cov_past.values(copy=False), cov_future.values(copy=False), target_series
 
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
@@ -162,7 +154,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.target_series)
 
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
@@ -190,10 +182,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
 
         # TODO: slice numpy views instead of TimeSeries...
-        return tgt_past.values(copy=False), cov_future.values(copy=False)
-
-    def get_target(self, idx: int) -> TimeSeries:
-        return self.target_series[idx]
+        return tgt_past.values(copy=False), cov_future.values(copy=False), target_series
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):
@@ -235,13 +224,10 @@ class DualCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx):
-        past_target, historic_future_covs, _ = self.ds_past[idx]
-        _, future_covs = self.ds_future[idx]
-        return past_target, historic_future_covs, future_covs
-
-    def get_target(self, idx: int) -> TimeSeries:
-        return self.ds_past.get_target(idx)
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
+        past_target, historic_future_covs, _, ts_target = self.ds_past[idx]
+        _, future_covs, _ = self.ds_future[idx]
+        return past_target, historic_future_covs, future_covs, ts_target
 
 
 class MixedCovariatesInferenceDataset(InferenceDataset):
@@ -290,13 +276,12 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx):
-        past_target, past_covs, future_past_covs = self.ds_past[idx]
-        _, historic_future_covs, future_covs = self.ds_future[idx]
-        return past_target, past_covs, historic_future_covs, future_covs, future_past_covs
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
+                                        Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
 
-    def get_target(self, idx: int) -> TimeSeries:
-        return self.ds_past.get_target(idx)
+        past_target, past_covs, future_past_covs, ts_target = self.ds_past[idx]
+        _, historic_future_covs, future_covs, _ = self.ds_future[idx]
+        return past_target, past_covs, historic_future_covs, future_covs, future_past_covs, ts_target
 
 
 class SplitCovariatesInferenceDataset(InferenceDataset):
@@ -344,10 +329,9 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx):
-        past_target, past_covs, future_past_covs = self.ds_past[idx]
-        _, future_covs = self.ds_future[idx]
-        return past_target, past_covs, future_covs, future_past_covs
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
+                                        Optional[np.ndarray], TimeSeries]:
 
-    def get_target(self, idx: int) -> TimeSeries:
-        return self.ds_past.get_target(idx)
+        past_target, past_covs, future_past_covs, ts_target = self.ds_past[idx]
+        _, future_covs, _ = self.ds_future[idx]
+        return past_target, past_covs, future_covs, future_past_covs, ts_target
