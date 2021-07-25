@@ -14,7 +14,6 @@ from typing import Tuple, Optional, Callable, Any, List, Union
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
-from xarray.core import dataarray
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -1804,7 +1803,7 @@ class TimeSeries:
         plt.legend()
         plt.title(self._xa.name);
 
-    def with_column_renamed(self, col_name: str, col_name_new: str) -> 'TimeSeries':
+    def with_columns_renamed(self, cols_name: Union[List[str], str], cols_name_new: Union[List[str], str]) -> 'TimeSeries':
         """
         Changes a ts column name and returns a new TimeSeries instance
         -------
@@ -1812,12 +1811,26 @@ class TimeSeries:
             A new TimeSeries instance
         """
 
+        if isinstance(cols_name, str):
+            cols_name = [cols_name]
+        if isinstance(cols_name_new, str):
+            cols_name_new = [cols_name_new]
+        
+        raise_if_not(len(cols_name) == len(cols_name_new), 'Length of col_name_new list should be'
+                                                    ' equal to length of col_name list', logger)
+
+
+        cols = self.components
+
+        for (o, n) in zip(cols_name, cols_name_new):
+            cols = [n if (c==o) else c for c in cols]
+
         new_xa = xr.DataArray(
             self._xa.values,
             dims=self._xa.dims,
             coords={
                 self._xa.dims[0]: self.time_index, 
-                DIMS[1]: pd.Index([col_name_new if (c==col_name) else c for c in self.components])
+                DIMS[1]: pd.Index(cols)
                 }
         )
         

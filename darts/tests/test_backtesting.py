@@ -164,17 +164,14 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         features = (
             features
-            .with_column_renamed(features.components[0], "Value0")
-            .with_column_renamed(features.components[1], "Value1")
+            .with_columns_renamed(features.components, ["Value0", "Value1"])
         )
 
         features_multivariate = (
             features_multivariate
-            .with_column_renamed(features_multivariate.components[0], "Value0")
-            .with_column_renamed(features_multivariate.components[1], "Value1")
-            .with_column_renamed(features_multivariate.components[2], "Value2")
+            .with_columns_renamed(features_multivariate.components, ["Value0", "Value1", "Value2"])
         )
-        
+
         # univariate feature test
         score = LinearRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
             series=target, covariates=features, start=pd.Timestamp('20000201'),
