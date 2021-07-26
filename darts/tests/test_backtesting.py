@@ -10,7 +10,7 @@ from darts.utils.timeseries_generation import (
     sine_timeseries as st,
     random_walk_timeseries as rt,
     constant_timeseries as ct,
-    gaussian_timeseries as gt,
+    gaussian_timeseries as gt
 )
 from darts.models import (
     Theta,
@@ -20,7 +20,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     RandomForest,
-    ARIMA,
+    ARIMA
 )
 
 
@@ -33,9 +33,7 @@ try:
     from ..models import TCNModel, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning(
-        "Torch models are not installed - will not be tested for backtesting"
-    )
+    logger.warning("Torch models are not installed - will not be tested for backtesting")
     TORCH_AVAILABLE = False
 
 
@@ -85,12 +83,8 @@ class BacktestingTestCase(DartsBaseTestClass):
         linear_series_multi = linear_series.stack(linear_series)
 
         # univariate model + univariate series
-        score = NaiveDrift().backtest(
-            linear_series,
-            start=pd.Timestamp("20000201"),
-            forecast_horizon=3,
-            metric=r2_score,
-        )
+        score = NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000201'),
+                                      forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
         # test that it also works for time series that are not Datetime-indexed
@@ -99,31 +93,17 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertEqual(score, 1.0)
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(
-                linear_series, start=pd.Timestamp("20000217"), forecast_horizon=3
-            )
-        with self.assertRaises(ValueError):
-            NaiveDrift().backtest(
-                linear_series,
-                start=pd.Timestamp("20000217"),
-                forecast_horizon=3,
-                overlap_end=False,
-            )
-        NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3
-        )
-        NaiveDrift().backtest(
-            linear_series,
-            start=pd.Timestamp("20000217"),
-            forecast_horizon=3,
-            overlap_end=True,
-        )
+            NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000217'), forecast_horizon=3,
+                                  overlap_end=False)
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp('20000216'), forecast_horizon=3)
+        NaiveDrift().backtest(linear_series,
+                              start=pd.Timestamp('20000217'),
+                              forecast_horizon=3,
+                              overlap_end=True)
 
         # Using forecast_horizon default value
         NaiveDrift().backtest(linear_series, start=pd.Timestamp("20000216"))
-        NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000217"), overlap_end=True
-        )
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp("20000217"), overlap_end=True)
 
         # Using an int or float value for start
         NaiveDrift().backtest(linear_series, start=30)
@@ -143,50 +123,34 @@ class BacktestingTestCase(DartsBaseTestClass):
             NaiveDrift().backtest(linear_series, start="wrong type")
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(
-                linear_series, start=49, forecast_horizon=2, overlap_end=False
-            )
+            NaiveDrift().backtest(linear_series, start=49, forecast_horizon=2, overlap_end=False)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
-            NaiveDrift().backtest(
-                linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
-            )
+            NaiveDrift().backtest(linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3)
 
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
-            tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
-            )
-            pred = tcn_model.historical_forecasts(
-                linear_series,
-                start=pd.Timestamp("20000125"),
-                forecast_horizon=3,
-                verbose=False,
-                last_points_only=True,
-            )
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1)
+            pred = tcn_model.historical_forecasts(linear_series,
+                                                  start=pd.Timestamp('20000125'),
+                                                  forecast_horizon=3,
+                                                  verbose=False,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 1)
             self.assertEqual(pred.end_time(), linear_series.end_time())
 
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
-                tcn_model.backtest(
-                    linear_series_multi,
-                    start=pd.Timestamp("20000125"),
-                    forecast_horizon=3,
-                    verbose=False,
-                )
+                tcn_model.backtest(linear_series_multi, start=pd.Timestamp('20000125'),
+                                   forecast_horizon=3, verbose=False)
 
-            tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1
-            )
-            pred = tcn_model.historical_forecasts(
-                linear_series_multi,
-                start=pd.Timestamp("20000125"),
-                forecast_horizon=3,
-                verbose=False,
-                last_points_only=True,
-            )
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1)
+            pred = tcn_model.historical_forecasts(linear_series_multi,
+                                                  start=pd.Timestamp('20000125'),
+                                                  forecast_horizon=3,
+                                                  verbose=False,
+                                                  last_points_only=True)
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
 
@@ -194,9 +158,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         gaussian_series = gt(mean=2, length=50)
         sine_series = st(length=50)
         features = gaussian_series.stack(sine_series)
-        features_multivariate = (
-            (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
-        )
+        features_multivariate = (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
         target = sine_series
 
         features = TimeSeries.from_dataframe(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
@@ -255,9 +217,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         ts_length = 50
         dummy_series = (
-            lt(length=ts_length, end_value=10)
-            + st(length=ts_length, value_y_offset=10)
-            + rt(length=ts_length)
+            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
         )
         dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
@@ -283,18 +243,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         ts_length = 100
 
         dummy_series = (
-            lt(length=ts_length, end_value=1)
-            + st(length=ts_length, value_y_offset=0)
-            + rt(length=ts_length)
+            lt(length=ts_length, end_value=1) + st(length=ts_length, value_y_offset=0) + rt(length=ts_length)
         )
 
-        ts_train = dummy_series[: round(ts_length * 0.8)]
-        ts_val = dummy_series[round(ts_length * 0.8) :]
+        ts_train = dummy_series[:round(ts_length * 0.8)]
+        ts_val = dummy_series[round(ts_length * 0.8):]
 
         test_cases = [
             {
                 "model": ARIMA,  # ExtendedForecastingModel
-                "parameters": {"p": [18, 4, 8], "q": [1, 2, 3]},
+                "parameters": {"p": [18, 4, 8], "q": [1, 2, 3]}
             },
             {
                 "model": BlockRNNModel,   # TorchForecastingModel
@@ -302,11 +260,9 @@ class BacktestingTestCase(DartsBaseTestClass):
                     "input_chunk_length": [1, 3, 5, 10],
                     "output_chunk_length": [1, 3, 5, 10],
                     "n_epochs": [1, 5],
-                    "random_state": [
-                        42
-                    ],  # necessary to avoid randomness among runs with same parameters
-                },
-            },
+                    "random_state": [42]  # necessary to avoid randomness among runs with same parameters
+                }
+            }
         ]
 
         for test in test_cases:
@@ -330,9 +286,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):
-        dummy_series = st(length=40, value_y_offset=10).stack(
-            lt(length=40, end_value=20)
-        )
+        dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
             "input_chunk_length": [12],
             "output_chunk_length": [3],
@@ -355,9 +309,5 @@ class BacktestingTestCase(DartsBaseTestClass):
         # test constant, positive residuals
         linear_ts = lt(length=20)
         residuals = model.residuals(linear_ts)
-        np.testing.assert_almost_equal(
-            np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1)
-        )
-        np.testing.assert_array_less(
-            np.zeros(len(residuals)), residuals.univariate_values()
-        )
+        np.testing.assert_almost_equal(np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1))
+        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.univariate_values())

@@ -10,9 +10,6 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
-import numpy as np
-import pandas as pd
-
 from ..logging import get_logger
 from typing import Optional, Union
 from .regression_model import RegressionModel
@@ -36,15 +33,16 @@ class RandomForest(RegressionModel):
             Number of lagged target values used to predict the next time step. If an integer is given
             the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
         lags_covariates : Union[int, list, bool]
-            Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
-            at the current time `t`. This might lead to leakage if for **predictions** the values of the exogenous
-            variables at time `t` are not known.
+            Number of lagged covariates values used to predict the next time step. If an integer is given
+            the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
+            If True `lags` will be used to determine `lags_covariates`. If False, the values of all covariates at the
+            current time `t`. This might lead to leakage if for predictions the values of the covariates at time `t`
+            are not known.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
-            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all
+            leaves contain less than min_samples_split samples.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
         """

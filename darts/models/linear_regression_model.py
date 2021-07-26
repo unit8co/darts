@@ -26,9 +26,9 @@ class LinearRegressionModel(RegressionModel):
         lags_covariates : Union[int, list, bool]
             Number of lagged covariates values used to predict the next time step. If an integer is given
             the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
-            at the current time `t`. This might lead to leakage if for predictions the values of the exogenous
-            variables at time `t` are not known.
+            If True `lags` will be used to determine `lags_covariates`. If False, the values of all covariates at the
+            current time `t`. This might lead to leakage if for predictions the values of the covariates at time `t`
+            are not known.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.
         """
@@ -36,4 +36,4 @@ class LinearRegressionModel(RegressionModel):
         super().__init__(lags=lags, lags_covariates=lags_covariates, model=LinearRegression(**kwargs))
 
     def __str__(self):
-        return "LinearRegression(lags={}, lags_exog={})".format(self.lags, self.lags_covariates)
+        return "LinearRegression(lags={}, lags_covariates={})".format(self.lags, self.lags_covariates)

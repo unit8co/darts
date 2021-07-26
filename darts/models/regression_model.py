@@ -3,7 +3,7 @@ Regression Model
 ----------------
 
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of an exogenous series. They can wrap around any regression model having a `fit()`
+and possibly lags of an covariate series. They can wrap around any regression model having a `fit()`
 and `predict()` functions accepting tabularized data (e.g. scikit-learn regression models), and are using
 `sklearn.linear_model.LinearRegression` by default.
 
@@ -17,7 +17,7 @@ from sklearn.linear_model import LinearRegression
 from .forecasting_model import GlobalForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
 from darts.utils.data.lagged_dataset import (
-    LaggedDataset,
+    LaggedTrainingDataset,
     LaggedInferenceDataset,
     _process_lags,
 )
@@ -26,7 +26,26 @@ from darts.utils.data.lagged_dataset import (
 logger = get_logger(__name__)
 
 
-def _consume_column(m: np.ndarray) -> Union[None, np.ndarray]:
+def _consume_column(m: np.ndarray) -> Optional[np.ndarray]:
+    """
+    Deletes the first column of the given matrix. In case the column is only one, returns `None`.
+
+    Params
+    ------
+    m
+        np.array representing a matrix.
+
+    Returns
+    -------
+    Optional[np.ndarray]
+        The passed matrix with the first column removed. `None` in case the initial matrix was single-columned.
+    """
+
+    raise_if_not(
+        len(m.shape) >= 2,
+        f"The passed array must have at least 2 dimensions, found {len(m.shape)}"
+    )
+
     if m.shape[1] == 1:
         return None
     else:
@@ -47,14 +66,14 @@ class RegressionModel(GlobalForecastingModel):
 
         Parameters
         ----------
-        lags : Union[int, list]
-            Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            The integers must be strictly positive (>0).
-        lags_covariates : Union[int, list, bool]
-            Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            The integers must be positive (>=0).
+        lags
+            Number of lagged target values used to predict the next time step. If an integer is given the last `lags`
+            lags are used (inclusive). Otherwise a list of integers with lags is required (each lag must be > 0).
+        lags_covariates
+            Number of lagged covariates values used to predict the next time step. If an integer is given
+            the last `lags_covariates` lags are used (inclusive, starting from lag 1). Otherwise a list of
+            integers with lags >= 0 is required. The special index 0 is supported, in case the covariate at time `t`
+            should be used. Note that the 0 index is not included when passing a single interger value > 0.
         model
             Scikit-learn-like model with `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
@@ -78,6 +97,7 @@ class RegressionModel(GlobalForecastingModel):
         # turning lags into array of int or None
         self.lags, self.lags_covariates = _process_lags(lags, lags_covariates)
 
+        # getting the indices from the lags
         if self.lags is not None:
             self.lags_indices = np.array(self.lags) * (-1)
         else:
@@ -85,6 +105,7 @@ class RegressionModel(GlobalForecastingModel):
 
         if self.lags_covariates is not None:
             if 0 in self.lags_covariates:
+                # +1 since -0 must be turned into -1 and the other must be shifted
                 self.cov_lags_indices = (np.array(self.lags_covariates) + 1) * (-1)
             else:
                 self.cov_lags_indices = (np.array(self.lags_covariates)) * (-1)
@@ -107,7 +128,12 @@ class RegressionModel(GlobalForecastingModel):
         covariates : Union[TimeSeries, Sequence[TimeSeries]], optional
             TimeSeries or Sequence[TimeSeries] object containing the exogenous values.
         max_samples_per_ts : int
-            # TODO describe param
+            This is an upper bound on the number of tuples that can be produced
+            per time series. It can be used in order to have an upper bound on the total size of the dataset and
+            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
+            creation) to know their sizes, which might be expensive on big datasets.
+            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
+            most recent `max_samples_per_ts` samples will be considered.
         """
         super().fit(series, covariates)
         raise_if(
@@ -118,7 +144,7 @@ class RegressionModel(GlobalForecastingModel):
             covariates is None and self.lags_covariates is not None,
             "`covariates` is None in `fit()` method call, but `lags_covariates` is not None in constructor. ",
         )
-        lagged_dataset = LaggedDataset(
+        lagged_dataset = LaggedTrainingDataset(
             series,
             covariates,
             self.lags,
@@ -132,23 +158,37 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = (0 if covariates is None else covariates[0].width) + series[0].width
 
-    def fit_from_dataset(self, dataset: LaggedDataset, **kwargs):
+    def fit_from_dataset(
+        self,
+        dataset: LaggedTrainingDataset, **kwargs
+    ):
+        """
+        Fit the model against the given `LaggedTrainingDataset`.
+        """
         training_x, training_y = dataset.get_data()
         self.model.fit(training_x, training_y, **kwargs)
 
-    def predict(self,
-                n: int,
-                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1,
-                **kwargs) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        **kwargs
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
         n : int
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        # TODO add doc
+        series
+            Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
+            is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
+            returns the forecast of the (single) training series.
+        covariates
+            Optionally, the covariates series needed as inputs for the model. They must match the covariates used
+            for training in terms of dimension and type.
         num_samples
             Currently this parameter is ignored for regression models.
         **kwargs
@@ -192,10 +232,17 @@ class RegressionModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    def predict_from_dataset(self, dataset: LaggedInferenceDataset, n: int = 1, **kwargs):
+    def predict_from_dataset(
+        self,
+        dataset: LaggedInferenceDataset,
+        n: int = 1,
+        **kwargs
+    ):
+        """
+        Forecasts values for `n` time steps after the end of the series contained in the given dataset.
+        """
 
         target_matrix, covariates_matrix, future_covariates_matrix = self._get_matrix_data_from_dataset(dataset)
-
         predictions = []
 
         for i in range(n):
@@ -251,8 +298,13 @@ class RegressionModel(GlobalForecastingModel):
         predictions = np.concatenate(predictions, axis=1)
         return [self._build_forecast_series(row, input) for row, (input, _, _) in zip(predictions, dataset)]
 
-    def _get_matrix_data_from_dataset(self, dataset: LaggedInferenceDataset):
-
+    def _get_matrix_data_from_dataset(
+        self,
+        dataset: LaggedInferenceDataset
+    ):
+        """
+        Helper function which turns a LaggedInferenceDataset into 3 matrices.
+        """
         target_matrix = []
         covariates_matrix = []
         future_covariates_matrix = []
@@ -265,7 +317,7 @@ class RegressionModel(GlobalForecastingModel):
 
             if future_covariates is not None:
                 future_covariates_matrix.append(future_covariates.values())
- 
+
         target_matrix = np.concatenate(target_matrix, axis=0)
         covariates_matrix = None if len(covariates_matrix) == 0 else np.asarray(covariates_matrix)
         future_covariates_matrix = None if len(future_covariates_matrix) == 0 else np.asarray(future_covariates_matrix)
