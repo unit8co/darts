@@ -110,5 +110,5 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         # test wrong timestamp
         with self.assertRaises(ValueError):
-            holidays_timeseries(time_index_3, 'US', until= 163)
+            holidays_timeseries(time_index_3, 'US', until=163)
 

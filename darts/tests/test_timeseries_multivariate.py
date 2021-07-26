@@ -155,7 +155,6 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertTrue(np.allclose(values_sin[start_of_month_idx], 0))
         self.assertTrue(np.allclose(values_cos[start_of_month_idx], 1))
 
-
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp('20201201'), periods=30, freq='D')
         seriesA = TimeSeries.from_times_and_values(times, range(len(times)))
