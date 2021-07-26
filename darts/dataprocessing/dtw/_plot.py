@@ -26,7 +26,7 @@ def plot(self,
     new_plot
         Boolean value indicating whether to spawn a new figure.
     show_series
-        Boolean value indicating whether to additionally lot the two time series.
+        Boolean value indicating whether to additionally plot the two time series.
         Series1 will be plotted below the cost matrix and series2 to the left of the cost matrix.
     show_cost
         Boolean value indicating whether to additionally plot the cost matrix.
