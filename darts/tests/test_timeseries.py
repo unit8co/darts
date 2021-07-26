@@ -1,4 +1,5 @@
 import math
+from shutil import Error
 
 import numpy as np
 import pandas as pd
@@ -95,7 +96,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                               coords={'time': self.times, 'component': cs_before})
             ts = TimeSeries.from_xarray(ar)
             self.assertEqual(ts.columns.tolist(), cs_after)
-
+    
     def test_quantiles(self):
         values = np.random.rand(10, 2, 1000)
         ar = xr.DataArray(values,
@@ -589,7 +590,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_map_with_timestamp(self):
         series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
         zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
-
+        print(zeroes.columns.to_list())
         zeroes = zeroes.with_columns_renamed('constant', 'linear')
         
         def function(ts, x):
@@ -666,3 +667,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         self.assertEqual(len(series1.longest_contiguous_slice()), 3)
         self.assertEqual(len(series1.longest_contiguous_slice(2)), 6)
+
+    def test_with_columns_renamed(self):
+        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12).stack(
+            linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)   
+        )
+
+        series1 = series1.with_columns_renamed(['linear', 'linear_1'], ['linear1', 'linear2'])
+        self.assertEqual(['linear1', 'linear2'], series1.columns.to_list())
+        
+        with self.assertRaises(ValueError):
+            series1.with_columns_renamed(['linear1', 'linear2'], ['linear1', 'linear3', 'linear4'])
+
+        #  Linear7 doesn't exist
+        with self.assertRaises(ValueError):
+            series1.with_columns_renamed('linear7', 'linear5')
