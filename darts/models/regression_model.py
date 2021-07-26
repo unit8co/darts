@@ -156,8 +156,6 @@ class RegressionModel(GlobalForecastingModel):
         series = [series] if isinstance(series, TimeSeries) else series
         covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
-        self.input_dim = (0 if covariates is None else covariates[0].width) + series[0].width
-
     def fit_from_dataset(
         self,
         dataset: LaggedTrainingDataset, **kwargs
@@ -166,6 +164,7 @@ class RegressionModel(GlobalForecastingModel):
         Fit the model against the given `LaggedTrainingDataset`.
         """
         training_x, training_y = dataset.get_data()
+        self.input_dim = training_x.shape[1]
         self.model.fit(training_x, training_y, **kwargs)
 
     def predict(
@@ -245,6 +244,13 @@ class RegressionModel(GlobalForecastingModel):
         target_matrix, covariates_matrix, future_covariates_matrix = self._get_matrix_data_from_dataset(dataset)
         predictions = []
 
+        """
+        The columns of the prediction matrix has to have the same column order as during the training step, which is
+        as follows: lags | lag_cov_0 | lag_cov_1 | .. where each lag_cov_X is a shortcut for
+        lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the dimension of the covariate
+        series (when multivariate).
+        """
+
         for i in range(n):
             # getting training matrix
             X = []
@@ -258,7 +264,12 @@ class RegressionModel(GlobalForecastingModel):
                 X.append(covariates.reshape(covariates.shape[0], -1))
 
             X = np.concatenate(X, axis=1)
-            # predicting
+            raise_if_not(
+                X.shape[1] == self.input_dim,
+                "Dimension of prediction dataset not matching the training one. Check if you are passing covariates in"
+                " case you used them during training, and whether lags and lags_covariates are the same during training"
+                " and prediction."
+            )
             prediction = self.model.predict(X, **kwargs)
             prediction = prediction.reshape(-1, 1)
             # appending prediction to final predictions

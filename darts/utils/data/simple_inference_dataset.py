@@ -27,19 +27,23 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         `cov_past` is equal to the covariates with the same time index as the target series if covariates
         are provided, otherwise a value of `None` will be emitted.
         Both `tgt_past` and `cov_past` will be `input_chunk_length` long.
+
         Block models:
         If the model is required to produce the forecast over multiple iterations, i.e. if
         `n > self.output_chunk_length`, and if covariates were provided, then `cov_future` will
         be equal to the future covariates up to `n - self.output_chunk_length` time steps into the future.
+
         Recurrent models:
         If covariates were used to train the model, `n` covariates have to be available into the future.
         Therefore, `cov_future` will be equal to the future covariates up to `n` time steps into the future.
+
         The parameter `input_chunk_length` is necessary to determine the minimum length for all `tgt_past`
         and `cov_past` time series.
         Parameters `n`, `output_chunk_length` and `model_is_recurrent` are necessary to determine whether
         `cov_future` is necessary (or can be set to `None`) and to determine the required length for `cov_future`.
         It is important for the 3 emitted time series to have the same length across data points because
         they will be cast to tensors later on.
+
         Parameters
         ----------
         series
@@ -58,7 +62,8 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         add_prediction_covariate
             Boolean indicating whether, in case of a recurrent dataset (the covariate at prediction time is stored in
             cov_past), should be one timestamp longer or not. If `False`, the oldest covariate timestamp is discarded,
-            freeing space for the current covariate. If `True`, `len(cov_past) = len(tgt_past) + 1.
+            freeing space for the current covariate.
+            NOTE: If `True`, `len(cov_past) = len(tgt_past) + 1`.
     """
 
         super().__init__()
@@ -71,7 +76,7 @@ class SimpleInferenceDataset(TimeSeriesInferenceDataset):
         self.add_prediction_covariate = add_prediction_covariate
 
         raise_if(self.add_prediction_covariate is True and model_is_recurrent is False,
-                 "keep _extra_covariate can be only used when model_is_recurrent=True`")
+                 "`add_prediction_covariate` can be only used when `model_is_recurrent=True`")
 
         raise_if(model_is_recurrent and output_chunk_length != 1,
                  'Recurrent models require an `output_chunk_length == 1`.')

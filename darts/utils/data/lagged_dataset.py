@@ -59,13 +59,13 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
 
     raise_if(
         isinstance(lags, bool) or isinstance(lags_covariates, bool),
-        "`lags` and `lags_covariates` must be of type int or list, not bool.",
+        "`lags` and `lags_covariates` must be of type int or list, not bool."
     )
 
     if isinstance(lags, int):
         raise_if_not(
             lags > 0,
-            f"`lags` must be strictly positive. Given: {lags}.",
+            f"`lags` must be strictly positive. Given: {lags}."
         )
         # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
         lags = list(range(1, lags + 1))
@@ -74,7 +74,7 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
         for lag in lags:
             raise_if(
                 not isinstance(lag, int) or (lag <= 0),
-                f"Every element of `lags` must be a strictly positive integer. Given: {lags}.",
+                f"Every element of `lags` must be a strictly positive integer. Given: {lags}."
             )
     # using only the current current covariates, at position 0, which is the same timestamp as the prediction
     if isinstance(lags_covariates, int) and lags_covariates == 0:
@@ -83,7 +83,7 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
     elif isinstance(lags_covariates, int):
         raise_if_not(
             lags_covariates > 0,
-            f"`lags_covariates` must be an integer >= 0. Given: {lags_covariates}.",
+            f"`lags_covariates` must be an integer >= 0. Given: {lags_covariates}."
         )
         lags_covariates = list(range(1, lags_covariates + 1))
 
@@ -91,7 +91,7 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
         for lag in lags_covariates:
             raise_if(
                 not isinstance(lag, int) or (lag < 0),
-                f"Every element of `lags_covariates` must be an integer >= 0. Given: {lags_covariates}.",
+                f"Every element of `lags_covariates` must be an integer >= 0. Given: {lags_covariates}."
             )
 
     return lags, lags_covariates
@@ -152,7 +152,7 @@ class LaggedTrainingDataset:
             covariates=covariates,
             input_chunk_length=max_lags,
             output_chunk_length=1,
-            max_samples_per_ts=max_samples_per_ts,
+            max_samples_per_ts=max_samples_per_ts
         )
 
     def __len__(self):
@@ -201,6 +201,10 @@ class LaggedTrainingDataset:
         """
         The function returns a training matrix X with shape (n_samples, lags + lags_covariates*covariates.width)
         and y with shape (n_sample,).
+
+        The columns of the resulting matrix have the following order: lags | lag_cov_0 | lag_cov_1 | .. where each
+        lag_cov_X is a shortcut for lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the
+        dimension of the covariate series (when multivariate).
         """
         x = []
         y = []
@@ -228,7 +232,7 @@ class LaggedInferenceDataset:
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         lags: Union[int, list] = None,
         lags_covariates: Union[int, list] = None,
-        n: int = 1,
+        n: int = 1
     ):
         """
         A time series dataset wrapping around `SimpleInferenceDataset`. The `input_chunk_length` is inferred through

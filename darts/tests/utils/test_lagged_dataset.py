@@ -1,8 +1,7 @@
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.data.lagged_dataset import (
-    LaggedDataset,
-    LaggedInferenceDataset,
+    LaggedTrainingDataset,
     _process_lags,
 )
 from darts.models.linear_regression_model import LinearRegressionModel
@@ -26,11 +25,16 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
         self.assertEqual(lags, [1])
         self.assertEqual(lags_covariate, [0])
 
+        not_supported_values = [(0, None), (-3, None), (None, -1), ([0], None), ([-3], None), (None, [-1])]
+        for lags, lags_cov in not_supported_values:
+            with self.assertRaises(ValueError):
+                _process_lags(lags=lags, lags_covariates=lags_cov)
+
     def test_no_lags_covariates(self):
         # array of lags
         tests = [[3, 2, 1], [3]]
         for lags in tests:
-            X, y = LaggedDataset(target_series=self.target_1, lags=lags).get_data()
+            X, y = LaggedTrainingDataset(target_series=self.target_1, lags=lags).get_data()
 
             # len(series) - (older_lag + 1 (prediction)) + 1
             expected_length = len(self.target_1) - max(lags)
@@ -39,15 +43,13 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
                 X.shape[0],
                 expected_length,
                 f"Wrong matrix dimension. Expected {expected_length} number of "
-                f"samples, found {X.shape[0]}",
+                f"samples, found {X.shape[0]}"
             )
 
         # multiple TS
         tests = [[3, 2, 1], [3]]
         for lags in tests:
-            X, y = LaggedDataset(
-                target_series=[self.target_1] * 2, lags=lags
-            ).get_data()
+            X, y = LaggedTrainingDataset(target_series=[self.target_1] * 2, lags=lags).get_data()
 
             # len(series) - (older_lag + 1 (prediction)) + 1
             expected_length = (len(self.target_1) - max(lags)) * 2
@@ -56,30 +58,30 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
                 X.shape[0],
                 expected_length,
                 f"Wrong matrix dimension. Expected {expected_length} number of "
-                f"samples, found {X.shape[0]}",
+                f"samples, found {X.shape[0]}"
             )
 
     def test_get_data_without_covariate(self):
-        X, y = LaggedDataset(target_series=[self.target_1] * 2, lags=[3, 2]).get_data()
+        X, y = LaggedTrainingDataset(target_series=[self.target_1] * 2, lags=[3, 2]).get_data()
         self.assertEqual(X.shape[1], 2)
         self.assertEqual(X.shape[0], y.shape[0])
 
     def test_get_data_with_covariate_univariate(self):
-        X, y = LaggedDataset(
+        X, y = LaggedTrainingDataset(
             target_series=[self.target_1] * 2,
             covariates=[self.covariate_1] * 2,
             lags=[3, 2],
-            lags_covariates=[1],
+            lags_covariates=[1]
         ).get_data()
         self.assertEqual(X.shape[1], 3)
         self.assertEqual(X.shape[0], y.shape[0])
 
     def test_get_data_with_covariate_multivariate(self):
-        X, y = LaggedDataset(
+        X, y = LaggedTrainingDataset(
             target_series=[self.target_1] * 2,
             covariates=[self.covariate_1.stack(self.covariate_1 + 10)] * 2,
             lags=[3, 2],
-            lags_covariates=[2, 1],
+            lags_covariates=[2, 1]
         ).get_data()
         self.assertEqual(X.shape[1], 6)
         self.assertEqual(X.shape[0], y.shape[0])
@@ -88,11 +90,11 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
         lags = [5, 3, 1]
         lags_covariates = [4, 2, 0]
 
-        X, y = LaggedDataset(
+        X, y = LaggedTrainingDataset(
             target_series=self.target_1,
             covariates=self.covariate_1,
             lags=lags,
-            lags_covariates=lags_covariates,
+            lags_covariates=lags_covariates
         ).get_data()
 
         # len(series) - (older_lag + 1 (prediction)) + 1 - 1 (need an additional covariate)
@@ -102,7 +104,7 @@ class LaggedDatasetTestCase(DartsBaseTestClass):
             X.shape[0],
             expected_length,
             f"Wrong matrix dimension. Expected {expected_length} number of "
-            f"samples, found {X.shape[0]}",
+            f"samples, found {X.shape[0]}"
         )
 
 
