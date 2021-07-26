@@ -692,37 +692,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with torch.no_grad():
             for batch_tuple in iterator:
 
-                input_data_tuple, input_series = batch_tuple[:-1], batch_tuple[-1]
-
-                # at this point `input_series` contains both the past target series and past covariates
-                # input_series = batch_tuple[0].to(self.device)
-                # cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
+                input_data_tuple, batch_input_series = batch_tuple[:-1], batch_tuple[-1]
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
                 for i in range(num_samples):
-                    # if self.is_recurrent:
-                    #     batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
-                    # else:
-                    #     batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
-
                     batch_prediction = self._get_batch_prediction(n, input_data_tuple, roll_size)
-
-
                     batch_prediction = batch_prediction.cpu().detach().numpy()
-
                     batch_predictions.append(batch_prediction)
 
-                # TODO: this isn't very good as here we are calling again the input_series_dataset (which
-                # TODO: causes some slicing again). Instead, we should return Tensors only in the __getitem__()
-                # TODO: of the dataset, and offer a get_past_target(idx) method to return the past_target.
-                batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
-                        [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
-                        input_series_dataset[dataset_idx][0]
+                        [batch_prediction[sample_idx] for batch_prediction in batch_predictions], input_series
                     )
-                    for batch_idx, dataset_idx in enumerate(batch_indices)
+                    for sample_idx, input_series in enumerate(batch_input_series)
                 )
 
                 predictions.extend(ts_forecasts)
@@ -767,7 +750,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
                 train_batch = tuple(tensor.to(self.device) if tensor is not None else None for tensor in train_batch)
-                output = self._forward_pass(train_batch[:-1], train=True)
+                output = self._produce_train_output(train_batch[:-1])
                 target = train_batch[-1]
                 loss = self._compute_loss(output, target)
                 self.optimizer.zero_grad()
