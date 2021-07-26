@@ -64,7 +64,7 @@ class TrainingDataset(ABC, Dataset):
         pass
 
 
-class PastCovariatesTrainingDataset(ABC, TrainingDataset):
+class PastCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
         Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
@@ -78,7 +78,7 @@ class PastCovariatesTrainingDataset(ABC, TrainingDataset):
         pass
 
 
-class FutureCovariatesTrainingDataset(ABC, TrainingDataset):
+class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
         Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
@@ -92,7 +92,7 @@ class FutureCovariatesTrainingDataset(ABC, TrainingDataset):
         pass
 
 
-class DualCovariatesTrainingDataset(ABC, TrainingDataset):
+class DualCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
         Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
@@ -106,7 +106,7 @@ class DualCovariatesTrainingDataset(ABC, TrainingDataset):
         pass
 
 
-class MixedCovariatesTrainingDataset(ABC, TrainingDataset):
+class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
         Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
@@ -121,7 +121,7 @@ class MixedCovariatesTrainingDataset(ABC, TrainingDataset):
         pass
 
 
-class SplitCovariatesTrainingDataset(ABC, TrainingDataset):
+class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
         Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of

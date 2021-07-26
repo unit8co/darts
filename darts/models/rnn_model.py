@@ -10,9 +10,7 @@ from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
-                                      DualCovariatesTorchModel,
-                                      RecurrentModel)
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
 from ..utils.torch import random_method
 from ..utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from ..utils.likelihood_models import LikelihoodModel
@@ -97,7 +95,7 @@ class _RNNModule(nn.Module):
         return predictions, last_hidden_state
 
 
-class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel, RecurrentModel):
+class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
     @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
