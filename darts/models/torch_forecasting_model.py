@@ -190,7 +190,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.nr_epochs_val_period = nr_epochs_val_period
 
         if model_name is None:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
@@ -611,23 +611,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_tuple in iterator:
 
                 # at this point `input_series` contains both the past target series and past covariates
-                input_series = batch_tuple[0]
+                input_series = batch_tuple[0].to(self.device)
                 cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
-                for i in range(num_samples):
+
+                # if batch_size is not a multiple of input_series, this won't fill the entire batch_size
+                series_length = input_series.shape[0]
+                batch_sample_size = max(batch_size // series_length, 1)
+                sample_length = 0
+
+                in_shape = input_series.shape
+
+                while sample_length < num_samples:
+                    if sample_length+batch_sample_size > num_samples:
+                        batch_sample_size = num_samples - sample_length
+
+                    sample_input_series = input_series.tile((batch_sample_size, 1, 1))
+
                     if self.is_recurrent:
-                        batch_prediction = self._predict_batch_recurrent_model(n, input_series, cov_future)
+                        batch_prediction = self._predict_batch_recurrent_model(n, sample_input_series, cov_future)
                     else:
-                        batch_prediction = self._predict_batch_block_model(n, input_series, cov_future, roll_size)
+                        batch_prediction = self._predict_batch_block_model(n, sample_input_series, cov_future, roll_size)
 
                     # bring predictions into desired format and drop unnecessary values
-                    batch_prediction = torch.cat(batch_prediction, dim=1)
-                    batch_prediction = batch_prediction[:, :n, :]
-                    batch_prediction = batch_prediction.cpu().detach().numpy()
 
+                    batch_prediction = torch.cat(batch_prediction, dim=1)
+                    out_shape = batch_prediction.shape
+
+                    batch_prediction = batch_prediction.reshape((batch_sample_size, series_length,) + out_shape[1:])
+                    batch_prediction = batch_prediction[:, :, :n, :]
                     batch_predictions.append(batch_prediction)
+                    sample_length += batch_sample_size
+
+                batch_predictions = torch.cat(batch_predictions, dim=0)
+                batch_predictions = batch_predictions.cpu().detach().numpy()
 
                 batch_indices = batch_tuple[-1]
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
@@ -943,9 +962,9 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
-        This is a base class for pytroch parametric probabilistic models. "Parametric" 
-        means that these models are based on some predefined parametric distribution, say Gaussian. 
-        Make sure that subclasses contain the *likelihood* parameter in __init__ method 
+        This is a base class for pytroch parametric probabilistic models. "Parametric"
+        means that these models are based on some predefined parametric distribution, say Gaussian.
+        Make sure that subclasses contain the *likelihood* parameter in __init__ method
         and it is passed to the superclass via calling super().__init__. If the likelihood is not
         provided, the model is considered as deterministic.
 
