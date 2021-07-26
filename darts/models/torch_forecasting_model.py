@@ -82,57 +82,6 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-class TimeSeriesTorchDataset(Dataset):
-    def __init__(self, ts_dataset: Union[InferenceDataset, TrainingDataset]):
-        """
-        Wraps around `TimeSeriesDataset`, in order to provide translation
-        from `TimeSeries` to torch tensors and stack target series with covariates when needed.
-        Inherits from torch `Dataset`.
-
-        Parameters
-        ----------
-        ts_dataset
-            the `TimeSeriesDataset` or `TrainingDataset` underlying this torch Dataset.
-        """
-        self.ts_dataset = ts_dataset
-
-    @staticmethod
-    def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
-        if tsr2 is None:
-            return tsr1
-        else:
-            return torch.cat([tsr1, tsr2], dim=1)
-
-    def __len__(self):
-        return len(self.ts_dataset)
-
-    def __getitem__(self, idx: int):
-        """
-        Cast the content of the dataset to torch tensors
-        """
-        item = self.ts_dataset[idx]
-
-        if isinstance(self.ts_dataset, InferenceDataset):
-            # the dataset contains (input_target, input_covariate) only
-            past_tgt = torch.from_numpy(item[0].values(copy=False)).float()
-            past_cov = torch.from_numpy(item[1].values(copy=False)).float() if item[1] is not None else None
-            future_cov = torch.from_numpy(item[2].values(copy=False)).float() if item[2] is not None else None
-
-            if future_cov is not None:
-                return self._cat_with_optional(past_tgt, past_cov), future_cov, idx
-            else:
-                return self._cat_with_optional(past_tgt, past_cov), idx
-
-        elif isinstance(self.ts_dataset, TrainingDataset):
-            # the dataset contains (input_target, output_target, input_covariate)
-            past_tgt, output_tgt = torch.from_numpy(item[0]).float(), torch.from_numpy(item[1]).float()
-            past_cov = torch.from_numpy(item[2]).float() if item[2] is not None else None
-            return self._cat_with_optional(past_tgt, past_cov), output_tgt
-
-        else:
-            raise ValueError('The dataset must be of type `TrainingDataset` or `InferenceDataset`')
-
-
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
