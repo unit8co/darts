@@ -703,9 +703,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 ts_forecasts = Parallel(n_jobs=n_jobs)(
                     delayed(self._build_forecast_series)(
-                        [batch_prediction[sample_idx] for batch_prediction in batch_predictions], input_series
+                        [batch_prediction[batch_idx] for batch_prediction in batch_predictions], input_series
                     )
-                    for sample_idx, input_series in enumerate(batch_input_series)
+                    for batch_idx, input_series in enumerate(batch_input_series)
                 )
 
                 predictions.extend(ts_forecasts)
