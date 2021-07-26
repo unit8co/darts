@@ -1,6 +1,6 @@
 """
-Recurrent Neural Networks
--------------------------
+Block Recurrent Neural Networks
+-------------------------------
 """
 
 import torch.nn as nn
