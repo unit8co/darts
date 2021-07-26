@@ -1,5 +1,4 @@
 import unittest
-from numpy.lib.arraysetops import isin
 import pandas as pd
 
 from darts.dataprocessing.transformers.mappers import Mapper, InvertibleMapper

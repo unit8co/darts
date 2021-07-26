@@ -1,5 +1,4 @@
 import math
-from shutil import Error
 
 import numpy as np
 import pandas as pd
@@ -590,7 +589,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_map_with_timestamp(self):
         series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
         zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
-        print(zeroes.columns.to_list())
         zeroes = zeroes.with_columns_renamed('constant', 'linear')
         
         def function(ts, x):

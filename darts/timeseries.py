@@ -1817,7 +1817,7 @@ class TimeSeries:
             cols_name_new = [cols_name_new]
 
         raise_if_not(all([(x in self.columns.to_list()) for x in cols_name]), 
-                                                    "Some column names in cols_name don't exist in the time series")
+                                                    "Some column names in cols_name don't exist in the time series", logger)
         
         raise_if_not(len(cols_name) == len(cols_name_new), 'Length of col_name_new list should be'
                                                     ' equal to length of col_name list', logger)
