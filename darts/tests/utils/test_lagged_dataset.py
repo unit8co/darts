@@ -1,9 +1,6 @@
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.data.lagged_dataset import (
-    LaggedTrainingDataset,
-    _process_lags,
-)
+from darts.models.regression_model import LaggedTrainingDataset, _process_lags
 from darts.models.linear_regression_model import LinearRegressionModel
 
 
