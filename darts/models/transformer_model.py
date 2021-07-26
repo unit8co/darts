@@ -269,9 +269,9 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_decoder = custom_decoder
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, future_target, past_covariates)
-        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
-        output_dim = train_sample[1].shape[1]
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
 
         return _TransformerModule(input_chunk_length=self.input_chunk_length,
                                   output_chunk_length=self.output_chunk_length,

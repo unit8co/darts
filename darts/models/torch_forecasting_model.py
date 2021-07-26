@@ -215,6 +215,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # We will fill these dynamically, upon first call of fit_from_dataset():
         self.model = None
         self.train_sample = None
+        self.output_dim = None
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -437,13 +438,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_sample = train_dataset[0]
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
-            self.train_sample = train_sample
+            self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
             self._init_model()
         else:
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(len(train_sample) == len(self.train_sample),
                          'The size of the training set samples (tuples) does not match what the model has been '
-                         'previously trained one. Trained on tuples of length {}, received tuples of length {}.'.format(
+                         'previously trained on. Trained on tuples of length {}, received tuples of length {}.'.format(
                              len(self.train_sample), len(train_sample)
                          ))
             raise_if_not((s.shape[1] for s in train_sample) == (s.shape[1] for s in self.train_sample),
@@ -455,7 +456,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
-        train_loader = DataLoader(torch_train_dataset,
+        train_loader = DataLoader(train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
                                   num_workers=0,
@@ -463,7 +464,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                   drop_last=False)
 
         # Prepare validation data
-        val_loader = None if val_dataset is None else DataLoader(torch_val_dataset,
+        val_loader = None if val_dataset is None else DataLoader(val_dataset,
                                                                  batch_size=self.batch_size,
                                                                  shuffle=False,
                                                                  num_workers=0,
@@ -657,26 +658,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self._verify_inference_dataset_type(input_series_dataset)
 
-        self.model.eval()
-
         if roll_size is None:
             roll_size = self.output_chunk_length
         else:
             raise_if_not(0 < roll_size <= self.output_chunk_length,
                          '`roll_size` must be an integer between 1 and `self.output_chunk_length`.')
 
-        # check input data type
-        raise_if_not(isinstance(input_series_dataset, InferenceDataset),
-                     'Only InferenceDataset is accepted as input type.')
-
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, '`num_samples` must be a positive integer.')
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
-        torch_dataset = input_series_dataset.to_torch_dataset()  # TODO: self.device?
 
-        pred_loader = DataLoader(torch_dataset,
+        pred_loader = DataLoader(input_series_dataset,
                                  batch_size=batch_size,
                                  shuffle=False,
                                  num_workers=0,
@@ -684,12 +678,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  drop_last=False)
         predictions = []
         iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
+
+        self.model.eval()
         with torch.no_grad():
             for batch_tuple in iterator:
 
+                input_data_tuple, input_series = batch_tuple[:-1], batch_tuple[-1]
+
                 # at this point `input_series` contains both the past target series and past covariates
-                input_series = batch_tuple[0].to(self.device)
-                cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
+                # input_series = batch_tuple[0].to(self.device)
+                # cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
@@ -729,7 +727,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                    roll_size) -> Sequence[TimeSeries]:
 
         batch_prediction = []
+
+        # TODO: remove this "first_prediction_index" and move it into the models that need it
         out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
+
         batch_prediction.append(out[:, :roll_size, :])
         prediction_length = roll_size
 
@@ -833,10 +834,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         for epoch in iterator:
             total_loss = 0
 
-            for batch_idx, (data, target) in enumerate(train_loader):
+            for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
-                data, target = data.to(self.device), target.to(self.device)
-                output = self._produce_train_output(data)
+                train_batch = tuple(tensor.to(self.device) if tensor is not None else None for tensor in train_batch)
+                output = self._produce_train_output(train_batch[:-1])
+                target = train_batch[-1]
                 loss = self._compute_loss(output, target)
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -875,8 +877,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 elif verbose:
                     print("Training loss: {:.4f}".format(training_loss), end="\r")
 
-    def _produce_train_output(self, data):
-        return self.model(data)
+    def _produce_train_output(self, train_batch):
+        """
+        The main purpose of this function is to be redefined in the RNN models, so that they can
+        return the output only (and not the hidden state).
+        """
+        return self.model(*train_batch)
+
+        # past_target, past_covariate, _ = train_batch
+        # return self.model(past_target, past_covariate)
+        # inpt = _cat_with_optional(train_batch[0], train_batch[2])
+        # return self.model(inpt)
 
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
@@ -888,9 +899,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         total_loss = 0
         self.model.eval()
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(val_loader):
-                data, target = data.to(self.device), target.to(self.device)
-                output = self._produce_train_output(data)
+            for batch_idx, val_batch in enumerate(val_loader):
+                val_batch = tuple(tensor.to(self.device) if tensor is not None else None for tensor in val_batch)
+                output = self._produce_train_output(val_batch)
+                target = self._get_target_from_train_batch(val_batch)
                 loss = self._compute_loss(output, target)
                 total_loss += loss.item()
 
@@ -1064,6 +1076,14 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
 
 def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
     raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
+
+
+def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
+    if tsr2 is None:
+        return tsr1
+    else:
+        # dimensions are (batch, length, width), we concatenate along the widths.
+        return torch.cat([tsr1, tsr2], dim=2)
 
 
 """

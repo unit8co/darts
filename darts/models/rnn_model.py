@@ -173,9 +173,10 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         self.is_recurrent = True
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, future_target, historic_future_covariates, future_covariates)
-        input_dim = train_sample[0].shape[1] + (train_sample[2].shape[1] if train_sample[2] is not None else 0)
-        output_dim = train_sample[1].shape[1]
+        # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
+        # historic_future_covariates and future_covariates have the same width
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
 
         target_size = (
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
@@ -206,8 +207,8 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                      'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
         raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
 
-    def _produce_train_output(self, data):
-        return self.model(data)[0]
+    def _produce_train_output(self, input_batch):
+        return self.model(*input_batch)[0]
 
     @random_method
     def _produce_predict_output(self, input, last_hidden_state=None):
