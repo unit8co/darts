@@ -22,9 +22,10 @@ from darts.utils.data.simple_inference_dataset import SimpleInferenceDataset
 logger = get_logger(__name__)
 
 
-def _process_lags(lags: Optional[Union[int, List[int]]] = None,
-                  lags_covariates: Optional[Union[int, List[int]]] = None
-                  ) -> Tuple[Optional[List[int]], Optional[List[int]]]:
+def _process_lags(
+    lags: Optional[Union[int, List[int]]] = None,
+    lags_covariates: Optional[Union[int, List[int]]] = None
+) -> Tuple[Optional[List[int]], Optional[List[int]]]:
     """
     Process lags and lags_covariate.
 
@@ -54,29 +55,24 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
 
     raise_if(
         (lags is None) and (lags_covariates is None),
-        "At least one of `lags` or `lags_covariates` must be not None."
-    )
+        "At least one of `lags` or `lags_covariates` must be not None.")
 
     raise_if_not(
         isinstance(lags, (int, list)) or lags is None,
-        f"`lags` must be of type int or list. Given: {type(lags)}."
-    )
+        f"`lags` must be of type int or list. Given: {type(lags)}.")
 
     raise_if_not(
         isinstance(lags_covariates, (int, list)) or lags_covariates is None,
-        f"`lags_covariates` must be of type int or list. Given: {type(lags_covariates)}."
-    )
+        f"`lags_covariates` must be of type int or list. Given: {type(lags_covariates)}.")
 
     raise_if(
         isinstance(lags, bool) or isinstance(lags_covariates, bool),
-        "`lags` and `lags_covariates` must be of type int or list, not bool."
-    )
+        "`lags` and `lags_covariates` must be of type int or list, not bool.")
 
     if isinstance(lags, int):
         raise_if_not(
             lags > 0,
-            f"`lags` must be strictly positive. Given: {lags}."
-        )
+            f"`lags` must be strictly positive. Given: {lags}.")
         # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
         lags = list(range(1, lags + 1))
 
@@ -84,8 +80,7 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
         for lag in lags:
             raise_if(
                 not isinstance(lag, int) or (lag <= 0),
-                f"Every element of `lags` must be a strictly positive integer. Given: {lags}."
-            )
+                f"Every element of `lags` must be a strictly positive integer. Given: {lags}.")
     # using only the current current covariates, at position 0, which is the same timestamp as the prediction
     if isinstance(lags_covariates, int) and lags_covariates == 0:
         lags_covariates = [0]
@@ -93,16 +88,14 @@ def _process_lags(lags: Optional[Union[int, List[int]]] = None,
     elif isinstance(lags_covariates, int):
         raise_if_not(
             lags_covariates > 0,
-            f"`lags_covariates` must be an integer >= 0. Given: {lags_covariates}."
-        )
+            f"`lags_covariates` must be an integer >= 0. Given: {lags_covariates}.")
         lags_covariates = list(range(1, lags_covariates + 1))
 
     elif isinstance(lags_covariates, list):
         for lag in lags_covariates:
             raise_if(
                 not isinstance(lag, int) or (lag < 0),
-                f"Every element of `lags_covariates` must be an integer >= 0. Given: {lags_covariates}."
-            )
+                f"Every element of `lags_covariates` must be an integer >= 0. Given: {lags_covariates}.")
 
     return lags, lags_covariates
 
@@ -124,13 +117,8 @@ def _consume_column(m: np.ndarray) -> Optional[np.ndarray]:
 
     raise_if_not(
         len(m.shape) >= 2,
-        f"The passed array must have at least 2 dimensions, found {len(m.shape)}"
-    )
-
-    if m.shape[1] == 1:
-        return None
-    else:
-        return m[:, 1:]
+        f"The passed array must have at least 2 dimensions, found {len(m.shape)}")
+    return None if m.shape[1] == 1 else m[:, 1:]
 
 
 class LaggedTrainingDataset:
@@ -209,7 +197,6 @@ class LaggedTrainingDataset:
 
             T5 T4 T3 T2 T1 T0 -> P | T5 T4 T3 T2 T1     -> T0~P'
             C5 C4 C3 C2 C1 C0      | C5 C4 C3 C2 C1 C0
-
             """
             # overwrite the prediction
             output_target = np.array(input_target[-1]).reshape(1, 1)
@@ -477,6 +464,7 @@ class RegressionModel(GlobalForecastingModel):
             covariates = self.covariate_series
 
         called_with_single_series = False
+
         if isinstance(series, TimeSeries):
             called_with_single_series = True
             series = [series]
@@ -493,10 +481,7 @@ class RegressionModel(GlobalForecastingModel):
             "model input dim = {}".format(in_dim, self.input_dim),
         )
 
-        dataset = LaggedInferenceDataset(
-            series, covariates, self.lags, self.lags_covariates, n
-        )
-
+        dataset = LaggedInferenceDataset(series, covariates, self.lags, self.lags_covariates, n)
         predictions = self.predict_from_dataset(dataset, n, **kwargs)
 
         return predictions[0] if called_with_single_series else predictions
@@ -513,11 +498,13 @@ class RegressionModel(GlobalForecastingModel):
 
         raise_if_not(
             (dataset.lags == self.lags) and (dataset.lags_covariates == self.lags_covariates),
-            "Either lags or lags_covariates not matching with the one used during training."
-        )
+            "Either lags or lags_covariates not matching with the one used during training.")
 
         target_matrix, covariates_matrix, future_covariates_matrix = self._get_matrix_data_from_dataset(dataset)
         predictions = []
+
+        if future_covariates_matrix is not None:
+            raise_if_not(future_covariates_matrix.shape[1] >= n - 1, "Not enough future covariate provided.")
 
         """
         The columns of the prediction matrix has to have the same column order as during the training step, which is
@@ -527,7 +514,7 @@ class RegressionModel(GlobalForecastingModel):
         """
 
         for i in range(n):
-            # getting training matrix
+            # building training matrix
             X = []
             if self.lags_indices is not None:
                 target_series = target_matrix[:, self.lags_indices]
@@ -556,7 +543,6 @@ class RegressionModel(GlobalForecastingModel):
 
             # shifting matrices for the next step
             if i < n - 1:
-
                 # discarding oldest covariate
                 if covariates_matrix is not None:
                     covariates_matrix = _consume_column(covariates_matrix)
@@ -572,12 +558,8 @@ class RegressionModel(GlobalForecastingModel):
                         covariates_matrix = np.concatenate(new_cov_matrix, axis=1)
                         future_covariates_matrix = _consume_column(future_covariates_matrix)
 
-                        # TODO move this to a check
-                        raise_if(future_covariates_matrix is None and i != n - 2, "future covariates not sufficiently"
-                                 "long")
-
         predictions = np.concatenate(predictions, axis=1)
-        return [self._build_forecast_series(row, input) for row, (input, _, _) in zip(predictions, dataset)]
+        return [self._build_forecast_series(row, input_tgt) for row, (input_tgt, _, _) in zip(predictions, dataset)]
 
     def _get_matrix_data_from_dataset(
         self,

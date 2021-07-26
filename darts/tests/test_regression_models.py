@@ -119,10 +119,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertTrue(len(prediction[0]) == 10)
 
             with self.assertRaises(ValueError):
+                # testing lags_covariate None but covariates during training
                 model_instance = model(lags=4, lags_covariates=None)
                 model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
 
             with self.assertRaises(ValueError):
+                # testing lags_covariate but no covariate during fit
                 model_instance = model(lags=4, lags_covariates=3)
                 model_instance.fit(series=self.ts_sum1)
 
@@ -131,7 +133,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_covariates=4)
                 model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
-                prediction = model_instance.predict(n=10)
+                model_instance.predict(n=10)
 
             model_instance = model(lags=12)
             model_instance.fit(series=self.ts_sum1)
@@ -163,11 +165,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
             self.assertTrue(
                 current_rmse <= min_rmse,
-                (
-                    "{} model was not able to denoise data. A rmse score of {} was recorded.".format(
-                        str(model_instance), current_rmse
-                    )
-                ),
+                f"{str(model_instance)} model was not able to denoise data. A rmse score of {current_rmse} was"
+                "recorded."
             )
 
     def test_models_denoising(self):
@@ -189,7 +188,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             retrain=True,
             overlap_end=False,
             last_points_only=True,
-            verbose=False,
+            verbose=False
         )
         self.assertEqual(len(result), 51)
 
@@ -203,7 +202,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             retrain=True,
             overlap_end=False,
             last_points_only=True,
-            verbose=False,
+            verbose=False
         )
         self.assertEqual(len(result), 51)
 
@@ -213,7 +212,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             RegressionModel(lags=lags),
             RegressionModel(lags=lags, model=LinearRegression()),
             RegressionModel(lags=lags, model=RandomForestRegressor()),
-            RegressionModel(lags=lags, model=HistGradientBoostingRegressor()),
+            RegressionModel(lags=lags, model=HistGradientBoostingRegressor())
         ]
 
         for model in models:
@@ -221,7 +220,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(len(model.lags), lags)
             model.predict(n=10)
 
-    def test_my_test(self):
+    def test_multiple_ts(self):
         lags = 4
         lags_covariates = 3
         model = RegressionModel(lags=lags, lags_covariates=lags_covariates)
@@ -229,21 +228,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
         covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
         covariates = covariates.stack(
-            tg.linear_timeseries(start_value=400, end_value=449, length=50)
-        )
+            tg.linear_timeseries(start_value=400, end_value=449, length=50))
 
         target_train, target_test = target_series.split_after(0.7)
         covariates_train, covariates_test = covariates.split_after(0.7)
         model.fit(
             series=[target_train, target_train + 0.5],
-            covariates=[covariates_train, covariates_train + 0.5],
-        )
+            covariates=[covariates_train, covariates_train + 0.5])
 
         predictions = model.predict(
             10,
             series=[target_train, target_train + 0.5],
-            covariates=[covariates, covariates + 0.5],
-        )
+            covariates=[covariates, covariates + 0.5])
 
         self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
 
@@ -270,6 +266,26 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             covariates=[covariates, covariates + 0.5],
         )
 
-        self.assertEqual(
-            len(predictions[0]), 10, f"Found {len(predictions[0])} instead"
-        )
+        self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions[0])} instead")
+
+    def test_not_enough_future_covariate(self):
+
+        target_series = tg.linear_timeseries(start_value=0, end_value=19, length=20)
+        covariates = tg.linear_timeseries(start_value=0, end_value=20, length=20)
+
+        target_train, target_test = target_series.split_after(9)
+        covariates_train, covariates_test = covariates.split_after(9)
+
+        model = RegressionModel(lags_covariates=0)
+        model.fit(series=target_train, covariates=covariates_train)
+        # 11 future covariates, with 0 lags covariate, can predict up to 10
+        model.predict(10, series=target_train, covariates=covariates)
+        with self.assertRaises(ValueError):
+            model.predict(11, series=target_train, covariates=covariates)
+
+        model = RegressionModel(lags_covariates=1)
+        model.fit(series=target_train, covariates=covariates_train)
+        # 11 future covariates, without 0 lags covariate, can predict up to 11
+        model.predict(11, series=target_train, covariates=covariates)
+        with self.assertRaises(ValueError):
+            model.predict(12, series=target_train, covariates=covariates)
