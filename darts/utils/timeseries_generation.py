@@ -214,13 +214,14 @@ def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     if not add_length and not until:
         return time_index
 
-    raise_if(add_length and until, "set only one of add_length and until")
+    raise_if(bool(add_length) and bool(until), "set only one of add_length and until")
 
     end = time_index[-1]
     freq = time_index.freq
 
-    if add_length > 0:
-        raise_if_not(add_length >= 0, "until, indicating the number of time points to extend into the future by, must be positive")
+    if add_length:
+        raise_if_not(add_length >= 0, f"Expected add_length, by which to extend the time series by, "
+                                      f"to be positive, got {add_length}")
 
         try:
             end += add_length*freq
@@ -247,7 +248,7 @@ def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
 
         end = timestamp
 
-    new_time_index = pd.date_range(start= time_index[0], end=end, freq= freq)
+    new_time_index = pd.date_range(start=time_index[0], end=end, freq=freq)
     return new_time_index
 
 
@@ -279,6 +280,7 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
         and int for range indexed series, should match or exceed forecasting window.
     add_length
         Extend the time_index by add_length, should match or exceed forecasting window.
+        Set only one of until and add_length.
 
     Returns
     -------
@@ -304,6 +306,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
 
+
     Parameters
     ----------
     time_index
@@ -316,12 +319,14 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         (results in more columns).
     cyclic
         Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+        Alternative to one_hot encoding, enable only one of the two.
         (adds 2 columns, corresponding to sin and cos transformation)
     until
         Extend the time_index up until timestamp for datetime indexed series
         and int for range indexed series, should match or exceed forecasting window.
     add_length
         Extend the time_index by add_length, should match or exceed forecasting window.
+        Set only one of until and add_length.
 
     Returns
     -------
@@ -361,8 +366,12 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
                 values_df[i] = 0
         values_df = values_df[range(1, num_values_dict[attribute] + 1)]
     elif cyclic:
-        period = num_values_dict[attribute]
-        freq = 2*np.pi/period
+        if attribute == "day":
+            periods = [time_index[i].days_in_month for i in time_index.month]
+            freq = 2*np.pi * np.reciprocal(periods)
+        else:
+            period = num_values_dict[attribute]
+            freq = 2*np.pi/period
 
         values_df = pd.DataFrame({
             attribute+"_sin": np.sin(freq * values),

@@ -138,9 +138,23 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(sum(seriesD.values()[:, 1 + 1]), 23)
 
         # test cyclic
-        seriesE = self.series1.add_datetime_attribute('day', cyclic=True)
-        self.assertTrue(np.allclose(seriesE.values()[:, 3], np.sin((2*np.pi/31) * self.series1.time_index.day)))
-        self.assertTrue(np.allclose(seriesE.values()[:, 4], np.cos((2*np.pi/31) * self.series1.time_index.day)))
+        times_month = pd.date_range('20130101', '20140610')
+        start = times_month[0]
+        end = times_month[-1]
+
+        seriesE = TimeSeries.from_times_and_values(times_month, np.repeat(0.1, len(times_month)))
+        seriesF = seriesE.add_datetime_attribute('day', cyclic=True)
+
+        values_sin = seriesF.values()[:, 1]
+        values_cos = seriesF.values()[:, 2]
+
+        self.assertTrue(np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1))
+        start_of_month = [pd.Timestamp(year=start.year, month=m, day=1, freq='d') - start for m in range(start.month, end.month)]
+        start_of_month_idx = [stamp.days for stamp in start_of_month]
+
+        self.assertTrue(np.allclose(values_sin[start_of_month_idx], 0))
+        self.assertTrue(np.allclose(values_cos[start_of_month_idx], 1))
+
 
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp('20201201'), periods=30, freq='D')

@@ -95,13 +95,12 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 test_routine(time_index, country_code)
 
         # test extend time index
-        test_routine(time_index_1, 'US',  add_length= 365)
+        test_routine(time_index_1, 'US',  add_length=365)
         test_routine(time_index_1, 'CH',  until='2016-01-01')
         test_routine(time_index_1, 'CH',  until='20160101')
         test_routine(time_index_1, 'AR',  until=pd.Timestamp('2016-01-01'))
 
         # test overflow
-
         with self.assertRaises(ValueError):
             holidays_timeseries(time_index_1, 'US', add_length=99999)
 

@@ -1555,7 +1555,8 @@ class TimeSeries:
             (results in more columns).
         cyclic
             Boolean value indicating whether to add the specified attribute as a cyclic encoding.
-            (adds 2 columns, corresponding to sin and cos transformation)
+            Alternative to one_hot encoding, enable only one of the two.
+            (adds 2 columns, corresponding to sin and cos transformation).
 
         Returns
         -------
