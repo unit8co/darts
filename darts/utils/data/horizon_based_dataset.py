@@ -21,7 +21,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                  lh: Tuple[int, int] = (1, 3),
                  lookback: int = 3) -> None:
         """
-        A time series dataset containing tuples of (past_target, future_target, past_covariates) arrays,
+        A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
         in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
         The "past" series have length `lookback * output_chunk_length`, and the "future" series has length
@@ -88,7 +88,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
 
@@ -130,4 +130,4 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
             input_covariate = covariate_values[-(cov_fcast_idx + self.lookback * self.output_chunk_length):-cov_fcast_idx]
 
-        return input_series, output_series, input_covariate
+        return input_series, input_covariate, output_series

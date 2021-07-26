@@ -4,7 +4,6 @@ Shifted Training Dataset
 """
 
 from typing import Union, Sequence, Optional, Tuple
-import torch
 import numpy as np
 
 from ...timeseries import TimeSeries
@@ -25,7 +24,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (past_target, future_target, past_covariates)
+        A time series dataset containing tuples of (past_target, past_covariates, future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" (and "past_covariates") goes from position `i` to `i+length`,
@@ -74,7 +73,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -86,7 +85,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (past_target, future_target, future_covariates)
+        A time series dataset containing tuples of (past_target, future_covariates, future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
@@ -138,7 +137,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -174,10 +173,10 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
-        past_target, future_target, past_covariate = self.ds_past[idx]
-        _, _, future_covariate = self.ds_future[idx]
-        return past_target, future_target, past_covariate, future_covariate
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+        past_target, past_covariate, future_target = self.ds_past[idx]
+        _, future_covariate, _ = self.ds_future[idx]
+        return past_target, past_covariate, future_covariate, future_target
 
 
 class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
@@ -189,8 +188,8 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        A time series dataset containing tuples of (past_target, future_target, past_covariates,
-                                                    historic_future_covariates, future_covariates)
+        A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
+                                                    future_covariates, future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
@@ -250,10 +249,12 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
-        past_target, future_target, past_covariate = self.ds_past[idx]
-        _, _, historic_future_covariate, future_covariate = self.ds_dual[idx]
-        return past_target, future_target, past_covariate, historic_future_covariate, future_covariate
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
+                                        Optional[np.ndarray], np.ndarray]:
+
+        past_target, past_covariate, future_target = self.ds_past[idx]
+        _, historic_future_covariate, future_covariate, _ = self.ds_dual[idx]
+        return past_target, past_covariate, historic_future_covariate, future_covariate, future_target
 
 
 class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
@@ -289,10 +290,10 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
-        past_target, future_target, past_covariate = self.ds_past[idx]
-        _, _, future_covariate = self.ds_future[idx]
-        return past_target, future_target, past_covariate, future_covariate
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+        past_target, past_covariate, future_target = self.ds_past[idx]
+        _, future_covariate, _ = self.ds_future[idx]
+        return past_target, past_covariate, future_covariate, future_target
 
 
 class GenericShiftedDataset:
@@ -305,7 +306,7 @@ class GenericShiftedDataset:
                  shift_covariates: bool = False,
                  max_samples_per_ts: Optional[int] = None):
         """
-        Contains (past_target, future_target, <X>_covariate), where "<X>" is past if `shift_covariates = False`
+        Contains (past_target, <X>_covariate, future_target), where "<X>" is past if `shift_covariates = False`
         and future otherwise.
         The past chunks have length `input_chunk_length` and the future chunks have length `output_chunk_length`.
         The future chunks start `shift` after the past chunks' start.
@@ -361,7 +362,7 @@ class GenericShiftedDataset:
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
@@ -419,4 +420,4 @@ class GenericShiftedDataset:
                          "The dataset contains some covariate series whose time axis doesn't allow to "
                          "obtain the input (or output) chunk relative to the target series.")
 
-        return past_target, future_target, covariate
+        return past_target, covariate, future_target
