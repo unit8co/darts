@@ -351,6 +351,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         pass
 
+    @abstractmethod
+    def _forward_pass(self, input_batch: Tuple, train: bool):
+        pass
+
     @random_method
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -837,7 +841,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
                 train_batch = tuple(tensor.to(self.device) if tensor is not None else None for tensor in train_batch)
-                output = self._produce_train_output(train_batch[:-1])
+                output = self._forward_pass(train_batch[:-1], train=True)
                 target = train_batch[-1]
                 loss = self._compute_loss(output, target)
                 self.optimizer.zero_grad()
@@ -1131,6 +1135,12 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
+
+    def _forward_pass(self, input_batch: Tuple, train: bool):
+        past_target, past_covariate = input_batch
+        # Currently all our PastCovariates models require past target and covariates concatenated
+        inpt = torch.cat([past_target, past_covariate], dim=2) if past_covariate is not None else past_target
+        return self.model(inpt)
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):

@@ -82,7 +82,7 @@ class _RNNModule(nn.Module):
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
-        batch_size = x.size(0)
+        batch_size = x.shape[0]
 
         # out is of size (batch_size, input_length, hidden_dim)
         out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
@@ -207,8 +207,14 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                      'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
         raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
 
-    def _produce_train_output(self, input_batch):
-        return self.model(*input_batch)[0]
+    def _forward_pass(self, input_batch: Tuple, train: bool):
+        past_target, historic_future_covariates, future_covariates = input_batch
+        # For the RNN we concatenate the past_target with the future_covariates
+        # (they have the same length because we enforce a Shift dataset for RNNs)
+        # TODO: double check if for inference this still works
+        model_input = torch.cat([past_target, future_covariates], dim=2) if future_covariates is not None else past_target
+
+        return self.model(model_input)[0] if train else self.model(model_input)
 
     @random_method
     def _produce_predict_output(self, input, last_hidden_state=None):
