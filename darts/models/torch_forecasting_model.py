@@ -950,11 +950,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return p['lr']
 
 
-class RecurrentModel(TorchForecastingModel, ABC):
-    # TODO: extract recurrent specific logic here (override produce_block_forecast() etc).
-    pass
-
-
 class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
     def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
