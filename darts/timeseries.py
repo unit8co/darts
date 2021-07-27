@@ -1539,7 +1539,7 @@ class TimeSeries:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
-    def add_datetime_attribute(self, attribute, one_hot: bool = False) -> 'TimeSeries':
+    def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
@@ -1553,6 +1553,10 @@ class TimeSeries:
         one_hot
             Boolean value indicating whether to add the specified attribute as a one hot encoding
             (results in more columns).
+        cyclic
+            Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+            Alternative to one_hot encoding, enable only one of the two.
+            (adds 2 columns, corresponding to sin and cos transformation).
 
         Returns
         -------
@@ -1561,7 +1565,7 @@ class TimeSeries:
         """
         self._assert_deterministic()
         from .utils import timeseries_generation as tg
-        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot, cyclic))
 
     def add_holidays(self,
                      country_code: str,
