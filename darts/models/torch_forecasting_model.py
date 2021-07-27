@@ -619,7 +619,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # if batch_size is not a multiple of input_series, this won't fill the entire batch_size
                 series_length = input_series.shape[0]
-                batch_sample_size = max(batch_size // series_length, 1)
+                batch_sample_size = min(max(batch_size // series_length, 1), num_samples)
                 sample_length = 0
 
                 in_shape = input_series.shape
