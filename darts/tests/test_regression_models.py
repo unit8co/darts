@@ -11,6 +11,7 @@ from sklearn.experimental import (
     enable_hist_gradient_boosting,
 )  # enable import of HistGradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
+from typing import Sequence
 
 
 def train_test_split(features, target, split_ts):
@@ -106,17 +107,26 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 f"Expected length 20, found {len(prediction)} instead",
             )
 
-            model_instance = model(lags=4, lags_covariates=2)
-            model_instance.fit(
-                series=[train_y, train_y + 1], covariates=[train_x, train_x + 100]
-            )
-            prediction = model_instance.predict(
-                n=10,
-                series=[train_y, train_y + 1],
-                covariates=[self.ts_exog1, self.ts_exog1 + 100],
-            )
+            test_cases = [
+                (train_y, train_x, self.ts_exog1),
+                ([train_y, train_y + 1], [train_x, train_x + 100], [self.ts_exog1, self.ts_exog1 + 100])
+            ]
 
-            self.assertTrue(len(prediction[0]) == 10)
+            for input_tgt, input_cov, cov in test_cases:
+                model_instance = model(lags=4, lags_covariates=2)
+                model_instance.fit(
+                    series=input_tgt, covariates=input_cov
+                )
+                prediction = model_instance.predict(
+                    n=10,
+                    series=input_tgt,
+                    covariates=cov
+                )
+
+                if isinstance(input_tgt, Sequence):
+                    self.assertTrue(len(prediction[0]) == 10)
+                else:
+                    self.assertTrue(len(prediction) == 10)
 
             with self.assertRaises(ValueError):
                 # testing lags_covariate None but covariates during training
@@ -153,9 +163,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def helper_test_models_accuracy(self, series, covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(
-            covariates, series, pd.Timestamp("20010101")
-        )
+        train_f, train_t, test_f, test_t = train_test_split(covariates, series, pd.Timestamp("20010101"))
 
         for model in self.models:
             model_instance = model(lags=12, lags_covariates=2)
