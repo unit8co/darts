@@ -618,8 +618,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 batch_predictions = []
 
                 # if batch_size is not a multiple of input_series, this won't fill the entire batch_size
-                series_length = input_series.shape[0]
-                batch_sample_size = min(max(batch_size // series_length, 1), num_samples)
+                num_series = input_series.shape[0]
+                batch_sample_size = min(max(batch_size // num_series, 1), num_samples)
                 sample_length = 0
 
                 in_shape = input_series.shape
@@ -628,6 +628,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     if sample_length+batch_sample_size > num_samples:
                         batch_sample_size = num_samples - sample_length
 
+                    # generate prediction for num_series x batch_sample_size
                     sample_input_series = input_series.tile((batch_sample_size, 1, 1))
 
                     if self.is_recurrent:
@@ -635,16 +636,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     else:
                         batch_prediction = self._predict_batch_block_model(n, sample_input_series, cov_future, roll_size)
 
-                    # bring predictions into desired format and drop unnecessary values
-
+                    # concatenate array of predictions into contiguous prediction
                     batch_prediction = torch.cat(batch_prediction, dim=1)
                     out_shape = batch_prediction.shape
 
-                    batch_prediction = batch_prediction.reshape((batch_sample_size, series_length,) + out_shape[1:])
-                    batch_prediction = batch_prediction[:, :, :n, :]
+                    # drop unnecessary values
+                    batch_prediction = batch_prediction[:, :n, :]
+
+                    # reshape from 3d tensor (num_series x batch_sample_size, ...)
+                    # into 4d tensor (batch_sample_size, num_series, ...), where dim 0 represents the samples
+                    batch_prediction = batch_prediction.reshape((batch_sample_size, num_series,) + out_shape[1:])
+
                     batch_predictions.append(batch_prediction)
                     sample_length += batch_sample_size
 
+                # concatenate the batch of samples, to form num_samples samples
                 batch_predictions = torch.cat(batch_predictions, dim=0)
                 batch_predictions = batch_predictions.cpu().detach().numpy()
 
