@@ -394,7 +394,7 @@ class GenericShiftedDataset:
         past_target = target_vals[-start_of_input_idx:-(start_of_input_idx - self.input_chunk_length)]
 
         # optionally also produce the input covariate
-        covariate = [None]  # put in a list for torch to collate Nones properly # TODO
+        covariate = []  # put an empty list instead of None # TODO: is there a cleaner way?
         if self.covariates is not None:
             ts_covariate = self.covariates[ts_idx]
             cov_vals = ts_covariate.values(copy=False)

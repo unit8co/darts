@@ -160,6 +160,8 @@ class _TransformerModule(nn.Module):
 
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
+        print('dtype src: {}'.format(src.dtype))
+        print('encoder dtype: {}')
         src = self.encoder(src) * math.sqrt(self.input_size)
         src = self.positional_encoding(src)
 

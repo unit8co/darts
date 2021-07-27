@@ -231,7 +231,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
-        self.model = model.to(self.device)
+        self.model = model.double()  # TODO: this is needed because currently all TimeSeries values are float64
+                                     # TODO: in the future, we should allow float32 TimeSeries and dynamically change.
+        self.model = self.model.to(self.device)
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -394,6 +396,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  logger)
 
         train_sample = train_dataset[0]
+        train_sample = tuple(map(lambda t: None if isinstance(t, list) else t, train_sample))  # transform list to None
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
@@ -642,6 +645,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_tuple in iterator:
 
                 input_data_tuple, batch_input_series = batch_tuple[:-1], batch_tuple[-1]
+                input_data_tuple = tuple(tsr.to(self.device) if not isinstance(tsr, list) else None for tsr in batch_tuple)
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
@@ -698,7 +702,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
-                train_batch = tuple(tensor.to(self.device) if tensor is not None else None for tensor in train_batch)
+                train_batch = tuple(tensor.to(self.device) if not isinstance(tensor, list) else None for tensor in train_batch)
                 output = self._produce_train_output(train_batch[:-1])
                 target = train_batch[-1]
                 loss = self._compute_loss(output, target)
