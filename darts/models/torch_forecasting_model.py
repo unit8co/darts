@@ -90,8 +90,8 @@ def _batch_collate_fn(batch: List[Tuple]) -> Tuple:
     first_sample = batch[0]
     for i in range(len(first_sample)):
         elem = first_sample[i]
-        if isinstance(elem, Tensor):
-            aggregated.append(torch.stack([sample[i] for sample in batch], dim=0))
+        if isinstance(elem, np.ndarray):
+            aggregated.append(torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0)))  # TODO: todevice
         elif elem is None:
             aggregated.append(None)
         elif isinstance(elem, TimeSeries):
