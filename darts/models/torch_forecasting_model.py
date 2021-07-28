@@ -414,7 +414,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  logger)
 
         train_sample = train_dataset[0]
-        train_sample = tuple(map(lambda t: None if isinstance(t, list) else t, train_sample))  # transform list to None
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
@@ -426,11 +425,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          'previously trained on. Trained on tuples of length {}, received tuples of length {}.'.format(
                              len(self.train_sample), len(train_sample)
                          ))
-            raise_if_not((s.shape[1] for s in train_sample) == (s.shape[1] for s in self.train_sample),
+            same_dims = (tuple(s.shape[1] if s is not None else None for s in train_sample) ==
+                         tuple(s.shape[1] if s is not None else None for s in self.train_sample))
+            raise_if_not(same_dims,
                          'The dimensionality of the series in the training set do not match the dimensionality'
                          ' of the series the model has previously been trained on. '
                          'Model input/output dimensions = {}, provided input/ouptput dimensions = {}'.format(
-                             (s.shape[1] for s in self.train_sample), (s.shape[1] for s in train_sample)
+                             tuple(s.shape[1] if s is not None else None for s in self.train_sample),
+                             tuple(s.shape[1] if s is not None else None for s in train_sample)
                          ))
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
