@@ -82,23 +82,6 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-def _batch_collate_fn(batch: List[Tuple]) -> Tuple:
-    """
-    Returns a batch Tuple from a list of samples
-    """
-    aggregated = []
-    first_sample = batch[0]
-    for i in range(len(first_sample)):
-        elem = first_sample[i]
-        if isinstance(elem, np.ndarray):
-            aggregated.append(torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0)))  # TODO: todevice
-        elif elem is None:
-            aggregated.append(None)
-        elif isinstance(elem, TimeSeries):
-            aggregated.append([sample[i] for sample in batch])
-    return tuple(aggregated)
-
-
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
@@ -227,6 +210,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                      " training or use `force_reset=True` to initialize anyway to start"
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
+
+    def _batch_collate_fn(self, batch: List[Tuple]) -> Tuple:
+        """
+        Returns a batch Tuple from a list of samples
+        """
+        aggregated = []
+        first_sample = batch[0]
+        for i in range(len(first_sample)):
+            elem = first_sample[i]
+            if isinstance(elem, np.ndarray):
+                aggregated.append(
+                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0)).to(self.device)
+                )
+            elif elem is None:
+                aggregated.append(None)
+            elif isinstance(elem, TimeSeries):
+                aggregated.append([sample[i] for sample in batch])
+        return tuple(aggregated)
 
     def reset_model(self):
         """ Resets the model object and removes all the stored data - model, checkpoints and training history.
@@ -440,7 +441,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                   num_workers=0,
                                   pin_memory=True,
                                   drop_last=False,
-                                  collate_fn=_batch_collate_fn)
+                                  collate_fn=self._batch_collate_fn)
 
         # Prepare validation data
         val_loader = None if val_dataset is None else DataLoader(val_dataset,
@@ -449,7 +450,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                  num_workers=0,
                                                                  pin_memory=True,
                                                                  drop_last=False,
-                                                                 collate_fn=_batch_collate_fn)
+                                                                 collate_fn=self._batch_collate_fn)
 
         # Prepare tensorboard writer
         tb_writer = self._prepare_tensorboard_writer()
@@ -656,7 +657,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  num_workers=0,
                                  pin_memory=False,
                                  drop_last=False,
-                                 collate_fn=_batch_collate_fn)
+                                 collate_fn=self._batch_collate_fn)
         predictions = []
         iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
 
@@ -665,8 +666,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for batch_tuple in iterator:
 
                 input_data_tuple, batch_input_series = batch_tuple[:-1], batch_tuple[-1]
-                input_data_tuple = tuple(elem.to(self.device) if isinstance(elem, Tensor) else elem
-                                         for elem in input_data_tuple)
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
@@ -723,7 +722,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
-                train_batch = tuple(elem.to(self.device) if isinstance(elem, Tensor) else elem for elem in train_batch)
                 output = self._produce_train_output(train_batch[:-1])
                 target = train_batch[-1]  # By convention target is always the last element returned by datasets
                 loss = self._compute_loss(output, target)
@@ -775,7 +773,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.eval()
         with torch.no_grad():
             for batch_idx, val_batch in enumerate(val_loader):
-                val_batch = tuple(elem.to(self.device) if elem is not None else elem for elem in val_batch)
                 output = self._produce_train_output(val_batch[:-1])
                 target = val_batch[-1]
                 loss = self._compute_loss(output, target)
