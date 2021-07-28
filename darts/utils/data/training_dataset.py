@@ -15,8 +15,7 @@ from ...timeseries import TimeSeries
 logger = get_logger(__name__)
 
 # Those freqs can be used to divide Time deltas (the others can't):
-# Note: we include "1" here to make it work with our integer-indexed series
-DIVIDABLE_FREQS = {1, 'D', 'H', 'T', 'min', 'S', 'L', 'ms', 'U', 'us', 'N'}
+DIVIDABLE_FREQS = {'D', 'H', 'T', 'min', 'S', 'L', 'ms', 'U', 'us', 'N'}
 
 
 class TrainingDataset(ABC, Dataset):
@@ -159,7 +158,10 @@ def _get_matching_index(ts_target: TimeSeries,
 
     freq = ts_target.freq
 
-    if ts_target.freq.freqstr in DIVIDABLE_FREQS:
+    if isinstance(freq, int):
+        return idx + int(ts_covariate.end_time() - ts_target.end_time())
+
+    elif ts_target.freq.freqstr in DIVIDABLE_FREQS:
         return idx + int((ts_covariate.end_time() - ts_target.end_time()) / freq)
 
     # /!\ THIS IS TAKING LINEAR TIME IN THE LENGTH OF THE SERIES
