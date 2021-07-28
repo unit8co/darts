@@ -118,7 +118,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                 cov_future = covariate_series[last_req_ts-(nr_timestamps_needed-1)*target_series.freq:last_req_ts+target_series.freq]
 
         # TODO: change and slice numpy views instead of TimeSeries in the logic above
-        return tgt_past.values(copy=False), cov_past.values(copy=False), cov_future.values(copy=False), target_series
+        return tgt_past.values(copy=False), cov_past.values(copy=False) if cov_past is not None else None, \
+               cov_future.values(copy=False) if cov_future is not None else None, target_series
 
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
@@ -182,7 +183,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
 
         # TODO: slice numpy views instead of TimeSeries...
-        return tgt_past.values(copy=False), cov_future.values(copy=False), target_series
+        return tgt_past.values(copy=False), cov_future.values(copy=False) if cov_future is not None else None, target_series
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):
