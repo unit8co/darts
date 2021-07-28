@@ -559,14 +559,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates = [past_covariates] if isinstance(past_covariates, TimeSeries) else past_covariates
         future_covariates = [future_covariates] if isinstance(future_covariates, TimeSeries) else future_covariates
 
-        # check that the input sizes match
-        # TODO: move this check in predict_from_dataset() by checking index 0 of torch dataset
-        # in_dim = (0 if covariates is None else covariates[0].width) + series[0].width
-        # raise_if_not(in_dim == self.input_dim,
-        #              'The dimensionality of the series provided for prediction does not match the dimensionality '
-        #              'of the series this model has been trained on. Provided input dim = {}, '
-        #              'model input dim = {}'.format(in_dim, self.input_dim))
-
         dataset = self._build_inference_dataset(target=series,
                                                 n=n,
                                                 past_covariates=past_covariates,
@@ -640,6 +632,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Returns one or more forecasts for time series.
         """
         self._verify_inference_dataset_type(input_series_dataset)
+
+        # TODO: check that the dimensions are matching with what the model has been trained on
+        # TODO: in order to provide nicer error messages than torch
+        # predict_sample = input_series_dataset[0]
 
         if roll_size is None:
             roll_size = self.output_chunk_length

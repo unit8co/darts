@@ -6,12 +6,17 @@ TimeSeries Dataset Base Classes
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
 import numpy as np
+import pandas as pd
 
 from typing import Tuple, Optional
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
+# Those freqs can be used to divide Time deltas (the others can't):
+# Note: we include "1" here to make it work with our integer-indexed series
+DIVIDABLE_FREQS = {1, 'D', 'H', 'T', 'min', 'S', 'L', 'ms', 'U', 'us', 'N'}
 
 
 class TrainingDataset(ABC, Dataset):
@@ -152,6 +157,17 @@ def _get_matching_index(ts_target: TimeSeries,
                  'The dataset contains some target/covariates series pair that have incompatible '
                  'time axes (not the same "freq") and thus cannot be matched')
 
-    # compute the number of steps the covariates are in advance w.r.t. the target:
-    time_diff = int((ts_covariate.end_time() - ts_target.end_time()) / ts_target.freq)
-    return idx + time_diff
+    freq = ts_target.freq
+
+    if ts_target.freq.freqstr in DIVIDABLE_FREQS:
+        return idx + int((ts_covariate.end_time() - ts_target.end_time()) / freq)
+
+    # /!\ THIS IS TAKING LINEAR TIME IN THE LENGTH OF THE SERIES
+    # it won't scale if the end of target and covariates are far apart and the freq is not in DIVIDABLE_FREQ
+    # (Not sure there's a way around it for exotic freqs)
+    if ts_covariate.end_time() >= ts_target.end_time():
+        return idx - 1 + len(
+            pd.date_range(start=ts_target.end_time(), end=ts_covariate.end_time(), freq=ts_target.freq))
+    else:
+        return idx + 1 - len(
+            pd.date_range(start=ts_covariate.end_time(), end=ts_target.end_time(), freq=ts_target.freq))
