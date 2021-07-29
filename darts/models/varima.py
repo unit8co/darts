@@ -15,14 +15,14 @@ import pandas as pd
 from statsmodels.tsa.api import VARMAX as staVARMA
 from typing import Optional
 
-from .forecasting_model import FutureCovariatesForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
 
-class VARIMA(FutureCovariatesForecastingModel):
+class VARIMA(DualCovariatesForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
         """ VARIMA
 

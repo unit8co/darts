@@ -17,13 +17,13 @@ from inspect import signature
 from typing import Union, Optional
 from ..timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
-from .forecasting_model import FutureCovariatesForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..logging import raise_if, raise_if_not, get_logger, raise_log
 
 logger = get_logger(__name__)
 
 
-class RegressionModel(FutureCovariatesForecastingModel):
+class RegressionModel(DualCovariatesForecastingModel):
     def __init__(self,
                  lags: Union[int, list] = None,
                  lags_exog: Union[int, list] = None,
@@ -134,7 +134,7 @@ class RegressionModel(FutureCovariatesForecastingModel):
         if "series" in signature(self.model.fit).parameters:
             self.model.fit(
                 series=training_y,
-                exog=training_x,
+                future_covariates=training_x,
                 **kwargs
             )
         else:
@@ -239,7 +239,7 @@ class RegressionModel(FutureCovariatesForecastingModel):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, future_covariates, num_samples)
+        super().predict(n=n, future_covariates=future_covariates, num_samples=num_samples)
 
         if self.max_lag != 0:
             prediction_data = self.prediction_data.copy()
@@ -279,7 +279,7 @@ class RegressionModel(FutureCovariatesForecastingModel):
             if "series" in signature(self.model.fit).parameters:
                 forecasting_data = TimeSeries.from_dataframe(forecasting_data, freq=self.training_series.freq)
                 forecast = self.model.predict(n=len(forecasting_data),
-                                              exog=forecasting_data,
+                                              future_covariates=forecasting_data,
                                               **kwargs)
                 forecast = forecast.pd_dataframe().values
             else:

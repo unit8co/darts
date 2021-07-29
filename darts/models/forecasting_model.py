@@ -59,7 +59,7 @@ class ForecastingModel(ABC):
         series
             A target time series. The model will be trained to forecast this time series.
         """
-        if not isinstance(self, FutureCovariatesForecastingModel):
+        if not isinstance(self, DualCovariatesForecastingModel):
             series._assert_univariate()
         raise_if_not(len(series) >= self.min_train_series_length,
                      "Train series only contains {} elements but {} model requires at least {} entries"
@@ -771,10 +771,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         self.fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
 
 
-class FutureCovariatesForecastingModel(ForecastingModel, ABC):
+class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """ The base class for the forecasting models that are not global, but support future covariates.
-    Among other things, it lets Darts forecasting models wrap around statsmodels models having and `future_covariates` parameter,
-    which corresponds to future-known covariates.
+    Among other things, it lets Darts forecasting models wrap around statsmodels models
+    having a `future_covariates` parameter, which corresponds to future-known covariates.
 
     Extended forecasting models expand upon the functionality of `ForecastingModel` in 2 ways:
     1. They introduce an optional `future_covariates` time series parameter

@@ -14,13 +14,13 @@ from statsmodels.tsa.arima.model import ARIMA as staARIMA
 from typing import Optional, Tuple
 import numpy as np
 
-from .forecasting_model import FutureCovariatesForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 
-class ARIMA(FutureCovariatesForecastingModel):
+class ARIMA(DualCovariatesForecastingModel):
     def __init__(self,
                  p: int = 12, d: int = 1, q: int = 0,
                  seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),

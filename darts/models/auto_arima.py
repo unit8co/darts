@@ -6,14 +6,14 @@ Auto-ARIMA
 from pmdarima import AutoARIMA as PmdAutoARIMA
 from typing import Optional
 
-from .forecasting_model import FutureCovariatesForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(FutureCovariatesForecastingModel):
+class AutoARIMA(DualCovariatesForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """ Auto-ARIMA
 
