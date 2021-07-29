@@ -318,6 +318,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pass
 
     @abstractmethod
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        pass
+
+    @abstractmethod
     def _produce_train_output(self, input_batch: Tuple) -> Tensor:
         pass
 
@@ -633,9 +637,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self._verify_inference_dataset_type(input_series_dataset)
 
-        # TODO: check that the dimensions are matching with what the model has been trained on
-        # TODO: in order to provide nicer error messages than torch
-        # predict_sample = input_series_dataset[0]
+        # check that covariates and dimensions are matching what we had during training
+        self._verify_predict_sample(input_series_dataset[0])
 
         if roll_size is None:
             roll_size = self.output_chunk_length
@@ -962,6 +965,27 @@ Below we define the 5 torch model types:
 # TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
 
 
+def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
+    """
+    For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
+    that training/inference datasets have target and a covariate in first and second position to do the checks.
+    """
+    tgt_train, cov_train = train_sample[:2]
+    tgt_pred, cov_pred = predict_sample[:2]
+    raise_if_not(tgt_train.shape[-1] == tgt_pred.shape[-1],
+                 'The provided target has a dimension (width) that does not match the dimension '
+                 'of the target this model has been trained on.')
+    raise_if(cov_train is not None and cov_pred is None,
+             'This model has been trained with covariates; some covariates of matching dimensionality are needed '
+             'for prediction.')
+    raise_if(cov_train is None and cov_pred is not None,
+             'This model has been trained without covariates. No covariates should be provided for prediction.')
+    raise_if(cov_train is not None and cov_pred is not None and
+             cov_train.shape[-1] != cov_pred.shape[-1],
+             'The provided covariates must have dimensionality matching that of the covariates used for training '
+             'the model.')
+
+
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
@@ -996,6 +1020,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
+
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        _basic_compare_sample(self.train_sample, predict_sample)
 
     def _produce_train_output(self, input_batch: Tuple):
         past_target, past_covariate = input_batch
@@ -1094,6 +1121,9 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
 
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        _basic_compare_sample(self.train_sample, predict_sample)
+
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
@@ -1126,6 +1156,9 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, DualCovariatesInferenceDataset)
+
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        _basic_compare_sample(self.train_sample, predict_sample)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: The only DualCovariatesModel is an RNN with a specific implementation.")
@@ -1162,6 +1195,10 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
 
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        # TODO: we have to check both past and future covariates
+        raise NotImplementedError()
+
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
@@ -1196,6 +1233,10 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)
+
+    def _verify_predict_sample(self, predict_sample: Tuple):
+        # TODO: we have to check both past and future covariates
+        raise NotImplementedError()
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")

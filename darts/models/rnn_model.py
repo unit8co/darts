@@ -228,8 +228,8 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat([historic_future_covariates[1:], future_covariates], dim=1)
-            cov_past, cov_future = all_covariates[:past_target.shape[1]], all_covariates[past_target.shape[1]:]
+            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
+            cov_past, cov_future = all_covariates[:, :past_target.shape[1], :], all_covariates[:, past_target.shape[1]:, :]
             input_series = torch.cat([past_target, cov_past], dim=2)
         else:
             input_series = past_target
