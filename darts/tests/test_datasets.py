@@ -278,77 +278,79 @@ class DatasetTestCase(DartsBaseTestClass):
         np.testing.assert_almost_equal(ds[0][3], past_cov.values()[30:40])
         self.assertEqual(ds[0][4], target)
 
-    def test_sequential_dataset(self):
+    def test_past_covariates_sequential_dataset(self):
         # one target series
-        ds = SequentialDataset(target_series=self.target1, input_chunk_length=10, output_chunk_length=10)
+        ds = PastCovariatesSequentialDataset(target_series=self.target1, input_chunk_length=10, output_chunk_length=10)
         self.assertEqual(len(ds), 81)
-        self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
 
         # two target series
-        ds = SequentialDataset(target_series=[self.target1, self.target2], input_chunk_length=10, output_chunk_length=10)
+        ds = PastCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             input_chunk_length=10, output_chunk_length=10)
         self.assertEqual(len(ds), 262)
-        self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
-        self._assert_eq(ds[136], (self.target2[125:135], self.target2[135:145], None))
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
+        self._assert_eq(ds[136], (self.target2[125:135], None, self.target2[135:145]))
 
         # two target series with custom max_nr_samples
-        ds = SequentialDataset(target_series=[self.target1, self.target2],
-                               input_chunk_length=10, output_chunk_length=10, max_samples_per_ts=50)
+        ds = PastCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             input_chunk_length=10, output_chunk_length=10, max_samples_per_ts=50)
         self.assertEqual(len(ds), 100)
-        self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], None))
-        self._assert_eq(ds[55], (self.target2[125:135], self.target2[135:145], None))
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[125:135], None, self.target2[135:145]))
 
         # two targets and one covariate
         with self.assertRaises(ValueError):
-            ds = SequentialDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+            ds = PastCovariatesSequentialDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
 
         # two targets and two covariates
-        ds = SequentialDataset(target_series=[self.target1, self.target2],
-                               covariates=[self.cov1, self.cov2],
-                               input_chunk_length=10, output_chunk_length=10)
-        self._assert_eq(ds[5], (self.target1[75:85], self.target1[85:95], self.cov1[75:85]))
-        self._assert_eq(ds[136], (self.target2[125:135], self.target2[135:145], self.cov2[125:135]))
+        ds = PastCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             covariates=[self.cov1, self.cov2],
+                                             input_chunk_length=10, output_chunk_length=10)
+        self._assert_eq(ds[5], (self.target1[75:85], self.cov1[75:85], self.target1[85:95]))
+        self._assert_eq(ds[136], (self.target2[125:135], self.cov2[125:135], self.target2[135:145]))
 
-    def test_shifted_dataset(self):
+    def test_past_covariates_shifted_dataset(self):
         # one target series
-        ds = ShiftedDataset(target_series=self.target1, length=10, shift=5)
+        ds = PastCovariatesShiftedDataset(target_series=self.target1, length=10, shift=5)
         self.assertEqual(len(ds), 86)
-        self._assert_eq(ds[5], (self.target1[80:90], self.target1[85:95], None))
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
 
         # two target series
-        ds = ShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5)
+        ds = PastCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5)
         self.assertEqual(len(ds), 272)
-        self._assert_eq(ds[5], (self.target1[80:90], self.target1[85:95], None))
-        self._assert_eq(ds[141], (self.target2[130:140], self.target2[135:145], None))
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], None, self.target2[135:145]))
 
         # two target series with custom max_nr_samples
-        ds = ShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5, max_samples_per_ts=50)
+        ds = PastCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10,
+                                          shift=5, max_samples_per_ts=50)
         self.assertEqual(len(ds), 100)
-        self._assert_eq(ds[5], (self.target1[80:90], self.target1[85:95], None))
-        self._assert_eq(ds[55], (self.target2[130:140], self.target2[135:145], None))
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[130:140], None, self.target2[135:145]))
 
         # two targets and one covariate
         with self.assertRaises(ValueError):
-            ds = ShiftedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+            ds = PastCovariatesShiftedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
 
         # two targets and two covariates
-        ds = ShiftedDataset(target_series=[self.target1, self.target2],
+        ds = PastCovariatesShiftedDataset(target_series=[self.target1, self.target2],
                             covariates=[self.cov1, self.cov2],
                             length=10, shift=5)
-        self._assert_eq(ds[5], (self.target1[80:90], self.target1[85:95], self.cov1[80:90]))
-        self._assert_eq(ds[141], (self.target2[130:140], self.target2[135:145], self.cov2[130:140]))
+        self._assert_eq(ds[5], (self.target1[80:90], self.cov1[80:90], self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], self.cov2[130:140], self.target2[135:145]))
 
     def test_horizon_based_dataset(self):
         # one target series
         ds = HorizonBasedDataset(target_series=self.target1, output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 20)
-        self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
+        self._assert_eq(ds[5], (self.target1[65:85], None, self.target1[85:95]))
 
         # two target series
         ds = HorizonBasedDataset(target_series=[self.target1, self.target2],
                                  output_chunk_length=10, lh=(1, 3), lookback=2)
         self.assertEqual(len(ds), 40)
-        self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], None))
-        self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], None))
+        self._assert_eq(ds[5], (self.target1[65:85], None, self.target1[85:95]))
+        self._assert_eq(ds[25], (self.target2[115:135], None, self.target2[135:145]))
 
         # two targets and one covariate
         with self.assertRaises(ValueError):
@@ -358,8 +360,8 @@ class DatasetTestCase(DartsBaseTestClass):
         ds = HorizonBasedDataset(target_series=[self.target1, self.target2],
                                  covariates=[self.cov1, self.cov2],
                                  output_chunk_length=10, lh=(1, 3), lookback=2)
-        self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], self.cov1[65:85]))
-        self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], self.cov2[115:135]))
+        self._assert_eq(ds[5], (self.target1[65:85], self.cov1[65:85], self.target1[85:95]))
+        self._assert_eq(ds[25], (self.target2[115:135], self.cov2[115:135], self.target2[135:145]))
 
     def test_get_matching_index(self):
         from ..utils.data.utils import _get_matching_index
