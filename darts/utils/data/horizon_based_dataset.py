@@ -8,7 +8,8 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .training_dataset import PastCovariatesTrainingDataset, _get_matching_index
+from .training_dataset import PastCovariatesTrainingDataset
+from .utils import _get_matching_index
 
 logger = get_logger(__name__)
 

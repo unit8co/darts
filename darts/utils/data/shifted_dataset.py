@@ -11,8 +11,8 @@ from .training_dataset import (PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset,
-                               _get_matching_index)
+                               SplitCovariatesTrainingDataset)
+from .utils import _get_matching_index
 from ..utils import raise_if_not
 
 

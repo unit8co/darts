@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
+from .utils import _get_matching_index
 
 
 class InferenceDataset(ABC, Dataset):
@@ -65,13 +66,14 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         """
 
         super().__init__()
+
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
 
-        raise_if_not((covariates is None or len(target_series) == len(covariates)),
+        raise_if_not((covariates is None or len(self.target_series) == len(self.covariates)),
                      'The number of target series must be equal to the number of covariates.')
 
     def __len__(self):
@@ -80,21 +82,19 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
+        target_vals = target_series.values(copy=False)
+        cov_vals = covariate_series.values(copy=False)
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
                          self.input_chunk_length))
 
-        tgt_past = target_series[-self.input_chunk_length:]
+        tgt_past_vals = target_vals[-self.input_chunk_length:]
 
         cov_past = cov_future = None
         if covariate_series is not None:
-            raise_if_not(covariate_series.freq == target_series.freq,
-                         'The dataset contains some covariate series that do not have the same freq as the '
-                         'target series ({}-th)'.format(idx))
-
-            # past target and past covariates must come from the same time slice
-            cov_past = covariate_series.slice_intersect(tgt_past)
+            start_past_cov_idx = _get_matching_index(target_series, covariate_series, self.input_chunk_length)
+            cov_past = cov_vals[-start_past_cov_idx:-start_past_cov_idx+self.input_chunk_length]
 
             raise_if_not(len(cov_past) == self.input_chunk_length,
                          'The dataset contains some covariates that do not have a sufficient time span to obtain '
@@ -115,11 +115,10 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                                  idx, covariate_series.end_time(), last_req_ts
                              ))
 
-                cov_future = covariate_series[last_req_ts-(nr_timestamps_needed-1)*target_series.freq:last_req_ts+target_series.freq]
+                cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:
+                                      -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed]
 
-        # TODO: change and slice numpy views instead of TimeSeries in the logic above
-        return tgt_past.values(copy=False), cov_past.values(copy=False) if cov_past is not None else None, \
-               cov_future.values(copy=False) if cov_future is not None else None, target_series
+        return tgt_past_vals, cov_past, cov_future, target_series
 
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
@@ -149,7 +148,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         self.n = n
         self.input_chunk_length = input_chunk_length
 
-        raise_if_not((covariates is None or len(target_series) == len(covariates)),
+        raise_if_not((covariates is None or len(self.target_series) == len(self.covariates)),
                      'The number of target series must be equal to the number of covariates.')
 
     def __len__(self):
@@ -158,19 +157,17 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
+        target_vals = target_series.values(copy=False)
+        cov_vals = covariate_series.values(copy=False)
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
                          self.input_chunk_length))
 
-        tgt_past = target_series[-self.input_chunk_length:]
+        tgt_past_vals = target_vals[-self.input_chunk_length:]
 
         cov_future = None
         if covariate_series is not None:
-            raise_if_not(covariate_series.freq == target_series.freq,
-                         'The dataset contains some covariate series that do not have the same freq as the '
-                         'target series ({}-th)'.format(idx))
-
             # check that we have at least n timestamps of future covariates available
             last_req_ts = target_series.end_time() + self.n * target_series.freq
 
@@ -180,10 +177,10 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                          "For the dataset's {}-th sample, the last covariate timestamp is {} whereas it "
                          "should be {}.".format(idx, covariate_series.end_time(), last_req_ts))
 
-            cov_future = covariate_series[last_req_ts - (self.n - 1) * target_series.freq:last_req_ts + target_series.freq]
+            start_idx = _get_matching_index(target_series, covariate_series, 0)
+            cov_future = cov_vals[-start_idx:-start_idx+self.n]
 
-        # TODO: slice numpy views instead of TimeSeries...
-        return tgt_past.values(copy=False), cov_future.values(copy=False) if cov_future is not None else None, target_series
+        return tgt_past_vals, cov_future, target_series
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):

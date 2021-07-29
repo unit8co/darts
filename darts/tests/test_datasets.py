@@ -1,10 +1,16 @@
+import pandas as pd
+import numpy as np
+
 from .base_test_class import DartsBaseTestClass
-from ..utils.data import SimpleInferenceDataset, SequentialDataset, ShiftedDataset, HorizonBasedDataset
+from ..timeseries import TimeSeries
+from ..utils.data import (PastCovariatesInferenceDataset, PastCovariatesSequentialDataset,
+                          PastCovariatesShiftedDataset, HorizonBasedDataset)
 from ..utils.timeseries_generation import gaussian_timeseries
 
 
 class DatasetTestCase(DartsBaseTestClass):
     target1, target2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
+    vals1, vals2 = target1.values(), target2.values()
     cov1, cov2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
 
     def _assert_eq(self, tup_ar, tup_series):
@@ -17,24 +23,41 @@ class DatasetTestCase(DartsBaseTestClass):
 
         self.assertEqual(l1, l2)
 
-    def test_simple_inference_dataset(self):
+    def test_past_covariates_inference_dataset(self):
         # one target series
-        ds = SimpleInferenceDataset(series=self.target1, input_chunk_length=len(self.target1))
-        self.assertEqual(ds[0], (self.target1, None, None))
+        ds = PastCovariatesInferenceDataset(target_series=self.target1, input_chunk_length=len(self.target1))
+        np.testing.assert_almost_equal(ds[0][0], self.vals1)
+        self.assertEqual(ds[0][1:], (None, None, self.target1))
 
         # two target series
-        ds = SimpleInferenceDataset(series=[self.target1, self.target2],
-                                    input_chunk_length=max(len(self.target1), len(self.target2)))
-        self.assertEqual(ds[1], (self.target2, None, None))
+        ds = PastCovariatesInferenceDataset(target_series=[self.target1, self.target2],
+                                            input_chunk_length=max(len(self.target1), len(self.target2)))
+        np.testing.assert_almost_equal(ds[1][0], self.vals2)
+        self.assertEqual(ds[1][1:], (None, None, self.target2))
 
         # fail if covariates do not have same size
         with self.assertRaises(ValueError):
-            ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1])
+            ds = PastCovariatesInferenceDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
 
         # with covariates
-        ds = SimpleInferenceDataset(series=[self.target1, self.target2], covariates=[self.cov1, self.cov2],
-                                    input_chunk_length=max(len(self.target1), len(self.target2)))
-        self.assertEqual(ds[1], (self.target2, self.cov2, None))
+        ds = PastCovariatesInferenceDataset(target_series=[self.target1, self.target2],
+                                            covariates=[self.cov1, self.cov2],
+                                            input_chunk_length=max(len(self.target1), len(self.target2)))
+        np.testing.assert_almost_equal(ds[1][0], self.vals2)
+        np.testing.assert_almost_equal(ds[1][1], self.cov2.values())
+        self.assertEqual(ds[1][2:], (None, self.target2))  # no "future past" covariate here
+
+        # more complex case with future past covariates
+        t1 =
+        ds = PastCovariatesInferenceDataset(target_series=[self.target1, self.target2],
+                                            covariates=[self.cov1, self.cov2],
+                                            input_chunk_length=10,
+                                            output_chunk_length=10,
+                                            n=50)
+
+
+        # TODO: more complex case with series shifted w.r.t. one another and datetimes
+
 
     def test_sequential_dataset(self):
         # one target series
@@ -118,3 +141,26 @@ class DatasetTestCase(DartsBaseTestClass):
                                  output_chunk_length=10, lh=(1, 3), lookback=2)
         self._assert_eq(ds[5], (self.target1[65:85], self.target1[85:95], self.cov1[65:85]))
         self._assert_eq(ds[25], (self.target2[115:135], self.target2[135:145], self.cov2[115:135]))
+
+    def test_get_matching_index(self):
+        from ..utils.data.utils import _get_matching_index
+
+        # Check dividable freq
+        times1 = pd.date_range(start='20100101', end='20100330', freq='D')
+        times2 = pd.date_range(start='20100101', end='20100320', freq='D')
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        self.assertEqual(_get_matching_index(target, cov, idx=15), 5)
+
+        # check non-dividable freq
+        times1 = pd.date_range(start='20100101', end='20120101', freq='M')
+        times2 = pd.date_range(start='20090101', end='20110601', freq='M')
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        self.assertEqual(_get_matching_index(target, cov, idx=15), 15 - 7)
+
+        # check integer-indexed series
+        times2 = pd.RangeIndex(start=10, stop=90)
+        target = TimeSeries.from_values(np.random.randn(100))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        self.assertEqual(_get_matching_index(target, cov, idx=15), 5)
