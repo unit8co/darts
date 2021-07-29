@@ -83,7 +83,6 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
         target_vals = target_series.values(copy=False)
-        cov_vals = covariate_series.values(copy=False)
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
@@ -93,8 +92,14 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
         cov_past = cov_future = None
         if covariate_series is not None:
+            cov_vals = covariate_series.values(copy=False)
             start_past_cov_idx = _get_matching_index(target_series, covariate_series, self.input_chunk_length)
-            cov_past = cov_vals[-start_past_cov_idx:-start_past_cov_idx+self.input_chunk_length]
+
+            # because -0 doesn't do what we want as an indexing bound
+            if -start_past_cov_idx+self.input_chunk_length == 0:
+                cov_past = cov_vals[-start_past_cov_idx:]
+            else:
+                cov_past = cov_vals[-start_past_cov_idx:-start_past_cov_idx+self.input_chunk_length]
 
             raise_if_not(len(cov_past) == self.input_chunk_length,
                          'The dataset contains some covariates that do not have a sufficient time span to obtain '
@@ -115,8 +120,12 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                                  idx, covariate_series.end_time(), last_req_ts
                              ))
 
-                cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:
-                                      -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed]
+                # because -0 doesn't do what we want as an indexing bound
+                if -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed == 0:
+                    cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:]
+                else:
+                    cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:
+                                          -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed]
 
         return tgt_past_vals, cov_past, cov_future, target_series
 
@@ -158,7 +167,6 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
         target_vals = target_series.values(copy=False)
-        cov_vals = covariate_series.values(copy=False)
 
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      'All input series must have length >= `input_chunk_length` ({}).'.format(
@@ -177,8 +185,14 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                          "For the dataset's {}-th sample, the last covariate timestamp is {} whereas it "
                          "should be {}.".format(idx, covariate_series.end_time(), last_req_ts))
 
+            cov_vals = covariate_series.values(copy=False)
             start_idx = _get_matching_index(target_series, covariate_series, 0)
-            cov_future = cov_vals[-start_idx:-start_idx+self.n]
+
+            # because -0 doesn't do what we want as an indexing bound
+            if -start_idx+self.n == 0:
+                cov_future = cov_vals[-start_idx:]
+            else:
+                cov_future = cov_vals[-start_idx:-start_idx+self.n]
 
         return tgt_past_vals, cov_future, target_series
 

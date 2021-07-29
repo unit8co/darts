@@ -391,7 +391,11 @@ class GenericShiftedDataset:
         start_of_input_idx = end_of_output_idx + self.output_chunk_length + self.shift
 
         # select input period; look at the `input_chunk_length` points before the forecast point
-        past_target = target_vals[-start_of_input_idx:-(start_of_input_idx - self.input_chunk_length)]
+        if -(start_of_input_idx - self.input_chunk_length) == 0:
+            # handle "-0" indexing bound
+            past_target = target_vals[-start_of_input_idx:]
+        else:
+            past_target = target_vals[-start_of_input_idx:-(start_of_input_idx - self.input_chunk_length)]
 
         # optionally also produce the input covariate
         covariate = None
@@ -413,7 +417,11 @@ class GenericShiftedDataset:
                 # We need to return the past covariates. In this case we use the same indexing as for
                 # "past_target" (shifting the index if the time axes of target and covariate are not the same)
                 start_of_input_idx_cov = _get_matching_index(ts_target, ts_covariate, start_of_input_idx)
-                covariate = cov_vals[-start_of_input_idx_cov:-(start_of_input_idx_cov - self.input_chunk_length)]
+                if -(start_of_input_idx_cov - self.input_chunk_length) == 0:
+                    # handle "-0" indexing bound
+                    covariate = cov_vals[-start_of_input_idx_cov:]
+                else:
+                    covariate = cov_vals[-start_of_input_idx_cov:-(start_of_input_idx_cov - self.input_chunk_length)]
 
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),

@@ -3,7 +3,9 @@ import numpy as np
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
-from ..utils.data import (PastCovariatesInferenceDataset, PastCovariatesSequentialDataset,
+from ..utils.data import (PastCovariatesInferenceDataset, FutureCovariatesInferenceDataset,
+                          DualCovariatesInferenceDataset, MixedCovariatesInferenceDataset,
+                          SplitCovariatesInferenceDataset, PastCovariatesSequentialDataset,
                           PastCovariatesShiftedDataset, HorizonBasedDataset)
 from ..utils.timeseries_generation import gaussian_timeseries
 
@@ -47,17 +49,234 @@ class DatasetTestCase(DartsBaseTestClass):
         np.testing.assert_almost_equal(ds[1][1], self.cov2.values())
         self.assertEqual(ds[1][2:], (None, self.target2))  # no "future past" covariate here
 
-        # more complex case with future past covariates
-        t1 =
-        ds = PastCovariatesInferenceDataset(target_series=[self.target1, self.target2],
-                                            covariates=[self.cov1, self.cov2],
-                                            input_chunk_length=10,
-                                            output_chunk_length=10,
-                                            n=50)
+        # more complex case with future past covariates:
+        times1 = pd.date_range(start='20100101', end='20100701', freq='D')
+        times2 = pd.date_range(start='20100101', end='20100820', freq='D')  # 50 days longer than times1
 
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        short_cov = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        long_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
 
-        # TODO: more complex case with series shifted w.r.t. one another and datetimes
+        ds = PastCovariatesInferenceDataset(target_series=target, covariates=short_cov,
+                                            input_chunk_length=10, output_chunk_length=10, n=30)
 
+        # should fail if covariates are too short
+        with self.assertRaises(ValueError):
+            ds[0]
+
+        # Should return correct values when covariates is long enough
+        ds = PastCovariatesInferenceDataset(target_series=target, covariates=long_cov,
+                                            input_chunk_length=10, output_chunk_length=10, n=30)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-60:-50])
+        np.testing.assert_almost_equal(ds[0][2], long_cov.values()[-50:-30])
+        self.assertEqual(ds[0][3], target)
+
+        # Should also work for integer-indexed series
+        target = TimeSeries.from_times_and_values(pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40))
+        covariate = TimeSeries.from_times_and_values(pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60))
+
+        ds = PastCovariatesInferenceDataset(target_series=target, covariates=covariate,
+                                            input_chunk_length=10, output_chunk_length=10, n=20)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], covariate.values()[20:30])
+        np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:40])
+        self.assertEqual(ds[0][3], target)
+
+    def test_future_covariates_inference_dataset(self):
+        # one target series
+        ds = FutureCovariatesInferenceDataset(target_series=self.target1, input_chunk_length=len(self.target1))
+        np.testing.assert_almost_equal(ds[0][0], self.vals1)
+        self.assertEqual(ds[0][1:], (None, self.target1))
+
+        # two target series
+        ds = FutureCovariatesInferenceDataset(target_series=[self.target1, self.target2],
+                                              input_chunk_length=max(len(self.target1), len(self.target2)))
+        np.testing.assert_almost_equal(ds[1][0], self.vals2)
+        self.assertEqual(ds[1][1:], (None, self.target2))
+
+        # fail if covariates do not have same size
+        with self.assertRaises(ValueError):
+            ds = FutureCovariatesInferenceDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # With future past covariates:
+        times1 = pd.date_range(start='20100101', end='20100701', freq='D')
+        times2 = pd.date_range(start='20100101', end='20100820', freq='D')  # 50 days longer than times1
+
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        short_cov = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        long_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = FutureCovariatesInferenceDataset(target_series=target, covariates=short_cov, input_chunk_length=10, n=30)
+
+        # should fail if covariates are too short
+        with self.assertRaises(ValueError):
+            ds[0]
+
+        # Should return correct values when covariates is long enough
+        ds = FutureCovariatesInferenceDataset(target_series=target, covariates=long_cov, input_chunk_length=10, n=30)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-50:-20])
+        self.assertEqual(ds[0][2], target)
+
+        # Should also work for integer-indexed series
+        target = TimeSeries.from_times_and_values(pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40))
+        covariate = TimeSeries.from_times_and_values(pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60))
+
+        ds = FutureCovariatesInferenceDataset(target_series=target, covariates=covariate, input_chunk_length=10, n=20)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], covariate.values()[30:50])
+        self.assertEqual(ds[0][2], target)
+
+    def test_dual_covariates_inference_dataset(self):
+        # one target series
+        ds = DualCovariatesInferenceDataset(target_series=self.target1, input_chunk_length=len(self.target1))
+        np.testing.assert_almost_equal(ds[0][0], self.vals1)
+        self.assertEqual(ds[0][1:], (None, None, self.target1))
+
+        # two target series
+        ds = DualCovariatesInferenceDataset(target_series=[self.target1, self.target2],
+                                            input_chunk_length=max(len(self.target1), len(self.target2)))
+        np.testing.assert_almost_equal(ds[1][0], self.vals2)
+        self.assertEqual(ds[1][1:], (None, None, self.target2))
+
+        # fail if covariates do not have same size
+        with self.assertRaises(ValueError):
+            ds = DualCovariatesInferenceDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # With future past covariates:
+        times1 = pd.date_range(start='20100101', end='20100701', freq='D')
+        times2 = pd.date_range(start='20100101', end='20100820', freq='D')  # 50 days longer than times1
+
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        short_cov = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        long_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = DualCovariatesInferenceDataset(target_series=target, covariates=short_cov,
+                                            input_chunk_length=10, output_chunk_length=10, n=30)
+
+        # should fail if covariates are too short
+        with self.assertRaises(ValueError):
+            ds[0]
+
+        # Should return correct values when covariates is long enough
+        ds = DualCovariatesInferenceDataset(target_series=target, covariates=long_cov,
+                                            input_chunk_length=10, output_chunk_length=10, n=30)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], long_cov.values()[-60:-50])
+        np.testing.assert_almost_equal(ds[0][2], long_cov.values()[-50:-20])
+        self.assertEqual(ds[0][3], target)
+
+        # Should also work for integer-indexed series
+        target = TimeSeries.from_times_and_values(pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40))
+        covariate = TimeSeries.from_times_and_values(pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60))
+
+        ds = DualCovariatesInferenceDataset(target_series=target, covariates=covariate,
+                                            input_chunk_length=10, output_chunk_length=10, n=20)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], covariate.values()[20:30])
+        np.testing.assert_almost_equal(ds[0][2], covariate.values()[30:50])
+        self.assertEqual(ds[0][3], target)
+
+    def test_mixed_covariates_inference_dataset(self):
+        # With future past covariates:
+        times1 = pd.date_range(start='20100101', end='20100701', freq='D')
+        times2 = pd.date_range(start='20100201', end='20100820', freq='D')  # ends 50 days after times1
+
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        past_cov = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        long_past_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        future_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = MixedCovariatesInferenceDataset(target_series=target, past_covariates=past_cov,
+                                             future_covariates=past_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=30)
+
+        # should fail if future covariates are too short
+        with self.assertRaises(ValueError):
+            ds[0]
+
+        # Should return correct values when covariates is long enough
+        ds = MixedCovariatesInferenceDataset(target_series=target, past_covariates=long_past_cov,
+                                             future_covariates=future_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=30)
+
+        # It should contain:
+        # past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], long_past_cov.values()[-60:-50])
+        np.testing.assert_almost_equal(ds[0][2], future_cov.values()[-60:-50])
+        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-50:-20])
+        np.testing.assert_almost_equal(ds[0][4], long_past_cov.values()[-50:-30])
+        self.assertEqual(ds[0][5], target)
+
+        # Should also work for integer-indexed series
+        target = TimeSeries.from_times_and_values(pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40))
+        past_cov = TimeSeries.from_times_and_values(pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60))
+        future_cov = TimeSeries.from_times_and_values(pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70))
+
+        ds = MixedCovariatesInferenceDataset(target_series=target, past_covariates=past_cov,
+                                             future_covariates=future_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=20)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], past_cov.values()[20:30])
+        np.testing.assert_almost_equal(ds[0][2], future_cov.values()[10:20])
+        np.testing.assert_almost_equal(ds[0][3], future_cov.values()[20:40])
+        np.testing.assert_almost_equal(ds[0][4], past_cov.values()[30:40])
+        self.assertEqual(ds[0][5], target)
+
+    def test_split_covariates_inference_dataset(self):
+        # With future past covariates:
+        times1 = pd.date_range(start='20100101', end='20100701', freq='D')
+        times2 = pd.date_range(start='20100201', end='20100820', freq='D')  # ends 50 days after times1
+
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        past_cov = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        long_past_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        future_cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = SplitCovariatesInferenceDataset(target_series=target, past_covariates=past_cov,
+                                             future_covariates=past_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=30)
+
+        # should fail if future covariates are too short
+        with self.assertRaises(ValueError):
+            ds[0]
+
+        # Should return correct values when covariates is long enough
+        ds = SplitCovariatesInferenceDataset(target_series=target, past_covariates=long_past_cov,
+                                             future_covariates=future_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=30)
+
+        # It should contain:
+        # past_target, past_covariates, future_covariates, future_past_covariates
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], long_past_cov.values()[-60:-50])
+        np.testing.assert_almost_equal(ds[0][2], future_cov.values()[-50:-20])
+        np.testing.assert_almost_equal(ds[0][3], long_past_cov.values()[-50:-30])
+        self.assertEqual(ds[0][4], target)
+
+        # Should also work for integer-indexed series
+        target = TimeSeries.from_times_and_values(pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40))
+        past_cov = TimeSeries.from_times_and_values(pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60))
+        future_cov = TimeSeries.from_times_and_values(pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70))
+
+        ds = SplitCovariatesInferenceDataset(target_series=target, past_covariates=past_cov,
+                                             future_covariates=future_cov, input_chunk_length=10,
+                                             output_chunk_length=10, n=20)
+
+        np.testing.assert_almost_equal(ds[0][0], target.values()[-10:])
+        np.testing.assert_almost_equal(ds[0][1], past_cov.values()[20:30])
+        np.testing.assert_almost_equal(ds[0][2], future_cov.values()[20:40])
+        np.testing.assert_almost_equal(ds[0][3], past_cov.values()[30:40])
+        self.assertEqual(ds[0][4], target)
 
     def test_sequential_dataset(self):
         # one target series
