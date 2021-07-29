@@ -311,14 +311,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @abstractmethod
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        """
+        Verify that the provided train dataset is of the correct type
+        """
         pass
 
     @abstractmethod
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+        """
+        Verify that the provided inference dataset is of the correct type
+        """
         pass
 
     @abstractmethod
     def _verify_predict_sample(self, predict_sample: Tuple):
+        """
+        verify that the (first) sample contained in the inference dataset matches the model type and the
+        data the model has been trained on.
+        """
+        pass
+
+    @abstractmethod
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        """
+        Verify that any non-None covariates comply with the model type.
+        """
         pass
 
     @abstractmethod
@@ -375,7 +392,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
         """
-        super().fit(series, past_covariates)
+        super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
+
+        # TODO: also check the validation covariates
+        self._verify_past_future_covariates(past_covariates=past_covariates, future_covariates=future_covariates)
 
         wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
         series = wrap_fn(series)
@@ -1024,6 +1044,11 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        raise_if_not(future_covariates is None,
+                     'Some future_covariates have been provided to a PastCovariates model. These models '
+                     'support only past_covariates.')
+
     def _produce_train_output(self, input_batch: Tuple):
         past_target, past_covariate = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
@@ -1124,6 +1149,11 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        raise_if_not(past_covariates is None,
+                     'Some past_covariates have been provided to a PastCovariates model. These models '
+                     'support only future_covariates.')
+
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
@@ -1159,6 +1189,11 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
+
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        raise_if_not(past_covariates is None,
+                     'Some past_covariates have been provided to a PastCovariates model. These models '
+                     'support only future_covariates.')
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: The only DualCovariatesModel is an RNN with a specific implementation.")
@@ -1199,6 +1234,10 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         # TODO: we have to check both past and future covariates
         raise NotImplementedError()
 
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        # both covariates are supported; do nothing
+        pass
+
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
@@ -1233,6 +1272,10 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)
+
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        # both covariates are supported; do nothing
+        pass
 
     def _verify_predict_sample(self, predict_sample: Tuple):
         # TODO: we have to check both past and future covariates
