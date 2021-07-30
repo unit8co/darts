@@ -105,13 +105,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertTrue(len(prediction) == 20)
 
             model_instance = model(lags=4, lags_exog=2)
-            model_instance.fit(series=train_y, exog=train_x)
-            prediction = model_instance.predict(n=10, exog=test_x[:10])
+            model_instance.fit(series=train_y, future_covariates=train_x)
+            prediction = model_instance.predict(n=10, future_covariates=test_x[:10])
             self.assertTrue(len(prediction) == 10)
 
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_exog=None)
-                model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+                model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
 
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_exog=3)
@@ -138,7 +138,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         for model in self.models:
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_exog=4)
-                model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+                model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
                 prediction = model_instance.predict(n=10)
 
             model_instance = model(lags=12)
@@ -146,15 +146,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(model_instance.nr_exog, 0)
 
             model_instance = model(lags=12, lags_exog=12)
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
             self.assertEqual(model_instance.nr_exog, 24)
 
             model_instance = model(lags=12, lags_exog=0)
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
             self.assertEqual(model_instance.nr_exog, 2)
 
             model_instance = model(lags=12, lags_exog=[1, 4, 6])
-            model_instance.fit(series=self.ts_sum1, exog=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
             self.assertEqual(model_instance.nr_exog, 6)
 
 
@@ -164,8 +164,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         for model in self.models:
             model_instance = model(lags=12, lags_exog=2)
-            model_instance.fit(series=train_t, exog=train_f)
-            prediction = model_instance.predict(n=len(test_f), exog=test_f)
+            model_instance.fit(series=train_t, future_covariates=train_f)
+            prediction = model_instance.predict(n=len(test_f), future_covariates=test_f)
             current_rmse = rmse(prediction, test_t)
 
             self.assertTrue(current_rmse <= min_rmse, (
@@ -186,7 +186,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = self.models[0](lags=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            covariates=None,
+            future_covariates=None,
             start=0.5,
             forecast_horizon=1,
             stride=1,
@@ -199,7 +199,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = self.models[0](lags=5, lags_exog=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            covariates=self.ts_exog1[:100],
+            future_covariates=self.ts_exog1[:100],
             start=0.5,
             forecast_horizon=1,
             stride=1,

@@ -808,7 +808,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         # TODO: is this really needed or could we find a workaround?
         if future_covariates is not None:
             raise_if_not(series.has_same_time_as(future_covariates),
-                         'The target series and the exogenous variables series must have the same time index.')
+                         'The target series and the future_covariates series must have the same time index.')
             self._expect_covariate = True
         super().fit(series)
 
