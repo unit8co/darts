@@ -63,7 +63,7 @@ if TORCH_AVAILABLE:
             model = NBEATSModel(input_chunk_length=3, output_chunk_length=4, n_epochs=5)
             model.fit(series_multivariate, past_covariates=series_covariates)
 
-            res = model.predict(n=3, series=series_multivariate, covariates=series_covariates).values()
+            res = model.predict(n=3, series=series_multivariate, past_covariates=series_covariates).values()
 
             self.assertEqual(len(res), 3)
             self.assertTrue(abs(np.average(res)) < 5)

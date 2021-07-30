@@ -197,6 +197,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         self.assertEqual(len(result), 51)
 
         model = self.models[0](lags=5, lags_exog=5)
+
+        print()
+        print('len 1: {}'.format(len(self.ts_sum1[:100])))
+        print('len 2: {}'.format(len(self.ts_exog1[:100])))
+        print()
+
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
             future_covariates=self.ts_exog1[:100],
