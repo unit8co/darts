@@ -1390,6 +1390,8 @@ class TimeSeries:
         bool
             True if both TimeSeries have the same index, False otherwise.
         """
+        if len(other) != len(self):
+            return False
         return (other.time_index == self.time_index).all()
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
