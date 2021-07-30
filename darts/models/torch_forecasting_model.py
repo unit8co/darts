@@ -249,8 +249,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
-        self.model = model.double()  # TODO: this is needed because currently all TimeSeries values are float64
-                                     # TODO: in the future, we should allow float32 TimeSeries and dynamically change.
+
+        if np.issubdtype(self.train_sample[0].dtype, np.float32):
+            logger.info('Time series values are 32-bits; casting model to float32.')
+            self.model = model.float()
+        elif np.issubdtype(self.train_sample[0].dtype, np.float64):
+            logger.info('Time series values are 64-bits; casting model to float64. If training is too slow you '
+                        'can try casting your data to 32-bits.')
+            self.model = model.double()
+
         self.model = self.model.to(self.device)
 
         # A utility function to create optimizer and lr scheduler from desired classes
