@@ -37,7 +37,7 @@ class _TrendGenerator(nn.Module):
             False)
 
     def forward(self, x):
-        return torch.matmul(x, self.T.float().T)
+        return torch.matmul(x, self.T.T)
 
 
 class _SeasonalityGenerator(nn.Module):
@@ -52,7 +52,7 @@ class _SeasonalityGenerator(nn.Module):
                               False)
 
     def forward(self, x):
-        return torch.matmul(x, self.S.float().T)
+        return torch.matmul(x, self.S.T)
 
 
 class _Block(nn.Module):
