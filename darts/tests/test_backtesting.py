@@ -162,9 +162,14 @@ class BacktestingTestCase(DartsBaseTestClass):
         features_multivariate = (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
         target = sine_series
 
-        features = TimeSeries.from_dataframe(features.pd_dataframe().rename({"0": "Value0", "1": "Value1"}, axis=1))
-        features_multivariate = TimeSeries.from_dataframe(features_multivariate.pd_dataframe().rename(
-            {"0": "Value0", "1": "Value1", "2": "Value2"}, axis=1)
+        features = (
+            features
+            .with_columns_renamed(features.components, ["Value0", "Value1"])
+        )
+
+        features_multivariate = (
+            features_multivariate
+            .with_columns_renamed(features_multivariate.components, ["Value0", "Value1", "Value2"])
         )
 
         # univariate feature test
