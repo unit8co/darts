@@ -407,6 +407,9 @@ class GenericShiftedDataset:
                 # We need to return the future covariates. In this case we use the same indexing as for
                 # "future_target" (shifting the index if the time axes of target and covariate are not the same)
                 end_of_output_idx_cov = _get_matching_index(ts_target, ts_covariate, end_of_output_idx)
+                raise_if_not(end_of_output_idx_cov >= 0,
+                             "The dataset contains some covariates that don't extend far enough into the future. "
+                             "({}-th sample)".format(idx))
                 if end_of_output_idx_cov == 0:
                     # we need this case because "-0" is not supported as an indexing bound
                     covariate = cov_vals[-self.output_chunk_length:]

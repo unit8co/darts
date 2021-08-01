@@ -6,7 +6,11 @@ from ..timeseries import TimeSeries
 from ..utils.data import (PastCovariatesInferenceDataset, FutureCovariatesInferenceDataset,
                           DualCovariatesInferenceDataset, MixedCovariatesInferenceDataset,
                           SplitCovariatesInferenceDataset, PastCovariatesSequentialDataset,
-                          PastCovariatesShiftedDataset, HorizonBasedDataset)
+                          FutureCovariatesSequentialDataset, DualCovariatesSequentialDataset,
+                          MixedCovariatesSequentialDataset, SplitCovariatesSequentialDataset,
+                          PastCovariatesShiftedDataset, FutureCovariatesShiftedDataset,
+                          DualCovariatesShiftedDataset, MixedCovariatesShiftedDataset,
+                          SplitCovariatesShiftedDataset, HorizonBasedDataset)
 from ..utils.timeseries_generation import gaussian_timeseries
 
 
@@ -309,6 +313,181 @@ class DatasetTestCase(DartsBaseTestClass):
         self._assert_eq(ds[5], (self.target1[75:85], self.cov1[75:85], self.target1[85:95]))
         self._assert_eq(ds[136], (self.target2[125:135], self.cov2[125:135], self.target2[135:145]))
 
+        # should fail if covariates do not have the required time span, even though covariates are longer
+        times1 = pd.date_range(start='20100101', end='20110101', freq='D')
+        times2 = pd.date_range(start='20120101', end='20150101', freq='D')
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = PastCovariatesSequentialDataset(target_series=target, covariates=cov,
+                                             input_chunk_length=10, output_chunk_length=10)
+        with self.assertRaises(ValueError):
+            ds[5]
+
+        # the same should fail when series are integer-indexed
+        times1 = pd.RangeIndex(start=0, stop=100, step=1)
+        times2 = pd.RangeIndex(start=200, stop=400, step=1)
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = PastCovariatesSequentialDataset(target_series=target, covariates=cov,
+                                             input_chunk_length=10, output_chunk_length=10)
+        with self.assertRaises(ValueError):
+            ds[5]
+
+        # we should get the correct covariate slice even when target and covariates are not aligned
+        times1 = pd.date_range(start='20100101', end='20110101', freq='D')
+        times2 = pd.date_range(start='20090101', end='20110106', freq='D')
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = PastCovariatesSequentialDataset(target_series=target, covariates=cov,
+                                             input_chunk_length=10, output_chunk_length=10)
+
+        self.assertTrue(all(ds[0][1] == cov.values()[-25:-15]))
+        self.assertTrue(all(ds[5][1] == cov.values()[-30:-20]))
+
+        # This should also be the case when series are integer indexed
+        times1 = pd.RangeIndex(start=100, stop=200, step=1)
+        times2 = pd.RangeIndex(start=50, stop=250, step=1)
+        target = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = PastCovariatesSequentialDataset(target_series=target, covariates=cov,
+                                             input_chunk_length=10, output_chunk_length=10)
+
+        self.assertTrue(all(ds[0][1] == cov.values()[-70:-60]))
+        self.assertTrue(all(ds[5][1] == cov.values()[-75:-65]))
+
+    def test_future_covariates_sequential_dataset(self):
+        # one target series
+        ds = FutureCovariatesSequentialDataset(target_series=self.target1, input_chunk_length=10, output_chunk_length=10)
+        self.assertEqual(len(ds), 81)
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
+
+        # two target series
+        ds = FutureCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             input_chunk_length=10, output_chunk_length=10)
+        self.assertEqual(len(ds), 262)
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
+        self._assert_eq(ds[136], (self.target2[125:135], None, self.target2[135:145]))
+
+        # two target series with custom max_nr_samples
+        ds = FutureCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                               input_chunk_length=10, output_chunk_length=10, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self._assert_eq(ds[5], (self.target1[75:85], None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[125:135], None, self.target2[135:145]))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = FutureCovariatesSequentialDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates; covariates not aligned, must contain correct values
+        target1 = TimeSeries.from_values(np.random.randn(100))
+        target2 = TimeSeries.from_values(np.random.randn(50))
+        cov1 = TimeSeries.from_values(np.random.randn(120))
+        cov2 = TimeSeries.from_values(np.random.randn(80))
+
+        ds = FutureCovariatesSequentialDataset(target_series=[target1, target2], covariates=[cov1, cov2],
+                                               input_chunk_length=10, output_chunk_length=10)
+
+        self.assertTrue(all(ds[0][0] == target1.values()[-20:-10]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-30:-20]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-10:]))
+
+        self.assertTrue(all(ds[101][0] == target2.values()[-40:-30]))
+        self.assertTrue(all(ds[101][1] == cov2.values()[-60:-50]))
+        self.assertTrue(all(ds[101][2] == target2.values()[-30:-20]))
+
+        # Should also contain correct values when time-indexed with covariates not aligned
+        times1 = pd.date_range(start='20090201', end='20090220', freq='D')
+        times2 = pd.date_range(start='20090201', end='20090222', freq='D')
+        target1 = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = FutureCovariatesSequentialDataset(target_series=[target1], covariates=[cov1],
+                                               input_chunk_length=2, output_chunk_length=2)
+
+        self.assertTrue(all(ds[0][0] == target1.values()[-4:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-4:-2]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-2:]))
+
+        # Should fail if covariates are not long enough
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(7))
+
+        ds = FutureCovariatesSequentialDataset(target_series=[target1], covariates=[cov1],
+                                               input_chunk_length=2, output_chunk_length=2)
+
+        with self.assertRaises(ValueError):
+            ds[0]
+
+    def test_dual_covariates_sequential_dataset(self):
+        # Must contain (past_target, historic_future_covariates, future_covariates, future_target)
+
+        # one target series
+        ds = DualCovariatesSequentialDataset(target_series=self.target1, input_chunk_length=10, output_chunk_length=10)
+        self.assertEqual(len(ds), 81)
+        self._assert_eq(ds[5], (self.target1[75:85], None, None, self.target1[85:95]))
+
+        # two target series
+        ds = DualCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             input_chunk_length=10, output_chunk_length=10)
+        self.assertEqual(len(ds), 262)
+        self._assert_eq(ds[5], (self.target1[75:85], None, None, self.target1[85:95]))
+        self._assert_eq(ds[136], (self.target2[125:135], None, None, self.target2[135:145]))
+
+        # two target series with custom max_nr_samples
+        ds = DualCovariatesSequentialDataset(target_series=[self.target1, self.target2],
+                                             input_chunk_length=10, output_chunk_length=10, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self._assert_eq(ds[5], (self.target1[75:85], None, None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[125:135], None, None, self.target2[135:145]))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = DualCovariatesSequentialDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates; covariates not aligned, must contain correct values
+        target1 = TimeSeries.from_values(np.random.randn(100))
+        target2 = TimeSeries.from_values(np.random.randn(50))
+        cov1 = TimeSeries.from_values(np.random.randn(120))
+        cov2 = TimeSeries.from_values(np.random.randn(80))
+
+        ds = DualCovariatesSequentialDataset(target_series=[target1, target2], covariates=[cov1, cov2],
+                                             input_chunk_length=10, output_chunk_length=10)
+
+        self.assertTrue(all(ds[0][0] == target1.values()[-20:-10]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-40:-30]))
+        self.assertTrue(all(ds[0][2] == cov1.values()[-30:-20]))
+        self.assertTrue(all(ds[0][3] == target1.values()[-10:]))
+
+        self.assertTrue(all(ds[101][0] == target2.values()[-40:-30]))
+        self.assertTrue(all(ds[101][1] == cov2.values()[-70:-60]))
+        self.assertTrue(all(ds[101][2] == cov2.values()[-60:-50]))
+        self.assertTrue(all(ds[101][3] == target2.values()[-30:-20]))
+
+        # Should also contain correct values when time-indexed with covariates not aligned
+        times1 = pd.date_range(start='20090201', end='20090220', freq='D')
+        times2 = pd.date_range(start='20090201', end='20090222', freq='D')
+        target1 = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+
+        ds = DualCovariatesSequentialDataset(target_series=[target1], covariates=[cov1],
+                                             input_chunk_length=2, output_chunk_length=2)
+
+        self.assertTrue(all(ds[0][0] == target1.values()[-4:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-6:-4]))
+        self.assertTrue(all(ds[0][2] == cov1.values()[-4:-2]))
+        self.assertTrue(all(ds[0][3] == target1.values()[-2:]))
+
+        # Should fail if covariates are not long enough
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(7))
+
+        ds = DualCovariatesSequentialDataset(target_series=[target1], covariates=[cov1],
+                                             input_chunk_length=2, output_chunk_length=2)
+
+        with self.assertRaises(ValueError):
+            ds[0]
+
     def test_past_covariates_shifted_dataset(self):
         # one target series
         ds = PastCovariatesShiftedDataset(target_series=self.target1, length=10, shift=5)
@@ -334,10 +513,156 @@ class DatasetTestCase(DartsBaseTestClass):
 
         # two targets and two covariates
         ds = PastCovariatesShiftedDataset(target_series=[self.target1, self.target2],
-                            covariates=[self.cov1, self.cov2],
-                            length=10, shift=5)
+                                          covariates=[self.cov1, self.cov2],
+                                          length=10, shift=5)
         self._assert_eq(ds[5], (self.target1[80:90], self.cov1[80:90], self.target1[85:95]))
         self._assert_eq(ds[141], (self.target2[130:140], self.cov2[130:140], self.target2[135:145]))
+
+        # Should contain correct values even when covariates are not aligned
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(10))
+        ds = PastCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-7:-4]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-3:]))
+
+        # Should also contain correct values when time-indexed with covariates not aligned
+        times1 = pd.date_range(start='20090201', end='20090220', freq='D')
+        times2 = pd.date_range(start='20090201', end='20090222', freq='D')
+        target1 = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = PastCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-7:-4]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-3:]))
+
+        # Should fail if covariates are too short
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(5))
+        ds = PastCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        with self.assertRaises(ValueError):
+            ds[0]
+
+    def test_future_covariates_shifted_dataset(self):
+        # one target series
+        ds = FutureCovariatesShiftedDataset(target_series=self.target1, length=10, shift=5)
+        self.assertEqual(len(ds), 86)
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
+
+        # two target series
+        ds = FutureCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5)
+        self.assertEqual(len(ds), 272)
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], None, self.target2[135:145]))
+
+        # two target series with custom max_nr_samples
+        ds = FutureCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10,
+                                            shift=5, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self._assert_eq(ds[5], (self.target1[80:90], None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[130:140], None, self.target2[135:145]))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = FutureCovariatesShiftedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates
+        ds = FutureCovariatesShiftedDataset(target_series=[self.target1, self.target2],
+                                            covariates=[self.cov1, self.cov2],
+                                            length=10, shift=5)
+        self._assert_eq(ds[5], (self.target1[80:90], self.cov1[85:95], self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], self.cov2[135:145], self.target2[135:145]))
+
+        # Should contain correct values even when covariates are not aligned
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(10))
+        ds = FutureCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                            length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-3:]))
+
+        # Should also contain correct values when time-indexed with covariates not aligned
+        times1 = pd.date_range(start='20090201', end='20090220', freq='D')
+        times2 = pd.date_range(start='20090201', end='20090222', freq='D')
+        target1 = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = FutureCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                            length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][2] == target1.values()[-3:]))
+
+        # Should fail if covariates are too short
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(7))
+        ds = FutureCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                            length=3, shift=2)
+        with self.assertRaises(ValueError):
+            ds[0]
+
+    def test_dual_covariates_shifted_dataset(self):
+        # one target series
+        ds = DualCovariatesShiftedDataset(target_series=self.target1, length=10, shift=5)
+        self.assertEqual(len(ds), 86)
+        self._assert_eq(ds[5], (self.target1[80:90], None, None, self.target1[85:95]))
+
+        # two target series
+        ds = DualCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10, shift=5)
+        self.assertEqual(len(ds), 272)
+        self._assert_eq(ds[5], (self.target1[80:90], None, None, self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], None, None, self.target2[135:145]))
+
+        # two target series with custom max_nr_samples
+        ds = DualCovariatesShiftedDataset(target_series=[self.target1, self.target2], length=10,
+                                          shift=5, max_samples_per_ts=50)
+        self.assertEqual(len(ds), 100)
+        self._assert_eq(ds[5], (self.target1[80:90], None, None, self.target1[85:95]))
+        self._assert_eq(ds[55], (self.target2[130:140], None, None, self.target2[135:145]))
+
+        # two targets and one covariate
+        with self.assertRaises(ValueError):
+            ds = DualCovariatesShiftedDataset(target_series=[self.target1, self.target2], covariates=[self.cov1])
+
+        # two targets and two covariates
+        ds = DualCovariatesShiftedDataset(target_series=[self.target1, self.target2],
+                                          covariates=[self.cov1, self.cov2],
+                                          length=10, shift=5)
+        self._assert_eq(ds[5], (self.target1[80:90], self.cov1[80:90], self.cov1[85:95], self.target1[85:95]))
+        self._assert_eq(ds[141], (self.target2[130:140], self.cov2[130:140], self.cov2[135:145], self.target2[135:145]))
+
+        # Should contain correct values even when covariates are not aligned
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(10))
+        ds = DualCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-7:-4]))
+        self.assertTrue(all(ds[0][2] == cov1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][3] == target1.values()[-3:]))
+
+        # Should also contain correct values when time-indexed with covariates not aligned
+        times1 = pd.date_range(start='20090201', end='20090220', freq='D')
+        times2 = pd.date_range(start='20090201', end='20090222', freq='D')
+        target1 = TimeSeries.from_times_and_values(times1, np.random.randn(len(times1)))
+        cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
+        ds = DualCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        self.assertTrue(all(ds[0][0] == target1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][1] == cov1.values()[-7:-4]))
+        self.assertTrue(all(ds[0][2] == cov1.values()[-5:-2]))
+        self.assertTrue(all(ds[0][3] == target1.values()[-3:]))
+
+        # Should fail if covariates are too short
+        target1 = TimeSeries.from_values(np.random.randn(8))
+        cov1 = TimeSeries.from_values(np.random.randn(7))
+        ds = DualCovariatesShiftedDataset(target_series=[target1], covariates=[cov1],
+                                          length=3, shift=2)
+        with self.assertRaises(ValueError):
+            ds[0]
 
     def test_horizon_based_dataset(self):
         # one target series
