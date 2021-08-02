@@ -1542,7 +1542,7 @@ class TimeSeries:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
-    def add_datetime_attribute(self, attribute, one_hot: bool = False) -> 'TimeSeries':
+    def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
@@ -1556,6 +1556,10 @@ class TimeSeries:
         one_hot
             Boolean value indicating whether to add the specified attribute as a one hot encoding
             (results in more columns).
+        cyclic
+            Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+            Alternative to one_hot encoding, enable only one of the two.
+            (adds 2 columns, corresponding to sin and cos transformation).
 
         Returns
         -------
@@ -1564,7 +1568,7 @@ class TimeSeries:
         """
         self._assert_deterministic()
         from .utils import timeseries_generation as tg
-        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot, cyclic))
 
     def add_holidays(self,
                      country_code: str,
@@ -1805,6 +1809,52 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name);
+
+    def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> 'TimeSeries':
+        """
+        Changes ts column names and returns a new TimeSeries instance.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the column names to be changed.
+        col_names_new
+            String or list of strings corresponding to the new column names. Must be the same length as col_names.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance.
+        """
+
+        if isinstance(col_names, str):
+            col_names = [col_names]
+        if isinstance(col_names_new, str):
+            col_names_new = [col_names_new]
+
+        raise_if_not(all([(x in self.columns.to_list()) for x in col_names]), 
+                                                    "Some column names in col_names don't exist in the time series.", logger)
+        
+        raise_if_not(len(col_names) == len(col_names_new), 'Length of col_names_new list should be'
+                                                    ' equal to the length of col_names list.', logger)
+
+
+        cols = self.components
+
+        for (o, n) in zip(col_names, col_names_new):
+            cols = [n if (c==o) else c for c in cols]
+
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={
+                self._xa.dims[0]: self.time_index, 
+                DIMS[1]: pd.Index(cols)
+                }
+        )
+        
+        return TimeSeries(new_xa)
+
 
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
