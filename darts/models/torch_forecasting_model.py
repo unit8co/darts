@@ -640,12 +640,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     batch_prediction = torch.cat(batch_prediction, dim=1)
                     out_shape = batch_prediction.shape
 
-                    # drop unnecessary values
-                    batch_prediction = batch_prediction[:, :n, :]
-
                     # reshape from 3d tensor (num_series x batch_sample_size, ...)
                     # into 4d tensor (batch_sample_size, num_series, ...), where dim 0 represents the samples
                     batch_prediction = batch_prediction.reshape((batch_sample_size, num_series,) + out_shape[1:])
+
+                    # drop unnecessary values
+                    batch_prediction = batch_prediction[:, :, :n, :]
 
                     batch_predictions.append(batch_prediction)
                     sample_length += batch_sample_size
