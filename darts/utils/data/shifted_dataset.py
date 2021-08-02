@@ -149,7 +149,45 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        TODO: doc
+        A time series dataset containing tuples of
+        (past_target, historic_future_covariates, future_covariates, future_target)
+        arrays, which all have length `length`.
+        The "future_target" is the "past_target" target shifted by `shift` time steps forward.
+        So if an emitted "past_target" goes from position `i` to `i+length`,
+        the emitted "future_target" will go from position `i+shift` to `i+shift+length`.
+        The slicing "future_covariates" matches that of "futuretarget" and the slicing of "historic_future_covariates"
+        matches that of "past_target". The slicing itself relies on time indexes to align the series if they have
+        unequal lengths.
+
+        Each series must be long enough to contain at least one (input, output) pair; i.e., each
+        series must have length at least `length + shift`.
+        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
+
+        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+        lengths, they will contain different numbers of slices. Therefore, some particular slices may
+        be sampled more often than others if they belong to shorter time series.
+
+        Parameters
+        ----------
+        target_series
+            One or a sequence of target `TimeSeries`.
+        covariates
+            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
+            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            covariates in the sequence must have a time span large enough to contain all the required slices.
+            The joint slicing of the target and covariates is relying on the time axes of both series.
+        length
+            The length of the emitted past and future series.
+        shift
+            The number of time steps by which to shift the output relative to the input.
+        max_samples_per_ts
+            This is an upper bound on the number of tuples that can be produced per time series.
+            It can be used in order to have an upper bound on the total size of the dataset and
+            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
+            creation) to know their sizes, which might be expensive on big datasets.
+            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
+            most recent `max_samples_per_ts` samples will be considered.
         """
 
         super().__init__()
@@ -266,7 +304,46 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None):
         """
-        TODO: doc
+        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target)
+        arrays, which all have length `length`.
+        The "future_target" is the "past_target" target shifted by `shift` time steps forward.
+        So if an emitted "past_target" goes from position `i` to `i+length`,
+        the emitted "future_target" will go from position `i+shift` to `i+shift+length`.
+        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
+        itself relies on time indexes to align the series if they have unequal lengths.
+
+        Each series must be long enough to contain at least one (input, output) pair; i.e., each
+        series must have length at least `length + shift`.
+        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
+
+        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+        lengths, they will contain different numbers of slices. Therefore, some particular slices may
+        be sampled more often than others if they belong to shorter time series.
+
+        Parameters
+        ----------
+        target_series
+            One or a sequence of target `TimeSeries`.
+        past_covariates
+            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
+            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            covariates in the sequence must have a time span large enough to contain all the required slices.
+            The joint slicing of the target and covariates is relying on the time axes of both series.
+        future_covariates
+            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. This has to follow
+            the same constraints as `past_covariates`.
+        length
+            The length of the emitted past and future series.
+        shift
+            The number of time steps by which to shift the output relative to the input.
+        max_samples_per_ts
+            This is an upper bound on the number of tuples that can be produced per time series.
+            It can be used in order to have an upper bound on the total size of the dataset and
+            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
+            creation) to know their sizes, which might be expensive on big datasets.
+            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
+            most recent `max_samples_per_ts` samples will be considered.
         """
 
         super().__init__()

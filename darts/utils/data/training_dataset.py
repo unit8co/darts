@@ -1,6 +1,6 @@
 """
-TimeSeries Dataset Base Classes
--------------------------------
+Training Datasets Base Classes
+------------------------------
 """
 
 from abc import ABC, abstractmethod
@@ -43,14 +43,15 @@ class TrainingDataset(ABC, Dataset):
         This is meant to be used for training (or validation), all data except `future_target` represents model
         inputs (`future_target` is the output the model are trained to predict).
 
-        Darts `TorchForecastingModel`s can be fit from instances of `TrainingDataset` using the
+        Darts `TorchForecastingModel`s can be fit from instances of `TrainingDataset` of the right type using the
         `fit_from_dataset()` method.
 
-        `TrainingDataset` inherits from `Sequence`; meaning that the implementations have to
-        provide the `__len__()` and `__getitem__()` methods.
+        `TrainingDataset` inherits torch `Dataset`; meaning that the implementations have to
+        provide the `__getitem__()` method.
 
         It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
-        and so we can get big performance gains when slicing by returning only numpy views of the data.
+        and so we can get big performance gains when slicing by returning only numpy views of the data
+        underlying the `TimeSeries`.
         """
         pass
 

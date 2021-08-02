@@ -251,8 +251,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1):
         """
-        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates) tuples.
-        "future_past_covariates" are past covariates that happen to be also known in the future - those
+        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
+        tuples. "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
         Parameters
