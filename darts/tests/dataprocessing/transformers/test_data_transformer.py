@@ -15,8 +15,11 @@ class DataTransformerTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    series1 = tg.random_walk_timeseries(length=100) * 20 - 10.
+    series1 = tg.random_walk_timeseries(length=100, column_name='series1') * 20 - 10.
     series2 = series1.stack(tg.random_walk_timeseries(length=100) * 20 - 100.)
+
+    
+    col_1 = series1.columns
 
     def test_scaling(self):
         self.series3 = self.series1[:1]
@@ -26,6 +29,12 @@ class DataTransformerTestCase(unittest.TestCase):
         series1_tr1 = transformer1.fit_transform(self.series1)
         series1_tr2 = transformer2.fit_transform(self.series1)
         series3_tr2 = transformer2.transform(self.series3)
+
+        # should have the defined name above
+        self.assertEqual(self.series1.columns[0], 'series1')
+
+        # should keep columns pd.Index
+        self.assertEqual(self.col_1, series1_tr1.columns)
 
         # should comply with scaling constraints
         self.assertAlmostEqual(min(series1_tr1.values().flatten()), 0.)
