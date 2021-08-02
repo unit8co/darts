@@ -1,12 +1,10 @@
 """
 Regression Model
 ----------------
-
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
 and possibly lags of an covariate series. They can wrap around any regression model having a `fit()`
 and `predict()` functions accepting tabularized data (e.g. scikit-learn regression models), and are using
 `sklearn.linear_model.LinearRegression` by default.
-
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
 from typing import Union, Sequence, Optional, Tuple, List
@@ -28,7 +26,6 @@ def _process_lags(
 ) -> Tuple[Optional[List[int]], Optional[List[int]]]:
     """
     Process lags and lags_covariate.
-
     Params
     ------
     lags
@@ -39,14 +36,12 @@ def _process_lags(
         the last `lags_covariates` lags are used (inclusive, starting from lag 1). Otherwise a list of
         integers with lags >= 0 is required. The special index 0 is supported, in case the covariate at time `t` should
         be used. Note that the 0 index is not included when passing a single interger value > 0.
-
     Returns
     -------
     Optional[List[int]]
         Processed `lags`, as a list of integers. If no lags are used, then `None` is returned.
     Optional[List[int]]
         Processed `lags_covariates` as a list of integers. If no lags covariates are used, then `None` is returned.
-
     Raises
     ------
     ValueError
@@ -103,12 +98,10 @@ def _process_lags(
 def _consume_column(m: np.ndarray) -> Optional[np.ndarray]:
     """
     Deletes the first column of the given matrix. In case the column is only one, returns `None`.
-
     Params
     ------
     m
         np.array representing a matrix.
-
     Returns
     -------
     Optional[np.ndarray]
@@ -135,7 +128,6 @@ class LaggedTrainingDataset:
         A time series dataset wrapping around `SequentialDataset` containing tuples of (input_target, output_target,
         input_covariates) arrays, where "input_target" is #lags long, "input_covariates" is #lags_covariates long,
         and "output" has length 1.
-
         Params
         ------
         target_series
@@ -194,7 +186,6 @@ class LaggedTrainingDataset:
         if self.lags_covariates is not None and 0 in self.lags_covariates:
             """
             In case we need the 'time 0' covariate, we have to adjust the data with the following trick
-
             T5 T4 T3 T2 T1 T0 -> P | T5 T4 T3 T2 T1     -> T0~P'
             C5 C4 C3 C2 C1 C0      | C5 C4 C3 C2 C1 C0
             """
@@ -224,7 +215,6 @@ class LaggedTrainingDataset:
         """
         The function returns a training matrix X with shape (n_samples, lags + lags_covariates*covariates.width)
         and y with shape (n_sample,).
-
         The columns of the resulting matrix have the following order: lags | lag_cov_0 | lag_cov_1 | .. where each
         lag_cov_X is a shortcut for lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the
         dimension of the covariate series (when multivariate).
@@ -260,7 +250,6 @@ class LaggedInferenceDataset:
         """
         A time series dataset wrapping around `SimpleInferenceDataset`. The `input_chunk_length` is inferred through
         lags and lags_covariates.
-
         Params
         ------
         target_series
@@ -316,10 +305,8 @@ class RegressionModel(GlobalForecastingModel):
         model=None,
     ):
         """Regression Model
-
         Can be used to fit any scikit-learn-like regressor class to predict the target
         time series from lagged values.
-
         Parameters
         ----------
         lags
@@ -376,7 +363,6 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
     ) -> None:
         """Fits/trains the model using the provided list of features time series and the target time series.
-
         Parameters
         ----------
         series : Union[TimeSeries, Sequence[TimeSeries]]
@@ -433,7 +419,6 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
-
         Parameters
         ----------
         n : int

@@ -43,10 +43,12 @@ class TimeSeries:
         # relying on np.nan (which is a float) won't work very properly.
         raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.',
                      logger)
-        if not np.issubdtype(xa.values.dtype, np.float):
-            logger.warn('TimeSeries is using a numeric type different from np.float. Not all functionalities '
-                        'may work properly. It is recommended casting your data to floating point numbers before '
-                        'using TimeSeries.')
+
+        val_dtype = xa.values.dtype
+        if not (np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)):
+            logger.warn('TimeSeries is using a numeric type different from np.float32 or np.float64. '
+                        'Not all functionalities may work properly. It is recommended casting your data to floating '
+                        'point numbers before using TimeSeries.')
 
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
@@ -218,7 +220,12 @@ class TimeSeries:
 
         # We cast the array to float
         # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
-        return TimeSeries(xa_.astype(np.float))
+        if np.issubdtype(xa_.values.dtype, np.float32):
+            # We conserve the float32 type
+            return TimeSeries(xa_.astype(np.float32))
+        else:
+            # Otherwise we cast to float64
+            return TimeSeries(xa_.astype(np.float64))
 
     @staticmethod
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
@@ -1390,6 +1397,8 @@ class TimeSeries:
         bool
             True if both TimeSeries have the same index, False otherwise.
         """
+        if len(other) != len(self):
+            return False
         return (other.time_index == self.time_index).all()
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
@@ -1806,6 +1815,52 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name);
+
+    def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> 'TimeSeries':
+        """
+        Changes ts column names and returns a new TimeSeries instance.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the column names to be changed.
+        col_names_new
+            String or list of strings corresponding to the new column names. Must be the same length as col_names.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance.
+        """
+
+        if isinstance(col_names, str):
+            col_names = [col_names]
+        if isinstance(col_names_new, str):
+            col_names_new = [col_names_new]
+
+        raise_if_not(all([(x in self.columns.to_list()) for x in col_names]), 
+                                                    "Some column names in col_names don't exist in the time series.", logger)
+        
+        raise_if_not(len(col_names) == len(col_names_new), 'Length of col_names_new list should be'
+                                                    ' equal to the length of col_names list.', logger)
+
+
+        cols = self.components
+
+        for (o, n) in zip(col_names, col_names_new):
+            cols = [n if (c==o) else c for c in cols]
+
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={
+                self._xa.dims[0]: self.time_index, 
+                DIMS[1]: pd.Index(cols)
+                }
+        )
+        
+        return TimeSeries(new_xa)
+
 
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.

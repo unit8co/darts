@@ -76,17 +76,19 @@ if TORCH_AVAILABLE:
                         model.fit(tg.gaussian_timeseries(length=100))
 
                         for res_block in model.model.res_blocks:
-                            res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
-                            res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
+                            res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape,
+                                                                                   dtype=torch.float64))
+                            res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape,
+                                                                                   dtype=torch.float64))
 
                         model.model.eval()
-                        input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float)
-                        zero_output = model.model.forward(input_tensor).float()[0, -1, 0]
+                        input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float64)
+                        zero_output = model.model.forward(input_tensor)[0, -1, 0]
 
                         # test for full coverage
                         for i in range(input_chunk_length):
                             input_tensor[0, i, 0] = 1
-                            curr_output = model.model.forward(input_tensor).float()[0, -1, 0]
+                            curr_output = model.model.forward(input_tensor)[0, -1, 0]
                             self.assertNotEqual(zero_output, curr_output)
                             input_tensor[0, i, 0] = 0
 
@@ -103,12 +105,14 @@ if TORCH_AVAILABLE:
                         model_2.fit(tg.gaussian_timeseries(length=100))
 
                         for res_block in model_2.model.res_blocks:
-                            res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape))
-                            res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape))
+                            res_block.conv1.weight = torch.nn.Parameter(torch.ones(res_block.conv1.weight.shape,
+                                                                                   dtype=torch.float64))
+                            res_block.conv2.weight = torch.nn.Parameter(torch.ones(res_block.conv2.weight.shape,
+                                                                                   dtype=torch.float64))
 
                         model_2.model.eval()
-                        input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float)
-                        zero_output = model_2.model.forward(input_tensor).float()[0, -1, 0]
+                        input_tensor = torch.zeros([1, input_chunk_length, 1], dtype=torch.float64)
+                        zero_output = model_2.model.forward(input_tensor)[0, -1, 0]
 
                         # test for incomplete coverage
                         uncovered_input_found = False
@@ -116,7 +120,7 @@ if TORCH_AVAILABLE:
                             continue
                         for i in range(input_chunk_length):
                             input_tensor[0, i, 0] = 1
-                            curr_output = model_2.model.forward(input_tensor).float()[0, -1, 0]
+                            curr_output = model_2.model.forward(input_tensor)[0, -1, 0]
                             if (zero_output == curr_output):
                                 uncovered_input_found = True
                                 break

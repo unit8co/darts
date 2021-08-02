@@ -113,7 +113,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             ]
 
             for input_tgt, input_cov, cov in test_cases:
-                model_instance = model(lags=4, lags_covariates=2)
+                model_instance = model(lags=4, lags_future_covariates=2)
                 model_instance.fit(
                     series=input_tgt, covariates=input_cov
                 )
@@ -189,7 +189,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = self.models[0](lags=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            covariates=None,
+            future_covariates=None,
             start=0.5,
             forecast_horizon=1,
             stride=1,
@@ -203,7 +203,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = self.models[0](lags=5, lags_covariates=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            covariates=self.ts_exog1[:100],
+            future_covariates=self.ts_exog1[:100],
             start=0.5,
             forecast_horizon=1,
             stride=1,

@@ -12,18 +12,17 @@ References
 import numpy as np
 import pandas as pd
 
-from statsmodels.tsa.api import VAR as staVAR
 from statsmodels.tsa.api import VARMAX as staVARMA
 from typing import Optional
 
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
 
-class VARIMA(ExtendedForecastingModel):
+class VARIMA(DualCovariatesForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
         """ VARIMA
 
@@ -58,23 +57,23 @@ class VARIMA(ExtendedForecastingModel):
             return 'VARMA({},{})'.format(self.p, self.q)
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         self._last_values = series.last_values()  # needed for back-transformation when d=1
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(series.pd_dataframe(copy=False).diff().dropna())
 
-        super().fit(series, exog)
+        super().fit(series, future_covariates)
         series = self.training_series
-        exog = exog.values() if exog else None
-        m = staVARMA(endog=series.pd_dataframe(copy=False), exog=exog, order=(self.p, self.q), trend=self.trend)
+        future_covariates = future_covariates.values() if future_covariates else None
+        m = staVARMA(endog=series.pd_dataframe(copy=False), exog=future_covariates, order=(self.p, self.q), trend=self.trend)
         self.model = m.fit(disp=0)
 
     def predict(self,
                 n: int,
-                exog: Optional[TimeSeries] = None,
+                future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1):
-        super().predict(n, exog, num_samples)
-        forecast = self.model.forecast(steps=n, exog=exog.values() if exog else None)
+        super().predict(n, future_covariates, num_samples)
+        forecast = self.model.forecast(steps=n, exog=future_covariates.values() if future_covariates else None)
         forecast = self._invert_transformation(forecast)
         return self._build_forecast_series(np.array(forecast))
 

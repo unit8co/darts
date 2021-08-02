@@ -9,11 +9,7 @@ from sklearn.linear_model import LinearRegression
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting_model import ForecastingModel
-from darts.models import (
-    EnsembleModel,
-    RegressionModel,
-    LinearRegressionModel
-)
+from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
 
 logger = get_logger(__name__)
 
@@ -78,7 +74,7 @@ class RegressionEnsembleModel(EnsembleModel):
             predictions = predictions.stack(model.predict(self.train_n_points))
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(series=regression_target, covariates=predictions)
+        self.regression_model.fit(series=regression_target, future_covariates=predictions)
 
         # prepare the forecasting models for further predicting by fitting
         # them with the entire data
@@ -93,4 +89,4 @@ class RegressionEnsembleModel(EnsembleModel):
             model.fit(self.training_series)
 
     def ensemble(self, predictions: TimeSeries) -> TimeSeries:
-        return self.regression_model.predict(n=len(predictions), covariates=predictions)
+        return self.regression_model.predict(n=len(predictions), future_covariates=predictions)

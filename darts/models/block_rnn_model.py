@@ -6,11 +6,11 @@ Block Recurrent Neural Networks
 import torch.nn as nn
 import torch
 from numpy.random import RandomState
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 from ..logging import raise_if_not, get_logger
 from ..utils.torch import random_method
-from .torch_forecasting_model import TorchForecastingModel
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -111,7 +111,7 @@ class _BlockRNNModule(nn.Module):
         return predictions
 
 
-class BlockRNNModel(TorchForecastingModel):
+class BlockRNNModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -179,7 +179,11 @@ class BlockRNNModel(TorchForecastingModel):
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
+
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(name=self.rnn_type_or_module,
