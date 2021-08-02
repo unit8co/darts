@@ -112,14 +112,24 @@ def multivariate_support(func):
     return wrapper_multivariate_support
 
 
+def _reduce_stochastic_to_median(series: TimeSeries):
+    """
+    Returns the median sample value of a probabilistic function
+    """
+
+    return series.quantile_timeseries(quantile=0.5)
+
+
 def _get_values_or_raise(series_a: TimeSeries,
                          series_b: TimeSeries,
-                         intersect: bool) -> Tuple[np.ndarray, np.ndarray]:
+                         intersect: bool,
+                         stoch_reduction: Callable[[TimeSeries], TimeSeries],
+                         ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
 
-    For stochastic series, return the median sample value
+    For stochastic series, applies the function stoch_reduction which must return a deterministic series.
     """
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
@@ -135,9 +145,11 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index, series_b.time_index),
                  logger)
 
-    # TODO: we may want to change this...
-    series_a_det = series_a_common if series_a_common.is_deterministic else series_a_common.quantile_timeseries(quantile=0.5)
-    series_b_det = series_b_common if series_b_common.is_deterministic else series_b_common.quantile_timeseries(quantile=0.5)
+    series_a_det = series_a_common if series_a_common.is_deterministic else stoch_reduction(series_a_common)
+    series_b_det = series_b_common if series_b_common.is_deterministic else stoch_reduction(series_b_common)
+
+    raise_if_not(series_a_det.is_deterministic, "stoch_reduction is expected to return a deterministic TimeSeries")
+    raise_if_not(series_b_det.is_deterministic, "stoch_reduction is expected to return a deterministic TimeSeries")
 
     return series_a_det.univariate_values(), series_b_det.univariate_values()
 
@@ -159,6 +171,7 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
         *,
+        stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
         reduction: Callable[[np.ndarray], float] = np.mean,
         inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
         n_jobs: int = 1,
@@ -180,6 +193,9 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -203,7 +219,7 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
 """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y1, y2 = _remove_nan_union(y1, y2)
     return np.mean(np.abs(y1 - y2))
 
@@ -214,6 +230,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
         *,
+        stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
         reduction: Callable[[np.ndarray], float] = np.mean,
         inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
         n_jobs: int = 1,
@@ -235,6 +252,9 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -257,7 +277,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y_true, y_pred = _remove_nan_union(y_true, y_pred)
     return np.mean((y_true - y_pred)**2)
 
@@ -267,6 +287,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          pred_series: Union[TimeSeries, Sequence[TimeSeries]],
          intersect: bool = True,
+         stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
          *,
          reduction: Callable[[np.ndarray], float] = np.mean,
          inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -289,6 +310,9 @@ def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -310,7 +334,7 @@ def rmse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     float
         The Root Mean Squared Error (RMSE)
     """
-    return np.sqrt(mse(actual_series, pred_series, intersect))
+    return np.sqrt(mse(actual_series, pred_series, intersect, stoch_reduction= stoch_reduction))
 
 
 @multi_ts_support
@@ -319,6 +343,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
           *,
+          stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
           reduction: Callable[[np.ndarray], float] = np.mean,
           inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
           n_jobs: int = 1,
@@ -345,6 +370,9 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     inter_reduction
         Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
         This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
@@ -364,7 +392,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction=stoch_reduction)
     y1, y2 = _remove_nan_union(y1, y2)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2)**2))
@@ -375,6 +403,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
                              intersect: bool = True,
+                             stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
                              *,
                              reduction: Callable[[np.ndarray], float] = np.mean,
                              inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -401,6 +430,9 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -423,7 +455,7 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
         The Coefficient of Variation
     """
 
-    return 100 * rmse(actual_series, pred_series, intersect) / actual_series.mean().mean()
+    return 100 * rmse(actual_series, pred_series, intersect, stoch_reduction) / actual_series.mean().mean()
 
 
 @multi_ts_support
@@ -431,6 +463,7 @@ def coefficient_of_variation(actual_series: Union[TimeSeries, Sequence[TimeSerie
 def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          pred_series: Union[TimeSeries, Sequence[TimeSeries]],
          intersect: bool = True,
+         stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
          *,
          reduction: Callable[[np.ndarray], float] = np.mean,
          inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -457,6 +490,9 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -484,7 +520,7 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not((y_true != 0).all(), 'The actual series must be strictly positive to compute the MAPE.', logger)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
@@ -495,6 +531,7 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
+          stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
           *,
           reduction: Callable[[np.ndarray], float] = np.mean,
           inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -523,6 +560,9 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -550,7 +590,7 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
                  'The actual series must be strictly positive to compute the sMAPE.', logger)
@@ -563,6 +603,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
          insample: Union[TimeSeries, Sequence[TimeSeries]],
          m: Optional[int] = 1,
          intersect: bool = True,
+         stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
          *,
          reduction: Callable[[np.ndarray], float] = np.mean,
          inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -573,7 +614,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
     for details about the MASE and how it is computed.
 
-    If any of the series is stochastic (containing several samples), the median sample value is considered.
+    By default if any of the series is stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
@@ -592,6 +633,9 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -624,6 +668,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                            insample: TimeSeries,
                            m: int,
                            intersect: bool,
+                           stoch_reduction: Callable[[TimeSeries], TimeSeries],
                            reduction: Callable[[np.ndarray], float]):
 
         raise_if_not(actual_series.width == pred_series.width,
@@ -646,7 +691,8 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
             y_true, y_hat = _get_values_or_raise(actual_series.univariate_component(i),
                                                  pred_series.univariate_component(i),
-                                                 intersect)
+                                                 intersect,
+                                                 stoch_reduction)
 
             x_t = insample_.univariate_component(i).values()
             errors = np.abs(y_true - y_hat)
@@ -664,7 +710,8 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                   insample=insample,
                                   m=m,
                                   intersect=intersect,
-                                  reduction=reduction)
+                                  reduction=reduction,
+                                  stoch_reduction=stoch_reduction)
 
     elif isinstance(actual_series, Sequence) and isinstance(actual_series[0], TimeSeries):
 
@@ -689,6 +736,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                                      fn_kwargs={
                                          "m": m,
                                          "intersect": intersect,
+                                         "stoch_reduction": stoch_reduction,
                                          "reduction": reduction
                                      })
         return inter_reduction(value_list)
@@ -702,6 +750,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         intersect: bool = True,
         *,
+        stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
         reduction: Callable[[np.ndarray], float] = np.mean,
         inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
         n_jobs: int = 1,
@@ -725,6 +774,9 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -752,7 +804,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y_true, y_pred = _remove_nan_union(y_true, y_pred)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.', logger)
@@ -764,6 +816,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
           pred_series: Union[TimeSeries, Sequence[TimeSeries]],
           intersect: bool = True,
+          stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
           *,
           reduction: Callable[[np.ndarray], float] = np.mean,
           inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -788,6 +841,9 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -815,7 +871,7 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y_true, y_hat = _remove_nan_union(y_true, y_hat)
     raise_if_not(y_true.max() > y_true.min(), 'The difference between the max and min values must be strictly'
                  'positive to compute the MARRE.', logger)
@@ -829,6 +885,7 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
              intersect: bool = True,
              *,
+             stoch_reduction: Callable[[TimeSeries], TimeSeries] = _reduce_stochastic_to_median,
              reduction: Callable[[np.ndarray], float] = np.mean,
              inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
              n_jobs: int = 1,
@@ -851,6 +908,9 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
+    stoch_reduction
+        Function taking as input a stochastic 'TimeSeries' (containing multiple samples) and returning a deterministic `TimeSeries` (containing a single sample). This function
+        is applied to stochastic `TimeSeries` before evaluating the metric.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
@@ -872,7 +932,7 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     float
         The Coefficient of Determination :math:`R^2`
     """
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, stoch_reduction)
     y1, y2 = _remove_nan_union(y1, y2)
     ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
