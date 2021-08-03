@@ -64,36 +64,59 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     def test_model_construction(self):
 
         for model in self.models:
+            # TESTING SINGLE INT
+            # testing lags
             model_instance = model(lags=5)
-            self.assertEqual(model_instance.lags, [1, 2, 3, 4, 5])
+            self.assertEqual(model_instance.lags, [-5, -4, -3, -2, -1])
+            # testing lags_past_covariates
+            model_instance = model(lags=None, lags_past_covariates=3)
+            self.assertEqual(model_instance.lags_past_covariates, [-3, -2, -1])
+            # testing lags_future covariates
+            model_instance = model(lags=None, lags_future_covariates=(3, 5))
+            self.assertEqual(model_instance.lags_historical_covariates, [-3, -2, -1])
+            self.assertEqual(model_instance.lags_future_covariates, [0, 1, 2, 3, 4])
 
-            model_instance = model(lags=None, lags_covariates=3)
-            self.assertEqual(model_instance.lags_covariates, [1, 2, 3])
-
-            model_instance = model(lags=5, lags_covariates=[3, 6, 9, 12])
-            self.assertEqual(model_instance.lags_covariates, [3, 6, 9, 12])
-
-            model_instance = model(lags=None, lags_covariates=0)
-            self.assertEqual(model_instance.lags_covariates, [0])
+            # TESTING LIST of int
+            # lags
+            values = [-5, -3, -1]
+            model_instance = model(lags=values)
+            self.assertEqual(model_instance.lags, values)
+            # testing lags_past_covariates
+            model_instance = model(lags_past_covariates=values)
+            self.assertEqual(model_instance.lags_past_covariates, values)
+            # testing lags_future_covariates
+            model_instance = model(lags_future_covariates=[-3, -5, 1, 5])
+            self.assertEqual(model_instance.lags_historical_covariates, [-5, -3])
+            self.assertEqual(model_instance.lags_future_covariates, [1, 5])
 
             with self.assertRaises(ValueError):
                 model()
             with self.assertRaises(ValueError):
                 model(lags=0)
             with self.assertRaises(ValueError):
-                model(lags=[3, 4, 5, 0])
+                model(lags=[-1, 0])
             with self.assertRaises(ValueError):
-                model(lags=[3, 4.0, 5])
+                model(lags=[3, 5])
+            with self.assertRaises(ValueError):
+                model(lags=[-3, -5.0])
             with self.assertRaises(ValueError):
                 model(lags=-5)
             with self.assertRaises(ValueError):
                 model(lags=3.6)
             with self.assertRaises(ValueError):
-                model(lags=None, lags_covariates=False)
+                model(lags=None, lags_past_covariates=False)
             with self.assertRaises(ValueError):
-                model(lags=0)
+                model(lags=None)
             with self.assertRaises(ValueError):
-                model(lags=5, lags_covariates=True)
+                model(lags=5, lags_future_covariates=True)
+            with self.assertRaises(ValueError):
+                model(lags=5, lags_future_covariates=(1, -3))
+            with self.assertRaises(ValueError):
+                model(lags=5, lags_future_covariates=(1, 2, 3))
+            with self.assertRaises(ValueError):
+                model(lags=5, lags_future_covariates=(1, True))
+            with self.assertRaises(ValueError):
+                model(lags=5, lags_future_covariates=(1, 1.0))
 
     def test_models_runnability(self):
         train_x, test_x = self.ts_exog1.split_before(0.7)
