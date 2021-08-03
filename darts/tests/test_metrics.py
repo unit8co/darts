@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
-from ..metrics import metrics
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.timeseries import TimeSeries
+from darts.metrics import metrics
 
 
 class MetricsTestCase(DartsBaseTestClass):
@@ -262,3 +262,31 @@ class MetricsTestCase(DartsBaseTestClass):
                                       reduction=np.mean, inter_reduction=np.max,
                                       n_jobs=-1,
                                       verbose=True))
+
+    def test_stochastic(self):
+        num_samples = 10
+        num_indices = 20
+
+        values1 = np.random.normal(0.0, 0.2, (num_indices, 1, num_samples))
+        values2 = np.random.normal(0.0, 0.1, (num_indices, 1, num_samples))
+
+        index1 = pd.RangeIndex(0,num_indices)
+        index2 = pd.RangeIndex(0,num_indices + 1)
+        series_stochastic1 = TimeSeries.from_times_and_values(index1, values1,)
+        series_stochastic2 = TimeSeries.from_times_and_values(index1, values2)
+        series_zero = TimeSeries.from_times_and_values(index2, np.zeros(num_indices+1))
+
+        mean_probability1 = metrics.mpgl(series_zero, series_stochastic1, True, deviation=0.1)
+        mean_probability2 = metrics.mpgl(series_zero, series_stochastic2, True, deviation=0.1)
+
+        # Larger standard deviation leads to smaller probability on interval
+        self.assertLess(mean_probability1, mean_probability2)
+
+        def reduction_mean(series):
+            return (series.quantile_timeseries(0) + series.quantile_timeseries(1))/2
+
+        median_metric = metrics.mae(series_stochastic1, series_stochastic2)
+        mean_metric = metrics.mae(series_stochastic1, series_stochastic2, stoch_reduction=reduction_mean)
+
+        self.assertNotEqual(mean_metric, median_metric)
+        self.assertLess(abs(mean_metric - median_metric), 0.1)

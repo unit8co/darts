@@ -948,7 +948,7 @@ def mpgl(
                        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
                        intersect: bool = True,
                        *,
-                       width: float = 1.0,
+                       deviation: float = 1.0,
                        reduction: Callable[[np.ndarray], float] = np.mean,
                        inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
                        n_jobs: int = 1,
@@ -969,7 +969,7 @@ def mpgl(
     intersect
         For time series that are overlapping in time without having the same time index, setting `intersect=True`
         will consider the values only over their common time interval (intersection in time).
-    width
+    deviation
         Defines the interval -width < X < width to compute the gaussian probability for.
         Set the width to an acceptable deviation from the ground-truth for the forecast.
     reduction
@@ -1020,11 +1020,12 @@ def mpgl(
     samples = np.delete(samples, isnan_mask, axis=0)
 
     # todo vectorize, gaussian_kde cannot be called on all the samples directly
+    n = len(values)
     mean_probability = 0.0
-    for i in range(len(actual_series_common)):
+    for i in range(n):
         value = values[i]
         kde = gaussian_kde(samples[i, :])
-        mean_probability += kde.integrate_box(value - above, value + above)
+        mean_probability += kde.integrate_box(value - deviation, value + deviation)
     mean_probability = mean_probability / n * 100
 
     return mean_probability
