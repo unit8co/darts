@@ -100,7 +100,7 @@ def multivariate_support(func):
         pred_series = args[1]
 
         raise_if_not(actual_series.width == pred_series.width,
-                     "The two TimeSeries instances must have the same above.", logger)
+                     "The two TimeSeries instances must have the same width.", logger)
 
         value_list = []
         for i in range(actual_series.width):
@@ -956,7 +956,7 @@ def mpgl(
 ):
     """ MEAN PERCENTAGE GAUSSIAN LIKELIHOOD
 
-    Computes the mean gaussian likelihood of the ground truth series `actual_series` ± width,
+    Computes the mean gaussian likelihood of the ground truth series `actual_series` ± deviation,
     occurring in the probabilistic forecast `pred_series.` Unlike other non-stochastic metrics,
     this metric considers the certainty (standard deviation) of the probabilistic forecast.
 
