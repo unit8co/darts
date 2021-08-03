@@ -157,11 +157,17 @@ class ForecastingModel(ABC):
         time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
         time_index = self._generate_new_dates(time_index_length, input_series=input_series)
 
+        columns = input_series.components
+        columns = pd.Index(["forecast_" + name for name in columns.values], name=columns.name)
+
         if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str)
+            return TimeSeries.from_times_and_values(time_index, points_preds,
+                                                    freq=input_series.freq_str,
+                                                    columns=columns)
 
         return TimeSeries.from_times_and_values(time_index, np.stack(points_preds, axis=2),
-                                                freq=input_series.freq_str)
+                                                freq=input_series.freq_str,
+                                                columns=columns)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function

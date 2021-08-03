@@ -84,6 +84,16 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
+    def test_forecast_name(self):
+        values = self.ts_gaussian.univariate_values()[10:]
+        index = self.ts_gaussian.time_index[10:]
+        ts_named = TimeSeries.from_series(pd.Series(values, index=index, name="series"))
+
+        for model, _ in models:
+            model.fit(ts_named)
+            prediction = model.predict(self.forecasting_horizon)
+            self.assertEqual(prediction.columns.values[0], "forecast_series")
+
     def test_models_runnability(self):
         for model, _ in models:
             model.fit(self.ts_gaussian)
