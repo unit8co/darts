@@ -130,7 +130,7 @@ def _get_values_or_raise(series_a: TimeSeries,
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
 
-    For stochastic series, applies the function stoch_reduction which must return a deterministic series.
+    For stochastic series, applies the function stoch_reduction, which must return a deterministic series.
     """
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
@@ -615,7 +615,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     See `Mean absolute scaled error wikipedia page <https://en.wikipedia.org/wiki/Mean_absolute_scaled_error>`_
     for details about the MASE and how it is computed.
 
-    By default if any of the series is stochastic (containing several samples), the median sample value is considered.
+    By default, if any of the series are stochastic (containing several samples), the median sample value is considered.
 
     Parameters
     ----------
@@ -673,9 +673,9 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                            reduction: Callable[[np.ndarray], float]):
 
         raise_if_not(actual_series.width == pred_series.width,
-                     "The two TimeSeries instances must have the same above.", logger)
+                     "The two TimeSeries instances must have the same width.", logger)
         raise_if_not(actual_series.width == insample.width,
-                     "The insample TimeSeries must have the same above as the other series.", logger)
+                     "The insample TimeSeries must have the same width as the other series.", logger)
         raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
                      "The pred_series must be the forecast of the insample series", logger)
 
