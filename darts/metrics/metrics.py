@@ -14,6 +14,7 @@ from warnings import warn
 from typing import Optional, Callable, Sequence, Union, Tuple
 from inspect import signature
 from functools import wraps
+from scipy.stats import gaussian_kde
 
 
 logger = get_logger(__name__)
@@ -99,7 +100,7 @@ def multivariate_support(func):
         pred_series = args[1]
 
         raise_if_not(actual_series.width == pred_series.width,
-                     "The two TimeSeries instances must have the same width.", logger)
+                     "The two TimeSeries instances must have the same above.", logger)
 
         value_list = []
         for i in range(actual_series.width):
@@ -672,9 +673,9 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                            reduction: Callable[[np.ndarray], float]):
 
         raise_if_not(actual_series.width == pred_series.width,
-                     "The two TimeSeries instances must have the same width.", logger)
+                     "The two TimeSeries instances must have the same above.", logger)
         raise_if_not(actual_series.width == insample.width,
-                     "The insample TimeSeries must have the same width as the other series.", logger)
+                     "The insample TimeSeries must have the same above as the other series.", logger)
         raise_if_not(insample.end_time() + insample.freq == pred_series.start_time(),
                      "The pred_series must be the forecast of the insample series", logger)
 
@@ -938,3 +939,94 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
     return 1 - ss_errors / ss_tot
+
+
+@multi_ts_support
+@multivariate_support
+def mpgl(
+                       actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+                       pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+                       intersect: bool = True,
+                       *,
+                       width: float = 1.0,
+                       reduction: Callable[[np.ndarray], float] = np.mean,
+                       inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+                       n_jobs: int = 1,
+                       verbose: bool = False
+):
+    """ MEAN PERCENTAGE GAUSSIAN LIKELIHOOD
+
+    Computes the mean gaussian likelihood of the ground truth series `actual_series` ± width,
+    occurring in the probabilistic forecast `pred_series.` Unlike other non-stochastic metrics,
+    this metric considers the certainty (standard deviation) of the probabilistic forecast.
+
+    Parameters
+    ----------
+    actual_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
+    pred_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
+    width
+        Defines the interval -width < X < width to compute the gaussian probability for.
+        Set the width to an acceptable deviation from the ground-truth for the forecast.
+    reduction
+        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate `TimeSeries` instances.
+    inter_reduction
+        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
+        metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+    Returns
+    -------
+    float
+        The Mean Percentage Likelihood
+    """
+
+    # Can't use _get_values since we are interested in the samples as well
+    raise_if_not(actual_series.width == pred_series.width, "The two time series must have the same number of components",
+                 logger)
+
+    raise_if_not(isinstance(intersect, bool), "The intersect parameter must be a bool")
+
+    actual_series_common = actual_series.slice_intersect(pred_series) if intersect else actual_series
+    pred_series_common = pred_series.slice_intersect(actual_series) if intersect else pred_series
+
+    raise_if_not(actual_series_common.has_same_time_as(pred_series_common), 'The two time series (or their intersection)'
+                                                                            'must have the same time index.'
+                                                                            '\nFirst series: {}\nSecond series: {}'.format(
+                                                                            actual_series.time_index, pred_series.time_index), logger)
+
+    raise_if_not(actual_series.is_deterministic and pred_series.is_stochastic,
+                 "Expected actual_series (ground truth) to be deterministic"
+                 "and pred_series to be a probabilistic forecast")
+
+    values = actual_series_common.univariate_values()
+    samples = pred_series_common.all_values()[:, 0, :]
+
+    # Remove nans
+    isnan_mask = np.logical_or(np.isnan(values), np.any(np.isnan(samples), axis=1))
+    values = np.delete(values, isnan_mask)
+    samples = np.delete(samples, isnan_mask, axis=0)
+
+    # todo vectorize, gaussian_kde cannot be called on all the samples directly
+    mean_probability = 0.0
+    for i in range(len(actual_series_common)):
+        value = values[i]
+        kde = gaussian_kde(samples[i, :])
+        mean_probability += kde.integrate_box(value - above, value + above)
+    mean_probability = mean_probability / n * 100
+
+    return mean_probability
+
+
