@@ -68,26 +68,47 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             # testing lags
             model_instance = model(lags=5)
             self.assertEqual(model_instance.lags, [-5, -4, -3, -2, -1])
+            self.assertEqual(model_instance.min_lag, -5)
+            self.assertEqual(model_instance.max_lag, None)
             # testing lags_past_covariates
             model_instance = model(lags=None, lags_past_covariates=3)
             self.assertEqual(model_instance.lags_past_covariates, [-3, -2, -1])
+            self.assertEqual(model_instance.min_lag, -3)
+            self.assertEqual(model_instance.max_lag, None)
             # testing lags_future covariates
             model_instance = model(lags=None, lags_future_covariates=(3, 5))
             self.assertEqual(model_instance.lags_historical_covariates, [-3, -2, -1])
             self.assertEqual(model_instance.lags_future_covariates, [0, 1, 2, 3, 4])
+            self.assertEqual(model_instance.min_lag, -3)
+            self.assertEqual(model_instance.max_lag, 4)
 
             # TESTING LIST of int
             # lags
             values = [-5, -3, -1]
             model_instance = model(lags=values)
             self.assertEqual(model_instance.lags, values)
+            self.assertEqual(model_instance.min_lag, -5)
+            self.assertEqual(model_instance.max_lag, None)
             # testing lags_past_covariates
             model_instance = model(lags_past_covariates=values)
             self.assertEqual(model_instance.lags_past_covariates, values)
+            self.assertEqual(model_instance.min_lag, -5)
+            self.assertEqual(model_instance.max_lag, None)
             # testing lags_future_covariates
-            model_instance = model(lags_future_covariates=[-3, -5, 1, 5])
-            self.assertEqual(model_instance.lags_historical_covariates, [-5, -3])
-            self.assertEqual(model_instance.lags_future_covariates, [1, 5])
+
+            checks_future_covariates = [
+                # lags as input, lags_historical_covariates, lags_future_covariates, min_lag, max_lag
+                ([-3, -5, 1, 5], [-5, -3], [1, 5], -5, 5),
+                ([-3, -5], [-5, -3], None, -5, None),
+                ([1, 5], None, [1, 5], None, 5)
+            ]
+
+            for lags, lags_hist, lags_fut, min_l, max_l in checks_future_covariates:
+                model_instance = model(lags_future_covariates=lags)
+                self.assertEqual(model_instance.lags_historical_covariates, lags_hist)
+                self.assertEqual(model_instance.lags_future_covariates, lags_fut)
+                self.assertEqual(model_instance.min_lag, min_l)
+                self.assertEqual(model_instance.max_lag, max_l)
 
             with self.assertRaises(ValueError):
                 model()
@@ -122,8 +143,32 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         train_x, test_x = self.ts_exog1.split_before(0.7)
         train_y, test_y = self.ts_sum1.split_before(0.7)
         for model in self.models:
+            # testing past covariates
+            with self.assertRaises(ValueError):
+                # testing lags_covariate None but covariates during training
+                model_instance = model(lags=4, lags_past_covariates=None)
+                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
+
+            with self.assertRaises(ValueError):
+                # testing lags_covariate but no covariate during fit
+                model_instance = model(lags=4, lags_past_covariates=3)
+                model_instance.fit(series=self.ts_sum1)
+
+            # testing future covariates
+            with self.assertRaises(ValueError):
+                # testing lags_covariate None but covariates during training
+                model_instance = model(lags=4, lags_future_covariates=None)
+                model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
+
+            with self.assertRaises(ValueError):
+                # testing lags_covariate but no covariate during fit
+                model_instance = model(lags=4, lags_future_covariates=3)
+                model_instance.fit(series=self.ts_sum1)
+
             model_instance = model(lags=4)
             model_instance.fit(series=self.ts_sum1)
+
+            """
             prediction = model_instance.predict(n=20)
             self.assertTrue(
                 len(prediction) == 20,
@@ -150,17 +195,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     self.assertTrue(len(prediction[0]) == 10)
                 else:
                     self.assertTrue(len(prediction) == 10)
-
-            with self.assertRaises(ValueError):
-                # testing lags_covariate None but covariates during training
-                model_instance = model(lags=4, lags_covariates=None)
-                model_instance.fit(series=self.ts_sum1, covariates=self.ts_exog1)
-
-            with self.assertRaises(ValueError):
-                # testing lags_covariate but no covariate during fit
-                model_instance = model(lags=4, lags_covariates=3)
-                model_instance.fit(series=self.ts_sum1)
-
+            """
     def test_fit(self):
         for model in self.models:
             with self.assertRaises(ValueError):
