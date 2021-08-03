@@ -119,7 +119,8 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
 
     return TimeSeries.from_times_and_values(series.time_index,
                                             series.pd_dataframe().fillna(value=fill),
-                                            series.freq)
+                                            freq = series.freq,
+                                            columns = series.columns)
 
 
 def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
