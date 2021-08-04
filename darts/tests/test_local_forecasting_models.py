@@ -41,7 +41,7 @@ multivariate_models = [
     (VARIMA(1, 1, 1), 57.0),
 ]
 
-extended_models = [ARIMA(), LinearRegressionModel(lags=4, lags_exog=2), RandomForest(lags=4, lags_exog=2)]
+dual_models = [ARIMA(), LinearRegressionModel(lags=4, lags_exog=2), RandomForest(lags=4, lags_exog=2)]
 
 
 try:
@@ -53,7 +53,7 @@ except ImportError:
 try:
     from ..models import AutoARIMA
     models.append((AutoARIMA(), 12.2))
-    extended_models.append(AutoARIMA())
+    dual_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:
     logger.warning('pmdarima not installed - will be skipping AutoARIMA tests')
@@ -120,14 +120,14 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             es_model.fit(ts_passengers_enhanced["2"])
 
     def test_exogenous_variables_support(self):
-        for model in extended_models:
+        for model in dual_models:
 
             # Test models runnability
-            model.fit(self.ts_gaussian, exog=self.ts_gaussian)
+            model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian)
 
             prediction = model.predict(
                 self.forecasting_horizon,
-                exog=tg.gaussian_timeseries(
+                future_covariates=tg.gaussian_timeseries(
                     length=self.forecasting_horizon,
                     start_ts=self.ts_gaussian.end_time()+self.ts_gaussian.freq
                     )
@@ -138,13 +138,13 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model.predict(
                     self.forecasting_horizon,
-                    exog=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
+                    future_covariates=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
 
             # Test mismatch in time-index/length between series and exogenous variables
             with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian, exog=self.ts_gaussian[:-1])
+                model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian[:-1])
             with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian[1:], exog=self.ts_gaussian[:-1])
+                model.fit(self.ts_gaussian[1:], future_covariates=self.ts_gaussian[:-1])
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
