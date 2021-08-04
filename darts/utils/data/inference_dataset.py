@@ -222,12 +222,15 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving historic future covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=covariates,
                                                           n=n,
@@ -273,12 +276,15 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving past covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving historic and future future covariates
         self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
                                                         covariates=future_covariates,
                                                         n=n,
@@ -327,12 +333,15 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving past covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=future_covariates,
                                                           n=n,

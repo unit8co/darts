@@ -192,6 +192,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
 
         super().__init__()
 
+        # This dataset is in charge of serving historical future covariates
         self.ds_past = GenericShiftedDataset(target_series=target_series,
                                              covariates=covariates,
                                              input_chunk_length=length,
@@ -200,6 +201,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
                                                covariates=covariates,
                                                input_chunk_length=length,
@@ -270,6 +272,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         """
         super().__init__()
 
+        # This dataset is in charge of serving past covariates
         self.ds_past = GenericShiftedDataset(target_series=target_series,
                                              covariates=past_covariates,
                                              input_chunk_length=length,
@@ -278,6 +281,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts)
 
+        # The dual dataset serves both historical and future future covariates
         self.ds_dual = DualCovariatesShiftedDataset(target_series=target_series,
                                                     covariates=future_covariates,
                                                     length=length,
@@ -348,6 +352,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
 
         super().__init__()
 
+        # This dataset is in charge of serving past covariates
         self.ds_past = GenericShiftedDataset(target_series=target_series,
                                              covariates=past_covariates,
                                              input_chunk_length=length,
@@ -356,6 +361,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
                                                covariates=future_covariates,
                                                input_chunk_length=length,
