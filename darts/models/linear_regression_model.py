@@ -41,4 +41,6 @@ class LinearRegressionModel(RegressionModel):
             model=LinearRegression(**kwargs))
 
     def __str__(self):
-        return "LinearRegression(lags={}, lags_covariates={})".format(self.lags, self.lags_covariates)
+        return (f"LinearRegression(lags={self.lags}, lags_past_covariates={self.lags_past_covariates}, "
+                f"lags_historical_covariates={self.lags_historical_covariates}, "
+                f"lags_future_covariates={self.lags_future_covariates}")

@@ -61,6 +61,7 @@ class RandomForest(RegressionModel):
         )
 
     def __str__(self):
-        return "RandomForest(lags={}, lags_covariates={}, n_estimators={}, max_depth={})".format(
-            self.lags, self.covariate_series, self.n_estimators, self.max_depth
-        )
+        return (f"RandomForest(lags={self.lags}, lags_past_covariates={self.lags_past_covariates}, "
+                f"lags_historical_covariates={self.lags_historical_covariates}, "
+                f"lags_future_covariates={self.lags_future_covariates}, "
+                f"n_estimators={self.n_estimators}, max_depth={self.max_depth}")

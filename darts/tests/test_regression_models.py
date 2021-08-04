@@ -13,7 +13,7 @@ from sklearn.experimental import (
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.models.regression_model import min_with_none, max_with_none, shift_matrices
+from darts.models.regression_model import shift_matrices
 
 
 def train_test_split(features, target, split_ts):
@@ -81,18 +81,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance = model(lags=5)
             self.assertEqual(model_instance.lags, [-5, -4, -3, -2, -1])
             self.assertEqual(model_instance.min_lag, -5)
-            self.assertEqual(model_instance.max_lag, None)
+            self.assertEqual(model_instance.max_lag, -1)
             # testing lags_past_covariates
             model_instance = model(lags=None, lags_past_covariates=3)
             self.assertEqual(model_instance.lags_past_covariates, [-3, -2, -1])
             self.assertEqual(model_instance.min_lag, -3)
-            self.assertEqual(model_instance.max_lag, None)
+            self.assertEqual(model_instance.max_lag, -1)
             # testing lags_future covariates
             model_instance = model(lags=None, lags_future_covariates=(3, 5))
             self.assertEqual(model_instance.lags_historical_covariates, [-3, -2, -1])
             self.assertEqual(model_instance.lags_future_covariates, [0, 1, 2, 3, 4])
             self.assertEqual(model_instance.min_lag, -3)
-            self.assertEqual(model_instance.max_lag, 5)
+            self.assertEqual(model_instance.max_lag, 4)
 
             # TESTING LIST of int
             # lags
@@ -100,19 +100,19 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance = model(lags=values)
             self.assertEqual(model_instance.lags, values)
             self.assertEqual(model_instance.min_lag, -5)
-            self.assertEqual(model_instance.max_lag, None)
+            self.assertEqual(model_instance.max_lag, -1)
             # testing lags_past_covariates
             model_instance = model(lags_past_covariates=values)
             self.assertEqual(model_instance.lags_past_covariates, values)
             self.assertEqual(model_instance.min_lag, -5)
-            self.assertEqual(model_instance.max_lag, None)
+            self.assertEqual(model_instance.max_lag, -1)
             # testing lags_future_covariates
 
             checks_future_covariates = [
                 # lags as input, lags_historical_covariates, lags_future_covariates, min_lag, max_lag
-                ([-3, -5, 1, 5], [-5, -3], [1, 5], -5, 6),
-                ([-3, -5], [-5, -3], None, -5, None),
-                ([1, 5], None, [1, 5], None, 6)
+                ([-3, -5, 1, 5], [-5, -3], [1, 5], -5, 5),
+                ([-3, -5], [-5, -3], None, -5, -3),
+                ([1, 5], None, [1, 5], 1, 5)
             ]
 
             for lags, lags_hist, lags_fut, min_l, max_l in checks_future_covariates:
@@ -153,16 +153,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_training_data_creation(self):
         # testing _get_training_data function
-        # TODO check matrix sizes and matrix content if possible
-
         model_instance = RegressionModel(
             lags=self.lags_1,
             lags_past_covariates=self.lags_past_covariates_1,
             lags_future_covariates=self.lags_future_covariates_1
         )
 
-        input_chunk_length = -min_with_none([model_instance.min_lag, 0])
-        training_output_chunk_length = max_with_none([model_instance.max_lag, 1])
+        input_chunk_length = -model_instance.min_lag
+        training_output_chunk_length = max(model_instance.max_lag + 1, 1)
 
         training_dataset = MixedCovariatesSequentialDataset(
             target_series=self.target_series,
@@ -193,8 +191,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         n = 2
-        input_chunk_length = -min_with_none([model_instance.min_lag, 0])
-        prediction_output_chunk_length = n + max_with_none([model_instance.max_lag, 0])
+        input_chunk_length = max(1, -model_instance.min_lag)
+        prediction_output_chunk_length = max(n + model_instance.max_lag, n)
 
         prediction_dataset = MixedCovariatesInferenceDataset(
             target_series=self.target_series,
@@ -275,14 +273,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
             self.assertEqual(model_instance.input_dim, 3)
 
-            # checking prediction error in case we are trying to predict too many values (max n = 1 in this case, no
-            # future_past_covariates passed and greater lags_past_covariates required = -1)
             with self.assertRaises(ValueError):
-                prediction = model_instance.predict(n=5)
+                prediction = model_instance.predict(n=len(test_y) + 2)
 
             # while it should work with n = 1
             prediction = model_instance.predict(n=1)
-            print(prediction)
             self.assertTrue(
                 len(prediction) == 1,
                 f"Expected length 1, found {len(prediction)} instead",
@@ -337,14 +332,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
             self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
-    def helper_test_models_accuracy(self, series, covariates, min_rmse):
+    def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(covariates, series, pd.Timestamp("20010101"))
+        train_f, train_t, test_f, test_t = train_test_split(past_covariates, series, pd.Timestamp("20010101"))
 
         for model in self.models:
             model_instance = model(lags=12, lags_past_covariates=2)
             model_instance.fit(series=train_t, past_covariates=train_f)
-            prediction = model_instance.predict(n=len(test_t), past_covariates=covariates)
+            prediction = model_instance.predict(n=len(test_t), past_covariates=past_covariates)
             current_rmse = rmse(prediction, test_t)
 
             self.assertTrue(
@@ -429,7 +424,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_only_future_covariates(self):
 
-        model = RegressionModel(lags_future_covariates=(0, 1))
+        model = RegressionModel(lags_future_covariates=[-2])
 
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
         covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
