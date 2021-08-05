@@ -6,14 +6,14 @@ Auto-ARIMA
 from pmdarima import AutoARIMA as PmdAutoARIMA
 from typing import Optional
 
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(ExtendedForecastingModel):
+class AutoARIMA(DualCovariatesForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """ Auto-ARIMA
 
@@ -41,18 +41,18 @@ class AutoARIMA(ExtendedForecastingModel):
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
-        super().fit(series, exog)
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super().fit(series, future_covariates)
         series = self.training_series
         self.model.fit(series.values(),
-                       X=exog.values() if exog else None)
+                       X=future_covariates.values() if future_covariates else None)
 
     def predict(self, n: int,
-                exog: Optional[TimeSeries] = None,
+                future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1):
-        super().predict(n, exog, num_samples)
+        super().predict(n, future_covariates, num_samples)
         forecast = self.model.predict(n_periods=n,
-                                      X=exog.values() if exog else None)
+                                      X=future_covariates.values() if future_covariates else None)
         return self._build_forecast_series(forecast)
 
     @property

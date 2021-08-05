@@ -3,7 +3,7 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Optional
+from typing import NewType, Union, List, Optional, Tuple
 from enum import Enum
 import numpy as np
 from numpy.random import RandomState
@@ -12,7 +12,7 @@ import torch.nn as nn
 
 from ..logging import get_logger, raise_log, raise_if_not
 from ..utils.torch import random_method
-from .torch_forecasting_model import TorchForecastingModel
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class _TrendGenerator(nn.Module):
             False)
 
     def forward(self, x):
-        return torch.matmul(x, self.T.float().T)
+        return torch.matmul(x, self.T.T)
 
 
 class _SeasonalityGenerator(nn.Module):
@@ -52,7 +52,7 @@ class _SeasonalityGenerator(nn.Module):
                               False)
 
     def forward(self, x):
-        return torch.matmul(x, self.S.float().T)
+        return torch.matmul(x, self.S.T)
 
 
 class _Block(nn.Module):
@@ -357,7 +357,7 @@ class _NBEATSModule(nn.Module):
         return y
 
 
-class NBEATSModel(TorchForecastingModel):
+class NBEATSModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -439,7 +439,10 @@ class NBEATSModel(TorchForecastingModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * num_stacks
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
 
         return _NBEATSModule(
             input_dim=input_dim,

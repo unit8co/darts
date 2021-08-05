@@ -8,14 +8,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
-from typing import Optional, Union, Sequence
+from typing import Optional, Union, Sequence, Tuple
 from ..timeseries import TimeSeries
 from ..utils.torch import random_method
-from ..utils.data import ShiftedDataset
+from ..utils.data import PastCovariatesShiftedDataset
 from ..utils.likelihood_models import LikelihoodModel
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -206,7 +206,7 @@ class _TCNModule(nn.Module):
         return x
 
 
-class TCNModel(TorchParametricProbabilisticForecastingModel):
+class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -271,7 +271,11 @@ class TCNModel(TorchParametricProbabilisticForecastingModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
+
         target_size = (
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
         )
@@ -288,11 +292,13 @@ class TCNModel(TorchParametricProbabilisticForecastingModel):
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
-                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
-        return ShiftedDataset(target_series=target,
-                              covariates=covariates,
-                              length=self.input_chunk_length,
-                              shift=self.output_chunk_length)
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesShiftedDataset:
+
+        return PastCovariatesShiftedDataset(target_series=target,
+                                            covariates=past_covariates,
+                                            length=self.input_chunk_length,
+                                            shift=self.output_chunk_length)
     
     @random_method
     def _produce_predict_output(self, input):

@@ -7,11 +7,11 @@ from numpy.random import RandomState
 import math
 import torch
 import torch.nn as nn
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 from ..utils.torch import random_method
-from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchForecastingModel
+from ..logging import get_logger
+from .torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -179,7 +179,7 @@ class _TransformerModule(nn.Module):
         return predictions
 
 
-class TransformerModel(TorchForecastingModel):
+class TransformerModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -268,7 +268,11 @@ class TransformerModel(TorchForecastingModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
+
         return _TransformerModule(input_chunk_length=self.input_chunk_length,
                                   output_chunk_length=self.output_chunk_length,
                                   input_size=input_dim,
