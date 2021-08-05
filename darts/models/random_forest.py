@@ -2,7 +2,11 @@
 Random Forest
 -------------
 
-Model for the Random Forest Regressor[1].
+A forecasting model using a random forest regression. It uses some of the target series' lags, as well as optionally
+some covariate series' lags in order to obtain a forecast.
+
+See [1] for a reference around random forests.
+
 The implementations is wrapped around `RandomForestRegressor
 <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_.
 
@@ -10,8 +14,6 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
-import numpy as np
-import pandas as pd
 
 from ..logging import get_logger
 from typing import Optional, Union
@@ -44,7 +46,8 @@ class RandomForest(RegressionModel):
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
-            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all
+            leaves contain less than min_samples_split samples.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
         """

@@ -45,7 +45,10 @@ extensions = [
 autodoc_default_options = {
     'inherited-members': None,
     'show-inheritance': None,
-    'exclude-members': 'TimeSeriesTorchDataset'
+    'exclude-members': 'ForecastingModel,DualCovariatesForecastingModel,TorchForecastingModel,' +
+                       'PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,' +
+                       'MixedCovariatesTorchModel,SplitCovariatesTorchModel,' +
+                       'TorchParametricProbabilisticForecastingModel'
 }
 
 # In order to also have the docstrings of __init__() methods included
