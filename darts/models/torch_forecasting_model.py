@@ -372,7 +372,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         will be trained for some (extra) `epochs` epochs.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
-        all the `PastCovariatesTorchModel`s support only `past_covariates` and not `future_covariates`. Darts will
+        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
         complain if you try fitting a model with the wrong covariates argument.
 
         When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
@@ -540,19 +540,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         or after the end of the specified `series`.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
-        all the `PastCovariatesTorchModel`s support only `past_covariates` and not `future_covariates`. Darts will
+        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
         complain if you try calling `predict() on a model with the wrong covariates argument.
 
         Darts will also complain if the provided covariates do not have a sufficient time span.
         In general, not all models require the same covariates' time spans:
 
-        * Models relying on past covariates require the last `input_chunk_length` of the `past_covariates` points to
-        be known at prediction time. For horizon values `n > output_chunk_length`, these models require at least
-        the next `n - output_chunk_length` future values to be known as well.
+        * Models relying on past covariates require the last `input_chunk_length` of the `past_covariates` points to be known at prediction time. For horizon values `n > output_chunk_length`, these models require at least the next `n - output_chunk_length` future values to be known as well.
 
-        * Models relying on future covariates require the next `n` values to be known. In addition
-        (for `DualCovariatesTorchModel`s and `MixedCovariatesTorchModel`s), they also require the "historic" values
-        of these future covariates (over the past `input_chunk_length`).
+        * Models relying on future covariates require the next `n` values to be known. In addition (for `DualCovariatesTorchModel` and `MixedCovariatesTorchModel`), they also require the "historic" values of these future covariates (over the past `input_chunk_length`).
 
         When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
         to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
