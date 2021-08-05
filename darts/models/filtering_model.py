@@ -36,11 +36,3 @@ class FilteringModel(ABC):
             A time series containing the filtered values.
         """
         pass
-
-    @property
-    def min_train_series_length(self) -> int:
-        """
-        Class property defining the minimum required length for the series.
-        This function/property should be overridden if a value different than 3 is required.
-        """
-        return 3
