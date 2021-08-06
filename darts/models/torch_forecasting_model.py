@@ -612,7 +612,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 # at this point `input_series` contains both the past target series and past covariates
                 input_series = batch_tuple[0].to(self.device)
-                cov_future = batch_tuple[1] if len(batch_tuple) == 3 else None
+                cov_future = batch_tuple[1].to(self.device) if len(batch_tuple) == 3 else None
 
                 # repeat prediction procedure for every needed sample
                 batch_predictions = []
