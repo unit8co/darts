@@ -3,7 +3,7 @@ Regression Model
 ----------------
 
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of a covariate series. They can wrap around any regression model having a `fit()`
+and possibly lags of a covariate series. They can wrap around any regression model having `fit()`
 and `predict()` functions (e.g. scikit-learn regression models).
 
 Darts also provides `LinearRegressionModel` and `RandomForest`, which are regression models wrapping around
