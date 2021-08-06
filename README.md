@@ -4,10 +4,11 @@
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg)](https://anaconda.org/conda-forge/u8darts-all)
 ![Supported versions](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
 [![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
 
@@ -35,7 +36,7 @@ Once your environment is set up you can install darts using pip:
 
     pip install darts
 
-For more detailed install instructions you can refer to our installation guide at the end of this page.
+For more detailed install instructions you can refer to our [installation guide](#installation-guide) at the end of this page.
 
 ## Example Usage
 
@@ -142,16 +143,10 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 
 ## Installation Guide
 
-### Preconditions
-
 Some of the models depend on `prophet` and `torch`, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
-The following steps assume running inside a conda environment.
-If that's not possible, first follow the official instructions to install
-[prophet](https://facebook.github.io/prophet/docs/installation.html#python)
-and [torch](https://pytorch.org/get-started/locally/), then skip to
-[Install darts](#install-darts)
+### From conda-forge
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
@@ -162,18 +157,19 @@ Don't forget to activate your virtual environment
 
     conda activate <env-name>
 
+As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
-#### MAC
+* Install darts with all available models: `conda install -c conda-forge u8darts-all`.
+* Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
 
-    conda install -c conda-forge -c pytorch pip prophet pytorch
 
-#### Linux and Windows
+### From PyPI
 
-    conda install -c conda-forge -c pytorch pip prophet pytorch cpuonly
+Install darts with all available models: `pip install darts`.
 
-### Install darts
-
-Install Darts with all available models: `pip install darts`.
+If this fails on your platform, please follow the official installation guides for
+[prophet](https://facebook.github.io/prophet/docs/installation.html#python)
+and [torch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
 As some models have relatively heavy (or non-Python) dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
@@ -182,6 +178,7 @@ we also maintain the `u8darts` package, which provides the following alternate l
 * Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
 * Install core + Facebook Prophet: `pip install 'u8darts[prophet]'`
 * Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
+
 
 ### Running the examples only, without installing:
 
