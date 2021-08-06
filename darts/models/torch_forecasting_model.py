@@ -630,7 +630,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         This method allows for predicting with a specific `darts.utils.data.InferenceDataset` instance. These datasets
         implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for inference.
-        In most cases, you'll rather want to call `fit()` instead, which will create an appropriate `InferenceDataset`
+        In most cases, you'll rather want to call `predict()` instead, which will create an appropriate `InferenceDataset`
         for you.
 
         Parameters
