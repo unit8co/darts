@@ -1,6 +1,5 @@
 """
 Ensemble Model Base Class
--------------------------
 """
 
 from abc import abstractmethod

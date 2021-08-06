@@ -1,6 +1,4 @@
 """
-Torch Forecasting Model Base Classes
-------------------------------------
 This file contains several abstract classes:
 
     * TorchForecastingModel is the super-class of all torch (deep learning) darts forecasting models.
@@ -14,8 +12,6 @@ This file contains several abstract classes:
       as well as past and future values of some future covariates.
     * SplitCovariatesTorchModel(TorchForecastingModel) for torch models consuming past-observed as well as future
       values of some future covariates.
-
-    * RecurrentModel(TorchForecastingModel) is the super-class of all recurrent models.
 
     * TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
       forecasting models.
@@ -368,17 +364,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose: bool = False,
             epochs: int = 0) -> None:
         """
-        The fit method for torch models.
-        It wraps around `fit_from_dataset()`.
+        The fit method for torch models. It wraps around `fit_from_dataset()`, constructing a default training
+        dataset for this model. If you need more control on how the series are sliced for training, consider
+        calling `fit_from_dataset()` with a custom `darts.utils.data.TrainingDataset`.
 
-        **Important**: if `epochs=0` (default), running `fit()` or `fit_from_dataset()` removes previously trained model - all it's checkpoints
-        and tensorboard data. If you want to train your model for more epochs, set the `epochs` parameter to value
-        greater than 0.
+        This function can be called several times to do some extra training. If `epochs` is specified, the model
+        will be trained for some (extra) `epochs` epochs.
 
-        **Note**: If your model wasn't yet trained and you requested to train for more epochs with `epoch` parameter,
-        it will be treated as trained for 0 epochs.
+        Below, all possible parameters are documented, but not all models support all parameters. For instance,
+        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
+        complain if you try fitting a model with the wrong covariates argument.
 
-        *** Future covariates are not yet supported ***
+        When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
+        to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
+        are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.
 
         Parameters
         ----------
@@ -392,7 +391,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, one or a sequence of validation target series, which will be used to compute the validation
             loss throughout training and keep track of the best performing models.
         val_past_covariates
-            Optionally, the covariates corresponding to the validation series (must match `covariates`)
+            Optionally, the past covariates corresponding to the validation series (must match `covariates`)
+        val_future_covariates
+            Optionally, the future covariates corresponding to the validation series (must match `covariates`)
         verbose
             Optionally, whether to print progress.
         epochs
@@ -435,6 +436,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          val_dataset: Optional[TrainingDataset] = None,
                          verbose: bool = False,
                          epochs: int = 0) -> None:
+        """
+        This method allows for training with a specific `darts.utils.data.TrainingDataset` instance. These datasets
+        implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for training. If you
+        are not sure which training dataset to use, consider calling `fit()` instead, which will create a default
+        training dataset appropriate for this model.
+
+        This function can be called several times to do some extra training. If `epochs` is specified, the model
+        will be trained for some (extra) `epochs` epochs.
+
+        Parameters
+        ----------
+        train_dataset
+            A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
+            `PastCovariatesTorchModel`s).
+        val_dataset
+            A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
+            `PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
+        verbose
+            Optionally, whether to print progress.
+        epochs
+            If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
+            was provided to the model constructor.
+        """
 
         self._verify_train_dataset_type(train_dataset)
         raise_if(len(train_dataset) == 0,
@@ -515,26 +539,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Predicts values for a certain number of time steps after the end of the training series,
         or after the end of the specified `series`.
 
-        TODO: update doc
+        Below, all possible parameters are documented, but not all models support all parameters. For instance,
+        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
+        complain if you try calling `predict() on a model with the wrong covariates argument.
 
-        Models relying on past covariates:
-        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in an
-        auto-regressive way, by iteratively feeding the last `roll_size` forecast points as
-        inputs to the model until a forecast of length `n` is obtained. If the model was trained with
-        covariates, all of the covariate time series need to have a time index that extends at least
-        `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
-        then covariates need to be available in the future.
+        Darts will also complain if the provided covariates do not have a sufficient time span.
+        In general, not all models require the same covariates' time spans:
 
-        Recurrent models:
-        All predictions are produced in a recurrent way by taking as input
-        - the previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction
-        - the previous hidden state
-        - the current covariates (if the model was trained with covariates)
-        As a result, if covariates were used, `n` covariates have to be available into the future.
+        * Models relying on past covariates require the last `input_chunk_length` of the `past_covariates` points to be known at prediction time. For horizon values `n > output_chunk_length`, these models require at least the next `n - output_chunk_length` future values to be known as well.
 
-        If some time series in the `series` argument have more than `input_chunk_length` time steps,
-        only the last `input_chunk_length` time steps will be considered.
+        * Models relying on future covariates require the next `n` values to be known. In addition (for `DualCovariatesTorchModel` and `MixedCovariatesTorchModel`), they also require the "historic" values of these future covariates (over the past `input_chunk_length`).
+
+        When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
+        to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
+        are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.
 
         Parameters
         ----------
@@ -610,29 +628,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              ) -> Sequence[TimeSeries]:
 
         """
-        Predicts values for a certain number of time steps after the end of the series appearing in the specified
-        `input_series_dataset`.
-
-        TODO: update doc
-
-        Block models:
-        If `n` is larger than the model `output_chunk_length`, the predictions will be computed in a
-        recurrent way, by iteratively feeding the last `roll_size` forecast points as
-        inputs to the model until a forecast of length `n` is obtained. If the model was trained with
-        covariates, all of the covariate time series need to have a time index that extends at least
-        `n - output_chunk_length` into the future. In other words, if `n` is larger than `output_chunk_length`
-        then covariates need to be available in the future.
-
-        Recurrent models:
-        All predictions are produced in a recurrent way by taking as input
-        - the previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction
-        - the previous hidden state
-        - the current covariates (if the model was trained with covariates)
-        As a result, if covariates were used, `n` covariates have to be available into the future.
-
-        If some series in the `input_series_dataset` have more time steps than `input_chunk_length`,
-        only the last `input_chunk_length` time steps will be considered.
+        This method allows for predicting with a specific `darts.utils.data.InferenceDataset` instance. These datasets
+        implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for inference.
+        In most cases, you'll rather want to call `predict()` instead, which will create an appropriate `InferenceDataset`
+        for you.
 
         Parameters
         ----------

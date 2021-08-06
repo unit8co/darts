@@ -1,6 +1,5 @@
 """
 Forecasting Model Base Classes
-------------------------------
 
 A forecasting model captures the future values of a time series as a function of the past as follows:
 
@@ -41,6 +40,7 @@ class ForecastingModel(ABC):
         The signatures in this base class are for "local" models handling only one univariate series and no covariates.
         Sub-classes can handle more complex cases.
     """
+
     @abstractmethod
     def __init__(self):
         # The series used for training the model through the `fit()` function.
@@ -775,12 +775,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
     Among other things, it lets Darts forecasting models wrap around statsmodels models
     having a `future_covariates` parameter, which corresponds to future-known covariates.
 
-    Extended forecasting models expand upon the functionality of `ForecastingModel` in 2 ways:
-    1. They introduce an optional `future_covariates` time series parameter
-    2. Multivariate time series are supported, both as target and covariate series.
-
     All implementations have to implement the `fit()` and `predict()` methods defined below.
-    The `fit()` method is meant to train the model on a time series, along with an optional covariate.
     """
 
     _expect_covariate = False
@@ -801,7 +796,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             The model will be trained to forecast this time series. Can be multivariate if the model supports it.
         future_covariates
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
-            some models as an input. Can be multivariate.
+            some models as an input.
         """
 
         # TODO: is this really needed or could we find a workaround?

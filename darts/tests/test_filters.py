@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
 from ..models import GaussianProcessFilter
-from ..models.filtering_model import MovingAverage
+from ..models.moving_average import MovingAverage
 from ..models.kalman_filter import KalmanFilter
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
