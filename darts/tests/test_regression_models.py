@@ -13,7 +13,7 @@ from sklearn.experimental import (
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.models.regression_model import shift_matrices
+from darts.models.regression_model import _shift_matrices
 
 
 def train_test_split(features, target, split_ts):
@@ -234,7 +234,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     def test_shift_matrices(self):
         a = np.zeros((10, 8, 2))
         b = np.ones((10, 3, 2))
-        a, b = shift_matrices(a, b)
+        a, b = _shift_matrices(a, b)
         # last "temporal slice" of a should now contain 1s
         np.testing.assert_array_equal(a[:, -1, :], np.ones((10, 2)))
 

@@ -2,7 +2,7 @@
 Regression Model
 ----------------
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of an covariate series. They can wrap around any regression model having a `fit()`
+and possibly lags of covariate series. They can wrap around any regression model having a `fit()`
 and `predict()` functions accepting tabularized data (e.g. scikit-learn regression models), and are using
 `sklearn.linear_model.LinearRegression` by default.
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
@@ -21,9 +21,12 @@ from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 logger = get_logger(__name__)
 
 
-def shift_matrices(past_matrix, future_matrix):
+def _shift_matrices(past_matrix, future_matrix):
     """
-    TODO add doc
+    Given two matrices, consumes the first column of the past_matrix (if available), and moves the first column of
+    the future_matrix to the end of the future_matrix. This can be seen as a time shift, sending the new past value
+    to the past_matrix. During this shift operation, the number of columns of the past_matrix should remain the same.
+    While past_matrix can be None
     """
     raise_if(future_matrix is None,
              "Future matrix to be shifted cannot be None")
@@ -47,6 +50,10 @@ def shift_matrices(past_matrix, future_matrix):
 
 def _update_min_max(current_min: Union[int, None], current_max: Union[int, None],
                     new_values: Sequence[int]) -> Tuple[int, int]:
+    """
+    Helper function that, given min, max and some values, updates min and max. Min and max can be set to None, if not
+    set yet.
+    """
     new_min = min(min(new_values), current_min) if current_min is not None else min(new_values)
     new_max = max(max(new_values), current_max) if current_max is not None else max(new_values)
     return new_min, new_max
@@ -202,6 +209,7 @@ class RegressionModel(GlobalForecastingModel):
                 )
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+        # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
         extra_shift = max(0, self.max_lag)
 
         if overlap_end:
@@ -213,7 +221,8 @@ class RegressionModel(GlobalForecastingModel):
 
     def _get_training_data(self, training_dataset: MixedCovariatesSequentialDataset):
         """
-        TODO write doc
+        Helper function turning a MixedCovariatesSequentialDataset into training matrices X and y, like required by
+        sklearn models.
         """
 
         training_samples = []
@@ -242,6 +251,37 @@ class RegressionModel(GlobalForecastingModel):
         training_samples = np.concatenate(training_samples, axis=0)
         training_labels = np.concatenate(training_labels, axis=0).ravel()
         return training_samples, training_labels
+
+    def _create_lagged_data(self, target_series, past_covariates, future_covariates, max_samples_per_ts):
+        """
+        Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
+        max_samples_per_ts.
+        """
+
+        # setting proper input and output chunk length. We need to find all necessary lags in the dataset. Thus, we
+        # need an input chunk length that contains the oldest past lag (min_lag), and we need to find the most future
+        # lag in the future_covariates as well. In case no future covariate are required, we still need an output
+        # chunk length of 1 for having the prediction target value.
+        training_dataset = MixedCovariatesSequentialDataset(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=max(0, -self.min_lag),
+            output_chunk_length=max(1, self.max_lag + 1),  # max lag + 1 since we need to access that index
+            max_samples_per_ts=max_samples_per_ts
+        )
+
+        return self._get_training_data(training_dataset=training_dataset)
+
+    def _fit_model(self, target_series, past_covariates, future_covariates, max_samples_per_ts, **kwargs):
+        """
+        Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
+        adding validation data), keeping the sanity checks on series performed by fit().
+        """
+        training_samples, training_labels = self._create_lagged_data(
+            target_series, past_covariates, future_covariates, max_samples_per_ts)
+
+        self.model.fit(training_samples, training_labels, **kwargs)
 
     def fit(
         self,
@@ -289,23 +329,6 @@ class RegressionModel(GlobalForecastingModel):
             "`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in"
             "constructor.")
 
-        # setting proper input and output chunk length. We need to find all necessary lags in the dataset. Thus, we
-        # need an input chunk length that contains the oldest past lag (min_lag), and we need to find the most future
-        # lag in the future_covariates as well. In case no future covariate are required, we still need an output
-        # chunk length of 1 for having the prediction target value. Both min_lag and max_lag could be set to None.
-
-        training_dataset = MixedCovariatesSequentialDataset(
-            target_series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            input_chunk_length=max(0, -self.min_lag),
-            output_chunk_length=max(1, self.max_lag + 1),  # max lag + 1 since we need to access that index
-            max_samples_per_ts=max_samples_per_ts
-        )
-
-        training_samples, training_labels = self._get_training_data(training_dataset=training_dataset)
-        self.model.fit(training_samples, training_labels, **kwargs)
-
         # saving the input dim, so that we can perform the dim check at prediction time
         series_dim = series.width if isinstance(series, TimeSeries) else series[0].width
         covariates_dim = 0
@@ -318,12 +341,14 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = series_dim + covariates_dim
 
+        self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts)
+
     def _get_prediction_data(
         self,
         prediction_dataset: MixedCovariatesInferenceDataset
     ):
         """
-        Helper function which turns a LaggedInferenceDataset into 5 matrices and a List[TimeSeries].
+        Helper function which turns a MixedCovariatesInferenceDataset into 5 matrices and a List[TimeSeries].
         """
         target_matrix = []
         past_covariates_matrix = []
@@ -501,10 +526,10 @@ class RegressionModel(GlobalForecastingModel):
 
                 # discarding oldest covariate
                 if past_covariates_matrix is not None:
-                    past_covariates_matrix, future_past_covariates_matrix = shift_matrices(
+                    past_covariates_matrix, future_past_covariates_matrix = _shift_matrices(
                         past_covariates_matrix, future_past_covariates_matrix)
                 if historic_future_covariates_matrix is not None:
-                    historic_future_covariates_matrix, future_covariates_matrix = shift_matrices(
+                    historic_future_covariates_matrix, future_covariates_matrix = _shift_matrices(
                         historic_future_covariates_matrix, future_covariates_matrix)
 
         predictions = np.concatenate(predictions, axis=1)
