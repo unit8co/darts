@@ -172,20 +172,20 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
 
         # univariate feature test
-        score = LinearRegressionModel(lags=None, lags_exog=[0, 1]).backtest(
+        score = LinearRegressionModel(lags=None, lags_future_covariates=[0, 1]).backtest(
             series=target, future_covariates=features, start=pd.Timestamp('20000201'),
             forecast_horizon=3, metric=r2_score, last_points_only=True
         )
         self.assertGreater(score, 0.9)
 
         # Using an int or float value for start
-        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target, future_covariates=features, start=30,
             forecast_horizon=3, metric=r2_score
         )
         self.assertGreater(score, 0.9)
 
-        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target, future_covariates=features, start=0.5,
             forecast_horizon=3, metric=r2_score
         )
@@ -205,14 +205,14 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.95)
 
         # multivariate feature test
-        score = RandomForest(lags=12, lags_exog=[0, 1], random_state=0).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0, -1], random_state=0).backtest(
             series=target, future_covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score
         )
         self.assertGreater(score, 0.94)
 
         # multivariate with stride
-        score = RandomForest(lags=12, lags_exog=[0], random_state=0).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target, future_covariates=features_multivariate,
             start=pd.Timestamp('20000201'), forecast_horizon=3, metric=r2_score,
             last_points_only=True, stride=3

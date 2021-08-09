@@ -185,6 +185,14 @@ class ForecastingModel(ABC):
         series = args[0]
         _historical_forecasts_general_checks(series, kwargs)
 
+    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+        if overlap_end:
+            last_valid_pred_time = series.time_index[-1]
+        else:
+            last_valid_pred_time = series.time_index[-forecast_horizon]
+
+        return last_valid_pred_time
+
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(self,
                              series: TimeSeries,
@@ -269,10 +277,7 @@ class ForecastingModel(ABC):
         start = series.get_timestamp_at_point(start)
 
         # build the prediction times in advance (to be able to use tqdm)
-        if overlap_end:
-            last_valid_pred_time = series.time_index[-1]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon]
+        last_valid_pred_time = self._get_last_prediction_time(series, forecast_horizon, overlap_end)
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
@@ -643,7 +648,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     2. The input series used by `predict()` can be different from the series used to fit the model.
     3. Covariates can be supported (multivariate or univariate).
     4. They can allow for multivariate target series and covariates.
-    
+
     The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
     to a temporally contiguous, "local", time series.
 

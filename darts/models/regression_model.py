@@ -201,6 +201,16 @@ class RegressionModel(GlobalForecastingModel):
                     [lag[0], lag[-1]]
                 )
 
+    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+        extra_shift = max(0, self.max_lag)
+
+        if overlap_end:
+            last_valid_pred_time = series.time_index[-1 - extra_shift]
+        else:
+            last_valid_pred_time = series.time_index[-forecast_horizon - extra_shift]
+
+        return last_valid_pred_time
+
     def _get_training_data(self, training_dataset: MixedCovariatesSequentialDataset):
         """
         TODO write doc
@@ -423,7 +433,7 @@ class RegressionModel(GlobalForecastingModel):
                 last_req_ts = series[sample].end_time() + (max(n + self.max_lag, n)) * series[sample].freq
                 raise_if_not(
                     future_covariates[sample].end_time() >= last_req_ts,
-                    "When forecasting future values for a horizon n using lags_future_covariates >= 0, future_covariates "
+                    "When forecasting future values for a horizon n and lags_future_covariates >= 0, future_covariates"
                     "are requires to be at least `n + max_lags`, with `max_lag` being the futhest lag in the future"
                     f"For the {sample}-th sample, last future covariate timestamp is"
                     f"{future_covariates[sample].end_time()}, whereas it should be at least {last_req_ts}."

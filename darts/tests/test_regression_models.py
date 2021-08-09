@@ -371,10 +371,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(len(result), 51)
 
-        model = self.models[0](lags=5, lags_covariates=5)
+        model = self.models[0](lags=5, lags_past_covariates=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            future_covariates=self.ts_exog1[:100],
+            past_covariates=self.ts_exog1[:100],
             start=0.5,
             forecast_horizon=1,
             stride=1,
@@ -402,7 +402,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     def test_multiple_ts(self):
         lags = 4
         lags_covariates = 3
-        model = RegressionModel(lags=lags, lags_covariates=lags_covariates)
+        model = RegressionModel(lags=lags, lags_past_covariates=lags_covariates)
 
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
         covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
@@ -413,12 +413,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         covariates_train, covariates_test = covariates.split_after(0.7)
         model.fit(
             series=[target_train, target_train + 0.5],
-            covariates=[covariates_train, covariates_train + 0.5])
+            past_covariates=[covariates_train, covariates_train + 0.5])
 
         predictions = model.predict(
             10,
             series=[target_train, target_train + 0.5],
-            covariates=[covariates, covariates + 0.5])
+            past_covariates=[covariates, covariates + 0.5])
 
         self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
 

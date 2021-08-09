@@ -31,7 +31,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
-        regr3 = RandomForest(lags_covariates=0)
+        regr3 = RandomForest(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel(self.get_models(), 10)
         model1 = RegressionEnsembleModel(self.get_models(), 10, regr1)
@@ -45,7 +45,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
-        regr2 = RandomForest(lags_covariates=0)
+        regr2 = RandomForest(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel([self.get_models()[0]], 10)
         model1 = RegressionEnsembleModel([self.get_models()[0]], 10, regr1)
@@ -57,7 +57,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.predict(10)
 
     def test_train_n_points(self):
-        regr = LinearRegressionModel(lags_covariates=[0])
+        regr = LinearRegressionModel(lags_future_covariates=[0])
 
         # same values
         ensemble = RegressionEnsembleModel(self.get_models(), 5, regr)

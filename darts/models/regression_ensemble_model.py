@@ -39,16 +39,22 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         super().__init__(forecasting_models)
         if regression_model is None:
-            regression_model = LinearRegressionModel(lags=None, lags_covariates=0, fit_intercept=False)
+            regression_model = LinearRegressionModel(lags=None, lags_future_covariates=[0], fit_intercept=False)
         elif isinstance(regression_model, RegressionModel):
             regression_model = regression_model
         else:
             # scikit-learn like model
-            regression_model = RegressionModel(lags_covariates=0, model=regression_model)
+            regression_model = RegressionModel(lags_future_covariates=[0], model=regression_model)
 
-        raise_if(regression_model.lags is not None and regression_model.lags_covariates != [0],
-                 f"`lags` of regression model must be `None` and `lags_covariates` must be [0]. Given: "
-                 f"{regression_model.lags} and {regression_model.lags_covariates}")
+        raise_if(
+            regression_model.lags is not None and regression_model.lags_historical_covariates is not None
+            and regression_model.lags_past_covariates is not None and regression_model.lags_future_covariates != [0],
+            (f"`lags`, `lags_historical_covariates` and `lags_past_covariates` of regression model must be `None`"
+             f"and `lags_future_covariates` must be [0]. Given:\n`lags`: {regression_model.lags},"
+             f"`lags_historical_covariates`: {regression_model.lags_historical_covariates},"
+             f"`lags_past_covariates`: {regression_model.lags} and `lags_future_covariates`"
+             f"{regression_model.lags_future_covariates}.")
+        )
 
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
