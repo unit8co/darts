@@ -172,7 +172,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
 
         # univariate feature test
-        score = LinearRegressionModel(lags=None, lags_future_covariates=[0, 1]).backtest(
+        score = LinearRegressionModel(lags=None, lags_future_covariates=[0, -1]).backtest(
             series=target, future_covariates=features, start=pd.Timestamp('20000201'),
             forecast_horizon=3, metric=r2_score, last_points_only=True
         )

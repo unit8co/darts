@@ -1,6 +1,8 @@
 """
 Regression ensemble model
 -------------------------
+
+An ensemble model which uses a regression model to compute the ensemble forecast.
 """
 from typing import List
 from darts.timeseries import TimeSeries

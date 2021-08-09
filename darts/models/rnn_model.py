@@ -119,12 +119,19 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         * GRU
 
         RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
-        - previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction
-        - the previous hidden state
-        - the current covariates (if the model was trained with covariates)
 
-        For a block version using an RNN model as an encoder only, checkout `BlockRNNModel`.
+        - previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),
+        - the previous hidden state,
+        - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),
+
+        This model supports future covariates; and it requires these covariates to extend far enough in the past
+        and the future (it's a so-called "dual covariates" model as the future covariates have to be provided both
+        in the past and the future). The model will complain if the provided `future_covariates` series doesn't have
+        an appropriate time span.
+
+        For a block version using an RNN model as an encoder only and supporting past
+        covariates, checkout `BlockRNNModel`.
 
         Parameters
         ----------
@@ -151,6 +158,47 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+
+        batch_size
+            Number of time series (input and output sequences) used in each training pass.
+        n_epochs
+            Number of epochs over which to train the model.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer.
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: `torch.nn.MSELoss()`.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+            the same time by different processes to share the same model_name). E.g.,
+            2021-06-14_09:53:32_torch_model_run_44607.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            `[work_dir]/.darts/runs/`.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            `TimeSeries` is passed to the `fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
 
         kwargs['input_chunk_length'] = input_chunk_length

@@ -2,9 +2,12 @@
 Regression Model
 ----------------
 A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of covariate series. They can wrap around any regression model having a `fit()`
-and `predict()` functions accepting tabularized data (e.g. scikit-learn regression models), and are using
-`sklearn.linear_model.LinearRegression` by default.
+and possibly lags of a covariate series. They can wrap around any regression model having `fit()`
+and `predict()` functions (e.g. scikit-learn regression models).
+
+Darts also provides `LinearRegressionModel` and `RandomForest`, which are regression models wrapping around
+scikit-learn linear regression and random forest regression, respectively.
+
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
 from typing import Union, Sequence, Optional, Tuple, List

@@ -222,12 +222,15 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving historic future covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=covariates,
                                                           n=n,
@@ -251,8 +254,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1):
         """
-        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates) tuples.
-        "future_past_covariates" are past covariates that happen to be also known in the future - those
+        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
+        tuples. "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
         Parameters
@@ -273,12 +276,15 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving past covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving historic and future future covariates
         self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
                                                         covariates=future_covariates,
                                                         n=n,
@@ -327,12 +333,15 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model emmits in output.
         """
         super().__init__()
+
+        # This dataset is in charge of serving past covariates
         self.ds_past = PastCovariatesInferenceDataset(target_series=target_series,
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length)
 
+        # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=future_covariates,
                                                           n=n,

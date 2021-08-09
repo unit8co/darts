@@ -1,6 +1,9 @@
 """
-Standard Regression model
--------------------------
+Linear Regression model
+-----------------------
+
+A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
+covariate series' lags in order to obtain a forecast.
 """
 from typing import Union, Tuple, List
 from ..logging import get_logger
