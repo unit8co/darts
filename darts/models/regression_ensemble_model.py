@@ -84,13 +84,11 @@ class RegressionEnsembleModel(EnsembleModel):
         if covariates is not None:
             if isinstance(covariates, TimeSeries):
                 forecast_covariates = self.covariate_series[:-self.train_n_points]
-                regression_covariates = self.covariate_series[-self.train_n_points:]  # TODO do we need it at all?
             else:
-                forecast_covariates, regression_covariates = \
-                    self._split_multi_ts_sequence(-self.train_n_points, covariates)  # TODO do we need it at all?
+                forecast_covariates, _ = \
+                    self._split_multi_ts_sequence(self.train_n_points, covariates)
         else:
             forecast_covariates=None
-            regression_covariates=None  # TODO do we need it at all?
 
         # fit the forecasting models
         for model in self.models:
@@ -102,7 +100,7 @@ class RegressionEnsembleModel(EnsembleModel):
         # predict train_n_points points for each model
         if self.is_global_ensemble:
             predictions = self._ts_sequence_to_multivariate_ts(
-                self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=forecast_covariates))
+                self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=covariates))
         else:
             predictions = self.models[0].predict(self.train_n_points)
 
@@ -110,7 +108,7 @@ class RegressionEnsembleModel(EnsembleModel):
             for model in self.models[1:]:
                 if self.is_global_ensemble:
                     prediction = self._ts_sequence_to_multivariate_ts(
-                        model.predict(n=self.train_n_points, series=forecast_training, covariates=forecast_covariates))
+                        model.predict(n=self.train_n_points, series=forecast_training, covariates=covariates))
                 else:
                     prediction = model.predict(self.train_n_points)
 

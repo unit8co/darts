@@ -29,6 +29,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     seq1 = [_make_ts(0), _make_ts(10), _make_ts(20)]
     cov1 = [_make_ts(5), _make_ts(15), _make_ts(25)]
 
+    seq2 = [_make_ts(0, 20), _make_ts(10, 20), _make_ts(20, 20)]
+    cov2 = [_make_ts(5, 25), _make_ts(15, 25), _make_ts(25, 25)]
+
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
@@ -106,13 +109,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble.fit(self.combined)
             ensemble.predict(10)
 
-        # TODO FIXIT
         def test_train_predict_global_models_multivar_no_covariates(self):
             ensemble = RegressionEnsembleModel(self.get_global_models(), 10)
             ensemble.fit(self.seq1)
             ensemble.predict(10, self.seq1)
 
-        # TODO FIXIT
         def test_train_predict_global_models_multivar_with_covariates(self):
             ensemble = RegressionEnsembleModel(self.get_global_models(), 10)
             ensemble.fit(self.seq1, self.cov1)

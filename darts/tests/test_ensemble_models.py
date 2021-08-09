@@ -9,9 +9,9 @@ from ..models import NaiveEnsembleModel
 from ..models import RNNModel, TCNModel, NBEATSModel
 
 
-def _make_ts(cls, n=0):
-    times = pd.date_range('20130101', '20130410')
-    pd_series = pd.Series(range(n, n + 100), index=times)
+def _make_ts(cls, start_value=0, n=100):
+    times = pd.date_range(start='1/1/2013', periods=n, freq='D')
+    pd_series = pd.Series(range(start_value, start_value + 100), index=times)
     return TimeSeries.from_series(pd_series)
 
 
