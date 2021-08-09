@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
 from ..logging import get_logger
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 from .regression_model import RegressionModel
 from sklearn.ensemble import RandomForestRegressor
 
@@ -21,8 +21,8 @@ logger = get_logger(__name__)
 class RandomForest(RegressionModel):
     def __init__(self,
                  lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, list] = None,
-                 lags_future_covariates: Union[Tuple[int, int], list] = None,
+                 lags_past_covariates: Union[int, List[int]] = None,
+                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
                  n_estimators: Optional[int] = 100,
                  max_depth: Optional[int] = None,
                  **kwargs):
@@ -30,15 +30,18 @@ class RandomForest(RegressionModel):
 
         Parameters
         ----------
-        lags : Union[int, list]
-            Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
-        lags_covariates : Union[int, list, bool] # TODO fix doc
-            Number of lagged covariates values used to predict the next time step. If an integer is given
-            the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine `lags_covariates`. If False, the values of all covariates at the
-            current time `t`. This might lead to leakage if for predictions the values of the covariates at time `t`
-            are not known.
+        lags
+            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
+            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+        lags_past_covariates
+            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
+            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
+            with lags < 0 is required.
+        lags_future_covariates
+            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
+            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
+            of integers with lags is required.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int

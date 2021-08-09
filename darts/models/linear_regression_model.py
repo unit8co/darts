@@ -2,7 +2,7 @@
 Standard Regression model
 -------------------------
 """
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from ..logging import get_logger
 from .regression_model import RegressionModel
 from sklearn.linear_model import LinearRegression
@@ -13,23 +13,26 @@ logger = get_logger(__name__)
 class LinearRegressionModel(RegressionModel):
     def __init__(self,
                  lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, list] = None,
-                 lags_future_covariates: Union[Tuple[int, int], list] = None,
+                 lags_past_covariates: Union[int, List[int]] = None,
+                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
                  **kwargs):
         """
         Simple wrapper for the linear regression model in scikit-learn, LinearRegression().
 
         Parameters
         ----------
-        lags : Union[int, list]
-            Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
-        lags_covariates : Union[int, list, bool] # TODO fix doc
-            Number of lagged covariates values used to predict the next time step. If an integer is given
-            the last `lags_covariates` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine `lags_covariates`. If False, the values of all covariates at the
-            current time `t`. This might lead to leakage if for predictions the values of the covariates at time `t`
-            are not known.
+        lags
+            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
+            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+        lags_past_covariates
+            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
+            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
+            with lags < 0 is required.
+        lags_future_covariates
+            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
+            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
+            of integers with lags is required.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.
         """

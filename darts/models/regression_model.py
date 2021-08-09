@@ -7,7 +7,7 @@ and `predict()` functions accepting tabularized data (e.g. scikit-learn regressi
 `sklearn.linear_model.LinearRegression` by default.
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 """
-from typing import Union, Sequence, Optional, Tuple
+from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
 
 from ..timeseries import TimeSeries
@@ -21,12 +21,12 @@ from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 logger = get_logger(__name__)
 
 
-def _shift_matrices(past_matrix, future_matrix):
+def _shift_matrices(past_matrix: Optional[np.ndarray],
+                    future_matrix: np.ndarray) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Given two matrices, consumes the first column of the past_matrix (if available), and moves the first column of
     the future_matrix to the end of the future_matrix. This can be seen as a time shift, sending the new past value
-    to the past_matrix. During this shift operation, the number of columns of the past_matrix should remain the same.
-    While past_matrix can be None
+    to the past_matrix. `None` will be returned in case a matrix is empty after performing the operation.
     """
     raise_if(future_matrix is None,
              "Future matrix to be shifted cannot be None")
@@ -63,8 +63,8 @@ class RegressionModel(GlobalForecastingModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list] = None,
-        lags_future_covariates: Union[Tuple[int, int], list] = None,
+        lags_past_covariates: Union[int, List[int]] = None,
+        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         model=None,
     ):
         """Regression Model
@@ -72,14 +72,18 @@ class RegressionModel(GlobalForecastingModel):
         time series from lagged values.
         Parameters
         ----------
-        lags TODO fix
-            Number of lagged target values used to predict the next time step. If an integer is given the last `lags`
-            lags are used (inclusive). Otherwise a list of integers with lags is required (each lag must be > 0).
-        lags_covariates TODO fix
-            Number of lagged covariates values used to predict the next time step. If an integer is given
-            the last `lags_covariates` lags are used (inclusive, starting from lag 1). Otherwise a list of
-            integers with lags >= 0 is required. The special index 0 is supported, in case the covariate at time `t`
-            should be used. Note that the 0 index is not included when passing a single interger value > 0.
+        lags
+            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
+            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+        lags_past_covariates
+            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
+            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
+            with lags < 0 is required.
+        lags_future_covariates
+            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
+            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
+            of integers with lags is required.
         model
             Scikit-learn-like model with `fit()` and `predict()` methods.
             Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
@@ -296,8 +300,10 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         series : Union[TimeSeries, Sequence[TimeSeries]]
             TimeSeries or Sequence[TimeSeries] object containing the target values.
-        covariates : Union[TimeSeries, Sequence[TimeSeries]], optional TODO fix
-            TimeSeries or Sequence[TimeSeries] object containing the exogenous values.
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates
         max_samples_per_ts : int
             This is an upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
@@ -348,7 +354,8 @@ class RegressionModel(GlobalForecastingModel):
         prediction_dataset: MixedCovariatesInferenceDataset
     ):
         """
-        Helper function which turns a MixedCovariatesInferenceDataset into 5 matrices and a List[TimeSeries].
+        Helper function which turns a MixedCovariatesInferenceDataset into 5 matrices. The matrices simply contain all
+        the samples stacked in the first dimension.
         """
         target_matrix = []
         past_covariates_matrix = []
@@ -404,9 +411,12 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
             is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
             returns the forecast of the (single) training series.
-        covariates # TODO update doc
-            Optionally, the covariates series needed as inputs for the model. They must match the covariates used
-            for training in terms of dimension and type.
+        past_covariates
+            Optionally, the past-observed covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        future_covariates
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
         num_samples
             Currently this parameter is ignored for regression models.
         **kwargs

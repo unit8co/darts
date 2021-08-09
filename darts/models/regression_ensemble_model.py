@@ -3,9 +3,6 @@ Regression ensemble model
 -------------------------
 """
 from typing import List
-
-from sklearn.linear_model import LinearRegression
-
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting_model import ForecastingModel
