@@ -126,6 +126,11 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         """ Block Recurrent Neural Network Model (RNNs).
 
+        This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and
+        a fully connected network to produce fixed-length outputs.
+
+        This model supports past covariates (known for `input_chunk_length` points before prediction time).
+
         This class provides three variants of RNNs:
 
         * Vanilla RNN
@@ -134,9 +139,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         * GRU
 
-        This is the 'block' implementation of the RNN model, which produces forecasts by using
-        an RNN as an encoder, and a fully connected network as a decoder which produces 'blocks'
-        of forecasts as a function of the last hidden state of the encoder.
 
         Parameters
         ----------
@@ -159,6 +161,47 @@ class BlockRNNModel(PastCovariatesTorchModel):
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+
+        batch_size
+            Number of time series (input and output sequences) used in each training pass.
+        n_epochs
+            Number of epochs over which to train the model.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer.
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: `torch.nn.MSELoss()`.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+            the same time by different processes to share the same model_name). E.g.,
+            2021-06-14_09:53:32_torch_model_run_44607.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            `[work_dir]/.darts/runs/`.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            `TimeSeries` is passed to the `fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
 
         kwargs['input_chunk_length'] = input_chunk_length
