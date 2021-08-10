@@ -195,9 +195,9 @@ class RegressionModel(GlobalForecastingModel):
             if len(self.lags_future_covariates) == 0:
                 self.lags_future_covariates = None
 
-        # setting min_lag and max_lag != None just if we have some lags in those directions. In other words,
-        # leaving min_lag to None if only future lags are required (>= prediction time), and leaving max_lag to None,
-        # in case only past lags are required (< prediction time)
+        # retrieving min and max lags, since they will be necessary for choosing appropriate input_chunk_size and
+        # output_chunk_size later
+
         if lags is not None:
             # min (index 0) and max (index -1) are enough since the array is already sorted
             self.min_lag, self.max_lag = _update_min_max(self.min_lag, self.max_lag, [self.lags[0], self.lags[-1]])
@@ -235,10 +235,6 @@ class RegressionModel(GlobalForecastingModel):
         training_samples = []
         training_labels = []
 
-        # TODO parallelise matrix building. We could check if stacking everything and selecting the lags in the final
-        # matrix is more efficient then masking single rows.
-
-        # TODO fix view thingy, appending is ok, but np stuff is probably creating a copy
         for past_target, past_covariate, historic_future_covariate, future_covariate, future_target in training_dataset:
             row = []
             if self.lags is not None:
@@ -253,8 +249,8 @@ class RegressionModel(GlobalForecastingModel):
                     row.append(covariate[lags].reshape(1, -1))
 
             training_samples.append(np.concatenate(row, axis=1))
-            # discard other future values which were retrived just because we need the covariates
             training_labels.append(future_target[0])
+
         training_samples = np.concatenate(training_samples, axis=0)
         training_labels = np.concatenate(training_labels, axis=0).ravel()
         return training_samples, training_labels
@@ -426,7 +422,6 @@ class RegressionModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model.
         """
         super().predict(n, series, past_covariates, future_covariates, num_samples)
-
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(

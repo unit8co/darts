@@ -13,7 +13,7 @@ from sklearn.experimental import (
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.models.regression_model import _shift_matrices
+from darts.models.regression_model import _shift_matrices, _update_min_max
 
 
 def train_test_split(features, target, split_ts):
@@ -49,19 +49,17 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_gaussian = tg.gaussian_timeseries(length=500)
     ts_random_walk = tg.random_walk_timeseries(length=500)
 
-    ts_exog1 = ts_periodic.stack(ts_gaussian)
-    ts_exog1 = ts_exog1.pd_dataframe()
-    ts_exog1.columns = ["Periodic", "Gaussian"]
-    ts_exog1 = TimeSeries.from_dataframe(ts_exog1)
+    ts_cov1 = ts_periodic.stack(ts_gaussian)
+    ts_cov1 = ts_cov1.pd_dataframe()
+    ts_cov1.columns = ["Periodic", "Gaussian"]
+    ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
     ts_sum1 = ts_periodic + ts_gaussian
 
-    ts_exog2 = ts_sum1.stack(ts_random_walk)
+    ts_cov2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
 
     # default regression models
     models = [RandomForest, LinearRegressionModel, RegressionModel]
-    lags = 4
-    lags_exog = [3, 4, 5]
 
     target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
     past_covariates = tg.linear_timeseries(start_value=50, end_value=99, length=50).stack(
@@ -238,26 +236,39 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         # last "temporal slice" of a should now contain 1s
         np.testing.assert_array_equal(a[:, -1, :], np.ones((10, 2)))
 
+        # testing empty future_matrix
+        with self.assertRaises(ValueError):
+            a, b = _shift_matrices(a, None)
+
+    def test_update_min_max(self):
+        current_min = None
+        current_max = None
+        values = [-1, -1, -4, 5, 9, 12]
+        current_min, current_max = _update_min_max(current_min, current_max, values)
+
+        self.assertEqual(current_min, -4)
+        self.assertEqual(current_max, 12)
+
     def test_models_runnability(self):
-        train_x, test_x = self.ts_exog1.split_before(0.7)
+        train_x, test_x = self.ts_cov1.split_before(0.7)
         train_y, test_y = self.ts_sum1.split_before(0.7)
         for model in self.models:
             # testing past covariates
             with self.assertRaises(ValueError):
-                # testing lags_covariate None but covariates during training
+                # testing lags_past_covariates None but past_covariates during training
                 model_instance = model(lags=4, lags_past_covariates=None)
-                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
+                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
 
             with self.assertRaises(ValueError):
-                # testing lags_covariate but no covariate during fit
+                # testing lags_past_covariates but no past_covariates during fit
                 model_instance = model(lags=4, lags_past_covariates=3)
                 model_instance.fit(series=self.ts_sum1)
 
-            # testing future covariates
+            # testing future_covariates
             with self.assertRaises(ValueError):
-                # testing lags_covariate None but covariates during training
+                # testing lags_future_covariates None but future_covariates during training
                 model_instance = model(lags=4, lags_future_covariates=None)
-                model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
+                model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_cov1)
 
             with self.assertRaises(ValueError):
                 # testing lags_covariate but no covariate during fit
@@ -283,36 +294,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 f"Expected length 1, found {len(prediction)} instead",
             )
 
-            # same check as previous one, but with future covariates as well
-
-            """
-
-            test_cases = [
-                (train_y, train_x, self.ts_exog1),
-                ([train_y, train_y + 1], [train_x, train_x + 100], [self.ts_exog1, self.ts_exog1 + 100])
-            ]
-
-            for input_tgt, input_cov, cov in test_cases:
-                model_instance = model(lags=4, lags_future_covariates=2)
-                model_instance.fit(
-                    series=input_tgt, covariates=input_cov
-                )
-                prediction = model_instance.predict(
-                    n=10,
-                    series=input_tgt,
-                    covariates=cov
-                )
-
-                if isinstance(input_tgt, Sequence):
-                    self.assertTrue(len(prediction[0]) == 10)
-                else:
-                    self.assertTrue(len(prediction) == 10)
-            """
     def test_fit(self):
         for model in self.models:
             with self.assertRaises(ValueError):
                 model_instance = model(lags=4, lags_past_covariates=4)
-                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
+                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
                 model_instance.predict(n=10)
 
             model_instance = model(lags=12)
@@ -320,16 +306,20 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(model_instance.lags_past_covariates, None)
 
             model_instance = model(lags=12, lags_past_covariates=12)
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
             self.assertEqual(len(model_instance.lags_past_covariates), 12)
 
             model_instance = model(lags=12, lags_future_covariates=(0, 1))
-            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_cov1)
             self.assertEqual(len(model_instance.lags_future_covariates), 1)
             self.assertIsNone(model_instance.lags_historical_covariates)
 
             model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_exog1)
+            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
+            self.assertEqual(len(model_instance.lags_past_covariates), 3)
+
+            model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
+            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
             self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
     def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
@@ -350,11 +340,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising(self):
         # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
-        self.helper_test_models_accuracy(self.ts_sum1, self.ts_exog1, 1.5)
+        self.helper_test_models_accuracy(self.ts_sum1, self.ts_cov1, 1.5)
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_exog2, 19)
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
@@ -374,7 +364,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = self.models[0](lags=5, lags_past_covariates=5)
         result = model.historical_forecasts(
             series=self.ts_sum1[:100],
-            past_covariates=self.ts_exog1[:100],
+            past_covariates=self.ts_cov1[:100],
             start=0.5,
             forecast_horizon=1,
             stride=1,
@@ -401,26 +391,85 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_multiple_ts(self):
         lags = 4
-        lags_covariates = 3
-        model = RegressionModel(lags=lags, lags_past_covariates=lags_covariates)
+        lags_past_covariates = 3
+        model = RegressionModel(lags=lags, lags_past_covariates=lags_past_covariates)
 
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
-        covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
-        covariates = covariates.stack(
+        past_covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
+        past_covariates = past_covariates.stack(
             tg.linear_timeseries(start_value=400, end_value=449, length=50))
 
         target_train, target_test = target_series.split_after(0.7)
-        covariates_train, covariates_test = covariates.split_after(0.7)
+        past_covariates_train, past_covariates_test = past_covariates.split_after(0.7)
         model.fit(
             series=[target_train, target_train + 0.5],
-            past_covariates=[covariates_train, covariates_train + 0.5])
+            past_covariates=[past_covariates_train, past_covariates_train + 0.5])
 
         predictions = model.predict(
             10,
             series=[target_train, target_train + 0.5],
-            past_covariates=[covariates, covariates + 0.5])
+            past_covariates=[past_covariates, past_covariates + 0.5])
 
         self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
+
+        # multiple TS, both future and past covariates, checking that both covariates lead to better results than using
+        # a single one (target series = past_cov + future_cov + noise)
+        np.random.seed(42)
+
+        linear_ts_1 = tg.linear_timeseries(start_value=10, end_value=59, length=50)
+        linear_ts_2 = tg.linear_timeseries(start_value=40, end_value=89, length=50)
+
+        past_covariates = tg.sine_timeseries(length=50) * 10
+        future_covariates = tg.sine_timeseries(length=50, value_frequency=0.015) * 50
+
+        target_series_1 = linear_ts_1 + 4 * past_covariates + 2 * future_covariates
+        target_series_2 = linear_ts_2 + 4 * past_covariates + 2 * future_covariates
+
+        target_series_1_noise = (linear_ts_1 + 4 * past_covariates + 2 * future_covariates
+                                 + tg.gaussian_timeseries(std=7, length=50))
+
+        target_series_2_noise = (linear_ts_2 + 4 * past_covariates + 2 * future_covariates
+                                 + tg.gaussian_timeseries(std=7, length=50))
+
+        target_train_1, target_test_1 = target_series_1.split_after(0.7)
+        target_train_2, target_test_2 = target_series_2.split_after(0.7)
+
+        target_train_1_noise, target_test_1_noise = target_series_1_noise.split_after(0.7)
+        target_train_2_noise, target_test_2_noise = target_series_2_noise.split_after(0.7)
+
+        # testing improved denoise with multiple TS
+
+        # test 1: with single TS, 2 covariates should be better than one
+        model = RegressionModel(lags=3, lags_past_covariates=5)
+        model.fit([target_train_1_noise], [past_covariates])
+
+        prediction_past_only = model.predict(
+            n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
+            past_covariates=[past_covariates] * 2
+        )
+
+        model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
+        model.fit([target_train_1_noise], [past_covariates], [future_covariates])
+        prediction_past_and_future = model.predict(
+            n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
+            past_covariates=[past_covariates] * 2, future_covariates=[future_covariates] * 2
+        )
+
+        error_past_only = rmse([target_test_1, target_test_2], prediction_past_only, inter_reduction=np.mean)
+        error_both = rmse([target_test_1, target_test_2], prediction_past_and_future, inter_reduction=np.mean)
+
+        self.assertTrue(error_past_only > error_both)
+        # test 2: with both covariates, 2 TS should learn more than one (with little noise)
+        model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
+        model.fit([target_train_1_noise, target_train_2_noise], [past_covariates] * 2, [future_covariates] * 2)
+        prediction_past_and_future_multi_ts = model.predict(
+            n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
+            past_covariates=[past_covariates] * 2, future_covariates=[future_covariates] * 2
+        )
+        error_both_multi_ts = rmse([target_test_1, target_test_2], prediction_past_and_future_multi_ts,
+                                   inter_reduction=np.mean)
+
+        self.assertTrue(error_both > error_both_multi_ts)
 
     def test_only_future_covariates(self):
 
