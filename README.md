@@ -153,6 +153,9 @@ Some of the models depend on `prophet` and `torch`, which have non-Python depend
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 ### From conda-forge
+Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
+into troubles.
+
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
