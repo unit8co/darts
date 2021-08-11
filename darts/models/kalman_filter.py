@@ -1,4 +1,7 @@
-import numpy as np
+"""
+Kalman Filter
+-------------
+"""
 
 from abc import ABC
 
@@ -24,13 +27,13 @@ class KalmanFilter(FilteringModel, ABC):
             F: Optional[np.array] = None,
             kf: Optional[FpKalmanFilter] = None
             ):
-        """ KalmanFilter model
+        """
         This model implements a Kalman filter over a time series (without control signal).
 
         The key method is `KalmanFilter.filter()`.
         It considers the provided time series as containing (possibly noisy) observations z obtained from a
         (possibly noisy) linear dynamical system with hidden state x. The function `filter(series)` returns a new
-        `TimeSeries` containing the mean values of the state x, as inferred by the Kalman filter from
+        `TimeSeries` describing the distribution of the state x, as inferred by the Kalman filter from
         sequentially observing z from `series`.
         Depending on the use case, this can be used to de-noise a series or infer the underlying hidden state of the
         data generating process (assuming notably that the dynamical system generating the data is known, as captured
