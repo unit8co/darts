@@ -1,14 +1,26 @@
 """
 Regression Model
 ----------------
-A `RegressionModel` forecasts future values of a target series based on lagged values of the target values
-and possibly lags of a covariate series. They can wrap around any regression model having `fit()`
-and `predict()` functions (e.g. scikit-learn regression models).
+A `RegressionModel` forecasts future values of a target series based on lagged values of
+
+* The target series (past lags only)
+
+* An optional past_covariates series (past lags only)
+
+* An optional future_covariates series (possibly past and future lags)
+
+
+The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
+acting on tabular data having `fit()` and `predict()` functions.
 
 Darts also provides `LinearRegressionModel` and `RandomForest`, which are regression models wrapping around
 scikit-learn linear regression and random forest regression, respectively.
 
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
+
+The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
+to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
+denoting past lags and positive values including 0 denoting future lags).
 """
 from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
@@ -71,8 +83,8 @@ class RegressionModel(GlobalForecastingModel):
         model=None,
     ):
         """Regression Model
-        Can be used to fit any scikit-learn-like regressor class to predict the target
-        time series from lagged values.
+        Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
+
         Parameters
         ----------
         lags
@@ -89,7 +101,7 @@ class RegressionModel(GlobalForecastingModel):
             of integers with lags is required.
         model
             Scikit-learn-like model with `fit()` and `predict()` methods.
-            Default: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
+            If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
         """
 
         super().__init__()
@@ -291,7 +303,7 @@ class RegressionModel(GlobalForecastingModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts=None,
+        max_samples_per_ts: Optional[int] = None,
         **kwargs
     ) -> None:
         """Fits/trains the model using the provided list of features time series and the target time series.
@@ -467,7 +479,7 @@ class RegressionModel(GlobalForecastingModel):
                 raise_if_not(
                     future_covariates[sample].end_time() >= last_req_ts,
                     "When forecasting future values for a horizon n and lags_future_covariates >= 0, future_covariates"
-                    "are requires to be at least `n + max_lags`, with `max_lag` being the futhest lag in the future"
+                    "are requires to be at least `n + max_lags`, with `max_lag` being the furthest lag in the future"
                     f"For the {sample}-th sample, last future covariate timestamp is"
                     f"{future_covariates[sample].end_time()}, whereas it should be at least {last_req_ts}."
                 )
