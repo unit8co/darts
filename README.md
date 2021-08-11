@@ -153,10 +153,6 @@ Some of the models depend on `prophet` and `torch`, which have non-Python depend
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 ### From conda-forge
-
-At the moment only Python 3.7 is supported with conda.
-Consider using `pip` if you use a more recent version of Python.
-
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
@@ -173,7 +169,6 @@ As some models have relatively heavy dependencies, we provide two conda-forge pa
 
 
 ### From PyPI
-
 Install darts with all available models: `pip install darts`.
 
 If this fails on your platform, please follow the official installation guides for
