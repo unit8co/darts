@@ -37,6 +37,10 @@ class ExponentialSmoothing(ForecastingModel):
         `ExponentialSmoothing(trend=None, seasonal=None)` corresponds to a single exponential smoothing.
         `ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)` corresponds to a Holt's exponential smoothing.
 
+        Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to
+        `None`) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
+        manually set the `seasonal_periods` parameter to a positive integer.
+
         Parameters
         ----------
         trend
@@ -72,13 +76,24 @@ class ExponentialSmoothing(ForecastingModel):
     def fit(self, series: TimeSeries):
         super().fit(series)
         series = self.training_series
+
+        # if the model was initially created with `self.seasonal_periods=None`, make sure that
+        # the model will try to automatically infer the index, otherwise it should use the
+        # provided `seasonal_periods` value
+        seasonal_periods_param = None if self.infer_seasonal_periods else self.seasonal_periods
+
+        # set the seasonal periods paramter to a default value if it was not provided explicitly
+        # and if it cannot be inferred due to the lack of a datetime index
+        if self.seasonal_periods is None and not series._has_datetime_index:
+            seasonal_periods_param = 12
+
         hw_model = hw.ExponentialSmoothing(series.values(),
                                            trend=self.trend.value,
                                            damped_trend=self.damped,
                                            seasonal=self.seasonal.value,
-                                           seasonal_periods= None if self.infer_seasonal_periods else self.seasonal_periods,
-                                           freq=series.freq,
-                                           dates=series.time_index)
+                                           seasonal_periods=seasonal_periods_param,
+                                           freq=series.freq if series._has_datetime_index else None,
+                                           dates=series.time_index if series._has_datetime_index else None)
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
