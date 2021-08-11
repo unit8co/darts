@@ -1325,7 +1325,7 @@ class TimeSeries:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq, self.time_index[-1])), logger)
 
-        if isinstance(self._time_index, pd.RangeIndex):
+        if self.has_range_index:
             new_time_index = self._time_index + n*self.freq
         else:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
