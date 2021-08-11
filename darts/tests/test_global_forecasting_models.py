@@ -193,7 +193,8 @@ if TORCH_AVAILABLE:
             preds_default = model.predict(n=160, series=targets,
                                           past_covariates=[self.covariates] * len(targets), batch_size=None)
 
-            for batch_size in range(1, 5):
+            # make batch size large enough to test stacking samples
+            for batch_size in range(1, 4 * len(targets)):
                 preds = model.predict(n=160, series=targets,
                                       past_covariates=[self.covariates] * len(targets), batch_size=batch_size)
 
