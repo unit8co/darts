@@ -96,8 +96,14 @@ from R2-scores to Mean Absolute Scaled Error.
 
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-**Regressive Models:** Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models)
+**Regression Models:** Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).
+
+**Multiple series training:** All neural networks, as well as `RegressionModel`s (incl. `LinearRegressionModel` and
+`RandomForest`) support being trained on multiple series.
+
+**Past and Future Covariates support:** Some models support past-observed and/or future-known covariate time series
+as inputs for producing forecasts.
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
@@ -121,12 +127,12 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `Theta` and `FourTheta` | x | | | | |
 `Prophet` | x | | | | |
 `FFT` (Fast Fourier Transform) | x | | | | |
-Regression Models (incl `RandomForest` and `LinearRegressionModel`) | x | | | | |
-`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | x | x
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | ( x )
-`NBEATSModel` | x | x | | x | x | ( x )
-`TCNModel` | x | x | x | x | x | ( x )
-`TransformerModel` | x | x | | x | x | ( x )
+`RegressionModel` (incl `RandomForest` and `LinearRegressionModel`) | x | x | | x | x | x
+`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x
+`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | 
+`NBEATSModel` | x | x | | x | x | 
+`TCNModel` | x | x | x | x | x | 
+`TransformerModel` | x | x | | x | x | 
 Naive Baselines | x | | | | |
 
 ## Contribute
@@ -147,6 +153,9 @@ Some of the models depend on `prophet` and `torch`, which have non-Python depend
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 ### From conda-forge
+
+At the moment only Python 3.7 is supported with conda.
+Consider using `pip` if you use a more recent version of Python.
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
