@@ -1332,7 +1332,10 @@ class TimeSeries:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq, self.time_index[-1])), logger)
 
-        new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+        if self.has_range_index:
+            new_time_index = self._time_index + n*self.freq
+        else:
+            new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return TimeSeries(new_xa)
 
