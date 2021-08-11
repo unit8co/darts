@@ -911,7 +911,7 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series
         The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
     metric
-        The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use.
+        The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use. Default: `mae`.
     reduction
         Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
         the metrics of different components in case of multivariate `TimeSeries` instances.
