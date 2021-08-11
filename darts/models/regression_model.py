@@ -116,7 +116,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # model checks
         if self.model is None:
-            self.model = LinearRegression()
+            self.model = LinearRegression(n_jobs=-1, fit_intercept=False)
 
         if not callable(getattr(self.model, "fit", None)):
             raise_log(Exception("Provided model object must have a fit() method", logger))
