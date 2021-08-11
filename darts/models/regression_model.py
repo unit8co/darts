@@ -101,7 +101,7 @@ class RegressionModel(GlobalForecastingModel):
             of integers with lags is required.
         model
             Scikit-learn-like model with `fit()` and `predict()` methods.
-            If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1, fit_intercept=False)`
+            If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
         """
 
         super().__init__()
@@ -116,7 +116,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # model checks
         if self.model is None:
-            self.model = LinearRegression(n_jobs=-1, fit_intercept=False)
+            self.model = LinearRegression(n_jobs=-1)
 
         if not callable(getattr(self.model, "fit", None)):
             raise_log(Exception("Provided model object must have a fit() method", logger))
