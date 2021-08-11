@@ -20,7 +20,7 @@ class ExponentialSmoothing(ForecastingModel):
                  trend: Optional[ModelMode] = ModelMode.ADDITIVE,
                  damped: Optional[bool] = False,
                  seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
-                 seasonal_periods: Optional[int] = 12,
+                 seasonal_periods: Optional[int] = None,
                  random_state: int = 0,
                  **fit_kwargs):
         """ Exponential Smoothing
@@ -49,7 +49,7 @@ class ExponentialSmoothing(ForecastingModel):
             Defaults to `ModelMode.ADDITIVE`.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
-            data with a weekly cycle.
+            data with a weekly cycle. If not set, inferred from frequency of `TimeSeries.`
         fit_kwargs
             Some optional keyword arguments that will be used to call
             `statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
@@ -60,6 +60,7 @@ class ExponentialSmoothing(ForecastingModel):
         self.trend = trend
         self.damped = damped
         self.seasonal = seasonal
+        self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
         self.fit_kwargs = fit_kwargs
         self.model = None
@@ -75,10 +76,14 @@ class ExponentialSmoothing(ForecastingModel):
                                            trend=self.trend.value,
                                            damped_trend=self.damped,
                                            seasonal=self.seasonal.value,
-                                           seasonal_periods=self.seasonal_periods)
-
+                                           seasonal_periods= None if self.infer_seasonal_periods else self.seasonal_periods,
+                                           freq=series.freq,
+                                           dates=series.time_index)
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
+
+        if self.infer_seasonal_periods:
+            self.seasonal_periods = hw_model.seasonal_periods
 
     def predict(self, n, num_samples=1):
         super().predict(n, num_samples)
