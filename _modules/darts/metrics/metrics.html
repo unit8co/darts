@@ -164,6 +164,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing</span> <span class="kn">import</span> <span class="n">dtw</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -987,8 +988,8 @@
 
 <span class="sd">    See `Coefficient of determination wikipedia page &lt;https://en.wikipedia.org/wiki/Coefficient_of_determination&gt;`_</span>
 <span class="sd">    for details about the :math:`R^2` score and how it is computed.</span>
-<span class="sd">    Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,</span>
-<span class="sd">    whereas `series2` should correspond to the predicted series.</span>
+<span class="sd">    Please note that this metric is not symmetric, `actual_series` should correspond to the ground truth series,</span>
+<span class="sd">    whereas `pred_series` should correspond to the predicted series.</span>
 
 <span class="sd">    If any of the series is stochastic (containing several samples), the median sample value is considered.</span>
 
@@ -1028,6 +1029,68 @@
     <span class="n">y_hat</span> <span class="o">=</span> <span class="n">y1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
     <span class="n">ss_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">ss_errors</span> <span class="o">/</span> <span class="n">ss_tot</span></div>
+
+
+<span class="c1"># Dynamic Time Warping</span>
+<div class="viewcode-block" id="dtw_metric"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.dtw_metric">[docs]</a><span class="nd">@multi_ts_support</span>
+<span class="k">def</span> <span class="nf">dtw_metric</span><span class="p">(</span><span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+               <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+               <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span>
+                    <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                    <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
+               <span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="n">mae</span><span class="p">,</span>
+               <span class="o">*</span><span class="p">,</span>
+               <span class="n">reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+               <span class="n">inter_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+               <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+               <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="o">**</span><span class="n">kwargs</span>
+               <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.</span>
+<span class="sd">    Enables comparison between series of different lengths, phases and time indices.</span>
+
+<span class="sd">    Defaults to using mae as a metric.</span>
+
+<span class="sd">    See darts.dataprocessing.dtw.dtw for more supported parameters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.</span>
+<span class="sd">    metric</span>
+<span class="sd">        The selected metric with signature &#39;[[TimeSeries, TimeSeries], float]&#39; to use. Default: `mae`.</span>
+<span class="sd">    reduction</span>
+<span class="sd">        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate</span>
+<span class="sd">        the metrics of different components in case of multivariate `TimeSeries` instances.</span>
+<span class="sd">    inter_reduction</span>
+<span class="sd">        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.</span>
+<span class="sd">        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a</span>
+<span class="sd">        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair</span>
+<span class="sd">        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise</span>
+<span class="sd">        metrics.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Result of calling metric(warped_series1, warped_series2)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">alignment</span> <span class="o">=</span> <span class="n">dtw</span><span class="o">.</span><span class="n">dtw</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="n">mae</span> <span class="ow">and</span> <span class="ow">not</span> <span class="s2">&quot;distance&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">alignment</span><span class="o">.</span><span class="n">mean_distance</span><span class="p">()</span>
+
+    <span class="n">warped_actual_series</span><span class="p">,</span> <span class="n">warped_pred_series</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">warped</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">metric</span><span class="p">(</span><span class="n">warped_actual_series</span><span class="p">,</span> <span class="n">warped_pred_series</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

@@ -200,7 +200,7 @@ It can represent a stochastic time series by storing several samples (trajectori
 you know what you are doing.</p>
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.add_datetime_attribute">
-<code class="sig-name descname">add_datetime_attribute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">attribute</span></em>, <em class="sig-param"><span class="n">one_hot</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_datetime_attribute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_datetime_attribute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_datetime_attribute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">attribute</span></em>, <em class="sig-param"><span class="n">one_hot</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">cyclic</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.add_datetime_attribute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.add_datetime_attribute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
 of the time index of the current series specified with <cite>attribute</cite>, such as ‘weekday’, ‘day’ or ‘month’.</p>
 <p>This works only for deterministic time series (i.e., made of 1 sample).</p>
@@ -210,6 +210,9 @@ of the time index of the current series specified with <cite>attribute</cite>, s
 <li><p><strong>attribute</strong> – A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).</p></li>
 <li><p><strong>one_hot</strong> – Boolean value indicating whether to add the specified attribute as a one hot encoding
 (results in more columns).</p></li>
+<li><p><strong>cyclic</strong> – Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+Alternative to one_hot encoding, enable only one of the two.
+(adds 2 columns, corresponding to sin and cos transformation).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -474,6 +477,37 @@ or an integer (if indexed by Int64Index/RangeIndex)</p>
 <dt id="darts.timeseries.TimeSeries.freq_str">
 <em class="property">property </em><code class="sig-name descname">freq_str</code><a class="headerlink" href="#darts.timeseries.TimeSeries.freq_str" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.timeseries.TimeSeries.from_csv">
+<em class="property">static </em><code class="sig-name descname">from_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filepath_or_buffer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>PathLike<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">, </span>IO<span class="p">[</span>T<span class="p">]</span><span class="p">, </span>io.RawIOBase<span class="p">, </span>io.BufferedIOBase<span class="p">, </span>io.TextIOBase<span class="p">, </span>_io.TextIOWrapper<span class="p">, </span>mmap.mmap<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">time_col</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>bool<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a deterministic TimeSeries instance built from a single CSV file.
+One column can be used to represent the time (if not present, the time index will be an Int64Index)
+and a list of columns <cite>value_cols</cite> can be used to indicate the values for this time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath_or_buffer</strong> – The path to the CSV file, or the file object; consistent with the argument of <cite>pandas.read_csv</cite> function</p></li>
+<li><p><strong>time_col</strong> – The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+If not set, the pandas Int64Index will be used.</p></li>
+<li><p><strong>value_cols</strong> – A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
+<cite>None</cite>, all columns from the CSV file will be used (except for the time_col, if specified)</p></li>
+<li><p><strong>fill_missing_dates</strong> – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps.
+Inferring the frequency and resampling the data can induce a significant performance overhead.</p></li>
+<li><p><strong>freq</strong> – Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>**kwargs</strong> – Optional arguments to be passed to <cite>pandas.read_csv</cite> function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A univariate or multivariate deterministic TimeSeries constructed from the inputs.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt id="darts.timeseries.TimeSeries.from_dataframe">
@@ -1377,6 +1411,26 @@ Leave it to True unless you know what you are doing.</p>
 <dt id="darts.timeseries.TimeSeries.width">
 <em class="property">property </em><code class="sig-name descname">width</code><a class="headerlink" href="#darts.timeseries.TimeSeries.width" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.timeseries.TimeSeries.with_columns_renamed">
+<code class="sig-name descname">with_columns_renamed</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">col_names</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">col_names_new</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>List<span class="p">[</span>str<span class="p">]</span><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.with_columns_renamed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.with_columns_renamed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes ts column names and returns a new TimeSeries instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>col_names</strong> – String or list of strings corresponding the the column names to be changed.</p></li>
+<li><p><strong>col_names_new</strong> – String or list of strings corresponding to the new column names. Must be the same length as col_names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries instance.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

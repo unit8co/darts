@@ -8,6 +8,7 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.dataprocessing.dtw
         darts.dataprocessing.transformers
         
         darts.dataprocessing.pipeline

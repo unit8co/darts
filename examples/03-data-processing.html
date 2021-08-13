@@ -792,7 +792,7 @@ Dimensions without coordinates: sample
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fd779e54820&gt;
+&lt;matplotlib.legend.Legend at 0x7ff5e3826c10&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -830,7 +830,7 @@ Dimensions without coordinates: sample
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fd77a1f6b80&gt;
+&lt;matplotlib.legend.Legend at 0x7ff5e3bcc790&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -898,7 +898,7 @@ Dimensions without coordinates: sample
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fd77a532b50&gt;
+&lt;matplotlib.legend.Legend at 0x7ff5e3dd1ac0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -909,7 +909,7 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -920,7 +920,7 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -932,12 +932,12 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fd75c0caee0&gt;
+&lt;matplotlib.legend.Legend at 0x7ff5e3fbb280&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -953,7 +953,7 @@ Dimensions without coordinates: sample
 <h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this headline">¶</a></h2>
 <p>Now suppose that we both want to apply the above transformation (daily averaging), and rescale the dataset between 0 and 1 to use a Neural Network based forecasting model. Instead of applying these two transformations separately, and then inversing them separately, we can use a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -972,7 +972,7 @@ Dimensions without coordinates: sample
 </div>
 <p>If all transformations in the pipeline are invertible, the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> object is too.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -990,7 +990,7 @@ Dimensions without coordinates: sample
 </div>
 <p>Recall now the incomplete series from <code class="docutils literal notranslate"><span class="pre">monthly-milk-incomplete.csv</span></code>. Suppose that we want to encapsule all our preprocessing steps into a Pipeline, consisting of: a <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> for filling the missing values, and a <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> for scaling the dataset between 0 and 1.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1007,7 +1007,7 @@ Dimensions without coordinates: sample
 <p>Suppose we have trained a Neural Network and produced some predictions. Now, we want to scale back out data. Unfortunately, since the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> is not an <code class="docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code> (why on Earth would someone want to insert missing values in the results!?), the inverse transformation will raise an exception: <em>ValueError: Not all transformers in the pipeline can perform inverse_transform</em>.</p>
 <p>Frustrating right? Fortunately, you don’t have to re-run everything from scratch, excluding the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> from the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>. Instead, you can just set the <code class="docutils literal notranslate"><span class="pre">partial</span></code> argument of the <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code> method to True. In this case, the inverse transformation will be performed skipping the not invertible transformers.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1020,7 +1020,7 @@ Dimensions without coordinates: sample
 <h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Permalink to this headline">¶</a></h2>
 <p>Often, we have to deal with multiple TimeSeries. DARTS supports Sequences of TimeSeries as input to transformers and pipelines, so that you don’t have to take care of processing each sample separately. Furthermore, it will take care of storing the parameters used by each scaler while transforming different TimeSeries (e.g., with scalers).</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1048,7 +1048,7 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1068,10 +1068,10 @@ Dimensions without coordinates: sample
 </section>
 <section id="Monitoring-&amp;-parallelising-data-processing">
 <h2>Monitoring &amp; parallelising data processing<a class="headerlink" href="#Monitoring-&-parallelising-data-processing" title="Permalink to this headline">¶</a></h2>
-<p>Sometimes, we could also have to deal with huge datasets. In this cases, processing each sample sequentially can take quite a long time. DARTS can help both monitoring the transformations, and processing multiple samples in parallel, when possible.</p>
+<p>Sometimes, we could also have to deal with huge datasets. In this cases, processing each sample sequentially can take quite a long time. Darts can help both monitoring the transformations, and processing multiple samples in parallel, when possible.</p>
 <p>Setting the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter in each transformer or pipeline while create some progress bars:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1089,18 +1089,18 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7734fef99b6e47ab90882ff99928cc59", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b6c470e3449d4a45b5ea7d73e87deb0d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "086be8ac416f4232917f84b024153dc3", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "414ea3d20db1445d9228a6d540a44dc2", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>We now know for how long we will have to wait. But since nobody loves wasting time waiting, we can leverage multiple cores of our machine to process data in parallel. We can do so by setting the <code class="docutils literal notranslate"><span class="pre">n_jobs</span></code> parameter (same usage as in <code class="docutils literal notranslate"><span class="pre">sklearn</span></code>).</p>
 <p><strong>Note</strong>: the speed-up closely depends on the number of available cores and the ‘CPU-intensiveness’ of the transformation.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1115,13 +1115,13 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1336698b91d3481d9e3979931333f390", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "051cc5ee572b4c5bab0ae546d617eab1", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6f0e27a83912459b886b346656a332e8", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "577d15b1243047dda08e3d9e97679cfc", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:

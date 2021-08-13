@@ -522,7 +522,17 @@ div.rendered_html tbody tr:hover {
 </div>
 <section id="Read-data-and-build-a-TimeSeries">
 <h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>
-<p>A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> simply represents a univariate or multivariate time series, with a proper time index. It is a wrapper around a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, and it can be built in a few different ways: * From an entire Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> directly * From a time index and an array of corresponding values * From a subset of Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> columns, indicating which are the time column and the values columns. This is what we will do here:</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.Int64Index</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals.</p>
+<p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be built easily using a few factory methods:</p>
+<ul class="simple">
+<li><p>From an entire Pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe()</span></code>.</p></li>
+<li><p>From a time index and an array of corresponding values, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_times_and_values()</span></code>.</p></li>
+<li><p>From a 1-D or 2-D Numpy array, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_values()</span></code>.</p></li>
+<li><p>From a Pandas <code class="docutils literal notranslate"><span class="pre">Series</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_series()</span></code>.</p></li>
+<li><p>From an <code class="docutils literal notranslate"><span class="pre">xarray.DataArray</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_xarray()</span></code>.</p></li>
+<li><p>From a csv file, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_csv()</span></code>.</p></li>
+</ul>
+<p>Here, we directly load the air passanger series from a Darts dataset:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -839,13 +849,13 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c7535040f88640a8b51f7e4ae100e143", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b461f8ca6bca4d14a48e026a519e4dd8", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "79aeb9d4515b4421958ea81c3e7cbb22", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "84366325059340bfa0d3780f68990c74", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -860,7 +870,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2a62e0dfbc1049f2bd24bfc5d5b36293", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "56fa658ebc4e409b8e949330df09e909", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -873,7 +883,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d7c14f31755e4831bd7a665412180af3", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bd59cc55af42428188a173712ed25a09", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Let’s see what this backtest forecast looks like. You can see it produces more accurate predictions at a 3 months horizon than the one-off prediction done above, because here the model is re-fit every month.</p>
 <div class="nbinput docutils container">
@@ -934,7 +944,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9c2dca9f53084889be7789a7085ad4b9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8b2f3dc9a7874ab18eeac3e426df381d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -967,7 +977,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <p>Some models can produce probabilistic forecasts. At the time of writing, this is the case for <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>. For <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> (as well as other neural network based models), one has to specify a <code class="docutils literal notranslate"><span class="pre">LikelihoodModel</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.GaussianLikelihoodModel</span></code> for Gaussian likelihood) - we refer the readers to notebooks 09 and 10 for examples.</p>
 <p>For <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, one can simply specify a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. The returned <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> will then be composed of <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> samples describing the distribution of the time series’ values, which can for instance be used to obtain quantiles:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -991,7 +1001,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 </div>
 <p>By default <code class="docutils literal notranslate"><span class="pre">TimeSeries.plot()</span></code> shows the median as well as the 5th and 95th percentiles (of the marginal distributions, if the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is multivariate). It is possible to control this:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1015,10 +1025,10 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <p>If you are in a hurry, jump to the <strong>``RegressionEnsembleModel`` approach</strong>.</p>
 <section id="RegressionModel-approach">
 <h3><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach<a class="headerlink" href="#RegressionModel-approach" title="Permalink to this headline">¶</a></h3>
-<p>A regression model is a model that predicts a <em>target</em> time series from a bunch of <em>features</em> time series. If the features time series are themselves obtained from forecasting models, their future (predicted) values can be combined using the regression model to obtain a final forecast.</p>
-<p>Here, we will first compute the historical predictions two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
+<p>A regression model is a model that predicts the target time series using some lags of this series (and possibly other series). It is also possible to use this approach to combine the forecasts of several models into one final forecast.</p>
+<p>Here, we will first compute the historical predictions from two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1040,22 +1050,22 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c11b4c2627ea454f8d87a199b600a541", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "74372ea3baea43d2a07f1d93a5485279", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f8a32b0e2708411f8ea44a03c33a4ef5", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3dd85f578a544fc8aaf746ffd226f0d8", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5934c7657913450aa21871761ccdc149", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "57794dc01c0f473991bdbef6fc0d4db7", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1068,13 +1078,13 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <p>Now that we have the historical forecasts <em>that we would have obtained</em> from a couple of models, we can train a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, in order to learn in a supervised way how to best combine the features time series (our 3 forecasts) into the target series that we are trying to predict.</p>
 <p>By default the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will fit a linear regression for predicting the target series from some features series. If you want something different than linear regression, <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> can wrap around any scikit-learn regression model.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; We build the regression model, and tell it to use the current predictions</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">regr_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">regr_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
 <span class="sd">&quot;&quot;&quot; Our target series is what we want to predict (the actual data)</span>
 <span class="sd">    It has to have the same time index as the features series:</span>
@@ -1084,7 +1094,7 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <span class="sd">&quot;&quot;&quot; Here we backtest our regression model</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="n">ensemble_pred</span> <span class="o">=</span> <span class="n">regr_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
-    <span class="n">series</span><span class="o">=</span><span class="n">series_target</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">model_predictions_stacked</span><span class="p">,</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">model_predictions_stacked</span><span class="p">,</span>
     <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19580101&#39;</span><span class="p">),</span> <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </pre></div>
@@ -1094,11 +1104,11 @@ Median error (MAPE) over all historical forecasts: 4.205415091459073
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4f8240abe2254c508eaa1baf58f44903", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7cc6594a407f4ea3b5c58c1bef2b6d9e", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Finally, let’s see how good the regression performs, compared to the original forecasts:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1156,7 +1166,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <p>Wouldn’t it be great if there would be a way to get an ensemble prediction in fewer lines of code?</p>
 <p>Actually, there is: using the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>. It is as simple as instantiating the ensemble model, calling the method <code class="docutils literal notranslate"><span class="pre">fit</span></code> on the training set, and then, calling the method <code class="docutils literal notranslate"><span class="pre">predict</span></code> with the number of time steps to forecast:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1184,7 +1194,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <p>Quite easy, isn’t it?</p>
 <p>Now, to get a result similar to the one obtained with the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach, just use the <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> method of your ensemble model:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1203,7 +1213,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "eac5a6b1ea224f39a6b502bdc0ba5468", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "133ffdcbd79a43f297e7c288e3e986a2", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">

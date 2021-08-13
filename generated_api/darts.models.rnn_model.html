@@ -163,10 +163,6 @@
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.ensemble_model.html">Ensemble Model Base Class</a>
-                        </li>
-                    
-                        <li class="">
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
@@ -175,15 +171,19 @@
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.filtering_model.html">Filtering Model Base Class</a>
+                            <a href="darts.models.gaussian_process_filter.html">Gaussian Processes</a>
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.forecasting_model.html">Forecasting Model Base Classes</a>
+                            <a href="darts.models.kalman_filter.html">Kalman Filter</a>
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.linear_regression_model.html">Standard Regression model</a>
+                            <a href="darts.models.linear_regression_model.html">Linear Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.moving_average.html">Moving Average</a>
                         </li>
                     
                         <li class="">
@@ -216,10 +216,6 @@
                     
                         <li class="">
                             <a href="darts.models.theta.html">Theta Method</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.models.torch_forecasting_model.html">Torch Forecasting Model Base Class</a>
                         </li>
                     
                         <li class="">
@@ -281,7 +277,7 @@
 <dl class="py class">
 <dt id="darts.models.rnn_model.RNNModel">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.rnn_model.</code><code class="sig-name descname">RNNModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/rnn_model.html#RNNModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.rnn_model.RNNModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchParametricProbabilisticForecastingModel" title="darts.models.torch_forecasting_model.TorchParametricProbabilisticForecastingModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.torch_forecasting_model.TorchParametricProbabilisticForecastingModel</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.torch_forecasting_model.TorchParametricProbabilisticForecastingModel</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.torch_forecasting_model.DualCovariatesTorchModel</span></code></p>
 <p>Recurrent Neural Network Model (RNNs).</p>
 <p>This class provides three variants of RNNs:</p>
 <ul class="simple">
@@ -289,16 +285,19 @@
 <li><p>LSTM</p></li>
 <li><p>GRU</p></li>
 </ul>
-<p>RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
-- previous target value, which will be set to the last known target value for the first prediction,</p>
-<blockquote>
-<div><p>and for all other predictions it will be set to the previous prediction</p>
-</div></blockquote>
+<p>RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:</p>
 <ul class="simple">
-<li><p>the previous hidden state</p></li>
-<li><p>the current covariates (if the model was trained with covariates)</p></li>
+<li><p>previous target value, which will be set to the last known target value for the first prediction,
+and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),</p></li>
+<li><p>the previous hidden state,</p></li>
+<li><p>the covariates at time <cite>t</cite> for forecasting the target at time <cite>t</cite> (if the model was trained with covariates),</p></li>
 </ul>
-<p>For a block version using an RNN model as an encoder only, checkout <cite>BlockRNNModel</cite>.</p>
+<p>This model supports future covariates; and it requires these covariates to extend far enough in the past
+and the future (it’s a so-called “dual covariates” model as the future covariates have to be provided both
+in the past and the future). The model will complain if the provided <cite>future_covariates</cite> series doesn’t have
+an appropriate time span.</p>
+<p>For a block version using an RNN model as an encoder only and supporting past
+covariates, checkout <cite>BlockRNNModel</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -317,12 +316,39 @@ training. For more information on this parameter, please see <cite>darts.utils.d
 If no likelihood model is provided, forecasts will be deterministic.</p></li>
 <li><p><strong>random_state</strong> – Control the randomness of the weights initialization. Check this
 <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random-state">link</a> for more details.</p></li>
+<li><p><strong>batch_size</strong> – Number of time series (input and output sequences) used in each training pass.</p></li>
+<li><p><strong>n_epochs</strong> – Number of epochs over which to train the model.</p></li>
+<li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used (default: <cite>torch.optim.Adam</cite>).</p></li>
+<li><p><strong>optimizer_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <cite>{‘lr’: 1e-3}</cite>
+for specifying a learning rate). Otherwise the default values of the selected <cite>optimizer_cls</cite>
+will be used.</p></li>
+<li><p><strong>lr_scheduler_cls</strong> – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <cite>None</cite> corresponds
+to using a constant learning rate.</p></li>
+<li><p><strong>lr_scheduler_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer.</p></li>
+<li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
+This parameter will be ignored for probabilistic models if the <cite>likelihood</cite> parameter is specified.
+Default: <cite>torch.nn.MSELoss()</cite>.</p></li>
+<li><p><strong>model_name</strong> – Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+defaults to the following string “YYYY-mm-dd_HH:MM:SS_torch_model_run_PID”, where the initial part of the
+name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+the same time by different processes to share the same model_name). E.g.,
+2021-06-14_09:53:32_torch_model_run_44607.</p></li>
+<li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
+(default: current working directory).</p></li>
+<li><p><strong>log_tensorboard</strong> – If set, use Tensorboard to log the different parameters. The logs will be located in:
+<cite>[work_dir]/.darts/runs/</cite>.</p></li>
+<li><p><strong>nr_epochs_val_period</strong> – Number of epochs to wait before evaluating the validation loss (if a validation
+<cite>TimeSeries</cite> is passed to the <cite>fit()</cite> method).</p></li>
+<li><p><strong>torch_device_str</strong> – Optionally, a string indicating the torch device to use. (default: “cuda:0” if a GPU
+is available, otherwise “cpu”)</p></li>
+<li><p><strong>force_reset</strong> – If set to <cite>True</cite>, any previously-existing model with the same name will be reset (all checkpoints will
+be discarded).</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.backtest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes error scores between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual values.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -343,7 +369,8 @@ newly expanded input sequence will be fed to the model to produce the new output
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 <li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time.
@@ -377,11 +404,6 @@ Set to np.mean by default.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt id="darts.models.rnn_model.RNNModel.covariate_series">
-<code class="sig-name descname">covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.rnn_model.RNNModel.covariate_series" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.first_prediction_index">
 <em class="property">property </em><code class="sig-name descname">first_prediction_index</code><a class="headerlink" href="#darts.models.rnn_model.RNNModel.first_prediction_index" title="Permalink to this definition">¶</a></dt>
@@ -390,23 +412,28 @@ Set to np.mean by default.</p></li>
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">val_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">val_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#darts.models.rnn_model.RNNModel.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>The fit method for torch models.
-It wraps around <cite>fit_from_dataset()</cite>.</p>
-<p><strong>Important</strong>: if <cite>epochs=0</cite> (default), running <cite>fit()</cite> or <cite>fit_from_dataset()</cite> removes previously trained model - all it’s checkpoints
-and tensorboard data. If you want to train your model for more epochs, set the <cite>epochs</cite> parameter to value
-greater than 0.</p>
-<p><strong>Note</strong>: If your model wasn’t yet trained and you requested to train for more epochs with <cite>epoch</cite> parameter,
-it will be treated as trained for 0 epochs.</p>
-<p><strong>* Future covariates are not yet supported *</strong></p>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">val_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">val_past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">val_future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#darts.models.rnn_model.RNNModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The fit method for torch models. It wraps around <cite>fit_from_dataset()</cite>, constructing a default training
+dataset for this model. If you need more control on how the series are sliced for training, consider
+calling <cite>fit_from_dataset()</cite> with a custom <cite>darts.utils.data.TrainingDataset</cite>.</p>
+<p>This function can be called several times to do some extra training. If <cite>epochs</cite> is specified, the model
+will be trained for some (extra) <cite>epochs</cite> epochs.</p>
+<p>Below, all possible parameters are documented, but not all models support all parameters. For instance,
+all the <cite>PastCovariatesTorchModel</cite> support only <cite>past_covariates</cite> and not <cite>future_covariates</cite>. Darts will
+complain if you try fitting a model with the wrong covariates argument.</p>
+<p>When handling covariates, Darts tries to be “smart” and uses the time axes of the target and the covariates
+to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
+are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – A series or sequence of series serving as target (i.e. what the model will be trained to forecast)</p></li>
-<li><p><strong>covariates</strong> – Optionally, a series or sequence of series specifying covariates</p></li>
+<li><p><strong>past_covariates</strong> – Optionally, a series or sequence of series specifying past-observed covariates</p></li>
+<li><p><strong>future_covariates</strong> – Optionally, a series or sequence of series specifying future-known covariates</p></li>
 <li><p><strong>val_series</strong> – Optionally, one or a sequence of validation target series, which will be used to compute the validation
 loss throughout training and keep track of the best performing models.</p></li>
-<li><p><strong>val_covariates</strong> – Optionally, the covariates corresponding to the validation series (must match <cite>covariates</cite>)</p></li>
+<li><p><strong>val_past_covariates</strong> – Optionally, the past covariates corresponding to the validation series (must match <cite>covariates</cite>)</p></li>
+<li><p><strong>val_future_covariates</strong> – Optionally, the future covariates corresponding to the validation series (must match <cite>covariates</cite>)</p></li>
 <li><p><strong>verbose</strong> – Optionally, whether to print progress.</p></li>
 <li><p><strong>epochs</strong> – If specified, will train the model for <cite>epochs</cite> (additional) epochs, irrespective of what <cite>n_epochs</cite>
 was provided to the model constructor.</p></li>
@@ -417,12 +444,36 @@ was provided to the model constructor.</p></li>
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.fit_from_dataset">
-<code class="sig-name descname">fit_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TrainingDataset" title="darts.utils.data.timeseries_dataset.TrainingDataset">darts.utils.data.timeseries_dataset.TrainingDataset</a></span></em>, <em class="sig-param"><span class="n">val_dataset</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TrainingDataset" title="darts.utils.data.timeseries_dataset.TrainingDataset">darts.utils.data.timeseries_dataset.TrainingDataset</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#darts.models.rnn_model.RNNModel.fit_from_dataset" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">train_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset">darts.utils.data.training_dataset.TrainingDataset</a></span></em>, <em class="sig-param"><span class="n">val_dataset</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset">darts.utils.data.training_dataset.TrainingDataset</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#darts.models.rnn_model.RNNModel.fit_from_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method allows for training with a specific <cite>darts.utils.data.TrainingDataset</cite> instance. These datasets
+implement a PyTorch <cite>Dataset</cite>, and specify how the target and covariates are sliced for training. If you
+are not sure which training dataset to use, consider calling <cite>fit()</cite> instead, which will create a default
+training dataset appropriate for this model.</p>
+<p>This function can be called several times to do some extra training. If <cite>epochs</cite> is specified, the model
+will be trained for some (extra) <cite>epochs</cite> epochs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_dataset</strong> – A training dataset with a type matching this model (e.g. <cite>PastCovariatesTrainingDataset</cite> for
+<a href="#id1"><span class="problematic" id="id2">`</span></a>PastCovariatesTorchModel`s).</p></li>
+<li><p><strong>val_dataset</strong> – A training dataset with a type matching this model (e.g. <cite>PastCovariatesTrainingDataset</cite> for
+<a href="#id3"><span class="problematic" id="id4">`</span></a>PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print progress.</p></li>
+<li><p><strong>epochs</strong> – If specified, will train the model for <cite>epochs</cite> (additional) epochs, irrespective of what <cite>n_epochs</cite>
+was provided to the model constructor.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.models.rnn_model.RNNModel.future_covariate_series">
+<code class="sig-name descname">future_covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.rnn_model.RNNModel.future_covariate_series" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -459,7 +510,8 @@ forcing <cite>n_jobs = 1</cite>.</p>
 <li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
 respective hyperparameter.</p></li>
 <li><p><strong>series</strong> – The TimeSeries instance used as input and target for training.</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
 <li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
 of <cite>training_series</cite> from which predictions will be made to evaluate the model.
@@ -484,14 +536,14 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 along with a dictionary containing these best hyper-parameters.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">ForecastingModel</a>, Dict</p>
+<dd class="field-odd"><p>ForecastingModel, Dict</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.historical_forecasts">
-<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the historical forecasts the model would have produced with an expanding training window
 and (by default) returns a time series created from the last point of each of these individual forecasts.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -510,7 +562,8 @@ newly expanded input sequence will be fed to the model to produce the new output
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts.</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 <li><p><strong>start</strong> – The first point of time at which a prediction is computed for a future time.
@@ -545,7 +598,7 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.load_from_checkpoint">
-<em class="property">static </em><code class="sig-name descname">load_from_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">work_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">best</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel">darts.models.torch_forecasting_model.TorchForecastingModel</a><a class="headerlink" href="#darts.models.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">load_from_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">work_dir</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">best</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; darts.models.torch_forecasting_model.TorchForecastingModel<a class="headerlink" href="#darts.models.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the model from the given checkpoint.
 if file is not given, will try to restore the most recent checkpoint.</p>
 <dl class="field-list simple">
@@ -561,7 +614,7 @@ if file is not given, will try to restore the most recent checkpoint.</p>
 <dd class="field-even"><p>The corresponding trained <cite>TorchForecastingModel</cite>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.models.torch_forecasting_model.html#darts.models.torch_forecasting_model.TorchForecastingModel" title="darts.models.torch_forecasting_model.TorchForecastingModel">TorchForecastingModel</a></p>
+<dd class="field-odd"><p>TorchForecastingModel</p>
 </dd>
 </dl>
 </dd></dl>
@@ -573,31 +626,28 @@ if file is not given, will try to restore the most recent checkpoint.</p>
 This function/property should be overridden if a value higher than 3 is required.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="darts.models.rnn_model.RNNModel.past_covariate_series">
+<code class="sig-name descname">past_covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.rnn_model.RNNModel.past_covariate_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">roll_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">roll_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predicts values for a certain number of time steps after the end of the training series,
 or after the end of the specified <cite>series</cite>.</p>
-<p>Block models:
-If <cite>n</cite> is larger than the model <cite>output_chunk_length</cite>, the predictions will be computed in a
-recurrent way, by iteratively feeding the last <cite>roll_size</cite> forecast points as
-inputs to the model until a forecast of length <cite>n</cite> is obtained. If the model was trained with
-covariates, all of the covariate time series need to have a time index that extends at least
-<cite>n - output_chunk_length</cite> into the future. In other words, if <cite>n</cite> is larger than <cite>output_chunk_length</cite>
-then covariates need to be available in the future.</p>
-<p>Recurrent models:
-All predictions are produced in a recurrent way by taking as input
-- the previous target value, which will be set to the last known target value for the first prediction,</p>
-<blockquote>
-<div><p>and for all other predictions it will be set to the previous prediction</p>
-</div></blockquote>
+<p>Below, all possible parameters are documented, but not all models support all parameters. For instance,
+all the <cite>PastCovariatesTorchModel</cite> support only <cite>past_covariates</cite> and not <cite>future_covariates</cite>. Darts will
+complain if you try calling <a href="#id5"><span class="problematic" id="id6">`</span></a>predict() on a model with the wrong covariates argument.</p>
+<p>Darts will also complain if the provided covariates do not have a sufficient time span.
+In general, not all models require the same covariates’ time spans:</p>
 <ul class="simple">
-<li><p>the previous hidden state</p></li>
-<li><p>the current covariates (if the model was trained with covariates)</p></li>
+<li><p>Models relying on past covariates require the last <cite>input_chunk_length</cite> of the <cite>past_covariates</cite> points to be known at prediction time. For horizon values <cite>n &gt; output_chunk_length</cite>, these models require at least the next <cite>n - output_chunk_length</cite> future values to be known as well.</p></li>
+<li><p>Models relying on future covariates require the next <cite>n</cite> values to be known. In addition (for <cite>DualCovariatesTorchModel</cite> and <cite>MixedCovariatesTorchModel</cite>), they also require the “historic” values of these future covariates (over the past <cite>input_chunk_length</cite>).</p></li>
 </ul>
-<p>As a result, if covariates were used, <cite>n</cite> covariates have to be available into the future.</p>
-<p>If some time series in the <cite>series</cite> argument have more than <cite>input_chunk_length</cite> time steps,
-only the last <cite>input_chunk_length</cite> time steps will be considered.</p>
+<p>When handling covariates, Darts tries to be “smart” and uses the time axes of the target and the covariates
+to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
+are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -605,8 +655,10 @@ only the last <cite>input_chunk_length</cite> time steps will be considered.</p>
 <li><p><strong>series</strong> – Optionally, one or several input <cite>TimeSeries</cite>, representing the history of the target series whose
 future is to be predicted. If specified, the method returns the forecasts of these
 series. Otherwise, the method returns the forecast of the (single) training series.</p></li>
-<li><p><strong>covariates</strong> – Optionally, the covariates series needed as inputs for the model. They must match the covariates used
-for training in terms of dimension and type.</p></li>
+<li><p><strong>past_covariates</strong> – Optionally, the past-observed covariates series needed as inputs for the model.
+They must match the covariates used for training in terms of dimension and type.</p></li>
+<li><p><strong>future_covariates</strong> – Optionally, the future-known covariates series needed as inputs for the model.
+They must match the covariates used for training in terms of dimension and type.</p></li>
 <li><p><strong>batch_size</strong> – Size of batches during prediction. Defaults to the models <cite>batch_size</cite> value.</p></li>
 <li><p><strong>verbose</strong> – Optionally, whether to print progress.</p></li>
 <li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Defaults to <cite>1</cite>. <cite>-1</cite> means using all processors.</p></li>
@@ -630,29 +682,11 @@ if <cite>series</cite> is not specified and the model has been trained on a sing
 
 <dl class="py method">
 <dt id="darts.models.rnn_model.RNNModel.predict_from_dataset">
-<code class="sig-name descname">predict_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">input_series_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset" title="darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset">darts.utils.data.timeseries_dataset.TimeSeriesInferenceDataset</a></span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">roll_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predicts values for a certain number of time steps after the end of the series appearing in the specified
-<cite>input_series_dataset</cite>.</p>
-<p>Block models:
-If <cite>n</cite> is larger than the model <cite>output_chunk_length</cite>, the predictions will be computed in a
-recurrent way, by iteratively feeding the last <cite>roll_size</cite> forecast points as
-inputs to the model until a forecast of length <cite>n</cite> is obtained. If the model was trained with
-covariates, all of the covariate time series need to have a time index that extends at least
-<cite>n - output_chunk_length</cite> into the future. In other words, if <cite>n</cite> is larger than <cite>output_chunk_length</cite>
-then covariates need to be available in the future.</p>
-<p>Recurrent models:
-All predictions are produced in a recurrent way by taking as input
-- the previous target value, which will be set to the last known target value for the first prediction,</p>
-<blockquote>
-<div><p>and for all other predictions it will be set to the previous prediction</p>
-</div></blockquote>
-<ul class="simple">
-<li><p>the previous hidden state</p></li>
-<li><p>the current covariates (if the model was trained with covariates)</p></li>
-</ul>
-<p>As a result, if covariates were used, <cite>n</cite> covariates have to be available into the future.</p>
-<p>If some series in the <cite>input_series_dataset</cite> have more time steps than <cite>input_chunk_length</cite>,
-only the last <cite>input_chunk_length</cite> time steps will be considered.</p>
+<code class="sig-name descname">predict_from_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">input_series_dataset</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset">darts.utils.data.inference_dataset.InferenceDataset</a></span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">roll_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><a class="headerlink" href="#darts.models.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method allows for predicting with a specific <cite>darts.utils.data.InferenceDataset</cite> instance. These datasets
+implement a PyTorch <cite>Dataset</cite>, and specify how the target and covariates are sliced for inference.
+In most cases, you’ll rather want to call <cite>predict()</cite> instead, which will create an appropriate <cite>InferenceDataset</cite>
+for you.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

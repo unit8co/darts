@@ -1,0 +1,357 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../index.html">
+    
+      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.dataprocessing.dtw.dtw"></span><dl class="py class">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment">
+<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.dtw.dtw.</code><code class="sig-name descname">DTWAlignment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series1</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">series2</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">cost</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix">darts.dataprocessing.dtw.cost_matrix.CostMatrix</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.cost">
+<code class="sig-name descname">cost</code><em class="property">: <a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix">darts.dataprocessing.dtw.cost_matrix.CostMatrix</a></em><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.cost" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.distance">
+<code class="sig-name descname">distance</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.distance" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The total distance between pair-wise elements in the two series after warping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.m">
+<code class="sig-name descname">m</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.mean_distance">
+<code class="sig-name descname">mean_distance</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.mean_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.mean_distance" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mean distance between pair-wise elements in the two series after warping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.n">
+<code class="sig-name descname">n</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.n" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.path">
+<code class="sig-name descname">path</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.path" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An array of indices [[i0,j0], [i1,j1], [i2,j2], …], where i indexes into series1 and j indexes into series2.
+Indices are in monotonic order, path[n] &gt;= path[n-1]</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray of shape <cite>(len(path), 2)</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_plot</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">show_series</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">show_cost</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">cost_cmap</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'summer'</span></em>, <em class="sig-param"><span class="n">args_path</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">args_cost</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">args_series1</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">args_series2</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the warp path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_plot</strong> – Boolean value indicating whether to spawn a new figure.</p></li>
+<li><p><strong>show_series</strong> – Boolean value indicating whether to additionally plot the two time series.
+Series1 will be plotted below the cost matrix and series2 to the left of the cost matrix.</p></li>
+<li><p><strong>show_cost</strong> – Boolean value indicating whether to additionally plot the cost matrix.
+Cost Matrix will be displayed as a heatmap.
+Useful for visualizing the effect of the window function.</p></li>
+<li><p><strong>cost_cmap</strong> – Colormap style for cost matrix plot</p></li>
+<li><p><strong>args_path</strong> – Some keyword arguments to pass to <cite>plot()</cite> function for warp path</p></li>
+<li><p><strong>args_cost</strong> – Some keyword arguments to pass to <cite>imshow</cite> function for cost matrix</p></li>
+<li><p><strong>args_series1</strong> – Some keyword arguments to pass to <cite>plot()</cite> method for series1</p></li>
+<li><p><strong>args_series2</strong> – Some keyword arguments to pass to <cite>plot()</cite> method for series2</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.plot_alignment">
+<code class="sig-name descname">plot_alignment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_plot</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">series1_y_offset</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">series2_y_offset</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="n">components</span><span class="p">:</span> <span class="n">Tuple<span class="p">[</span>Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span><span class="p">, </span>Union<span class="p">[</span>str<span class="p">, </span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0, 0</span></em>, <em class="sig-param"><span class="n">args_line</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">args_series1</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">args_series2</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.plot_alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the uni-variate component of each series,
+with lines between them indicating the alignment selected by the DTW algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_plot</strong> – whether to spawn a new Figure</p></li>
+<li><p><strong>series2_y_offset</strong> – offset series1 vertically for ease of viewing.</p></li>
+<li><p><strong>series1_y_offset</strong> – offset series2 vertically for ease of viewing.</p></li>
+<li><p><strong>components</strong> – Tuple of component index for series1 and component index for series2.</p></li>
+<li><p><strong>args_line</strong> – Some keywords arguments to pass to <cite>plot()</cite> method for line</p></li>
+<li><p><strong>args_series1</strong> – Some keyword arguments to pass to <cite>plot()</cite> method for series1</p></li>
+<li><p><strong>args_series2</strong> – Some keyword arguments to pass to <cite>plot()</cite> method for series2</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.series1">
+<code class="sig-name descname">series1</code><em class="property">: <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></em><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.series1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.series2">
+<code class="sig-name descname">series2</code><em class="property">: <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></em><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.series2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="darts.dataprocessing.dtw.dtw.DTWAlignment.warped">
+<code class="sig-name descname">warped</code><span class="sig-paren">(</span><em class="sig-param">) -&gt; (&lt;class 'darts.timeseries.TimeSeries'&gt;</em>, <em class="sig-param">&lt;class 'darts.timeseries.TimeSeries'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.warped"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.warped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.
+This will bring two time series that are out-of-phase back into phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Two new TimeSeries instances of the same length, indexed by pd.RangeIndex.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>(<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="darts.dataprocessing.dtw.dtw.default_distance_multi">
+<code class="sig-prename descclassname">darts.dataprocessing.dtw.dtw.</code><code class="sig-name descname">default_distance_multi</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em>, <em class="sig-param"><span class="n">y_values</span><span class="p">:</span> <span class="n">numpy.ndarray</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#default_distance_multi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.default_distance_multi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="darts.dataprocessing.dtw.dtw.default_distance_uni">
+<code class="sig-prename descclassname">darts.dataprocessing.dtw.dtw.</code><code class="sig-name descname">default_distance_uni</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_value</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">y_value</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#default_distance_uni"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.default_distance_uni" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="darts.dataprocessing.dtw.dtw.dtw">
+<code class="sig-prename descclassname">darts.dataprocessing.dtw.dtw.</code><code class="sig-name descname">dtw</code><span class="sig-paren">(</span><em class="sig-param">series1: darts.timeseries.TimeSeries, series2: darts.timeseries.TimeSeries, window: darts.dataprocessing.dtw.window.Window = &lt;darts.dataprocessing.dtw.window.NoWindow object&gt;, distance: Optional[Callable[[Union[numpy.ndarray, float], Union[numpy.ndarray, float]], float]] = None, multi_grid_radius: int = -1</em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="darts.dataprocessing.dtw.dtw.DTWAlignment">darts.dataprocessing.dtw.dtw.DTWAlignment</a><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#dtw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.dtw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the optimal alignment between two time series series1 and series2, according to the Dynamic Time Warping algorithm.
+The alignment minimizes the distance between pair-wise elements after warping. All elements in the two series are matched
+and are in strictly monotonically increasing order. Considers only the values in the series, ignoring the time axis.</p>
+<p>Dynamic Time Warping can be applied to determine how closely two time series correspond,
+irrespective of phase, length or speed differences.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series1</strong> – <cite>TimeSeries</cite></p></li>
+<li><p><strong>series2</strong> – A <cite>TimeSeries</cite></p></li>
+<li><p><strong>window</strong> – Used to constrain the search for the optimal alignment: see SakoeChiba and Itakura.
+Default considers all possible alignments.</p></li>
+<li><p><strong>distance</strong> – <p>Function taking as input either two <cite>floats</cite> for univariate series or two <cite>np.ndarray</cite>,
+and returning the distance between them.</p>
+<p>Defaults to the abs difference for univariate-data and the
+sum of the abs difference for multi-variate series.</p>
+</p></li>
+<li><p><strong>multi_grid_radius</strong> – <p>Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
+Without constraints DTW runs in O(nxm) time where n,m are the size of the series. Exact evaluation with no constraints,
+will result in a performance warning on large datasets.</p>
+<p>Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
+which executes in linear time, vs quadratic time for exact evaluation.
+Increasing radius trades solution accuracy for performance.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Helper object for getting warp path, mean_distance, distance and warped time series</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="darts.dataprocessing.dtw.dtw.DTWAlignment">DTWAlignment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

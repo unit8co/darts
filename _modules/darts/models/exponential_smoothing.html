@@ -170,7 +170,7 @@
                  <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
                  <span class="n">damped</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">seasonal</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
-                 <span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Exponential Smoothing</span>
@@ -187,6 +187,10 @@
 <span class="sd">        `ExponentialSmoothing(trend=None, seasonal=None)` corresponds to a single exponential smoothing.</span>
 <span class="sd">        `ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)` corresponds to a Holt&#39;s exponential smoothing.</span>
 
+<span class="sd">        Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to</span>
+<span class="sd">        `None`) can sometimes lead to errors if the input time series is too short. In these cases we suggest to</span>
+<span class="sd">        manually set the `seasonal_periods` parameter to a positive integer.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        trend</span>
@@ -199,7 +203,7 @@
 <span class="sd">            Defaults to `ModelMode.ADDITIVE`.</span>
 <span class="sd">        seasonal_periods</span>
 <span class="sd">            The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily</span>
-<span class="sd">            data with a weekly cycle.</span>
+<span class="sd">            data with a weekly cycle. If not set, inferred from frequency of `TimeSeries.`</span>
 <span class="sd">        fit_kwargs</span>
 <span class="sd">            Some optional keyword arguments that will be used to call</span>
 <span class="sd">            `statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.</span>
@@ -210,6 +214,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">=</span> <span class="n">trend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">damped</span> <span class="o">=</span> <span class="n">damped</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span> <span class="o">=</span> <span class="n">seasonal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">infer_seasonal_periods</span> <span class="o">=</span> <span class="n">seasonal_periods</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span> <span class="o">=</span> <span class="n">seasonal_periods</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span> <span class="o">=</span> <span class="n">fit_kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
@@ -221,14 +226,29 @@
 <div class="viewcode-block" id="ExponentialSmoothing.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.exponential_smoothing.html#darts.models.exponential_smoothing.ExponentialSmoothing.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+
+        <span class="c1"># if the model was initially created with `self.seasonal_periods=None`, make sure that</span>
+        <span class="c1"># the model will try to automatically infer the index, otherwise it should use the</span>
+        <span class="c1"># provided `seasonal_periods` value</span>
+        <span class="n">seasonal_periods_param</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">infer_seasonal_periods</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span>
+
+        <span class="c1"># set the seasonal periods paramter to a default value if it was not provided explicitly</span>
+        <span class="c1"># and if it cannot be inferred due to the lack of a datetime index</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">series</span><span class="o">.</span><span class="n">has_range_index</span><span class="p">:</span>
+            <span class="n">seasonal_periods_param</span> <span class="o">=</span> <span class="mi">12</span>
+
         <span class="n">hw_model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
                                            <span class="n">trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
                                            <span class="n">damped_trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">damped</span><span class="p">,</span>
                                            <span class="n">seasonal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-                                           <span class="n">seasonal_periods</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">)</span>
-
+                                           <span class="n">seasonal_periods</span><span class="o">=</span><span class="n">seasonal_periods_param</span><span class="p">,</span>
+                                           <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                                           <span class="n">dates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span> <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">hw_results</span> <span class="o">=</span> <span class="n">hw_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw_results</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">hw_results</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">infer_seasonal_periods</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span> <span class="o">=</span> <span class="n">hw_model</span><span class="o">.</span><span class="n">seasonal_periods</span></div>
 
 <div class="viewcode-block" id="ExponentialSmoothing.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.exponential_smoothing.html#darts.models.exponential_smoothing.ExponentialSmoothing.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>

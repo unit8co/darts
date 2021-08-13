@@ -149,13 +149,13 @@
                 
   <h1>Source code for darts.models.linear_regression_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Standard Regression model</span>
-<span class="sd">-------------------------</span>
-<span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="sd">Linear Regression model</span>
+<span class="sd">-----------------------</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="sd">A forecasting model using a linear regression of some of the target series&#39; lags, as well as optionally some</span>
+<span class="sd">covariate series&#39; lags in order to obtain a forecast.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
@@ -164,37 +164,42 @@
 
 
 <div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../generated_api/darts.models.linear_regression_model.html#darts.models.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span> <span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
-
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">lags_exog</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Simple wrapper for the linear regression model in scikit-learn, LinearRegression().</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        lags : Union[int, list]</span>
-<span class="sd">            Number of lagged target values used to predict the next time step. If an integer is given</span>
-<span class="sd">            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.</span>
-<span class="sd">        lags_exog : Union[int, list, bool]</span>
-<span class="sd">            Number of lagged exogenous values used to predict the next time step. If an integer is given</span>
-<span class="sd">            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.</span>
-<span class="sd">            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables</span>
-<span class="sd">            at the current time `t`. This might lead to leakage if for predictions the values of the exogenous</span>
-<span class="sd">            variables at time `t` are not known.</span>
+<span class="sd">        lags</span>
+<span class="sd">            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags</span>
+<span class="sd">            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be &lt; 0).</span>
+<span class="sd">        lags_past_covariates</span>
+<span class="sd">            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last</span>
+<span class="sd">            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers</span>
+<span class="sd">            with lags &lt; 0 is required.</span>
+<span class="sd">        lags_future_covariates</span>
+<span class="sd">            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is</span>
+<span class="sd">            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first</span>
+<span class="sd">            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list</span>
+<span class="sd">            of integers with lags is required.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
-            <span class="n">lags_exog</span><span class="o">=</span><span class="n">lags_exog</span><span class="p">,</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="p">)</span>
+            <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+            <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s1">&#39;LinearRegression(lags=</span><span class="si">{}</span><span class="s1">, lags_exog=</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LinearRegression(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, lags_past_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_past_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;lags_historical_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_historical_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;lags_future_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_future_covariates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

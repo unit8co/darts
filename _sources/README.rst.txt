@@ -19,9 +19,9 @@ Time Series Made Easy in Python
    :alt: PyPI version
 
 
-.. image:: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
-   :target: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
-   :alt: GitHub Workflow Status
+.. image:: https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg
+   :target: https://anaconda.org/conda-forge/u8darts-all
+   :alt: Conda Version
 
 
 .. image:: https://img.shields.io/badge/python-3.7+-blue.svg
@@ -37,6 +37,11 @@ Time Series Made Easy in Python
 .. image:: https://img.shields.io/github/release-date/unit8co/darts
    :target: https://img.shields.io/github/release-date/unit8co/darts
    :alt: GitHub Release Date
+
+
+.. image:: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
+   :target: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
+   :alt: GitHub Workflow Status
 
 
 .. image:: https://pepy.tech/badge/u8darts
@@ -71,6 +76,14 @@ High Level Introductions
 * `Introductory Blog Post <https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878>`_
 * `Introductory Video <https://www.youtube.com/watch?v=Sx-uI-PypmU&t=8s&ab_channel=Unit8>`_
 
+Articles on Selected Topics
+"""""""""""""""""""""""""""
+
+
+* `Training Models on Multiple Time Series <https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844>`_
+* `Using Past and Future Covariates <https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993>`_
+* `Temporal Convolutional Networks and Forecasting <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
+
 Install
 -------
 
@@ -83,7 +96,7 @@ Once your environment is set up you can install darts using pip:
    pip install darts
 
 
-For more detailed install instructions you can refer to our installation guide at the end of this page.
+For more detailed install instructions you can refer to our `installation guide <#installation-guide>`_ at the end of this page.
 
 Example Usage
 -------------
@@ -150,8 +163,14 @@ from R2-scores to Mean Absolute Scaled Error.
 
 **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
 
-**Regressive Models:** Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models)
+**Regression Models:** Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).
+
+**Multiple series training:** All neural networks, as well as ``RegressionModel``\ s (incl. ``LinearRegressionModel`` and
+``RandomForest``\ ) support being trained on multiple series.
+
+**Past and Future Covariates support:** Some models support past-observed and/or future-known covariate time series
+as inputs for producing forecasts.
 
 **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
 
@@ -227,19 +246,19 @@ on bringing more models and features.
      - 
      - 
      - 
-   * - Regression Models (incl ``RandomForest`` and ``LinearRegressionModel``\ )
+   * - ``RegressionModel`` (incl ``RandomForest`` and ``LinearRegressionModel``\ )
+     - x
      - x
      - 
-     - 
-     - 
-     - 
-     - 
+     - x
+     - x
+     - x
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - x
      - x
      - x
      - x
-     - x
+     - 
      - x
    * - ``BlockRNNModel`` (incl. LSTM and GRU)
      - x
@@ -247,28 +266,28 @@ on bringing more models and features.
      - 
      - x
      - x
-     - ( x )
+     - 
    * - ``NBEATSModel``
      - x
      - x
      - 
      - x
      - x
-     - ( x )
+     - 
    * - ``TCNModel``
      - x
      - x
      - x
      - x
      - x
-     - ( x )
+     - 
    * - ``TransformerModel``
      - x
      - x
      - 
      - x
      - x
-     - ( x )
+     - 
    * - Naive Baselines
      - x
      - 
@@ -294,17 +313,14 @@ If what you want to tell us is not a suitable github issue, feel free to send us
 Installation Guide
 ------------------
 
-Preconditions
-^^^^^^^^^^^^^
-
 Some of the models depend on ``prophet`` and ``torch``\ , which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.
 
-The following steps assume running inside a conda environment.
-If that's not possible, first follow the official instructions to install
-`prophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
-and `torch <https://pytorch.org/get-started/locally/>`_\ , then skip to
-`Install darts <#install-darts>`_
+From conda-forge
+^^^^^^^^^^^^^^^^
+
+Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
+into troubles.
 
 To create a conda environment for Python 3.7
 (after installing `conda <https://docs.conda.io/en/latest/miniconda.html>`_\ ):
@@ -321,27 +337,20 @@ Don't forget to activate your virtual environment
    conda activate <env-name>
 
 
-
-MAC
-~~~
-
-.. code-block::
-
-   conda install -c conda-forge -c pytorch pip prophet pytorch
+As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
 
-Linux and Windows
-~~~~~~~~~~~~~~~~~
+* Install darts with all available models (recommended): ``conda install -c conda-forge u8darts-all``.
+* Install core only (without neural networks, Prophet or AutoARIMA): ``conda install -c conda-forge u8darts``
 
-.. code-block::
+From PyPI
+^^^^^^^^^
 
-   conda install -c conda-forge -c pytorch pip prophet pytorch cpuonly
+Install darts with all available models: ``pip install darts``.
 
-
-Install darts
-^^^^^^^^^^^^^
-
-Install Darts with all available models: ``pip install darts``.
+If this fails on your platform, please follow the official installation guides for
+`prophet <https://facebook.github.io/prophet/docs/installation.html#python>`_
+and `torch <https://pytorch.org/get-started/locally/>`_\ , then try installing Darts again.
 
 As some models have relatively heavy (or non-Python) dependencies,
 we also maintain the ``u8darts`` package, which provides the following alternate lighter install options:

@@ -43,7 +43,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Shifted Training Dataset" href="darts.utils.data.shifted_dataset.html" />
-    <link rel="prev" title="Horizon-Based Training Dataset" href="darts.utils.data.horizon_based_dataset.html" />
+    <link rel="prev" title="Inference Dataset" href="darts.utils.data.inference_dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -227,31 +227,34 @@
   <span class="target" id="module-darts.utils.data.sequential_dataset"></span><section id="sequential-training-dataset">
 <h1>Sequential Training Dataset<a class="headerlink" href="#sequential-training-dataset" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="darts.utils.data.sequential_dataset.SequentialDataset">
-<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">SequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#SequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.SequentialDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.utils.data.timeseries_dataset.html#darts.utils.data.timeseries_dataset.TrainingDataset" title="darts.utils.data.timeseries_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.timeseries_dataset.TrainingDataset</span></code></a></p>
-<p>A time series dataset containing tuples of (input, output, input_covariates) arrays, where “input” and
-“input_covariates” have length <cite>input_chunk_length</cite>, and “output” has length <cite>output_chunk_length</cite>.</p>
-<p>The target and covariates series are sliced together, and therefore must have the same length.
-In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each
+<dt id="darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">DualCovariatesSequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#DualCovariatesSequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="darts.utils.data.training_dataset.DualCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.DualCovariatesTrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of
+(past_target, historic_future_covariates, future_covariates, future_target).
+The “past” series (incl <cite>historic_future_covariates</cite>) have length <cite>input_chunk_length</cite>
+and the “future” series have length <cite>output_chunk_length</cite>. The “future” series are immediately consecutive
+to the “past” series. The slicing of past and future covariates matches that of past and future targets,
+respectively. The slicing itself relies on time indexes to align the series if they have unequal lengths.</p>
+<p>Each series must be long enough to contain at least one (input, output) pair; i.e., each
 series must have length at least <cite>input_chunk_length + output_chunk_length</cite>.
 If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
 <p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
 a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
 lengths, they will contain different numbers of slices. Therefore, some particular slices may
 be sampled more often than others if they belong to shorter time series.</p>
-<p>The recommended use of this class is to either build it from a list of <cite>TimeSeries</cite> (if all your series fit
-in memory), or implement your own <cite>Sequence</cite> of time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
-<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing covariates. If this parameter is set,
-the provided sequence must have the same length as that of <cite>target_series</cite>.</p></li>
-<li><p><strong>input_chunk_length</strong> – The length of the emitted input series.</p></li>
-<li><p><strong>output_chunk_length</strong> – The length of the emitted output series.</p></li>
-<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
-per time series. It can be used in order to have an upper bound on the total size of the dataset and
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in the sequence must have a time span large enough to contain all the required slices.
+The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of tuples that can be produced per time series.
+It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
@@ -259,19 +262,157 @@ most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py method">
-<dt id="darts.utils.data.sequential_dataset.SequentialDataset.count">
-<code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span> &#x2192; integer – return number of occurrences of value<a class="headerlink" href="#darts.utils.data.sequential_dataset.SequentialDataset.count" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="darts.utils.data.sequential_dataset.SequentialDataset.index">
-<code class="sig-name descname">index</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="optional">[</span>, <em class="sig-param">start</em><span class="optional">[</span>, <em class="sig-param">stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; integer – return first index of value.<a class="headerlink" href="#darts.utils.data.sequential_dataset.SequentialDataset.index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raises ValueError if the value is not present.</p>
-<p>Supporting start and stop arguments is optional, but
-recommended.</p>
 </dd></dl>
 
+<dl class="py class">
+<dt id="darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">FutureCovariatesSequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#FutureCovariatesSequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.FutureCovariatesTrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of (past_target, future_covariates, future_target).
+The “past” series have length <cite>input_chunk_length</cite> and the “future” series have
+length <cite>output_chunk_length</cite>. The “future” series are immediately consecutive to the “past” series.
+The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
+itself relies on time indexes to align the series if they have unequal lengths.</p>
+<p>Each series must be long enough to contain at least one (input, output) pair; i.e., each
+series must have length at least <cite>input_chunk_length + output_chunk_length</cite>.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in the sequence must have a time span large enough to contain all the required slices.
+The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of tuples that can be produced per time series.
+It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">MixedCovariatesSequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#MixedCovariatesSequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.MixedCovariatesTrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of
+(past_target, past_covariates, historic_future_covariates, future_covariates, future_target).
+The “past” series (incl <cite>historic_future_covariates</cite>) have length <cite>input_chunk_length</cite>
+and the “future” series have length <cite>output_chunk_length</cite>. The “future” series are immediately consecutive
+to the “past” series. The slicing of past and future covariates matches that of past and future targets,
+respectively. The slicing itself relies on time indexes to align the series if they have unequal lengths.</p>
+<p>Each series must be long enough to contain at least one (input, output) pair; i.e., each
+series must have length at least <cite>input_chunk_length + output_chunk_length</cite>.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in the sequence must have a time span large enough to contain all the required slices.
+The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of tuples that can be produced per time series.
+It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">PastCovariatesSequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#PastCovariatesSequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="darts.utils.data.training_dataset.PastCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.PastCovariatesTrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of (past_target, past_covariates, future_target).
+The “past” series have length <cite>input_chunk_length</cite> and the “future” series have
+length <cite>output_chunk_length</cite>. The “future” series are immediately consecutive to the “past” series.
+The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
+itself relies on time indexes to align the series if they have unequal lengths.</p>
+<p>Each series must be long enough to contain at least one (input, output) pair; i.e., each
+series must have length at least <cite>input_chunk_length + output_chunk_length</cite>.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past-observed covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in the sequence must have a time span large enough to contain all the required slices.
+The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of tuples that can be produced per time series.
+It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset">
+<em class="property">class </em><code class="sig-prename descclassname">darts.utils.data.sequential_dataset.</code><code class="sig-name descname">SplitCovariatesSequentialDataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target_series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">12</span></em>, <em class="sig-param"><span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#SplitCovariatesSequentialDataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.SplitCovariatesTrainingDataset</span></code></a></p>
+<p>A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target).
+The “past” series have length <cite>input_chunk_length</cite> and the “future” series have
+length <cite>output_chunk_length</cite>. The “future” series are immediately consecutive to the “past” series.
+The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
+itself relies on time indexes to align the series if they have unequal lengths.</p>
+<p>Each series must be long enough to contain at least one (input, output) pair; i.e., each
+series must have length at least <cite>input_chunk_length + output_chunk_length</cite>.
+If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</p>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>past_covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past-observed covariates. If this parameter is set,
+the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
+covariates in the sequence must have a time span large enough to contain all the required slices.
+The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
+<li><p><strong>future_covariates</strong> – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates. This has to follow
+the same constraints as <cite>past_covariates</cite>.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>max_samples_per_ts</strong> – This is an upper bound on the number of tuples that can be produced per time series.
+It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -282,7 +423,7 @@ recommended.</p>
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.utils.data.horizon_based_dataset.html" title="previous page">Horizon-Based Training Dataset</a>
+    <a class='left-prev' id="prev-link" href="darts.utils.data.inference_dataset.html" title="previous page">Inference Dataset</a>
     <a class='right-next' id="next-link" href="darts.utils.data.shifted_dataset.html" title="next page">Shifted Training Dataset</a>
 
               </div>

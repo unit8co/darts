@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Kalman Filter &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
@@ -42,8 +42,8 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Standard Regression model" href="darts.models.linear_regression_model.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.models.gaussian_process_filter.html" />
+    <link rel="next" title="Linear Regression model" href="darts.models.linear_regression_model.html" />
+    <link rel="prev" title="Gaussian Processes" href="darts.models.gaussian_process_filter.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -69,7 +69,7 @@
             <a class="nav-link" href="../README.html">Home</a>
         </li>
         
-        <li class="nav-item ">
+        <li class="nav-item active">
             <a class="nav-link" href="darts.html">API Reference</a>
         </li>
         
@@ -121,6 +121,128 @@
         
         
         
+          
+            
+                <li class="">
+                    <a href="darts.dataprocessing.html">Data Processing</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.datasets.html">Datasets</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.metrics.html">Metrics</a>
+                </li>
+            
+          
+            
+  
+                <li class="active">
+                    <a href="darts.models.html">Models</a>
+                    <ul>
+                    
+                        <li class="">
+                            <a href="darts.models.arima.html">ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.auto_arima.html">Auto-ARIMA</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.baselines.html">Baseline Models</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.block_rnn_model.html">Block Recurrent Neural Networks</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.fft.html">Fast Fourier Transform</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.gaussian_process_filter.html">Gaussian Processes</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="">Kalman Filter</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.linear_regression_model.html">Linear Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.moving_average.html">Moving Average</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.nbeats.html">N-BEATS</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.prophet.html">Facebook Prophet</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.random_forest.html">Random Forest</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_ensemble_model.html">Regression ensemble model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.regression_model.html">Regression Model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.rnn_model.html">Recurrent Neural Networks</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.tcn_model.html">Temporal Convolutional Network</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.theta.html">Theta Method</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.transformer_model.html">Transformer Model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.varima.html">VARIMA</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.utils.html">Utils</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="darts.timeseries.html">Timeseries</a>
+                </li>
+            
+          
+        
         
         
         
@@ -150,16 +272,17 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.kalman_filter"></span><dl class="py class">
+  <span class="target" id="module-darts.models.kalman_filter"></span><section id="kalman-filter">
+<h1>Kalman Filter<a class="headerlink" href="#kalman-filter" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
 <dt id="darts.models.kalman_filter.KalmanFilter">
 <em class="property">class </em><code class="sig-prename descclassname">darts.models.kalman_filter.</code><code class="sig-name descname">KalmanFilter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dim_x</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">x_init</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">P</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">Q</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">R</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">H</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">F</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>numpy.array<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kf</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>filterpy.kalman.kalman_filter.KalmanFilter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/kalman_filter.html#KalmanFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.kalman_filter.KalmanFilter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.filtering_model.html#darts.models.filtering_model.FilteringModel" title="darts.models.filtering_model.FilteringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.filtering_model.FilteringModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
-<p>KalmanFilter model
-This model implements a Kalman filter over a time series (without control signal).</p>
+<p>This model implements a Kalman filter over a time series (without control signal).</p>
 <p>The key method is <cite>KalmanFilter.filter()</cite>.
 It considers the provided time series as containing (possibly noisy) observations z obtained from a
 (possibly noisy) linear dynamical system with hidden state x. The function <cite>filter(series)</cite> returns a new
-<cite>TimeSeries</cite> containing the mean values of the state x, as inferred by the Kalman filter from
+<cite>TimeSeries</cite> describing the distribution of the state x, as inferred by the Kalman filter from
 sequentially observing z from <cite>series</cite>.
 Depending on the use case, this can be used to de-noise a series or infer the underlying hidden state of the
 data generating process (assuming notably that the dynamical system generating the data is known, as captured
@@ -207,15 +330,9 @@ This must be a deterministic series (containing one sample).</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt id="darts.models.kalman_filter.KalmanFilter.min_train_series_length">
-<em class="property">property </em><code class="sig-name descname">min_train_series_length</code><a class="headerlink" href="#darts.models.kalman_filter.KalmanFilter.min_train_series_length" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class property defining the minimum required length for the series.
-This function/property should be overridden if a value different than 3 is required.</p>
 </dd></dl>
 
-</dd></dl>
-
+</section>
 
 
               </div>
@@ -223,8 +340,8 @@ This function/property should be overridden if a value different than 3 is requi
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.models.gaussian_process_filter.html" title="previous page">&lt;no title&gt;</a>
-    <a class='right-next' id="next-link" href="darts.models.linear_regression_model.html" title="next page">Standard Regression model</a>
+    <a class='left-prev' id="prev-link" href="darts.models.gaussian_process_filter.html" title="previous page">Gaussian Processes</a>
+    <a class='right-next' id="next-link" href="darts.models.linear_regression_model.html" title="next page">Linear Regression model</a>
 
               </div>
               

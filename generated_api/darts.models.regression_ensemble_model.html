@@ -163,10 +163,6 @@
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.ensemble_model.html">Ensemble Model Base Class</a>
-                        </li>
-                    
-                        <li class="">
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
@@ -175,15 +171,19 @@
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.filtering_model.html">Filtering Model Base Class</a>
+                            <a href="darts.models.gaussian_process_filter.html">Gaussian Processes</a>
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.forecasting_model.html">Forecasting Model Base Classes</a>
+                            <a href="darts.models.kalman_filter.html">Kalman Filter</a>
                         </li>
                     
                         <li class="">
-                            <a href="darts.models.linear_regression_model.html">Standard Regression model</a>
+                            <a href="darts.models.linear_regression_model.html">Linear Regression model</a>
+                        </li>
+                    
+                        <li class="">
+                            <a href="darts.models.moving_average.html">Moving Average</a>
                         </li>
                     
                         <li class="">
@@ -216,10 +216,6 @@
                     
                         <li class="">
                             <a href="darts.models.theta.html">Theta Method</a>
-                        </li>
-                    
-                        <li class="">
-                            <a href="darts.models.torch_forecasting_model.html">Torch Forecasting Model Base Class</a>
                         </li>
                     
                         <li class="">
@@ -278,9 +274,10 @@
                 
   <span class="target" id="module-darts.models.regression_ensemble_model"></span><section id="regression-ensemble-model">
 <h1>Regression ensemble model<a class="headerlink" href="#regression-ensemble-model" title="Permalink to this headline">¶</a></h1>
+<p>An ensemble model which uses a regression model to compute the ensemble forecast.</p>
 <dl class="py class">
 <dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel">
-<em class="property">class </em><code class="sig-prename descclassname">darts.models.regression_ensemble_model.</code><code class="sig-name descname">RegressionEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">regression_train_n_points</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">regression_model</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/regression_ensemble_model.html#RegressionEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.regression_ensemble_model.</code><code class="sig-name descname">RegressionEnsembleModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">regression_train_n_points</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">regression_model</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/regression_ensemble_model.html#RegressionEnsembleModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.ensemble_model.html#darts.models.ensemble_model.EnsembleModel" title="darts.models.ensemble_model.EnsembleModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.ensemble_model.EnsembleModel</span></code></a></p>
 <p>Class for ensemble models using a regression model for ensembling individual models’ predictions.
 The provided regression model must implement fit() and predict() methods
@@ -300,7 +297,7 @@ Default: <cite>darts.model.LinearRegressionModel(fit_intercept=False)</cite></p>
 </dl>
 <dl class="py method">
 <dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.backtest" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes error scores between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual values.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -321,7 +318,8 @@ newly expanded input sequence will be fed to the model to produce the new output
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 <li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time.
@@ -382,7 +380,7 @@ It is left to classes inheriting from EnsembleModel to do so appropriately when 
 
 <dl class="py method">
 <dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">darts.models.forecasting_model.ForecastingModel</a><span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -419,7 +417,8 @@ forcing <cite>n_jobs = 1</cite>.</p>
 <li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
 respective hyperparameter.</p></li>
 <li><p><strong>series</strong> – The TimeSeries instance used as input and target for training.</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
 <li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
 of <cite>training_series</cite> from which predictions will be made to evaluate the model.
@@ -444,14 +443,14 @@ Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite
 along with a dictionary containing these best hyper-parameters.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.models.forecasting_model.html#darts.models.forecasting_model.ForecastingModel" title="darts.models.forecasting_model.ForecastingModel">ForecastingModel</a>, Dict</p>
+<dd class="field-odd"><p>ForecastingModel, Dict</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="darts.models.regression_ensemble_model.RegressionEnsembleModel.historical_forecasts">
-<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.regression_ensemble_model.RegressionEnsembleModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the historical forecasts the model would have produced with an expanding training window
 and (by default) returns a time series created from the last point of each of these individual forecasts.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -470,7 +469,8 @@ newly expanded input sequence will be fed to the model to produce the new output
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts.</p></li>
-<li><p><strong>covariates</strong> – An optional covariate series. This applies only if the model supports covariates.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 <li><p><strong>start</strong> – The first point of time at which a prediction is computed for a future time.

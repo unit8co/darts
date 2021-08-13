@@ -496,7 +496,10 @@ div.rendered_html tbody tr:hover {
     <span class="n">dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihoodModel</span><span class="p">())</span>
-<span class="n">deeptcn</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span> <span class="n">covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">deeptcn</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -504,22 +507,22 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5eae7cf7887c4d98993221df8878f1de", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ab7e37a5c58949889a3ab0210c9db5d4", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: -20.6177
+Training loss: -20.0262
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">deeptcn</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">deeptcn</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">target_val</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
@@ -536,7 +539,7 @@ Training loss: -20.6177
 <section id="Daily-energy-production">
 <h2>Daily energy production<a class="headerlink" href="#Daily-energy-production" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -569,7 +572,7 @@ Training loss: -20.6177
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -584,7 +587,8 @@ Training loss: -20.6177
     <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
     <span class="n">num_filters</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihoodModel</span><span class="p">())</span>
-<span class="n">deeptcn</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">deeptcn</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -592,24 +596,24 @@ Training loss: -20.6177
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b7a4f2874f8a443c8985a6630cf92cb6", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b8ea97726ce94028bcfca94e27a1fe67", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: -249.6090
+Training loss: -249.5194
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_en</span> <span class="o">=</span> <span class="n">deeptcn</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">series_en_transformed</span><span class="p">,</span>
-    <span class="n">covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
     <span class="n">num_samples</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
     <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
@@ -623,7 +627,7 @@ Training loss: -249.6090
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8ea5e2df59684461a4c2bd45322b5fa9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "92653e1e76b947bdb0a984458d681613", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:

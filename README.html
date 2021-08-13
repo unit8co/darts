@@ -149,6 +149,10 @@
             <a href="#high-level-introductions" class="nav-link">High Level Introductions</a>
         </li>
     
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#articles-on-selected-topics" class="nav-link">Articles on Selected Topics</a>
+        </li>
+    
             </ul>
         </li>
     
@@ -177,7 +181,7 @@
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#installation-guide" class="nav-link">Installation Guide</a>
+            <a href="#id1" class="nav-link">Installation Guide</a>
         </li>
     
     </ul>
@@ -198,10 +202,11 @@
 <a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png" /></a>
 <hr class="docutils" />
 <a class="reference external image-reference" href="https://badge.fury.io/py/darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master" /></a>
+<a class="reference external image-reference" href="https://anaconda.org/conda-forge/u8darts-all"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/badge/python-3.7+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.7+-blue.svg" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master" /></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/u8darts"><img alt="Downloads" src="https://pepy.tech/badge/u8darts" /></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/darts"><img alt="Downloads" src="https://pepy.tech/badge/darts" /></a>
 <p><strong>darts</strong> is a Python library for easy manipulation and forecasting of time series.
@@ -224,6 +229,14 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 <li><p><a class="reference external" href="https://www.youtube.com/watch?v=Sx-uI-PypmU&amp;t=8s&amp;ab_channel=Unit8">Introductory Video</a></p></li>
 </ul>
 </section>
+<section id="articles-on-selected-topics">
+<h3>Articles on Selected Topics<a class="headerlink" href="#articles-on-selected-topics" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">Training Models on Multiple Time Series</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">Using Past and Future Covariates</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">Temporal Convolutional Networks and Forecasting</a></p></li>
+</ul>
+</section>
 </section>
 <section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
@@ -232,7 +245,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
 </pre></div>
 </div>
-<p>For more detailed install instructions you can refer to our installation guide at the end of this page.</p>
+<p>For more detailed install instructions you can refer to our <a class="reference external" href="#installation-guide">installation guide</a> at the end of this page.</p>
 </section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
@@ -280,8 +293,12 @@ ARIMA) to deep learning models (such as N-BEATS). See table of models below.</p>
 <p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.</p>
 <p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
-<p><strong>Regressive Models:</strong> Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models)</p>
+<p><strong>Regression Models:</strong> Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).</p>
+<p><strong>Multiple series training:</strong> All neural networks, as well as <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s (incl. <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and
+<code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>) support being trained on multiple series.</p>
+<p><strong>Past and Future Covariates support:</strong> Some models support past-observed and/or future-known covariate time series
+as inputs for producing forecasts.</p>
 <p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p>
 <p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
 time series; this can for instance be used to get confidence intervals.</p>
@@ -370,20 +387,20 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p>Regression Models (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> and <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> and <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>)</p></td>
+<td><p>x</p></td>
 <td><p>x</p></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
+<td><p>x</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
-<td><p>x</p></td>
+<td></td>
 <td><p>x</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
@@ -392,7 +409,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
-<td><p>( x )</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
 <td><p>x</p></td>
@@ -400,7 +417,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
-<td><p>( x )</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
 <td><p>x</p></td>
@@ -408,7 +425,7 @@ on bringing more models and features.</p>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
-<td><p>( x )</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
 <td><p>x</p></td>
@@ -416,7 +433,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
-<td><p>( x )</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p>Naive Baselines</p></td>
 <td><p>x</p></td>
@@ -439,15 +456,12 @@ We welcome pull requests and issues on GitHub.</p>
 <h2>Contact Us<a class="headerlink" href="#contact-us" title="Permalink to this headline">¶</a></h2>
 <p>If what you want to tell us is not a suitable github issue, feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other inquiries.</p>
 </section>
-<section id="installation-guide">
-<h2>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h2>
+<section id="id1">
+<h2>Installation Guide<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
-<p>The following steps assume running inside a conda environment.
-If that’s not possible, first follow the official instructions to install
-<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">prophet</a>
-and <a class="reference external" href="https://pytorch.org/get-started/locally/">torch</a>, then skip to
-<a class="reference external" href="#install-darts">Install darts</a></p>
+<p>Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
+into troubles.</p>
 <p>To create a conda environment for Python 3.7
 (after installing <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">conda</a>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
@@ -457,13 +471,15 @@ and <a class="reference external" href="https://pytorch.org/get-started/locally/
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">prophet</span> <span class="n">pytorch</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="o">-</span><span class="n">c</span> <span class="n">pytorch</span> <span class="n">pip</span> <span class="n">prophet</span> <span class="n">pytorch</span> <span class="n">cpuonly</span>
-</pre></div>
-</div>
-<p>Install Darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
+<p>As some models have relatively heavy dependencies, we provide two conda-forge packages:</p>
+<ul class="simple">
+<li><p>Install darts with all available models (recommended): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">u8darts-all</span></code>.</p></li>
+<li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">u8darts</span></code></p></li>
+</ul>
+<p>Install darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
+<p>If this fails on your platform, please follow the official installation guides for
+<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">prophet</a>
+and <a class="reference external" href="https://pytorch.org/get-started/locally/">torch</a>, then try installing Darts again.</p>
 <p>As some models have relatively heavy (or non-Python) dependencies,
 we also maintain the <code class="docutils literal notranslate"><span class="pre">u8darts</span></code> package, which provides the following alternate lighter install options:</p>
 <ul class="simple">

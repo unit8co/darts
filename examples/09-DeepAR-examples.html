@@ -527,7 +527,10 @@ div.rendered_html tbody tr:hover {
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihoodModel</span><span class="p">()</span>
 <span class="p">)</span>
-<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span> <span class="n">covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span>
+             <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+             <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -535,14 +538,14 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "95424a45a5bd48a49e5c63d7f583ca89", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "e80ae94328ce4a07978f172fd5572dcb", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: -50.9524
+Training loss: -51.6939
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -626,7 +629,7 @@ Training loss: -50.9524
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_en</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span>
-             <span class="n">covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span>
+             <span class="n">future_covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span>
              <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -635,7 +638,7 @@ Training loss: -50.9524
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "902450eefe8349218cf4398313c7b353", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "dead5be6189e4417832abd088f02fa2d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -651,7 +654,7 @@ Training loss: -56.0111
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_en</span> <span class="o">=</span> <span class="n">model_en</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series_en_transformed</span><span class="p">,</span>
-                                            <span class="n">covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
+                                            <span class="n">future_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
                                             <span class="n">num_samples</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
                                             <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
                                             <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
@@ -665,7 +668,7 @@ Training loss: -56.0111
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2af70e082e3040498d4773678d59ddcd", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9b38dce832464b07afd2cca6da70287c", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:

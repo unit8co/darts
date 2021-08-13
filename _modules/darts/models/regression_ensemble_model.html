@@ -151,16 +151,14 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Regression ensemble model</span>
 <span class="sd">-------------------------</span>
-<span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
 
+<span class="sd">An ensemble model which uses a regression model to compute the ensemble forecast.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">EnsembleModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">RegressionModel</span><span class="p">,</span>
-    <span class="n">RandomForest</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">EnsembleModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">RegressionModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -190,14 +188,23 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">regression_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regression_model</span><span class="p">,</span> <span class="n">RegressionModel</span><span class="p">):</span>
+            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># scikit-learn like model</span>
+            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">regression_model</span><span class="p">)</span>
 
-        <span class="n">regression_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags_exog</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">regression_model</span><span class="p">)</span>
-        <span class="n">raise_if</span><span class="p">(</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_exog</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span>
-            <span class="s2">&quot;`lags` of regression model must be `None` and `lags_exog` must be [0]. Given: </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2">&quot;</span>
-            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="p">,</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_exog</span><span class="p">)</span>
-            <span class="p">)</span>
+        <span class="n">raise_if</span><span class="p">(</span>
+            <span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_historical_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">regression_model</span><span class="o">.</span><span class="n">lags_future_covariates</span> <span class="o">!=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;`lags`, `lags_historical_covariates` and `lags_past_covariates` of regression model must be `None`&quot;</span>
+             <span class="sa">f</span><span class="s2">&quot;and `lags_future_covariates` must be [0]. Given:</span><span class="se">\n</span><span class="s2">`lags`: </span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">,&quot;</span>
+             <span class="sa">f</span><span class="s2">&quot;`lags_historical_covariates`: </span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags_historical_covariates</span><span class="si">}</span><span class="s2">,&quot;</span>
+             <span class="sa">f</span><span class="s2">&quot;`lags_past_covariates`: </span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2"> and `lags_future_covariates`&quot;</span>
+             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags_future_covariates</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
         <span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="o">=</span> <span class="n">regression_train_n_points</span>
 
@@ -206,9 +213,9 @@
 
         <span class="c1"># spare train_n_points points to serve as regression target</span>
         <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,</span>
-                 <span class="s2">&quot;regression_train_n_points parameter too big (must be smaller or equal&quot;</span> <span class="o">+</span>
-                 <span class="s2">&quot; to the number of points in training_series)&quot;</span><span class="p">,</span>
-                 <span class="n">logger</span><span class="p">)</span>
+                 <span class="s2">&quot;regression_train_n_points parameter too big (must be smaller or equal to the number of points in &quot;</span>
+                 <span class="s2">&quot;training_series)&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
         <span class="n">forecast_training</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[:</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">]</span>
         <span class="n">regression_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">:]</span>
 
@@ -222,14 +229,14 @@
             <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">))</span>
 
         <span class="c1"># train the regression model on the individual models&#39; predictions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">regression_target</span><span class="p">,</span> <span class="n">exog</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">regression_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span>
 
         <span class="c1"># prepare the forecasting models for further predicting by fitting</span>
         <span class="c1"># them with the entire data</span>
 
         <span class="c1"># Some models (incl. Neural-Network based models) may need to be &#39;reset&#39;</span>
         <span class="c1"># to allow being retrained from scratch</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">untrained_model</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;untrained_model&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">untrained_model</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;untrained_model&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">model</span>
                        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">]</span>
 
         <span class="c1"># fit the forecasting models</span>
@@ -237,7 +244,7 @@
             <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_ensemble_model.html#darts.models.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">exog</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">predictions</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

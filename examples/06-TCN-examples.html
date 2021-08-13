@@ -429,7 +429,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -447,14 +447,6 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">SunspotsDataset</span><span class="p">,</span> <span class="n">EnergyDataset</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
-</pre></div></div>
 </div>
 <section id="Air-passengers-dataset">
 <h2>Air passengers dataset<a class="headerlink" href="#Air-passengers-dataset" title="Permalink to this headline">¶</a></h2>
@@ -501,11 +493,15 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">covariates</span><span class="o">=</span><span class="n">train_month</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val</span><span class="p">,</span> <span class="n">val_covariates</span><span class="o">=</span><span class="n">val_month</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+              <span class="n">past_covariates</span><span class="o">=</span><span class="n">train_month</span><span class="p">,</span>
+              <span class="n">val_series</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+              <span class="n">val_past_covariates</span><span class="o">=</span><span class="n">val_month</span><span class="p">,</span>
+              <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -514,34 +510,36 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-07-02 17:35:25,058] INFO | darts.models.torch_forecasting_model | Train dataset contains 92 samples.
-[2021-07-02 17:35:25,058] INFO | darts.models.torch_forecasting_model | Train dataset contains 92 samples.
-[2021-07-02 17:35:25,062] INFO | darts.models.tcn_model | Number of layers chosen: 2
-[2021-07-02 17:35:25,062] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2021-08-01 13:13:00,823] INFO | darts.models.torch_forecasting_model | Train dataset contains 92 samples.
+[2021-08-01 13:13:00,823] INFO | darts.models.torch_forecasting_model | Train dataset contains 92 samples.
+[2021-08-01 13:13:00,829] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2021-08-01 13:13:00,829] INFO | darts.models.tcn_model | Number of layers chosen: 2
+[2021-08-01 13:13:00,837] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:13:00,837] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "801882aa1a574905bd35d89e3f9d5964", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0081c35ae05c4bc7bf48b5c2004b2899", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
+Training loss: 0.0016, validation loss: 0.0037, best val loss: 0.0037
 </pre></div></div>
 </div>
 <p>Let’s see what we get for a 6-months prediction:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest</span> <span class="o">=</span> <span class="n">model_air</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
-                                          <span class="n">covariates</span><span class="o">=</span><span class="n">month_series</span><span class="p">,</span>
+                                          <span class="n">past_covariates</span><span class="o">=</span><span class="n">month_series</span><span class="p">,</span>
                                           <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
                                           <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
                                           <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -557,7 +555,7 @@ Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7ccd276514a949d2947650e0eac12aed", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7180ae356295453e8ca7c33f4e90f4f3", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -571,7 +569,7 @@ Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
 <h2>Monthly sunspots<a class="headerlink" href="#Monthly-sunspots" title="Permalink to this headline">¶</a></h2>
 <p>Let’s try using the <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> on a more complex and much bigger dataset.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -585,7 +583,7 @@ Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -605,7 +603,7 @@ Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -618,37 +616,39 @@ Training loss: 0.0030, validation loss: 0.0029, best val loss: 0.0029
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-07-02 17:35:44,731] INFO | darts.models.torch_forecasting_model | Train dataset contains 2017 samples.
-[2021-07-02 17:35:44,731] INFO | darts.models.torch_forecasting_model | Train dataset contains 2017 samples.
-[2021-07-02 17:35:44,733] INFO | darts.models.tcn_model | Number of layers chosen: 6
-[2021-07-02 17:35:44,733] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:13:39,307] INFO | darts.models.torch_forecasting_model | Train dataset contains 2017 samples.
+[2021-08-01 13:13:39,307] INFO | darts.models.torch_forecasting_model | Train dataset contains 2017 samples.
+[2021-08-01 13:13:39,310] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:13:39,310] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:13:39,314] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:13:39,314] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9bea73b0ff5140679abf355dedb70cb6", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0b66560e147b4ea087a6531de6a89819", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
+Training loss: 0.0078, validation loss: 0.0346, best val loss: 0.0316
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_sp</span> <span class="o">=</span> <span class="n">model_sun</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series_sp_transformed</span><span class="p">,</span>
-                                          <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-                                          <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
-                                          <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-                                          <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                          <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                                             <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                                             <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                                             <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                             <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">series_sp_transformed</span><span class="p">[</span><span class="mi">2000</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;actual&#39;</span><span class="p">)</span>
 <span class="n">backtest_sp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;backtest (H=12)&#39;</span><span class="p">)</span>
@@ -660,7 +660,7 @@ Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f5da2fe027c4416ba7792f4aea16f74e", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4e31958f83824aa4bf0cf9f645a46092", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -673,7 +673,7 @@ Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
 <section id="Daily-energy-production">
 <h2>Daily energy production<a class="headerlink" href="#Daily-energy-production" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -704,7 +704,7 @@ Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -724,12 +724,12 @@ Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">model_en</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train_en_transformed</span><span class="p">,</span>
-             <span class="n">covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span>
+             <span class="n">past_covariates</span><span class="o">=</span><span class="n">train_day</span><span class="p">,</span>
              <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -739,33 +739,35 @@ Training loss: 0.0080, validation loss: 0.0343, best val loss: 0.0316
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-07-02 17:38:53,994] INFO | darts.models.torch_forecasting_model | Train dataset contains 605 samples.
-[2021-07-02 17:38:53,994] INFO | darts.models.torch_forecasting_model | Train dataset contains 605 samples.
-[2021-07-02 17:38:53,997] INFO | darts.models.tcn_model | Number of layers chosen: 6
-[2021-07-02 17:38:53,997] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:17:10,560] INFO | darts.models.torch_forecasting_model | Train dataset contains 605 samples.
+[2021-08-01 13:17:10,560] INFO | darts.models.torch_forecasting_model | Train dataset contains 605 samples.
+[2021-08-01 13:17:10,563] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:17:10,563] INFO | darts.models.tcn_model | Number of layers chosen: 6
+[2021-08-01 13:17:10,570] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:17:10,570] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3564eed22e4a4b8da6e2ee2119ce83b9", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a83d39117c5b4c58b072742a361ef12d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0084
+Training loss: 0.0083
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">backtest_en</span> <span class="o">=</span> <span class="n">model_en</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series_en_transformed</span><span class="p">,</span>
-                                            <span class="n">covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
+                                            <span class="n">past_covariates</span><span class="o">=</span><span class="n">day_series</span><span class="p">,</span>
                                             <span class="n">start</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
                                             <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
                                             <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -783,13 +785,22 @@ Training loss: 0.0084
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "63c4702274a746be9819f82b222b0d2a", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6cc86cacffaf4dadbf0b7788438174d7", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <img alt="../_images/examples_06-TCN-examples_19_1.png" src="../_images/examples_06-TCN-examples_19_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
 </div>
 </div>
 </section>

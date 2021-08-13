@@ -422,7 +422,7 @@ div.rendered_html tbody tr:hover {
 <p>In this notebook, we show an example of how <strong>N-BEATS</strong> can be used with darts. If you are new to darts, we recommend you first follow the <code class="docutils literal notranslate"><span class="pre">01-darts-intro.ipynb</span></code> notebook.</p>
 <p><strong>N-BEATS</strong> is a state-of-the-art model that shows the potential of <strong>pure DL architectures</strong> in the context of the time-series forecasting. It outperforms well-established statistical approaches on the <em>M3</em>, and <em>M4</em> competitions. For more details on the model, see: <a class="reference external" href="https://arxiv.org/pdf/1905.10437.pdf">https://arxiv.org/pdf/1905.10437.pdf</a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -432,8 +432,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -448,14 +448,6 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">EnergyDataset</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
-</pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -496,7 +488,7 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <p>To simplify things, we work with the daily generation, and we fill the missing values present in the data by using the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -523,7 +515,7 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <p>We split the data into train and validation sets. Normally we would need to use an additional test set to validate the model on unseen data, but we will skip it for this example.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -570,22 +562,24 @@ Importing plotly failed. Interactive plots will not work.
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-02-04 11:06:46,285] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
-[2021-02-04 11:06:46,285] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:20:03,298] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:20:03,298] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:20:03,353] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:20:03,353] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7524e4f9f7c440d294686e2265025bf7", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0ea31b4ed35c47ee8122e492b3a71ce9", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0123, validation loss: 0.0207, best val loss: 0.0207
+Training loss: 0.0059, validation loss: 0.0214, best val loss: 0.0191
 </pre></div></div>
 </div>
 <p>Let’s see the historical forecasts the model would have produced with an expanding training window, and a forecasting horizon of 7:</p>
@@ -610,29 +604,13 @@ Training loss: 0.0123, validation loss: 0.0207, best val loss: 0.0207
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "68c91fc9df5b46dfaa518b54ce45fac1", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-[2021-02-04 11:08:00,656] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "85d8e959768a42889be359f1afbc6271", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-NBEATS-examples_17_3.png" src="../_images/examples_08-NBEATS-examples_17_3.png" />
+<img alt="../_images/examples_08-NBEATS-examples_17_1.png" src="../_images/examples_08-NBEATS-examples_17_1.png" />
 </div>
 </div>
 </section>
@@ -640,7 +618,7 @@ Training loss: 0.0123, validation loss: 0.0207, best val loss: 0.0207
 <h3>Interpretable model<a class="headerlink" href="#Interpretable-model" title="Permalink to this headline">¶</a></h3>
 <p>N-BEATS offers an <em>interpretable architecture</em> consisting of two stacks: A <strong>trend</strong> stack and a <strong>seasonality</strong> stack. The architecture is designed so that: - The trend component is removed from the input before it is fed into the seasonality stack - The <strong>partial forecasts of trend and seasonality are available</strong> as separate interpretable outputs</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -660,7 +638,7 @@ Training loss: 0.0123, validation loss: 0.0207, best val loss: 0.0207
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -673,27 +651,29 @@ Training loss: 0.0123, validation loss: 0.0207, best val loss: 0.0207
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2021-02-04 11:08:16,921] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
-[2021-02-04 11:08:16,921] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:23:02,509] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:23:02,509] INFO | darts.models.torch_forecasting_model | Train dataset contains 940 samples.
+[2021-08-01 13:23:02,523] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:23:02,523] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bb7fe7701d0d45f39c358f1fab6be707", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ec7826ef13d34f638394962b72a2b30d", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0133, validation loss: 0.0245, best val loss: 0.0220
+Training loss: 0.0093, validation loss: 0.0240, best val loss: 0.0216
 </pre></div></div>
 </div>
 <p>Let’s see the historical forecasts the model would have produced with an expanding training window, and a forecasting horizon of 7:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -713,29 +693,13 @@ Training loss: 0.0133, validation loss: 0.0245, best val loss: 0.0220
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4b4c8b4897814138aaeb8d666950eac8", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-[2021-02-04 11:08:56,108] WARNING | darts.timeseries | The inferred frequency does not match the value of the &#34;freq&#34; argument.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "29321abcc15a445aa9ece0325623a13c", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-NBEATS-examples_23_3.png" src="../_images/examples_08-NBEATS-examples_23_3.png" />
+<img alt="../_images/examples_08-NBEATS-examples_23_1.png" src="../_images/examples_08-NBEATS-examples_23_1.png" />
 </div>
 </div>
 </section>

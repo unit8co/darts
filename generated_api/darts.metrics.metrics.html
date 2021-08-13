@@ -239,6 +239,41 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt id="darts.metrics.metrics.dtw_metric">
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">dtw_metric</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], metric: Callable[[Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]]], Union[float, numpy.ndarray]] = &lt;function mae&gt;, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False, **kwargs</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#dtw_metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.dtw_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
+Enables comparison between series of different lengths, phases and time indices.</p>
+<p>Defaults to using mae as a metric.</p>
+<p>See darts.dataprocessing.dtw.dtw for more supported parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
+<li><p><strong>metric</strong> – The selected metric with signature ‘[[TimeSeries, TimeSeries], float]’ to use. Default: <cite>mae</cite>.</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result of calling metric(warped_series1, warped_series2)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py data">
 <dt id="darts.metrics.metrics.logger">
 <code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger darts.metrics.metrics (INFO)&gt;</em><a class="headerlink" href="#darts.metrics.metrics.logger" title="Permalink to this definition">¶</a></dt>
@@ -525,8 +560,8 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 <dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span>.</p>
 <p>See <a class="reference external" href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Coefficient of determination wikipedia page</a>
 for details about the <span class="math notranslate nohighlight">\(R^2\)</span> score and how it is computed.
-Please note that this metric is not symmetric, <cite>series1</cite> should correspond to the ground truth series,
-whereas <cite>series2</cite> should correspond to the predicted series.</p>
+Please note that this metric is not symmetric, <cite>actual_series</cite> should correspond to the ground truth series,
+whereas <cite>pred_series</cite> should correspond to the predicted series.</p>
 <p>If any of the series is stochastic (containing several samples), the median sample value is considered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

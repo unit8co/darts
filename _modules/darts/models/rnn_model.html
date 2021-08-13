@@ -156,13 +156,13 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span>
+<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">DualCovariatesTorchModel</span>
 <span class="kn">from</span> <span class="nn">..utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
-<span class="kn">from</span> <span class="nn">..utils.data</span> <span class="kn">import</span> <span class="n">ShiftedDataset</span>
+<span class="kn">from</span> <span class="nn">..utils.data</span> <span class="kn">import</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">,</span> <span class="n">TrainingDataset</span>
 <span class="kn">from</span> <span class="nn">..utils.likelihood_models</span> <span class="kn">import</span> <span class="n">LikelihoodModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -230,7 +230,7 @@
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># data is of size (batch_size, input_length, input_size)</span>
-        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># out is of size (batch_size, input_length, hidden_dim)</span>
         <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">h</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
@@ -245,7 +245,7 @@
         <span class="k">return</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">last_hidden_state</span>
 
 
-<div class="viewcode-block" id="RNNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.rnn_model.html#darts.models.rnn_model.RNNModel">[docs]</a><span class="k">class</span> <span class="nc">RNNModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="RNNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.rnn_model.html#darts.models.rnn_model.RNNModel">[docs]</a><span class="k">class</span> <span class="nc">RNNModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">DualCovariatesTorchModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;RNN&#39;</span><span class="p">,</span>
@@ -269,12 +269,19 @@
 <span class="sd">        * GRU</span>
 
 <span class="sd">        RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:</span>
-<span class="sd">        - previous target value, which will be set to the last known target value for the first prediction,</span>
-<span class="sd">          and for all other predictions it will be set to the previous prediction</span>
-<span class="sd">        - the previous hidden state</span>
-<span class="sd">        - the current covariates (if the model was trained with covariates)</span>
 
-<span class="sd">        For a block version using an RNN model as an encoder only, checkout `BlockRNNModel`.</span>
+<span class="sd">        - previous target value, which will be set to the last known target value for the first prediction,</span>
+<span class="sd">          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),</span>
+<span class="sd">        - the previous hidden state,</span>
+<span class="sd">        - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),</span>
+
+<span class="sd">        This model supports future covariates; and it requires these covariates to extend far enough in the past</span>
+<span class="sd">        and the future (it&#39;s a so-called &quot;dual covariates&quot; model as the future covariates have to be provided both</span>
+<span class="sd">        in the past and the future). The model will complain if the provided `future_covariates` series doesn&#39;t have</span>
+<span class="sd">        an appropriate time span.</span>
+
+<span class="sd">        For a block version using an RNN model as an encoder only and supporting past</span>
+<span class="sd">        covariates, checkout `BlockRNNModel`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -301,6 +308,47 @@
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
+
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{&#39;lr&#39;: 1e-3}`</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training.</span>
+<span class="sd">            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.</span>
+<span class="sd">            Default: `torch.nn.MSELoss()`.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string &quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;, where the initial part of the</span>
+<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
+<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            2021-06-14_09:53:32_torch_model_run_44607.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            `[work_dir]/.darts/runs/`.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            `TimeSeries` is passed to the `fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;input_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
@@ -318,9 +366,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span> <span class="o">=</span> <span class="n">n_rnn_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">training_length</span> <span class="o">=</span> <span class="n">training_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">is_recurrent</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="c1"># samples are made of (past_target, historic_future_covariates, future_covariates, future_target)</span>
+        <span class="c1"># historic_future_covariates and future_covariates have the same width</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="n">target_size</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_num_parameters</span> <span class="o">*</span> <span class="n">output_dim</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">output_dim</span>
         <span class="p">)</span>
@@ -337,15 +389,26 @@
 
     <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-                             <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">ShiftedDataset</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                              <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
-                              <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_length</span><span class="p">,</span>
-                              <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                              <span class="n">shift</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                             <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">_produce_train_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                            <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                            <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">training_length</span><span class="p">,</span>
+                                            <span class="n">shift</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">),</span>
+                     <span class="s1">&#39;RNNModel requires a training dataset of type DualCovariatesShiftedDataset.&#39;</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">train_dataset</span><span class="o">.</span><span class="n">ds_past</span><span class="o">.</span><span class="n">shift</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;RNNModel requires a shifted training dataset with shift=1.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_produce_train_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
+        <span class="c1"># For the RNN we concatenate the past_target with the future_covariates</span>
+        <span class="c1"># (they have the same length because we enforce a Shift dataset for RNNs)</span>
+        <span class="n">model_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span>
+                                <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">past_target</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">model_input</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -353,7 +416,48 @@
             <span class="n">output</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_sample</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">hidden</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_batch_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">roll_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
+
+        <span class="k">if</span> <span class="n">historic_future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates</span>
+            <span class="n">all_covariates</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">historic_future_covariates</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:,</span> <span class="p">:],</span> <span class="n">future_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="n">all_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:],</span> <span class="n">all_covariates</span><span class="p">[:,</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:,</span> <span class="p">:]</span>
+            <span class="n">input_series</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">cov_past</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">input_series</span> <span class="o">=</span> <span class="n">past_target</span>
+            <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
+        <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:])</span>
+        <span class="n">prediction_length</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">while</span> <span class="n">prediction_length</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+
+            <span class="c1"># create new input to model from last prediction and current covariates, if available</span>
+            <span class="n">new_input</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:],</span> <span class="n">cov_future</span><span class="p">[:,</span> <span class="n">prediction_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="n">prediction_length</span><span class="p">,</span> <span class="p">:]],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cov_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+            <span class="c1"># feed new input to model, including the last hidden state from the previous iteration</span>
+            <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">new_input</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="p">)</span>
+
+            <span class="c1"># append prediction to batch prediction array, increase counter</span>
+            <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:])</span>
+            <span class="n">prediction_length</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># bring predictions into desired format and drop unnecessary values</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">batch_prediction</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="n">batch_prediction</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="k">return</span> <span class="n">batch_prediction</span></div>
 </pre></div>
 
               </div>

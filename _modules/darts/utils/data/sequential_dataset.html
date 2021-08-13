@@ -157,12 +157,15 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">.timeseries_dataset</span> <span class="kn">import</span> <span class="n">TrainingDataset</span>
+<span class="kn">from</span> <span class="nn">.training_dataset</span> <span class="kn">import</span> <span class="p">(</span><span class="n">PastCovariatesTrainingDataset</span><span class="p">,</span>
+                               <span class="n">FutureCovariatesTrainingDataset</span><span class="p">,</span>
+                               <span class="n">DualCovariatesTrainingDataset</span><span class="p">,</span>
+                               <span class="n">MixedCovariatesTrainingDataset</span><span class="p">,</span>
+                               <span class="n">SplitCovariatesTrainingDataset</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.shifted_dataset</span> <span class="kn">import</span> <span class="n">GenericShiftedDataset</span>
 
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
 
-
-<div class="viewcode-block" id="SequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.SequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">SequentialDataset</span><span class="p">(</span><span class="n">TrainingDataset</span><span class="p">):</span>
+<div class="viewcode-block" id="PastCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">PastCovariatesSequentialDataset</span><span class="p">(</span><span class="n">PastCovariatesTrainingDataset</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
                  <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -170,11 +173,13 @@
                  <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                  <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A time series dataset containing tuples of (input, output, input_covariates) arrays, where &quot;input&quot; and</span>
-<span class="sd">        &quot;input_covariates&quot; have length `input_chunk_length`, and &quot;output&quot; has length `output_chunk_length`.</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_target).</span>
+<span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
+<span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
+<span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
+<span class="sd">        itself relies on time indexes to align the series if they have unequal lengths.</span>
 
-<span class="sd">        The target and covariates series are sliced together, and therefore must have the same length.</span>
-<span class="sd">        In addition, each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        Each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
 <span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
 <span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
 
@@ -183,23 +188,301 @@
 <span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
 <span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
 
-<span class="sd">        The recommended use of this class is to either build it from a list of `TimeSeries` (if all your series fit</span>
-<span class="sd">        in memory), or implement your own `Sequence` of time series.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in the sequence must have a time span large enough to contain all the required slices.</span>
+<span class="sd">            The joint slicing of the target and covariates is relying on the time axes of both series.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of tuples that can be produced per time series.</span>
+<span class="sd">            It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                        <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                        <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                        <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                        <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                        <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                        <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="FutureCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">FutureCovariatesSequentialDataset</span><span class="p">(</span><span class="n">FutureCovariatesTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, future_covariates, future_target).</span>
+<span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
+<span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
+<span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
+<span class="sd">        itself relies on time indexes to align the series if they have unequal lengths.</span>
+
+<span class="sd">        Each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
+<span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        target_series</span>
 <span class="sd">            One or a sequence of target `TimeSeries`.</span>
-<span class="sd">        covariates:</span>
-<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing covariates. If this parameter is set,</span>
-<span class="sd">            the provided sequence must have the same length as that of `target_series`.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in the sequence must have a time span large enough to contain all the required slices.</span>
+<span class="sd">            The joint slicing of the target and covariates is relying on the time axes of both series.</span>
 <span class="sd">        input_chunk_length</span>
-<span class="sd">            The length of the emitted input series.</span>
+<span class="sd">            The length of the emitted past series.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the emitted output series.</span>
+<span class="sd">            The length of the emitted future series.</span>
 <span class="sd">        max_samples_per_ts</span>
-<span class="sd">            This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced</span>
-<span class="sd">            per time series. It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            This is an upper bound on the number of tuples that can be produced per time series.</span>
+<span class="sd">            It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                        <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                        <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                        <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                        <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                        <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DualCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">DualCovariatesSequentialDataset</span><span class="p">(</span><span class="n">DualCovariatesTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A time series dataset containing tuples of</span>
+<span class="sd">        (past_target, historic_future_covariates, future_covariates, future_target).</span>
+<span class="sd">        The &quot;past&quot; series (incl `historic_future_covariates`) have length `input_chunk_length`</span>
+<span class="sd">        and the &quot;future&quot; series have length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive</span>
+<span class="sd">        to the &quot;past&quot; series. The slicing of past and future covariates matches that of past and future targets,</span>
+<span class="sd">        respectively. The slicing itself relies on time indexes to align the series if they have unequal lengths.</span>
+
+<span class="sd">        Each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
+<span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in the sequence must have a time span large enough to contain all the required slices.</span>
+<span class="sd">            The joint slicing of the target and covariates is relying on the time axes of both series.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of tuples that can be produced per time series.</span>
+<span class="sd">            It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># This dataset is in charge of historical future covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                             <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+        <span class="c1"># This dataset is in charge of serving future covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                               <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                               <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                               <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                               <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                               <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                               <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
+
+
+<div class="viewcode-block" id="MixedCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">MixedCovariatesSequentialDataset</span><span class="p">(</span><span class="n">MixedCovariatesTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A time series dataset containing tuples of</span>
+<span class="sd">        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).</span>
+<span class="sd">        The &quot;past&quot; series (incl `historic_future_covariates`) have length `input_chunk_length`</span>
+<span class="sd">        and the &quot;future&quot; series have length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive</span>
+<span class="sd">        to the &quot;past&quot; series. The slicing of past and future covariates matches that of past and future targets,</span>
+<span class="sd">        respectively. The slicing itself relies on time indexes to align the series if they have unequal lengths.</span>
+
+<span class="sd">        Each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
+<span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in the sequence must have a time span large enough to contain all the required slices.</span>
+<span class="sd">            The joint slicing of the target and covariates is relying on the time axes of both series.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of tuples that can be produced per time series.</span>
+<span class="sd">            It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># This dataset is in charge of serving past covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                             <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+        <span class="c1"># This dataset is in charge of serving historical and future future covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_dual</span> <span class="o">=</span> <span class="n">DualCovariatesSequentialDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                                       <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                                       <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                       <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                       <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+                                        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_dual</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
+
+
+<div class="viewcode-block" id="SplitCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">SplitCovariatesSequentialDataset</span><span class="p">(</span><span class="n">SplitCovariatesTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target).</span>
+<span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
+<span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
+<span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
+<span class="sd">        itself relies on time indexes to align the series if they have unequal lengths.</span>
+
+<span class="sd">        Each series must be long enough to contain at least one (input, output) pair; i.e., each</span>
+<span class="sd">        series must have length at least `input_chunk_length + output_chunk_length`.</span>
+<span class="sd">        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,</span>
+<span class="sd">            the provided sequence must have the same length as that of `target_series`. Moreover, all</span>
+<span class="sd">            covariates in the sequence must have a time span large enough to contain all the required slices.</span>
+<span class="sd">            The joint slicing of the target and covariates is relying on the time axes of both series.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. This has to follow</span>
+<span class="sd">            the same constraints as `past_covariates`.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of tuples that can be produced per time series.</span>
+<span class="sd">            It can be used in order to have an upper bound on the total size of the dataset and</span>
 <span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
@@ -207,65 +490,31 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
+        <span class="c1"># This dataset is in charge of serving past covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                             <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">),</span>
-                     <span class="s1">&#39;The provided sequence of target series must have the same length as &#39;</span>
-                     <span class="s1">&#39;the provided sequence of covariate series.&#39;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># read all time series to get the maximum size</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">-</span> \
-                                      <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+        <span class="c1"># This dataset is in charge of serving future covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">GenericShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                               <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                               <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                               <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                               <span class="n">shift</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                               <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                               <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
-        <span class="c1"># determine the index of the time series.</span>
-        <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
-        <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="c1"># determine the actual number of possible samples in this time series</span>
-        <span class="n">n_samples_in_ts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">n_samples_in_ts</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span>
-                     <span class="s1">&#39;The dataset contains some time series that are too short to contain &#39;</span>
-                     <span class="s1">&#39;`input_chunk_length + `output_chunk_length` (</span><span class="si">{}</span><span class="s1">-th series)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
-
-        <span class="c1"># Determine the index of the forecasting point.</span>
-        <span class="c1"># It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)</span>
-        <span class="n">lh_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">ts_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span><span class="p">))</span> <span class="o">%</span> <span class="n">n_samples_in_ts</span>
-
-        <span class="c1"># The time series index of our forecasting point (indexed from the end of the series):</span>
-        <span class="n">forecast_point_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span>
-
-        <span class="c1"># select input and outputs, using the previously computed indexes</span>
-        <span class="n">input_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">forecast_point_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
-            <span class="c1"># we need this case because &quot;-0&quot; is not supported as an indexing bound</span>
-            <span class="n">output_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">output_target</span> <span class="o">=</span> <span class="n">ts_target</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:</span><span class="o">-</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">]</span>
-
-        <span class="c1"># optionally also produce the input covariate</span>
-        <span class="n">input_covariate</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts_covariate</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">),</span>
-                         <span class="s1">&#39;The dataset contains some target/covariate series &#39;</span>
-                         <span class="s1">&#39;pair that are not the same size (</span><span class="si">{}</span><span class="s1">-th)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
-
-            <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">input_target</span><span class="p">,</span> <span class="n">output_target</span><span class="p">,</span> <span class="n">input_covariate</span></div>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
 </pre></div>
 
               </div>

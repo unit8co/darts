@@ -269,7 +269,8 @@
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
                                             <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
-                                            <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+                                            <span class="n">freq</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                                            <span class="n">columns</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_auto_fill</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>

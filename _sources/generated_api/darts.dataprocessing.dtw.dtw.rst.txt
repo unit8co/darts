@@ -1,5 +1,5 @@
 
-.. automodule:: darts.utils.data.timeseries_dataset
+.. automodule:: darts.dataprocessing.dtw.dtw
    :members:
    :undoc-members:
    :show-inheritance:

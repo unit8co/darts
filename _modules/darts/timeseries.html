@@ -193,10 +193,12 @@
         <span class="c1"># relying on np.nan (which is a float) won&#39;t work very properly.</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">),</span> <span class="s1">&#39;The time series must contain numeric values only.&#39;</span><span class="p">,</span>
                      <span class="n">logger</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;TimeSeries is using a numeric type different from np.float. Not all functionalities &#39;</span>
-                        <span class="s1">&#39;may work properly. It is recommended casting your data to floating point numbers before &#39;</span>
-                        <span class="s1">&#39;using TimeSeries.&#39;</span><span class="p">)</span>
+
+        <span class="n">val_dtype</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">val_dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">val_dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;TimeSeries is using a numeric type different from np.float32 or np.float64. &#39;</span>
+                        <span class="s1">&#39;Not all functionalities may work properly. It is recommended casting your data to floating &#39;</span>
+                        <span class="s1">&#39;point numbers before using TimeSeries.&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">DIMS</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]:</span>
             <span class="c1"># The first dimension represents the time and may be named differently.</span>
@@ -368,7 +370,56 @@
 
         <span class="c1"># We cast the array to float</span>
         <span class="c1"># TODO: is astype() always copying? (might be slightly inefficient if array is already float)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">))</span></div>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+            <span class="c1"># We conserve the float32 type</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise we cast to float64</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TimeSeries.from_csv"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_csv">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_csv</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">_typing</span><span class="o">.</span><span class="n">FilePathOrBuffer</span><span class="p">,</span>
+                 <span class="n">time_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a deterministic TimeSeries instance built from a single CSV file.</span>
+<span class="sd">        One column can be used to represent the time (if not present, the time index will be an Int64Index)</span>
+<span class="sd">        and a list of columns `value_cols` can be used to indicate the values for this time series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filepath_or_buffer</span>
+<span class="sd">            The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function </span>
+<span class="sd">        time_col</span>
+<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex.</span>
+<span class="sd">            If not set, the pandas Int64Index will be used. </span>
+<span class="sd">        value_cols</span>
+<span class="sd">            A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to</span>
+<span class="sd">            `None`, all columns from the CSV file will be used (except for the time_col, if specified) </span>
+<span class="sd">        fill_missing_dates</span>
+<span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
+<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">        freq</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
+<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to be passed to `pandas.read_csv` function</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A univariate or multivariate deterministic TimeSeries constructed from the inputs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="o">=</span><span class="n">filepath_or_buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> 
+                                         <span class="n">time_col</span><span class="o">=</span><span class="n">time_col</span><span class="p">,</span> 
+                                         <span class="n">value_cols</span><span class="o">=</span><span class="n">value_cols</span><span class="p">,</span> 
+                                         <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> 
+                                         <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1431,7 +1482,10 @@
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">OverflowError</span><span class="p">(</span><span class="s2">&quot;the add operation between </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2"> will &quot;</span>
                                     <span class="s2">&quot;overflow&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])),</span> <span class="n">logger</span><span class="p">)</span>
 
-        <span class="n">new_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_range_index</span><span class="p">:</span>
+            <span class="n">new_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
         <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">new_time_index</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
@@ -1496,6 +1550,8 @@
 <span class="sd">        bool</span>
 <span class="sd">            True if both TimeSeries have the same index, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="TimeSeries.append"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
@@ -1645,7 +1701,7 @@
             <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.add_datetime_attribute"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_datetime_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_datetime_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.add_datetime_attribute"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_datetime_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_datetime_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cyclic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute</span>
 <span class="sd">        of the time index of the current series specified with `attribute`, such as &#39;weekday&#39;, &#39;day&#39; or &#39;month&#39;.</span>
@@ -1659,6 +1715,10 @@
 <span class="sd">        one_hot</span>
 <span class="sd">            Boolean value indicating whether to add the specified attribute as a one hot encoding</span>
 <span class="sd">            (results in more columns).</span>
+<span class="sd">        cyclic</span>
+<span class="sd">            Boolean value indicating whether to add the specified attribute as a cyclic encoding.</span>
+<span class="sd">            Alternative to one_hot encoding, enable only one of the two.</span>
+<span class="sd">            (adds 2 columns, corresponding to sin and cos transformation).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1667,7 +1727,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">()</span>
         <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">tg</span><span class="o">.</span><span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">tg</span><span class="o">.</span><span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">,</span> <span class="n">cyclic</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="TimeSeries.add_holidays"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_holidays">[docs]</a>    <span class="k">def</span> <span class="nf">add_holidays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                      <span class="n">country_code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1908,6 +1968,52 @@
 
         <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">name</span><span class="p">);</span></div>
+
+<div class="viewcode-block" id="TimeSeries.with_columns_renamed"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_columns_renamed">[docs]</a>    <span class="k">def</span> <span class="nf">with_columns_renamed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">col_names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">col_names_new</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Changes ts column names and returns a new TimeSeries instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------</span>
+<span class="sd">        col_names</span>
+<span class="sd">            String or list of strings corresponding the the column names to be changed.</span>
+<span class="sd">        col_names_new</span>
+<span class="sd">            String or list of strings corresponding to the new column names. Must be the same length as col_names.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">col_names</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col_names_new</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">col_names_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">col_names_new</span><span class="p">]</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([(</span><span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">col_names</span><span class="p">]),</span> 
+                                                    <span class="s2">&quot;Some column names in col_names don&#39;t exist in the time series.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">col_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_names_new</span><span class="p">),</span> <span class="s1">&#39;Length of col_names_new list should be&#39;</span>
+                                                    <span class="s1">&#39; equal to the length of col_names list.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+
+        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">col_names</span><span class="p">,</span> <span class="n">col_names_new</span><span class="p">):</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">==</span><span class="n">o</span><span class="p">)</span> <span class="k">else</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+
+        <span class="n">new_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> 
+                <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+                <span class="p">}</span>
+        <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.</span>

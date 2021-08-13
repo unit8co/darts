@@ -158,14 +158,14 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 <span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">..utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
-<span class="kn">from</span> <span class="nn">..utils.data</span> <span class="kn">import</span> <span class="n">ShiftedDataset</span>
+<span class="kn">from</span> <span class="nn">..utils.data</span> <span class="kn">import</span> <span class="n">PastCovariatesShiftedDataset</span>
 <span class="kn">from</span> <span class="nn">..utils.likelihood_models</span> <span class="kn">import</span> <span class="n">LikelihoodModel</span>
 
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span>
+<span class="kn">from</span> <span class="nn">.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">PastCovariatesTorchModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -356,7 +356,7 @@
         <span class="k">return</span> <span class="n">x</span>
 
 
-<div class="viewcode-block" id="TCNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.tcn_model.html#darts.models.tcn_model.TCNModel">[docs]</a><span class="k">class</span> <span class="nc">TCNModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="TCNModel"><a class="viewcode-back" href="../../../generated_api/darts.models.tcn_model.html#darts.models.tcn_model.TCNModel">[docs]</a><span class="k">class</span> <span class="nc">TCNModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -375,6 +375,8 @@
 
 <span class="sd">        This is an implementation of a dilated TCN used for forecasting.</span>
 <span class="sd">        Inspiration: https://arxiv.org/abs/1803.01271</span>
+
+<span class="sd">        This model supports past covariates (known for `input_chunk_length` points before prediction time).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -400,6 +402,47 @@
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
+
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{&#39;lr&#39;: 1e-3}`</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training.</span>
+<span class="sd">            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.</span>
+<span class="sd">            Default: `torch.nn.MSELoss()`.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string &quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;, where the initial part of the</span>
+<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
+<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            2021-06-14_09:53:32_torch_model_run_44607.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            `[work_dir]/.darts/runs/`.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            `TimeSeries` is passed to the `fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">kernel_size</span> <span class="o">&lt;</span> <span class="n">input_chunk_length</span><span class="p">,</span>
@@ -421,7 +464,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_norm</span> <span class="o">=</span> <span class="n">weight_norm</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
         <span class="n">target_size</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">_num_parameters</span> <span class="o">*</span> <span class="n">output_dim</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">output_dim</span>
         <span class="p">)</span>
@@ -438,11 +485,13 @@
 
     <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-                             <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">ShiftedDataset</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
-                              <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
-                              <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                              <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
+                             <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">PastCovariatesShiftedDataset</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="n">PastCovariatesShiftedDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                            <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                            <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                            <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
     
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>

@@ -278,7 +278,7 @@ Downloads the dataset if it is not present already</p>
 <em class="property">class </em><code class="sig-prename descclassname">darts.datasets.</code><code class="sig-name descname">GasRateCO2Dataset</code><a class="reference internal" href="../_modules/darts/datasets.html#GasRateCO2Dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Gas Rate CO2 dataset
-Two components, length 296 (dummy time index)</p>
+Two components, length 296 (integer time index)</p>
 <dl class="py method">
 <dt id="darts.datasets.GasRateCO2Dataset.load">
 <code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset.load" title="Permalink to this definition">¶</a></dt>
@@ -307,7 +307,7 @@ Downloads the dataset if it is not present already</p>
 The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
 each series is exactly 15 minutes.</p>
 <p>This is the series1 here: <a class="reference external" href="http://ecg.mit.edu/time-series/">http://ecg.mit.edu/time-series/</a>
-Using a dummy time index.</p>
+Using an integer time index.</p>
 <dl class="py method">
 <dt id="darts.datasets.HeartRateDataset.load">
 <code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.datasets.HeartRateDataset.load" title="Permalink to this definition">¶</a></dt>
@@ -438,7 +438,7 @@ Downloads the dataset if it is not present already</p>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
 Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts
-(Uses a dummy time index).</p>
+(Uses an integer time index).</p>
 <p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
 <p>[1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
 Journal of the Operational Research Society, 54, 799-805.</p>

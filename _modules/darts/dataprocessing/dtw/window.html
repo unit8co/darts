@@ -1,0 +1,538 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.dataprocessing.dtw.window &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../../index.html">
+    
+      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.dataprocessing.dtw.window</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">tan</span><span class="p">,</span> <span class="n">atan</span>
+<span class="kn">import</span> <span class="nn">array</span>
+
+
+<div class="viewcode-block" id="Window"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Window">[docs]</a><span class="k">class</span> <span class="nc">Window</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">m</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="Window.init_size"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Window.init_size">[docs]</a>    <span class="k">def</span> <span class="nf">init_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called by dtw to initialize the window to a certain size.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The width of the window, must be equal to the length of series1</span>
+<span class="sd">        m</span>
+<span class="sd">            The height of the window, must be equal to the length of series2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">m</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Window.column_index"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Window.column_index">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">column_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        elem</span>
+<span class="sd">            (i,j) index, where i indexes columns and j rows</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            The number of active grid cells before row element j, in column i,</span>
+<span class="sd">            If (i,j) is not an active grid cell returns -1</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_index</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+
+<div class="viewcode-block" id="Window.column_length"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Window.column_length">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">column_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        column</span>
+<span class="sd">            A column in the window, must be within 0 &lt; column &lt; n+1</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            The number of active grid cells in a column.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="Window.column_lengths"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Window.column_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">column_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        self</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray of shape (n+1,)</span>
+<span class="sd">            Containing The number of active grid cells in each column.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">column_length</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Iterator</span>
+<span class="sd">            Iterate over all active cells in the window, yielding (i,j) tuple.</span>
+<span class="sd">            Expected to start with index (1,1) and end with index (n+1, m+1).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NoWindow"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.NoWindow">[docs]</a><span class="k">class</span> <span class="nc">NoWindow</span><span class="p">(</span><span class="n">Window</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Window covers the entire grid,</span>
+<span class="sd">    meaning every possible alignment between series1 and series2 is considered.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span> <span class="c1"># include (0,0) element</span>
+
+<div class="viewcode-block" id="NoWindow.column_index"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.NoWindow.column_index">[docs]</a>    <span class="k">def</span> <span class="nf">column_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span></div>
+
+<div class="viewcode-block" id="NoWindow.column_length"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.NoWindow.column_length">[docs]</a>    <span class="k">def</span> <span class="nf">column_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span></div>
+
+<div class="viewcode-block" id="NoWindow.column_lengths"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.NoWindow.column_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">column_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span></div>
+
+
+<div class="viewcode-block" id="gtz"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.gtz">[docs]</a><span class="k">def</span> <span class="nf">gtz</span><span class="p">(</span><span class="n">value</span><span class="p">):</span> <span class="c1"># greater than zero</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="CRWindow"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow">[docs]</a><span class="k">class</span> <span class="nc">CRWindow</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compressed row representation window.</span>
+<span class="sd">    Stores the range of active grid cells in each column.</span>
+<span class="sd">    Any window with contiguous columns can be expressed as an CRWindow.</span>
+<span class="sd">    Supports efficient iterative construction and updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">length</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">column_ranges</span><span class="p">:</span> <span class="n">array</span><span class="o">.</span><span class="n">array</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ranges</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The width of the window, must be equal to the length of series1</span>
+<span class="sd">        m</span>
+<span class="sd">            The height of the window, must be equal to the length of series2</span>
+<span class="sd">        ranges</span>
+<span class="sd">            Ranges of active cells within a column [[start_column0, end_column0], ...]</span>
+<span class="sd">            with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">m</span>
+
+        <span class="k">if</span> <span class="n">ranges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">ranges</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expects a 2d array with [start, end] for each column and shape = (</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">, 2)&quot;</span><span class="p">)</span>
+
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">ranges</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">),</span> <span class="s2">&quot;Start must be &gt;=0&quot;</span><span class="p">)</span>
+            <span class="n">raise_if</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">end</span> <span class="o">&gt;</span> <span class="n">m</span><span class="p">),</span> <span class="s2">&quot;End must be &lt;m&quot;</span><span class="p">)</span>
+
+            <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
+
+            <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">ranges</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="c1">#start</span>
+            <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#end</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="n">ranges</span><span class="p">)</span>
+
+            <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="n">ranges</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CRWindow.add_range"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.add_range">[docs]</a>    <span class="k">def</span> <span class="nf">add_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extends the active cells in the column by the range (start,end).</span>
+<span class="sd">        Ranges smaller than the current one are ignored.</span>
+<span class="sd">        Note (1, m+1), not (0,m) corresponds to an entire column.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        column</span>
+<span class="sd">            Column int index</span>
+<span class="sd">        start</span>
+<span class="sd">            Row element int index where start &gt;= 1 and start &lt;= end</span>
+<span class="sd">        end:</span>
+<span class="sd">            Row element int index where end &gt;= 1 and end &lt;= m+1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Start must be &gt;=1 and &lt;=m, got </span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;End must be &gt;=1 and &lt;=m+1, got </span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="n">column</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">0</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="n">column</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">orig_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">start_idx</span><span class="p">]</span>
+        <span class="n">orig_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">end_idx</span><span class="p">]</span>
+
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">orig_start</span><span class="p">,</span> <span class="n">start</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">orig_end</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+        <span class="n">orig_row_length</span> <span class="o">=</span> <span class="n">gtz</span><span class="p">(</span><span class="n">orig_end</span> <span class="o">-</span> <span class="n">orig_start</span><span class="p">)</span>
+        <span class="n">row_length</span> <span class="o">=</span> <span class="n">gtz</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">+=</span> <span class="n">row_length</span> <span class="o">-</span> <span class="n">orig_row_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">start_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">end_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">end</span></div>
+
+<div class="viewcode-block" id="CRWindow.add"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mark grid cell as active.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        elem</span>
+<span class="sd">            Tuple of grid cell index (column, row)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_range</span><span class="p">(</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CRWindow.column_length"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.column_length">[docs]</a>    <span class="k">def</span> <span class="nf">column_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">column</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">gtz</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CRWindow.column_index"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.column_index">[docs]</a>    <span class="k">def</span> <span class="nf">column_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">elem</span>
+
+        <span class="n">start</span><span class="p">,</span><span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">start</span> <span class="ow">or</span> <span class="n">j</span> <span class="o">&gt;=</span> <span class="n">end</span><span class="p">:</span> <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">j</span> <span class="o">-</span> <span class="n">start</span></div>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elem</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">int</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">elem</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">end</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span>
+
+<div class="viewcode-block" id="CRWindow.column_lengths"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.column_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">column_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_ranges</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">start</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span></div>
+
+
+<div class="viewcode-block" id="Itakura"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Itakura">[docs]</a><span class="k">class</span> <span class="nc">Itakura</span><span class="p">(</span><span class="n">CRWindow</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Forms the Itakura parallelogram, where max_slope determines the slope of the steeper side.</span>
+
+<span class="sd">                                         x</span>
+<span class="sd">                                     xxxx</span>
+<span class="sd">                      B           xxxxxx</span>
+<span class="sd">                            xxxxxxxxxxx</span>
+<span class="sd">                        xxxxxxxxxxxxxx</span>
+<span class="sd">                    xxxxxxxxxxxxxxxxx</span>
+<span class="sd">                 xxxxxxxxxxxxxxxxxxxx     C</span>
+<span class="sd">               xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">              xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">             xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">        A   xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">           xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">          xxxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">         xxxxxxxxxxxxxxxxxxxx</span>
+<span class="sd">        xxxxxxxxxxxxxxxx       D</span>
+<span class="sd">        xxxxxxxxxxxx</span>
+<span class="sd">       xxxxxxxxx</span>
+<span class="sd">      xxxxxx</span>
+<span class="sd">     xxx</span>
+<span class="sd">    x</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_slope</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_slope</span> <span class="o">=</span> <span class="n">max_slope</span>
+
+<div class="viewcode-block" id="Itakura.init_size"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Itakura.init_size">[docs]</a>    <span class="k">def</span> <span class="nf">init_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">m</span>
+
+        <span class="n">max_slope</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_slope</span>
+        <span class="n">diagonal_slope</span> <span class="o">=</span> <span class="n">m</span><span class="o">/</span><span class="n">n</span> <span class="c1"># rise over run</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">max_slope</span> <span class="o">&gt;</span> <span class="n">diagonal_slope</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Itakura slope </span><span class="si">{</span><span class="n">max_slope</span><span class="si">}</span><span class="s2"> must be greater than </span><span class="si">{</span><span class="n">diagonal_slope</span><span class="si">}</span><span class="s2"> to form valid parallelogram.&quot;</span><span class="p">)</span>
+
+        <span class="n">max_slope_angle</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">max_slope</span><span class="p">)</span>
+        <span class="n">diagonal_slope_angle</span> <span class="o">=</span> <span class="n">atan</span><span class="p">(</span><span class="n">diagonal_slope</span><span class="p">)</span>
+
+        <span class="n">diff_slope_angle</span> <span class="o">=</span> <span class="n">max_slope_angle</span> <span class="o">-</span> <span class="n">diagonal_slope_angle</span>
+        <span class="n">min_slope</span> <span class="o">=</span> <span class="n">tan</span><span class="p">(</span><span class="n">diagonal_slope_angle</span> <span class="o">-</span> <span class="n">diff_slope_angle</span><span class="p">)</span>
+
+        <span class="c1"># Derivation for determining how wide the steep top sides (A) and shallow bottom (D) are</span>
+
+        <span class="c1"># max_slope*x + (n-x)*min_slope = m</span>
+        <span class="c1"># max_slope*x + n*min_slope - min_slope*x = m</span>
+        <span class="c1"># (max_slope - min_slope)*x = m - n*min_slope</span>
+        <span class="c1"># x = (m - n*min_slope) / (max_slope - min_slope)</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="n">shallow_bottom</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">m</span> <span class="o">-</span> <span class="n">n</span><span class="o">*</span><span class="n">max_slope</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">min_slope</span> <span class="o">-</span> <span class="n">max_slope</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ranges</span><span class="p">[:</span><span class="n">shallow_bottom</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">shallow_bottom</span><span class="p">)</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">shallow_bottom</span><span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">shallow_bottom</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+
+        <span class="n">ranges</span><span class="p">[:</span><span class="n">shallow_bottom</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="n">min_slope</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">shallow_bottom</span><span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="n">max_slope</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">shallow_bottom</span><span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">shallow_bottom</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">steep_top</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">m</span> <span class="o">-</span> <span class="n">n</span><span class="o">*</span><span class="n">min_slope</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_slope</span> <span class="o">-</span> <span class="n">min_slope</span><span class="p">)))</span>
+        <span class="n">ranges</span><span class="p">[:</span><span class="n">steep_top</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">steep_top</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">steep_top</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">steep_top</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+
+        <span class="n">ranges</span><span class="p">[:</span><span class="n">steep_top</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="n">max_slope</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">steep_top</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*=</span> <span class="n">min_slope</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="n">steep_top</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ranges</span><span class="p">[</span><span class="n">steep_top</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">ranges</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">out</span><span class="o">=</span><span class="n">ranges</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">ranges</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">out</span><span class="o">=</span><span class="n">ranges</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">ranges</span><span class="p">)</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">],</span> <span class="n">ranges</span><span class="p">)</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">ranges</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">ranges</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SakoeChiba"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.SakoeChiba">[docs]</a><span class="k">class</span> <span class="nc">SakoeChiba</span><span class="p">(</span><span class="n">CRWindow</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Forms a diagonal window where window_size controls the maximum allowed shift between the two series.</span>
+<span class="sd">    If both time-series have the same time axis, window_size corresponds to the maximum number of time periods</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+
+<div class="viewcode-block" id="SakoeChiba.init_size"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.SakoeChiba.init_size">[docs]</a>    <span class="k">def</span> <span class="nf">init_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">m</span>
+
+        <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">diff</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Window size must at least cover size difference (</span><span class="si">{</span><span class="n">diff</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span>
+
+        <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ranges</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">ranges</span><span class="p">)</span></div></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.utils.data.simple_inference_dataset
-   :members:
-   :undoc-members:
-   :show-inheritance:

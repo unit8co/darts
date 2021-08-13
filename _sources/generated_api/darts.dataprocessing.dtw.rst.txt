@@ -1,0 +1,14 @@
+
+
+.. automodule:: darts.dataprocessing.dtw
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.dataprocessing.dtw.cost_matrix
+        darts.dataprocessing.dtw.dtw
+        darts.dataprocessing.dtw.window

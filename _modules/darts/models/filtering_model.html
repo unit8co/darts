@@ -150,7 +150,6 @@
   <h1>Source code for darts.models.filtering_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Filtering Model Base Class</span>
-<span class="sd">--------------------------</span>
 
 <span class="sd">Filtering models all have a `filter(series)` function, which</span>
 <span class="sd">returns a `TimeSeries` that is a filtered version of `series`.</span>
@@ -186,59 +185,7 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A time series containing the filtered values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Class property defining the minimum required length for the series.</span>
-<span class="sd">        This function/property should be overridden if a value different than 3 is required.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="mi">3</span></div>
-
-
-<div class="viewcode-block" id="MovingAverage"><a class="viewcode-back" href="../../../generated_api/darts.models.filtering_model.html#darts.models.filtering_model.MovingAverage">[docs]</a><span class="k">class</span> <span class="nc">MovingAverage</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Moving average filter, implementing a FilteringModel.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        window</span>
-<span class="sd">            The length of the window over which to average values</span>
-<span class="sd">        centered</span>
-<span class="sd">            Set the labels at the center of the window. If not set, the averaged values are lagging after the</span>
-<span class="sd">            the original values.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">centered</span> <span class="o">=</span> <span class="n">centered</span>
-
-<div class="viewcode-block" id="MovingAverage.filter"><a class="viewcode-back" href="../../../generated_api/darts.models.filtering_model.html#darts.models.filtering_model.MovingAverage.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Computes a moving average of this series&#39; values and returns a new TimeSeries.</span>
-<span class="sd">        The returned series has the same length and time axis as `series`. (Note that this might create border effects).</span>
-
-<span class="sd">        Behind the scenes the moving average is computed using `pandas.DataFrame.rolling()` on the underlying</span>
-<span class="sd">        DataFrame.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            The series to average</span>
-
-<span class="sd">         Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        TimeSeries</span>
-<span class="sd">            A time series containing the average values</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">filtered_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
-                                                              <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                                                              <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">)</span></div></div>
+        <span class="k">pass</span></div></div>
 </pre></div>
 
               </div>

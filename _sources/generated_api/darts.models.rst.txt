@@ -21,6 +21,7 @@
         darts.models.gaussian_process_filter
         darts.models.kalman_filter
         darts.models.linear_regression_model
+        darts.models.moving_average
         darts.models.nbeats
         darts.models.prophet
         darts.models.random_forest
