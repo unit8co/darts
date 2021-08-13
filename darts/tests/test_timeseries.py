@@ -3,6 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tempfile import NamedTemporaryFile
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
@@ -94,7 +95,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                               coords={'time': self.times, 'component': cs_before})
             ts = TimeSeries.from_xarray(ar)
             self.assertEqual(ts.columns.tolist(), cs_after)
-
+    
     def test_quantiles(self):
         values = np.random.rand(10, 2, 1000)
         ar = xr.DataArray(values,
@@ -299,6 +300,11 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesE = seriesD.shift(1)
         test_case.assertEqual(seriesE.time_index[0], pd.Timestamp('20130102'))
 
+        seriesF = TimeSeries.from_times_and_values(pd.RangeIndex(2, 10), range(8))
+
+        seriesG = seriesF.shift(4)
+        test_case.assertEqual(seriesG.time_index[0], 6)
+
     @staticmethod
     def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
@@ -484,6 +490,27 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(data_darts1, data_darts2)
         self.assertEqual(data_darts1, data_darts3)
 
+    def test_from_csv(self):
+        data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
+
+        data_pd1 = pd.DataFrame(data_dict)
+
+        f1 = NamedTemporaryFile()
+        f2 = NamedTemporaryFile()
+        
+        # testing two separators to check later if the arguments are passed to the `pd.read_csv`
+        data_pd1.to_csv(f1.name, sep=',', index=False)
+        data_pd1.to_csv(f2.name, sep='.', index=False)
+
+        # it should be possible to read data given either file object or file path 
+        f1.seek(0)
+        data_darts1 = TimeSeries.from_csv(filepath_or_buffer=f1, time_col="Time", sep=',')
+        data_darts2 = TimeSeries.from_csv(filepath_or_buffer=f2.name, time_col="Time", sep='.')
+
+        self.assertEqual(data_darts1, data_darts2)
+
     def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
         values1 = np.random.uniform(low=-10, high=10, size=len(times))
@@ -567,7 +594,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_map_with_timestamp(self):
         series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
         zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
-
+        zeroes = zeroes.with_columns_renamed('constant', 'linear')
+        
         def function(ts, x):
             return x - ts.month
 
@@ -642,3 +670,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         self.assertEqual(len(series1.longest_contiguous_slice()), 3)
         self.assertEqual(len(series1.longest_contiguous_slice(2)), 6)
+
+    def test_with_columns_renamed(self):
+        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12).stack(
+            linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)   
+        )
+
+        series1 = series1.with_columns_renamed(['linear', 'linear_1'], ['linear1', 'linear2'])
+        self.assertEqual(['linear1', 'linear2'], series1.columns.to_list())
+        
+        with self.assertRaises(ValueError):
+            series1.with_columns_renamed(['linear1', 'linear2'], ['linear1', 'linear3', 'linear4'])
+
+        #  Linear7 doesn't exist
+        with self.assertRaises(ValueError):
+            series1.with_columns_renamed('linear7', 'linear5')

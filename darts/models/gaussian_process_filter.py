@@ -1,3 +1,8 @@
+"""
+Gaussian Processes
+------------------
+"""
+
 from typing import Optional
 
 import numpy as np
@@ -13,10 +18,12 @@ class GaussianProcessFilter(FilteringModel):
     def __init__(self,
                  kernel: Optional[Kernel] = None,
                  **kwargs):
-        """ GaussianProcessFilter model
-        This model uses the GaussianProcessRegressor of scikit-learn to fit a Gaussian Process to the
-        supplied TimeSeries. This can then be used to obtain samples or the mean values of the
+        """
+        This model uses the `GaussianProcessRegressor` of scikit-learn to fit a Gaussian Process to the
+        supplied TimeSeries. This can then be used to obtain samples from the
         Gaussian Process at the times of the TimeSeries.
+
+        It can for instance be used to fill in missing (NaN) values from a TimeSeries.
 
         Parameters
         ----------

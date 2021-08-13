@@ -43,10 +43,12 @@ class TimeSeries:
         # relying on np.nan (which is a float) won't work very properly.
         raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.',
                      logger)
-        if not np.issubdtype(xa.values.dtype, np.float):
-            logger.warn('TimeSeries is using a numeric type different from np.float. Not all functionalities '
-                        'may work properly. It is recommended casting your data to floating point numbers before '
-                        'using TimeSeries.')
+
+        val_dtype = xa.values.dtype
+        if not (np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)):
+            logger.warn('TimeSeries is using a numeric type different from np.float32 or np.float64. '
+                        'Not all functionalities may work properly. It is recommended casting your data to floating '
+                        'point numbers before using TimeSeries.')
 
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
@@ -218,7 +220,56 @@ class TimeSeries:
 
         # We cast the array to float
         # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
-        return TimeSeries(xa_.astype(np.float))
+        if np.issubdtype(xa_.values.dtype, np.float32):
+            # We conserve the float32 type
+            return TimeSeries(xa_.astype(np.float32))
+        else:
+            # Otherwise we cast to float64
+            return TimeSeries(xa_.astype(np.float64))
+
+    @staticmethod
+    def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
+                 time_col: Optional[str] = None,
+                 value_cols: Optional[Union[List[str], str]] = None,
+                 fill_missing_dates: Optional[bool] = False,
+                 freq: Optional[str] = None,
+                 **kwargs,) -> 'TimeSeries':
+        """
+        Returns a deterministic TimeSeries instance built from a single CSV file.
+        One column can be used to represent the time (if not present, the time index will be an Int64Index)
+        and a list of columns `value_cols` can be used to indicate the values for this time series.
+
+        Parameters
+        ----------
+        filepath_or_buffer
+            The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function 
+        time_col
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            If not set, the pandas Int64Index will be used. 
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
+            `None`, all columns from the CSV file will be used (except for the time_col, if specified) 
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        **kwargs
+            Optional arguments to be passed to `pandas.read_csv` function
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+
+        df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
+        return TimeSeries.from_dataframe(df=df, 
+                                         time_col=time_col, 
+                                         value_cols=value_cols, 
+                                         fill_missing_dates=fill_missing_dates, 
+                                         freq=freq)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
@@ -1281,7 +1332,10 @@ class TimeSeries:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq, self.time_index[-1])), logger)
 
-        new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+        if self.has_range_index:
+            new_time_index = self._time_index + n*self.freq
+        else:
+            new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return TimeSeries(new_xa)
 
@@ -1346,6 +1400,8 @@ class TimeSeries:
         bool
             True if both TimeSeries have the same index, False otherwise.
         """
+        if len(other) != len(self):
+            return False
         return (other.time_index == self.time_index).all()
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
@@ -1495,7 +1551,7 @@ class TimeSeries:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
-    def add_datetime_attribute(self, attribute, one_hot: bool = False) -> 'TimeSeries':
+    def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
@@ -1509,6 +1565,10 @@ class TimeSeries:
         one_hot
             Boolean value indicating whether to add the specified attribute as a one hot encoding
             (results in more columns).
+        cyclic
+            Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+            Alternative to one_hot encoding, enable only one of the two.
+            (adds 2 columns, corresponding to sin and cos transformation).
 
         Returns
         -------
@@ -1517,7 +1577,7 @@ class TimeSeries:
         """
         self._assert_deterministic()
         from .utils import timeseries_generation as tg
-        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot, cyclic))
 
     def add_holidays(self,
                      country_code: str,
@@ -1758,6 +1818,52 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name);
+
+    def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> 'TimeSeries':
+        """
+        Changes ts column names and returns a new TimeSeries instance.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the column names to be changed.
+        col_names_new
+            String or list of strings corresponding to the new column names. Must be the same length as col_names.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance.
+        """
+
+        if isinstance(col_names, str):
+            col_names = [col_names]
+        if isinstance(col_names_new, str):
+            col_names_new = [col_names_new]
+
+        raise_if_not(all([(x in self.columns.to_list()) for x in col_names]), 
+                                                    "Some column names in col_names don't exist in the time series.", logger)
+        
+        raise_if_not(len(col_names) == len(col_names_new), 'Length of col_names_new list should be'
+                                                    ' equal to the length of col_names list.', logger)
+
+
+        cols = self.components
+
+        for (o, n) in zip(col_names, col_names_new):
+            cols = [n if (c==o) else c for c in cols]
+
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={
+                self._xa.dims[0]: self.time_index, 
+                DIMS[1]: pd.Index(cols)
+                }
+        )
+        
+        return TimeSeries(new_xa)
+
 
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.

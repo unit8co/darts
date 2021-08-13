@@ -4,7 +4,55 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.9.1...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.10.0...develop)
+
+## [0.10.0](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-13)
+### For users of the library:
+
+**Added:**
+- &#x1F534; Improvement of the covariates support. Before, some models were accepting a `covariates` (or `exog`) 
+argument, but it wasn't always clear whether this represented "past-observed" or "future-known" covariates. 
+We have made this clearer. Now all covariate-aware models support `past_covariates` and/or `future_covariates` argument 
+in their `fit()` and `predict()` methods, which makes it clear what series is used as a past or future covariate.
+We recommend [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
+for more informations and examples.
+
+- &#x1F534; Significant improvement of `RegressionModel` (incl. `LinearRegressionModel` and `RandomForest`).
+These models now support training on multiple (possibly multivariate) time series. They also support both
+`past_covariates` and `future_covariates`. It makes it easier than ever to fit arbitrary regression models (e.g. from
+scikit-learn) on multiple series, to predict the future of a target series based on arbitrary lags of the target and 
+the past/future covariates. The signature of these models changed: It's not using "`exog`" keyword arguments, but
+`past_covariates` and `future_covariates` instead.
+
+- Dynamic Time Warping. There is a brand new `darts.dataprocessing.dtw` submodule that
+implements Dynamic Time Warping between two `TimeSeries`. It's also coming with a new `dtw`
+metric in `darts.metrics`. We recommend going over the 
+[new DTW example notebook](https://github.com/unit8co/darts/blob/master/examples/13-Dynamic-Time-Warping-example.ipynb) 
+for a good overview of the new functionalities
+
+- Conda forge installation support (fully supported with Python 3.7 only for now). You can now
+`conda install u8darts-all`.
+
+- `TimeSeries.from_csv()` allows to obtain a `TimeSeries` from a CSV file directly.
+
+- Optional cyclic encoding of the datetime attributes future covariates; for instance it's now possible to call 
+`my_series.add_datetime_attribute('weekday', cyclic=True)`, which will add two columns containing a sin/cos 
+encoding of the weekday.
+
+- Default seasonality inference in `ExponentialSmoothing`. If left to `None`, the `seasonal_periods` is inferred
+from the `freq` of the provided series.  
+
+- Various documentation improvements.
+
+**Fixed:**
+- Now transformations and forecasting maintain the columns' names of the `TimeSeries`.
+The generation module `darts.utils.timeseries_generation` also comes with better default columns names.
+- Some issues with our Docker build process
+- A bug with GPU usage
+
+**Changed:**
+- For probabilistic PyTorch based models, the generation of multiple samples (and series) at prediction time is now
+vectorized, which improves inference performance.
 
 ## [0.9.1](https://github.com/unit8co/darts/tree/0.9.1) (2021-07-17)
 ### For users of the library:

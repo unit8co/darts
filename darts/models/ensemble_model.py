@@ -1,6 +1,5 @@
 """
 Ensemble Model Base Class
--------------------------
 """
 
 from abc import abstractmethod
@@ -47,10 +46,10 @@ class EnsembleModel(ForecastingModel):
                 num_samples: int = 1) -> TimeSeries:
         super().predict(n, num_samples)
 
-        predictions = self.models[0].predict(n, num_samples)
+        predictions = self.models[0].predict(n=n, num_samples=num_samples)
         if len(self.models) > 1:
             for model in self.models[1:]:
-                predictions = predictions.stack(model.predict(n, num_samples))
+                predictions = predictions.stack(model.predict(n=n, num_samples=num_samples))
 
         return self.ensemble(predictions)
 

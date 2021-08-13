@@ -6,13 +6,13 @@ Recurrent Neural Networks
 import torch.nn as nn
 import torch
 from numpy.random import RandomState
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional, Union, Tuple
 from ..timeseries import TimeSeries
 
 from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel
+from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
 from ..utils.torch import random_method
-from ..utils.data import ShiftedDataset
+from ..utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from ..utils.likelihood_models import LikelihoodModel
 
 logger = get_logger(__name__)
@@ -80,7 +80,7 @@ class _RNNModule(nn.Module):
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
-        batch_size = x.size(0)
+        batch_size = x.shape[0]
 
         # out is of size (batch_size, input_length, hidden_dim)
         out, last_hidden_state = self.rnn(x) if h is None else self.rnn(x, h)
@@ -95,7 +95,7 @@ class _RNNModule(nn.Module):
         return predictions, last_hidden_state
 
 
-class RNNModel(TorchParametricProbabilisticForecastingModel):
+class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
     @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
@@ -119,12 +119,19 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
         * GRU
 
         RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
-        - previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction
-        - the previous hidden state
-        - the current covariates (if the model was trained with covariates)
 
-        For a block version using an RNN model as an encoder only, checkout `BlockRNNModel`.
+        - previous target value, which will be set to the last known target value for the first prediction,
+          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),
+        - the previous hidden state,
+        - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),
+
+        This model supports future covariates; and it requires these covariates to extend far enough in the past
+        and the future (it's a so-called "dual covariates" model as the future covariates have to be provided both
+        in the past and the future). The model will complain if the provided `future_covariates` series doesn't have
+        an appropriate time span.
+
+        For a block version using an RNN model as an encoder only and supporting past
+        covariates, checkout `BlockRNNModel`.
 
         Parameters
         ----------
@@ -151,6 +158,47 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+
+        batch_size
+            Number of time series (input and output sequences) used in each training pass.
+        n_epochs
+            Number of epochs over which to train the model.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer.
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: `torch.nn.MSELoss()`.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+            the same time by different processes to share the same model_name). E.g.,
+            2021-06-14_09:53:32_torch_model_run_44607.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            `[work_dir]/.darts/runs/`.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            `TimeSeries` is passed to the `fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
         """
 
         kwargs['input_chunk_length'] = input_chunk_length
@@ -168,9 +216,13 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
         self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
-        self.is_recurrent = True
 
-    def _create_model(self, input_dim: int, output_dim: int) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
+        # historic_future_covariates and future_covariates have the same width
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
+
         target_size = (
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
         )
@@ -187,15 +239,26 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
-                             covariates: Optional[Sequence[TimeSeries]]) -> ShiftedDataset:
-        return ShiftedDataset(target_series=target,
-                              covariates=covariates,
-                              length=self.training_length,
-                              shift_covariates=True,
-                              shift=1)
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesShiftedDataset:
 
-    def _produce_train_output(self, data):
-        return self.model(data)[0]
+        return DualCovariatesShiftedDataset(target_series=target,
+                                            covariates=future_covariates,
+                                            length=self.training_length,
+                                            shift=1)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
+                     'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
+        raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
+
+    def _produce_train_output(self, input_batch: Tuple):
+        past_target, historic_future_covariates, future_covariates = input_batch
+        # For the RNN we concatenate the past_target with the future_covariates
+        # (they have the same length because we enforce a Shift dataset for RNNs)
+        model_input = torch.cat([past_target, future_covariates],
+                                dim=2) if future_covariates is not None else past_target
+        return self.model(model_input)[0]
 
     @random_method
     def _produce_predict_output(self, input, last_hidden_state=None):
@@ -204,3 +267,44 @@ class RNNModel(TorchParametricProbabilisticForecastingModel):
             return self.likelihood._sample(output), hidden
         else:
             return self.model(input, last_hidden_state)
+
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+        """
+        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
+        """
+        past_target, historic_future_covariates, future_covariates = input_batch
+
+        if historic_future_covariates is not None:
+            # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
+            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
+            cov_past, cov_future = all_covariates[:, :past_target.shape[1], :], all_covariates[:, past_target.shape[1]:, :]
+            input_series = torch.cat([past_target, cov_past], dim=2)
+        else:
+            input_series = past_target
+            cov_future = None
+
+        batch_prediction = []
+        out, last_hidden_state = self._produce_predict_output(input_series)
+        batch_prediction.append(out[:, -1:, :])
+        prediction_length = 1
+
+        while prediction_length < n:
+
+            # create new input to model from last prediction and current covariates, if available
+            new_input = (
+                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
+                if cov_future is not None else out[:, -1:, :]
+            )
+
+            # feed new input to model, including the last hidden state from the previous iteration
+            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
+
+            # append prediction to batch prediction array, increase counter
+            batch_prediction.append(out[:, -1:, :])
+            prediction_length += 1
+
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+
+        return batch_prediction

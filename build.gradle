@@ -6,8 +6,8 @@ buildscript {
 }
 
 plugins {
-    id "com.palantir.docker" version "0.26.0"
-    id "com.palantir.docker-run" version "0.26.0"
+    id "com.palantir.docker" version "0.27.0"
+    id "com.palantir.docker-run" version "0.27.0"
 }
 
 // needed for palantir plugin
@@ -87,7 +87,7 @@ for(String flavour : flavours) {
 }
 
 task installLocally(type:Exec) {
-    commandLine "pip", "install", ".[all]"
+    commandLine "pip", "install", "."
 }
 
 task pipInstall() {
