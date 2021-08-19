@@ -319,8 +319,8 @@ A Conda environment is thus recommended because it will handle all of those in o
 From conda-forge
 ^^^^^^^^^^^^^^^^
 
-Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
-into troubles.
+Currently only Linux and macOS on the x86_64 architecture are fully supported with
+conda; consider using PyPI if you are running into troubles.
 
 To create a conda environment for Python 3.7
 (after installing `conda <https://docs.conda.io/en/latest/miniconda.html>`_\ ):
@@ -399,7 +399,7 @@ To run the tests for specific flavours of the library, replace ``_all`` with ``_
 Documentation
 ^^^^^^^^^^^^^
 
-To build documantation locally just run
+To build documentation locally just run
 
 .. code-block:: bash
 

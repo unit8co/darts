@@ -467,8 +467,8 @@ We welcome pull requests and issues on GitHub.</p>
 <h2>Installation Guide<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
-<p>Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
-into troubles.</p>
+<p>Currently only Linux and macOS on the x86_64 architecture are fully supported with
+conda; consider using PyPI if you are running into troubles.</p>
 <p>To create a conda environment for Python 3.7
 (after installing <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">conda</a>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
@@ -514,7 +514,7 @@ To run the example notebooks without installing our libraries natively on your m
 </pre></div>
 </div>
 <p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_prophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
-<p>To build documantation locally just run</p>
+<p>To build documentation locally just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
 </pre></div>
 </div>
