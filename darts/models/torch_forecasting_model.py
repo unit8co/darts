@@ -755,7 +755,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return tuple(tiled_input_data)
 
     def _batch_to_device(self, batch):
-        return [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
+        batch = [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
+        return tuple(batch)
 
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
