@@ -217,7 +217,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             elem = first_sample[i]
             if isinstance(elem, np.ndarray):
                 aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0)).to(self.device)
+                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
                 )
             elif elem is None:
                 aggregated.append(None)
@@ -682,7 +682,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  batch_size=batch_size,
                                  shuffle=False,
                                  num_workers=0,
-                                 pin_memory=False,
+                                 pin_memory=True,
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
         predictions = []
@@ -691,7 +691,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.eval()
         with torch.no_grad():
             for batch_tuple in iterator:
-
+                batch_tuple = self._batch_to_device(batch_tuple)
                 input_data_tuple, batch_input_series = batch_tuple[:-1], batch_tuple[-1]
 
                 # number of individual series to be predicted in current batch
@@ -754,6 +754,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tiled_input_data.append(None)
         return tuple(tiled_input_data)
 
+    def _batch_to_device(self, batch):
+        batch = [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
+        return tuple(batch)
+
     def untrained_model(self):
         return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
@@ -791,6 +795,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
+                train_batch = self._batch_to_device(train_batch)
                 output = self._produce_train_output(train_batch[:-1])
                 target = train_batch[-1]  # By convention target is always the last element returned by datasets
                 loss = self._compute_loss(output, target)
