@@ -225,7 +225,7 @@ To run the tests for specific flavours of the library, replace `_all` with `_cor
 
 ### Documentation
 
-To build documantation locally just run
+To build documentation locally just run
 ```bash
 ./gradlew buildDocs
 ```
