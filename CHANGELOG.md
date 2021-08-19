@@ -15,7 +15,7 @@ argument, but it wasn't always clear whether this represented "past-observed" or
 We have made this clearer. Now all covariate-aware models support `past_covariates` and/or `future_covariates` argument 
 in their `fit()` and `predict()` methods, which makes it clear what series is used as a past or future covariate.
 We recommend [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
-for more informations and examples.
+for more information and examples.
 
 - &#x1F534; Significant improvement of `RegressionModel` (incl. `LinearRegressionModel` and `RandomForest`).
 These models now support training on multiple (possibly multivariate) time series. They also support both
@@ -232,7 +232,7 @@ All implementations of `GlobalForecastingModel`s support multivariate time serie
 - Ensemble models, a new kind of `ForecastingModel` which allows to ensemble multiple models to make predictions:
   - `EnsembleModel` is the abstract base class for ensemble models. Classes deriving from `EnsembleModel` must implement the `ensemble()` method, which takes in a `List[TimeSeries]` of predictions from the constituent models, and returns the ensembled prediction (a single `TimeSeries` object)
   - `RegressionEnsembleModel`, a concrete implementation of `EnsembleModel `which allows to specify any regression model (providing `fit()` and `predict()` methods) to use to ensemble the constituent models' predictions.
-- A new method to `TorchForecastingModel`: `untrained_model()` returns the model as it was initally created, allowing to retrain the exact same model from scratch. Works both when specifying a `random_state` or not.
+- A new method to `TorchForecastingModel`: `untrained_model()` returns the model as it was initially created, allowing to retrain the exact same model from scratch. Works both when specifying a `random_state` or not.
 - New `ForecastingModel.backtest()` and `RegressionModel.backtest()` functions which by default compute a single error score from the historical forecasts the model would have produced.
   - A new `reduction` parameter allows to specify whether to compute the mean/median/… of errors or (when `reduction` is set to `None`) to return a list of historical errors.
   - The previous `backtest()` functionality still exists but has been renamed `historical_forecasts()`
@@ -264,7 +264,7 @@ All implementations of `GlobalForecastingModel`s support multivariate time serie
   - Implementing your own data transformers:
     - Data transformers which need to be fitted first should derive from the `FittableDataTransformer` base class and implement a `fit()` method. Fittable transformers also provide a `fit_transform()` method, which fits the transformer and then transforms the data with a single call.
     - Data transformers which perform an invertible transformation should derive from the `InvertibleDataTransformer` base class and implement a `inverse_transform()` method.
-    - Data transformers wich are neither fittable nor invertible should derive from the `BaseDataTransformer` base class
+    - Data transformers which are neither fittable nor invertible should derive from the `BaseDataTransformer` base class
     - All data transformers must implement a `transform()` method.
 - Concrete `DataTransformer` implementations:
   - `MissingValuesFiller` wraps around `fill_missing_value()` and allows to fill missing values using either a constant value or the `pd.interpolate()` method.
