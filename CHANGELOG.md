@@ -4,7 +4,16 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.10.0...develop)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.10.1...develop)
+
+## [0.10.1](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-19)
+### For users of the library:
+
+**Fixed:**
+- A bug with memory pinning that was causing issues with training models on GPUs.
+
+**Changed:**
+- Clarified conda support on the README
 
 ## [0.10.0](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-13)
 ### For users of the library:
