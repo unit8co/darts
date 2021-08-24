@@ -438,6 +438,7 @@ class ForecastingModel(ABC):
                    past_covariates: Optional[TimeSeries] = None,
                    future_covariates: Optional[TimeSeries] = None,
                    forecast_horizon: Optional[int] = None,
+                   stride: int = 1,
                    start: Union[pd.Timestamp, float, int] = 0.5,
                    last_points_only: bool = False,
                    val_series: Optional[TimeSeries] = None,
@@ -498,6 +499,8 @@ class ForecastingModel(ABC):
             An optional future-known covariate series. This applies only if the model supports future covariates.
         forecast_horizon
             The integer value of the forecasting horizon used in expanding window mode.
+        stride
+            The number of time steps between two consecutive predictions. Only used in expanding window mode.
         start
             The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index
             of `training_series` from which predictions will be made to evaluate the model.
@@ -568,6 +571,7 @@ class ForecastingModel(ABC):
                                        num_samples=1,
                                        start=start,
                                        forecast_horizon=forecast_horizon,
+                                       stride=stride,
                                        metric=metric,
                                        reduction=reduction,
                                        last_points_only=last_points_only)
