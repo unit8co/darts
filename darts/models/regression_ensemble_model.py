@@ -1,16 +1,14 @@
 """
 Regression ensemble model
 -------------------------
+
+An ensemble model which uses a regression model to compute the ensemble forecast.
 """
 from typing import Optional, List, Union, Sequence, Tuple
-
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting_model import ForecastingModel, GlobalForecastingModel
-from darts.models import (
-    EnsembleModel, LinearRegressionModel, RegressionModel,
-    RandomForest
-)
+from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
 
 logger = get_logger(__name__)
 
@@ -40,14 +38,23 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         super().__init__(forecasting_models)
         if regression_model is None:
-            regression_model = LinearRegressionModel(lags_exog=0, fit_intercept=False)
+            regression_model = LinearRegressionModel(lags=None, lags_future_covariates=[0], fit_intercept=False)
+        elif isinstance(regression_model, RegressionModel):
+            regression_model = regression_model
+        else:
+            # scikit-learn like model
+            regression_model = RegressionModel(lags_future_covariates=[0], model=regression_model)
 
-        regression_model = RegressionModel(lags_exog=0, model=regression_model)
-        raise_if(regression_model.lags is not None and regression_model.lags_exog != [0], (
-            "`lags` of regression model must be `None` and `lags_exog` must be [0]. Given: {} and {}"
-            .format(regression_model.lags, regression_model.lags_exog)
-            )
+        raise_if(
+            regression_model.lags is not None and regression_model.lags_historical_covariates is not None
+            and regression_model.lags_past_covariates is not None and regression_model.lags_future_covariates != [0],
+            (f"`lags`, `lags_historical_covariates` and `lags_past_covariates` of regression model must be `None`"
+             f"and `lags_future_covariates` must be [0]. Given:\n`lags`: {regression_model.lags},"
+             f"`lags_historical_covariates`: {regression_model.lags_historical_covariates},"
+             f"`lags_past_covariates`: {regression_model.lags} and `lags_future_covariates`"
+             f"{regression_model.lags_future_covariates}.")
         )
+
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
@@ -71,9 +78,8 @@ class RegressionEnsembleModel(EnsembleModel):
             train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
 
         raise_if(train_n_points_too_big,
-                 "regression_train_n_points parameter too big (must be smaller or equal" +
-                 " to the number of points in training_series)",
-                 logger)
+                 "regression_train_n_points parameter too big (must be smaller or equal to the number of points in "
+                 "training_series)", logger)
 
         if self.is_univariate:
             forecast_training = self.training_series[:-self.train_n_points]
@@ -113,14 +119,14 @@ class RegressionEnsembleModel(EnsembleModel):
                     predictions = predictions.stack(prediction)
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(series=regression_target, exog=predictions)
+        self.regression_model.fit(series=regression_target, future_covariates=predictions)
 
         # prepare the forecasting models for further predicting by fitting
         # them with the entire data
 
         # Some models (incl. Neural-Network based models) may need to be 'reset'
         # to allow being retrained from scratch
-        self.models = [model.untrained_model() if hasattr(model, 'untrained_model') else model
+        self.models = [model.untrained_model() if hasattr(model, "untrained_model") else model
                        for model in self.models]
 
         # fit the forecasting models
@@ -128,4 +134,4 @@ class RegressionEnsembleModel(EnsembleModel):
             model.fit(self.training_series)
 
     def ensemble(self, predictions: TimeSeries) -> TimeSeries:
-        return self.regression_model.predict(n=len(predictions), exog=predictions) ##
+        return self.regression_model.predict(n=len(predictions), future_covariates=predictions)

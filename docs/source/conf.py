@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../../..'))
 project = 'darts'
 copyright = '2021, Unit8 SA'
 author = 'Unit8 SA'
-version = '0.9.1'
+version = '0.10.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -45,7 +45,10 @@ extensions = [
 autodoc_default_options = {
     'inherited-members': None,
     'show-inheritance': None,
-    'exclude-members': 'TimeSeriesTorchDataset'
+    'exclude-members': 'ForecastingModel,DualCovariatesForecastingModel,TorchForecastingModel,' +
+                       'PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,' +
+                       'MixedCovariatesTorchModel,SplitCovariatesTorchModel,' +
+                       'TorchParametricProbabilisticForecastingModel'
 }
 
 # In order to also have the docstrings of __init__() methods included

@@ -1,6 +1,5 @@
 """
 Ensemble Model Base Class
--------------------------
 """
 
 from abc import abstractmethod
@@ -87,7 +86,7 @@ class EnsembleModel(GlobalForecastingModel):
         if self.is_global_ensemble and not self.is_univariate:
             predictions = self.models[0].predict(n, series, covariates, num_samples)
         else:
-            predictions = self.models[0].predict(n, num_samples)
+            predictions = self.models[0].predict(n=n, num_samples=num_samples)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
@@ -95,7 +94,7 @@ class EnsembleModel(GlobalForecastingModel):
                     prediction = model.predict(n, series, covariates, num_samples)
                     predictions = self._stack_ts_seq(predictions, prediction)
                 else:
-                    prediction = model.predict(n, num_samples)
+                    prediction = model.predict(n=n, num_samples=num_samples)
                     predictions = predictions.stack(prediction)
 
         return self.ensemble(predictions)

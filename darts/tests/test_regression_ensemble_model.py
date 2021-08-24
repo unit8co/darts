@@ -16,7 +16,7 @@ try:
     from ..models import RNNModel, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not available. Some tests will be skipped.')
+    logger.warning("Torch not available. Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
 
@@ -43,7 +43,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
-        regr3 = RandomForest(lags_exog=0)
+        regr3 = RandomForest(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel(self.get_local_models(), 10)
         model1 = RegressionEnsembleModel(self.get_local_models(), 10, regr1)
@@ -57,7 +57,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
-        regr2 = RandomForest(lags_exog=0)
+        regr2 = RandomForest(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel([self.get_local_models()[0]], 10)
         model1 = RegressionEnsembleModel([self.get_local_models()[0]], 10, regr1)
@@ -69,7 +69,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.predict(10)
 
     def test_train_n_points(self):
-        regr = LinearRegressionModel(lags_exog=[0])
+        regr = LinearRegressionModel(lags_future_covariates=[0])
 
         # same values
         ensemble = RegressionEnsembleModel(self.get_local_models(), 5, regr)
@@ -89,6 +89,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble.fit(self.combined)
 
     if TORCH_AVAILABLE:
+
         def test_torch_models_retrain(self):
             model1 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
             model2 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)

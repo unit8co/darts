@@ -14,6 +14,7 @@ from warnings import warn
 from typing import Optional, Callable, Sequence, Union, Tuple
 from inspect import signature
 from functools import wraps
+from darts.dataprocessing import dtw
 
 
 logger = get_logger(__name__)
@@ -837,8 +838,8 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     See `Coefficient of determination wikipedia page <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
     for details about the :math:`R^2` score and how it is computed.
-    Please note that this metric is not symmetric, `series1` should correspond to the ground truth series,
-    whereas `series2` should correspond to the predicted series.
+    Please note that this metric is not symmetric, `actual_series` should correspond to the ground truth series,
+    whereas `pred_series` should correspond to the predicted series.
 
     If any of the series is stochastic (containing several samples), the median sample value is considered.
 
@@ -878,3 +879,65 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
     return 1 - ss_errors / ss_tot
+
+
+# Dynamic Time Warping
+@multi_ts_support
+def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+               pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+               metric: Callable[[
+                    Union[TimeSeries, Sequence[TimeSeries]],
+                    Union[TimeSeries, Sequence[TimeSeries]]
+               ], Union[float, np.ndarray]] = mae,
+               *,
+               reduction: Callable[[np.ndarray], float] = np.mean,
+               inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+               n_jobs: int = 1,
+               verbose: bool = False,
+               **kwargs
+               ) -> float:
+    """
+    Applies Dynamic Time Warping to actual_series and pred_series before passing it into the metric.
+    Enables comparison between series of different lengths, phases and time indices.
+
+    Defaults to using mae as a metric.
+
+    See darts.dataprocessing.dtw.dtw for more supported parameters.
+
+    Parameters
+    ----------
+    actual_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
+    pred_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
+    metric
+        The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use. Default: `mae`.
+    reduction
+        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate `TimeSeries` instances.
+    inter_reduction
+        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
+        metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        Result of calling metric(warped_series1, warped_series2)
+    """
+
+    alignment = dtw.dtw(actual_series, pred_series, **kwargs)
+    if metric == mae and not "distance" in kwargs:
+        return alignment.mean_distance()
+
+    warped_actual_series, warped_pred_series = alignment.warped()
+
+    return metric(warped_actual_series, warped_pred_series)
