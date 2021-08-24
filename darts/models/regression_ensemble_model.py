@@ -75,14 +75,14 @@ class RegressionEnsembleModel(EnsembleModel):
                  " to the number of points in training_series)",
                  logger)
 
-        if isinstance(series, TimeSeries):
+        if self.is_univariate:
             forecast_training = self.training_series[:-self.train_n_points]
             regression_target = self.training_series[-self.train_n_points:]
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
         if covariates is not None:
-            if isinstance(covariates, TimeSeries):
+            if self.is_univariate_covariate:
                 forecast_covariates = self.covariate_series[:-self.train_n_points]
             else:
                 forecast_covariates, _ = \
@@ -98,21 +98,19 @@ class RegressionEnsembleModel(EnsembleModel):
                 model.fit(forecast_training)
 
         # predict train_n_points points for each model
-        if self.is_global_ensemble:
-            predictions = self._ts_sequence_to_multivariate_ts(
-                self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=covariates))
+        if self.is_global_ensemble and not self.is_univariate:
+            predictions = self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=covariates)
         else:
             predictions = self.models[0].predict(self.train_n_points)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
-                if self.is_global_ensemble:
-                    prediction = self._ts_sequence_to_multivariate_ts(
-                        model.predict(n=self.train_n_points, series=forecast_training, covariates=covariates))
+                if self.is_global_ensemble and not self.is_univariate:
+                    prediction = model.predict(n=self.train_n_points, series=forecast_training, covariates=covariates)
+                    predictions = self._stack_ts_seq(predictions, prediction)
                 else:
                     prediction = model.predict(self.train_n_points)
-
-                predictions = predictions.stack(prediction)
+                    predictions = predictions.stack(prediction)
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, exog=predictions)
@@ -130,4 +128,4 @@ class RegressionEnsembleModel(EnsembleModel):
             model.fit(self.training_series)
 
     def ensemble(self, predictions: TimeSeries) -> TimeSeries:
-        return self.regression_model.predict(n=len(predictions), exog=predictions)
+        return self.regression_model.predict(n=len(predictions), exog=predictions) ##

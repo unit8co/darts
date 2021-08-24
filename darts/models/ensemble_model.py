@@ -40,6 +40,8 @@ class EnsembleModel(GlobalForecastingModel):
                      logger)
         super().__init__()
         self.models: Union[List[ForecastingModel], List[GlobalForecastingModel]] = models
+        self.is_univariate = None
+        self.is_univariate_covariate = None
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -57,13 +59,21 @@ class EnsembleModel(GlobalForecastingModel):
                  "All models are of type darts.models.ForecastingModel which do not support covariates.",
                  logger
                  )
+
+        self.is_univariate = isinstance(series, TimeSeries)
+        if covariates is not None:
+            self.is_univariate_covariate = isinstance(covariates, TimeSeries)
+
+        raise_if(covariates is not None and (self.is_univariate != self.is_univariate_covariate),
+                 "Both series and covariates have to be either univariate or multivariate.",
+                 logger
+                 )
+
         super().fit(series, covariates)
 
-    def _ts_sequence_to_multivariate_ts(self, ts_sequence: Sequence[TimeSeries]) -> TimeSeries:
-        if isinstance(ts_sequence, Sequence):
-            return reduce(lambda a, b: a.stack(b), ts_sequence)
-        else:
-            return ts_sequence
+    def _stack_ts_seq(self, seq1, seq2):
+        # stacks two sequences of timeseries elementwise
+        return [ts1.stack(ts2) for ts1, ts2 in zip(seq1, seq2)]
 
     def predict(self,
                 n: int,
@@ -74,21 +84,19 @@ class EnsembleModel(GlobalForecastingModel):
 
         super().predict(n, series, covariates, num_samples)
 
-        if self.is_global_ensemble:
-            predictions = self._ts_sequence_to_multivariate_ts(
-                self.models[0].predict(n, series, covariates, num_samples))
+        if self.is_global_ensemble and not self.is_univariate:
+            predictions = self.models[0].predict(n, series, covariates, num_samples)
         else:
             predictions = self.models[0].predict(n, num_samples)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
-                if self.is_global_ensemble:
-                    prediction = self._ts_sequence_to_multivariate_ts(
-                        model.predict(n, series, covariates, num_samples))
+                if self.is_global_ensemble and not self.is_univariate:
+                    prediction = model.predict(n, series, covariates, num_samples)
+                    predictions = self._stack_ts_seq(predictions, prediction)
                 else:
                     prediction = model.predict(n, num_samples)
-
-                predictions = predictions.stack(prediction)
+                    predictions = predictions.stack(prediction)
 
         return self.ensemble(predictions)
 
