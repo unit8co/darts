@@ -227,7 +227,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
         )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
-            model = _RNNModule(name=self.rnn_type_or_module,
+            model = _RNNModule(name='custom_module',
                                input_size=input_dim,
                                target_size=target_size,
                                hidden_dim=self.hidden_dim,
