@@ -19,10 +19,9 @@ References
 """
 
 from ..logging import get_logger
-from typing import Union, Optional
+from typing import Union, Optional, Sequence, List, Tuple
 from .regression_model import RegressionModel
 from ..timeseries import TimeSeries
-from ..utils.data.lagged_dataset import LaggedDataset
 import lightgbm as lgb
 
 logger = get_logger(__name__)
@@ -31,7 +30,8 @@ logger = get_logger(__name__)
 class GradientBoostedModel(RegressionModel):
     def __init__(self,
                  lags: Union[int, list] = None,
-                 lags_exog: Union[int, list, bool] = None,
+                 lags_past_covariates: Union[int, List[int]] = None,
+                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
                  **kwargs):
         """ Light Gradient Boosted Model
 
@@ -53,22 +53,26 @@ class GradientBoostedModel(RegressionModel):
 
         super().__init__(
             lags=lags,
-            lags_exog=lags_exog,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
             model=lgb.LGBMRegressor(
                 **kwargs
             )
         )
 
     def __str__(self):
-        return 'LGBModel(lags={}, lags_exog={})'.format(
-            self.lags, self.lags_exog
+        return 'LGBModel(lags={}, lags_past={}, lags_future={})'.format(
+            self.lags, self.lags_past_covariates, self.lags_future_covariates
         )
 
     def fit(self,
             series: TimeSeries,
-            exog: Optional[TimeSeries] = None,
-            eval_series: Optional[TimeSeries] = None,
-            eval_exog: Optional[TimeSeries] = None,
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            eval_series: TimeSeries = None,
+            eval_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            eval_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            max_samples_per_ts: Optional[int] = None,
             **kwargs) -> None:
         """ Fits/trains the model using the provided list of features time series and the target time series.
             Optionally, validation dataset can be provided.
@@ -87,15 +91,16 @@ class GradientBoostedModel(RegressionModel):
 
         if eval_series is not None:
 
-            eval_set = LaggedDataset(
+            kwargs['eval_set'] = self._create_lagged_data(
                 target_series=eval_series,
-                covariates=eval_exog,
-                lags=self.lags,
-                lags_covariates=self.lags_exog
-            )
+                past_covariates=eval_past_covariates,
+                future_covariates=eval_future_covariates,
+                max_samples_per_ts=max_samples_per_ts
+                )
 
-            # since this is a validation dataset, it should be fairly small, hence materialization through `get_data()`
-            kwargs['eval_set'] = eval_set.get_data()  # (X, y)
-
-        super().fit(series, exog, **kwargs)
+        super().fit(series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    **kwargs)
 

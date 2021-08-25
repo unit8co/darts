@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import darts.models
 from .. import TimeSeries
 from ..metrics import rmse
 from ..models import RegressionModel, RandomForest, LinearRegressionModel, GradientBoostedModel
@@ -14,7 +15,7 @@ from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegresso
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 from darts.models.regression_model import _shift_matrices, _update_min_max
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 
 def train_test_split(features, target, split_ts):
     """
@@ -349,7 +350,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19.15)
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19.5)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
@@ -523,13 +524,17 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             model.predict(12, series=target_train, past_covariates=covariates)
 
-    @patch('darts.models.gradient_boosted_model.LaggedDataset')
-    def test_gradient_boosted_model_with_eval(self, patch_ldset):
-        model = GradientBoostedModel(lags=4, lags_exog=2)
+    @patch.object(darts.models.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
+    def test_gradient_boosted_model_with_eval(self, lgb_fit_patch):
+        model = GradientBoostedModel(lags=4, lags_past_covariates=2)
         split_index = 450
         model.fit(series=self.ts_sum1[:split_index],
-                  exog=self.ts_exog1[:split_index],
+                  past_covariates=self.ts_cov1[:split_index],
                   eval_series=self.ts_sum1[split_index:],
-                  eval_exog=self.ts_exog1[split_index:]
+                  eval_past_covariates=self.ts_cov1[split_index:],
+                  early_stopping_rounds=2,
                   )
-        patch_ldset.assert_called_once()
+
+        #lgb_fit_patch.assert_called_once()
+        print(lgb_fit_patch.call_args)
+        assert lgb_fit_patch.call_args.kwargs['eval_set'] is not None
