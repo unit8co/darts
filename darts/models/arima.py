@@ -12,18 +12,20 @@ References
 
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 from typing import Optional, Tuple
+import numpy as np
 
-from .forecasting_model import ExtendedForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
 logger = get_logger(__name__)
 
 
-class ARIMA(ExtendedForecastingModel):
+class ARIMA(DualCovariatesForecastingModel):
     def __init__(self,
                  p: int = 12, d: int = 1, q: int = 0,
                  seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
-                 trend: Optional[str] = None):
+                 trend: Optional[str] = None,
+                 random_state: int = 0):
         """ ARIMA
         ARIMA-type models extensible with exogenous variables and seasonal components.
 
@@ -49,29 +51,48 @@ class ARIMA(ExtendedForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-
+        np.random.seed(random_state)
 
     def __str__(self):
         if self.seasonal_order == (0, 0, 0, 0):
             return f'ARIMA{self.order}'
         return f'SARIMA{self.order}x{self.seasonal_order}'
 
-    def fit(self, series: TimeSeries, exog: Optional[TimeSeries] = None):
-        super().fit(series, exog)
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super().fit(series, future_covariates)
         m = staARIMA(
             self.training_series.values(),
-            exog=exog.values() if exog else None,
+            exog=future_covariates.values() if future_covariates else None,
             order=self.order,
             seasonal_order=self.seasonal_order,
             trend=self.trend
         )
         self.model = m.fit()
 
-    def predict(self, n: int, exog: Optional[TimeSeries] = None):
-        super().predict(n, exog)
-        forecast = self.model.forecast(steps=n,
-                                       exog=exog.values() if exog else None)
+    def predict(self, n: int,
+                future_covariates: Optional[TimeSeries] = None,
+                num_samples: int = 1):
+
+        if num_samples > 1 and self.trend:
+            logger.warn('Trends are not well supported yet for getting probabilistic forecasts with ARIMA.'
+                        'If you run into issues, try calling fit() with num_samples=1 or removing the trend from'
+                        'your model.')
+
+        super().predict(n, future_covariates, num_samples)
+
+        if num_samples == 1:
+            forecast = self.model.forecast(steps=n,
+                                           exog=future_covariates.values() if future_covariates else None)
+        else:
+            forecast = self.model.simulate(nsimulations=n,
+                                           repetitions=num_samples,
+                                           initial_state=self.model.states.predicted[-1, :],
+                                           exog=future_covariates.values() if future_covariates else None)
+
         return self._build_forecast_series(forecast)
+
+    def _is_probabilistic(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self) -> int:

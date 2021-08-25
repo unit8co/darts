@@ -43,10 +43,12 @@ class TimeSeries:
         # relying on np.nan (which is a float) won't work very properly.
         raise_if_not(np.issubdtype(xa.values.dtype, np.number), 'The time series must contain numeric values only.',
                      logger)
-        if not np.issubdtype(xa.values.dtype, np.float):
-            logger.warn('TimeSeries is using a numeric type different from np.float. Not all functionalities '
-                        'may work properly. It is recommended casting your data to floating point numbers before '
-                        'using TimeSeries.')
+
+        val_dtype = xa.values.dtype
+        if not (np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)):
+            logger.warn('TimeSeries is using a numeric type different from np.float32 or np.float64. '
+                        'Not all functionalities may work properly. It is recommended casting your data to floating '
+                        'point numbers before using TimeSeries.')
 
         if xa.dims[-2:] != DIMS[-2:]:
             # The first dimension represents the time and may be named differently.
@@ -60,37 +62,32 @@ class TimeSeries:
 
         self._time_dim = xa.dims[0]  # how the time dimension is named
 
-        if isinstance(xa.get_index(self._time_dim), pd.DatetimeIndex):
-            # We only sort the xarray if it's indexed by time. That is because sorting with a RangeIndex
-            # transforms the RangeIndex into Int64Index, which messes up things afterwards.
-
-            # The following sorting returns a copy, which we are relying on.
-
-            # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
-            # https://github.com/pydata/xarray/issues/5466
-            self._xa: xr.DataArray = xa.sortby(self._time_dim)
-        else:
-            self._xa = xa.copy()
+        # The following sorting returns a copy, which we are relying on.
+        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
+        # https://github.com/pydata/xarray/issues/5466
+        self._xa: xr.DataArray = xa.sortby(self._time_dim)
 
         self._time_index = self._xa.get_index(self._time_dim)
 
-        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.RangeIndex):
+        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.Int64Index):
             raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
-                                 'or with a RangeIndex.'), logger)
+                                 'or with an Int64Index (this can include a RangeIndex).'), logger)
 
         self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
 
         if self._has_datetime_index:
             freq_tmp = xa.get_index(self._time_dim).freq  # store original freq (see bug of sortby() above).
-            self._freq: pd.DateOffset = freq_tmp
+            self._freq: pd.DateOffset = (freq_tmp if freq_tmp is not None else
+                                         to_offset(self._xa.get_index(self._time_dim).inferred_freq))
             raise_if(self._freq is None,
-                     'The time index of the provided DataArray is missing the freq attribute.',
+                     'The time index of the provided DataArray is missing the freq attribute, and the '
+                     'frequency cannot be inferred.',
                      logger)
 
             self._freq_str: str = self._freq.freqstr
 
             # reset freq inside the xarray index (see bug of sortby() above).
-            self._xa.get_index(self._time_dim).freq = freq_tmp
+            self._xa.get_index(self._time_dim).freq = self._freq
 
             # We have to check manually if the index is complete. Another way could be to rely
             # on `inferred_freq` being present, but this fails for series of length < 3.
@@ -99,7 +96,7 @@ class TimeSeries:
                                                   freq=self._freq).difference(self._time_index)) == 0
 
             raise_if_not(is_index_complete, 'Not all timestamps seem to be present in the time index. Does '
-                                            'the series contain holes? If you are using a constructor method, '
+                                            'the series contain holes? If you are using a factory method, '
                                             'try specifying `fill_missing_dates=True` '
                                             'or specify the `freq` parameter.', logger)
         else:
@@ -113,13 +110,18 @@ class TimeSeries:
 
     @staticmethod
     def from_xarray(xa: xr.DataArray,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from an xarray DataArray.
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
         dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
         respectively.
+
+        The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
+        The time must be indexed either with a pandas DatetimeIndex or a pandas Int64Index. If a DatetimeIndex is
+        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+        issues (filling holes with NaN) at a performance cost.
 
         If two components have the same name or are not strings, this method will disambiguate the components
         names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
@@ -131,6 +133,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -141,12 +144,15 @@ class TimeSeries:
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
 
-        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
+        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)
         if fill_missing_dates and isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex):
             sorted_xa = xa.sortby(xa.dims[0])
             time_index = sorted_xa.get_index(xa.dims[0])
 
             if not freq:
+                # FIXME: This is taking long, especially on longer series
+                # FIXME: both constructing observed_frequencies, as well as resampling the DataArray are taking long
+                # FIXME: can we do better?
                 samples_size = 3
                 observed_frequencies = [
                     time_index[x:x + samples_size].inferred_freq
@@ -165,8 +171,13 @@ class TimeSeries:
 
                 freq = observed_frequencies.pop()
 
-            # TODO: if provided freq doesn't match the freq in index either raise an error or correct
             xa_ = sorted_xa.resample({xa.dims[0]: freq}).asfreq()
+
+        elif isinstance(xa.get_index(xa.dims[0]), pd.DatetimeIndex) and \
+                freq is not None and \
+                xa.get_index(xa.dims[0]).freq is None:
+            # The provided index does not have a freq; using the provided freq
+            xa_ = xa.resample({xa.dims[0]: freq}).asfreq()
         else:
             xa_ = xa
 
@@ -209,13 +220,62 @@ class TimeSeries:
 
         # We cast the array to float
         # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
-        return TimeSeries(xa_.astype(np.float))
+        if np.issubdtype(xa_.values.dtype, np.float32):
+            # We conserve the float32 type
+            return TimeSeries(xa_.astype(np.float32))
+        else:
+            # Otherwise we cast to float64
+            return TimeSeries(xa_.astype(np.float64))
+
+    @staticmethod
+    def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
+                 time_col: Optional[str] = None,
+                 value_cols: Optional[Union[List[str], str]] = None,
+                 fill_missing_dates: Optional[bool] = False,
+                 freq: Optional[str] = None,
+                 **kwargs,) -> 'TimeSeries':
+        """
+        Returns a deterministic TimeSeries instance built from a single CSV file.
+        One column can be used to represent the time (if not present, the time index will be an Int64Index)
+        and a list of columns `value_cols` can be used to indicate the values for this time series.
+
+        Parameters
+        ----------
+        filepath_or_buffer
+            The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function 
+        time_col
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            If not set, the pandas Int64Index will be used. 
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
+            `None`, all columns from the CSV file will be used (except for the time_col, if specified) 
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        **kwargs
+            Optional arguments to be passed to `pandas.read_csv` function
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+
+        df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
+        return TimeSeries.from_dataframe(df=df, 
+                                         time_col=time_col, 
+                                         value_cols=value_cols, 
+                                         fill_missing_dates=fill_missing_dates, 
+                                         freq=freq)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
-                       fill_missing_dates: Optional[bool] = True,
+                       fill_missing_dates: Optional[bool] = False,
                        freq: Optional[str] = None,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -229,13 +289,16 @@ class TimeSeries:
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas RangeIndex.
+            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+            issues (filling holes with NaN) at a performance cost.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
             `None`, the whole DataFrame will be used.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -258,9 +321,9 @@ class TimeSeries:
         if time_col:
             time_index = pd.DatetimeIndex(df[time_col])
         else:
-            raise_if_not(isinstance(df.index, pd.RangeIndex) or isinstance(df.index, pd.DatetimeIndex),
+            raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
                          'If time_col is not specified, the DataFrame must be indexed either with'
-                         'a DatetimeIndex, or with a RangeIndex.', logger)
+                         'a DatetimeIndex, or with a Int64Index (incl. RangeIndex).', logger)
             time_index = df.index
 
         if not time_index.name:
@@ -274,10 +337,15 @@ class TimeSeries:
 
     @staticmethod
     def from_series(pd_series: pd.Series,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,) -> 'TimeSeries':
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
+
+        The series must contain an index that is
+        either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+        issues (filling holes with NaN) at a performance cost.
 
         Parameters
         ----------
@@ -286,6 +354,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -304,9 +373,9 @@ class TimeSeries:
                                          freq=freq)
 
     @staticmethod
-    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.RangeIndex],
+    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
-                              fill_missing_dates: Optional[bool] = True,
+                              fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
                               columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
         """
@@ -315,7 +384,10 @@ class TimeSeries:
         Parameters
         ----------
         times
-            A `pandas.DateTimeIndex` or `pandas.RangeIndex` representing the time axis for the time series.
+            A `pandas.DateTimeIndex` or `pandas.Int64Index` (or `pandas.RangeIndex`) representing the time axis
+            for the time series. If a DatetimeIndex is
+            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these
+            issues (filling holes with NaN) at a performance cost.
         values
             A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
             and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
@@ -323,6 +395,7 @@ class TimeSeries:
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
@@ -335,8 +408,8 @@ class TimeSeries:
             A TimeSeries constructed from the inputs.
         """
 
-        raise_if_not(isinstance(times, pd.RangeIndex) or isinstance(times, pd.DatetimeIndex),
-                     'the `times` argument must be a RangeIndex or a DateTimeIndex. Use '
+        raise_if_not(isinstance(times, pd.Int64Index) or isinstance(times, pd.DatetimeIndex),
+                     'the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
         times_name = DIMS[0] if not times.name else times.name
@@ -359,9 +432,34 @@ class TimeSeries:
 
     @staticmethod
     def from_values(values: np.ndarray,
-                    fill_missing_dates: Optional[bool] = True,
+                    fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+        """
+        Returns a TimeSeries built from an array of values.
+        The series will have an integer index (Int64Index).
+
+        Parameters
+        ----------
+        values
+            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
+            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
+            should be (time, component), and in the latter case (time, component, sample).
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
+            Inferring the frequency and resampling the data can induce a significant performance overhead.
+        freq
+            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
+            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        columns
+            Columns to be used by the underlying pandas DataFrame.
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries constructed from the inputs.
+        """
 
         time_index = pd.RangeIndex(0, len(values), 1)
 
@@ -453,11 +551,11 @@ class TimeSeries:
         return self.components
 
     @property
-    def time_index(self) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    def time_index(self) -> Union[pd.DatetimeIndex, pd.Int64Index]:
         """
         Returns
         -------
-        Union[pd.DatetimeIndex, pd.RangeIndex]
+        Union[pd.DatetimeIndex, pd.Int64Index]
             The time index of this time series.
         """
         return self._time_index.copy()
@@ -465,14 +563,14 @@ class TimeSeries:
     @property
     def has_datetime_index(self) -> bool:
         """
-        Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with a RangeIndex)
+        Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an Int64Index)
         """
         return self._has_datetime_index
 
     @property
     def has_range_index(self) -> bool:
         """
-        Whether this series is indexed with a RangeIndex (otherwise it is indexed with a DatetimeIndex)
+        Whether this series is indexed with an Int64Index (otherwise it is indexed with a DatetimeIndex)
         """
         return not self._has_datetime_index
 
@@ -691,7 +789,7 @@ class TimeSeries:
         -------
         Union[pandas.Timestamp, int]
             A timestamp containing the first time of the TimeSeries (if indexed by DatetimeIndex),
-            or an integer (if indexed by RangeIndex)
+            or an integer (if indexed by Int64Index/RangeIndex)
         """
         return self._time_index[0]
 
@@ -701,7 +799,7 @@ class TimeSeries:
         -------
         Union[pandas.Timestamp, int]
             A timestamp containing the last time of the TimeSeries (if indexed by DatetimeIndex),
-            or an integer (if indexed by RangeIndex)
+            or an integer (if indexed by Int64Index/RangeIndex)
         """
         return self._time_index[-1]
 
@@ -898,7 +996,7 @@ class TimeSeries:
         if isinstance(point, float):
             raise_if_not(0. <= point <= 1., 'point (float) should be between 0.0 and 1.0.', logger)
             point_index = int((len(self) - 1) * point)
-        elif isinstance(point, int):
+        elif isinstance(point, (int, np.int64)):
             raise_if(point not in range(len(self)), "point (int) should be a valid index in series", logger)
             point_index = point
         elif isinstance(point, pd.Timestamp):
@@ -916,7 +1014,7 @@ class TimeSeries:
 
     def get_timestamp_at_point(self, point: Union[pd.Timestamp, float, int]) -> pd.Timestamp:
         """
-        Converts a point into a pandas.Timestamp in the time series
+        Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
         Parameters
         ----------
@@ -929,8 +1027,6 @@ class TimeSeries:
             In case of a `pandas.Timestamp`, point will be returned as is provided that the timestamp
             is present in the series time index, otherwise will raise a ValueError.
         """
-        raise_if_not(self._has_datetime_index, 'Called get_timestamp_at_point() but this series '
-                                               'is not indexed with a DatetimeIndex.', logger)
         idx = self.get_index_at_point(point)
         return self._time_index[idx]
 
@@ -1038,7 +1134,7 @@ class TimeSeries:
                                                      'same type.', logger)
         if isinstance(start_ts, pd.Timestamp):
             raise_if_not(self._has_datetime_index, 'Timestamps have been provided to slice(), but the series is '
-                                                   'indexed using an integer-based RangeIndex.', logger)
+                                                   'indexed using an integer-based Int64Index.', logger)
             idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t <= end_ts, self._time_index))
         else:
             raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
@@ -1067,7 +1163,7 @@ class TimeSeries:
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(start_ts)
 
-        if isinstance(start_ts, int):
+        if isinstance(start_ts, (int, np.int64)):
             return self[start_ts:start_ts+n]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
@@ -1099,7 +1195,7 @@ class TimeSeries:
         raise_if_not(n > 0, 'n should be a positive integer.', logger)
         self._raise_if_not_within(end_ts)
 
-        if isinstance(end_ts, int):
+        if isinstance(end_ts, (int, np.int64)):
             return self[end_ts-n+1:end_ts+1]
         elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
@@ -1226,7 +1322,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with a shifted index.
         """
-        if not isinstance(n, int):
+        if not isinstance(n, (int, np.int64)):
             logger.warning(f"TimeSeries.shift(): converting n to int from {n} to {int(n)}")
             n = int(n)
 
@@ -1236,7 +1332,10 @@ class TimeSeries:
             raise_log(OverflowError("the add operation between {} and {} will "
                                     "overflow".format(n * self.freq, self.time_index[-1])), logger)
 
-        new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+        if self.has_range_index:
+            new_time_index = self._time_index + n*self.freq
+        else:
+            new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return TimeSeries(new_xa)
 
@@ -1301,6 +1400,8 @@ class TimeSeries:
         bool
             True if both TimeSeries have the same index, False otherwise.
         """
+        if len(other) != len(self):
+            return False
         return (other.time_index == self.time_index).all()
 
     def append(self, other: 'TimeSeries') -> 'TimeSeries':
@@ -1318,7 +1419,7 @@ class TimeSeries:
             A new TimeSeries, obtained by appending the second TimeSeries to the first.
         """
         raise_if_not(other.has_datetime_index == self.has_datetime_index,
-                     'Both series must have the same type of time index (either DatetimeIndex or RangeIndex).', logger)
+                     'Both series must have the same type of time index (either DatetimeIndex or Int64Index).', logger)
         raise_if_not(other.freq == self.freq,
                      'Appended TimeSeries must have the same frequency as the current one', logger)
         raise_if_not(other.n_components == self.n_components,
@@ -1340,6 +1441,7 @@ class TimeSeries:
         if not self._has_datetime_index:
             new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
 
+        # TODO: fill_missing_dates takes a performance hit; do we need it here
         return TimeSeries.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
 
     def append_values(self, values: np.ndarray) -> 'TimeSeries':
@@ -1449,7 +1551,7 @@ class TimeSeries:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
         return TimeSeries(new_xa)
 
-    def add_datetime_attribute(self, attribute, one_hot: bool = False) -> 'TimeSeries':
+    def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
         Returns a new TimeSeries instance with one (or more) additional component(s) that contain an attribute
         of the time index of the current series specified with `attribute`, such as 'weekday', 'day' or 'month'.
@@ -1463,6 +1565,10 @@ class TimeSeries:
         one_hot
             Boolean value indicating whether to add the specified attribute as a one hot encoding
             (results in more columns).
+        cyclic
+            Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+            Alternative to one_hot encoding, enable only one of the two.
+            (adds 2 columns, corresponding to sin and cos transformation).
 
         Returns
         -------
@@ -1471,7 +1577,7 @@ class TimeSeries:
         """
         self._assert_deterministic()
         from .utils import timeseries_generation as tg
-        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot))
+        return self.stack(tg.datetime_attribute_timeseries(self.time_index, attribute, one_hot, cyclic))
 
     def add_holidays(self,
                      country_code: str,
@@ -1544,7 +1650,7 @@ class TimeSeries:
         Parameters
         ----------
         ts
-            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with RangeIndex) to check.
+            The `pandas.Timestamp` (if indexed with DatetimeIndex) or integer (if indexed with Int64Index) to check.
 
         Returns
         -------
@@ -1569,7 +1675,7 @@ class TimeSeries:
             Either a function which takes a value and returns a value ie. `f(x) = y`
             Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`
             The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
-            or an integer otherwise (if the series is indexed with a RangeIndex).
+            or an integer otherwise (if the series is indexed with an Int64Index).
 
         Returns
         -------
@@ -1622,8 +1728,8 @@ class TimeSeries:
     def plot(self,
              new_plot: bool = False,
              central_quantile: Union[float, str] = 0.5,
-             confidence_low_quantile: Optional[float] = 0.05,
-             confidence_high_quantile: Optional[float] = 0.95,
+             low_quantile: Optional[float] = 0.05,
+             high_quantile: Optional[float] = 0.95,
              *args,
              **kwargs):
         """
@@ -1638,14 +1744,14 @@ class TimeSeries:
             it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
             of the components' marginal distributions). For instance, setting `central_quantile=0.5` will plot the
             median of each component. `central_quantile` can also be set to 'mean'.
-        confidence_low_quantile
+        low_quantile
             The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `confidence_low_quantile` is None (default 0.05).
-        confidence_high_quantile
+        high_quantile
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
-            interval is shown if `confidence_high_quantile` is None (default 0.95).
+            interval is shown if `high_quantile` is None (default 0.95).
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -1658,8 +1764,8 @@ class TimeSeries:
                          'central_quantile must be either "mean", or a float between 0 and 1.',
                          logger)
 
-        if confidence_high_quantile is not None and confidence_low_quantile is not None:
-            raise_if_not(0. <= confidence_low_quantile <= 1. and 0. <= confidence_high_quantile <= 1.,
+        if high_quantile is not None and low_quantile is not None:
+            raise_if_not(0. <= low_quantile <= 1. and 0. <= high_quantile <= 1.,
                          'confidence interval low and high quantiles must be between 0 and 1.',
                          logger)
 
@@ -1704,14 +1810,60 @@ class TimeSeries:
             kwargs['alpha'] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
-            if comp.sample.size > 1 and confidence_low_quantile is not None and confidence_high_quantile is not None:
-                    low_series = comp.quantile(q=confidence_low_quantile, dim=DIMS[2])
-                    high_series = comp.quantile(q=confidence_high_quantile, dim=DIMS[2])
+            if comp.sample.size > 1 and low_quantile is not None and high_quantile is not None:
+                    low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
+                    high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                     plt.fill_between(self.time_index, low_series, high_series, color=color_used,
                                      alpha=(alpha_confidence_intvls if 'alpha' not in kwargs else kwargs['alpha']))
 
         plt.legend()
         plt.title(self._xa.name);
+
+    def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> 'TimeSeries':
+        """
+        Changes ts column names and returns a new TimeSeries instance.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the column names to be changed.
+        col_names_new
+            String or list of strings corresponding to the new column names. Must be the same length as col_names.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance.
+        """
+
+        if isinstance(col_names, str):
+            col_names = [col_names]
+        if isinstance(col_names_new, str):
+            col_names_new = [col_names_new]
+
+        raise_if_not(all([(x in self.columns.to_list()) for x in col_names]), 
+                                                    "Some column names in col_names don't exist in the time series.", logger)
+        
+        raise_if_not(len(col_names) == len(col_names_new), 'Length of col_names_new list should be'
+                                                    ' equal to the length of col_names list.', logger)
+
+
+        cols = self.components
+
+        for (o, n) in zip(col_names, col_names_new):
+            cols = [n if (c==o) else c for c in cols]
+
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={
+                self._xa.dims[0]: self.time_index, 
+                DIMS[1]: pd.Index(cols)
+                }
+        )
+        
+        return TimeSeries(new_xa)
+
 
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
@@ -1921,7 +2073,7 @@ class TimeSeries:
 
     def __getitem__(self,
                     key: Union[pd.DatetimeIndex,
-                               pd.RangeIndex,
+                               pd.Int64Index,
                                List[str],
                                List[int],
                                List[pd.Timestamp],
@@ -1936,7 +2088,7 @@ class TimeSeries:
         - str -> return a TimeSeries including the column(s) (components) specified as str.
         - int -> return a TimeSeries with the value(s) at the given row (time) index.
 
-        `pd.DatetimeIndex` and `pd.RangeIndex` are also supported and will return the corresponding value(s)
+        `pd.DatetimeIndex` and `pd.Int64Index` are also supported and will return the corresponding value(s)
         at the provided time indices.
 
         .. warning::
@@ -1944,10 +2096,10 @@ class TimeSeries:
         """
         def _check_dt():
             raise_if_not(self._has_datetime_index, 'Attempted indexing a series with a DatetimeIndex or a timestamp, '
-                                                   'but the series uses a RangeIndex.', logger)
+                                                   'but the series uses an Int64Index.', logger)
 
         def _check_range():
-            raise_if(self._has_datetime_index, 'Attempted indexing a series with a RangeIndex, '
+            raise_if(self._has_datetime_index, 'Attempted indexing a series with an Int64Index, '
                                                'but the series uses a DatetimeIndex.', logger)
 
         def _set_freq_in_xa(xa_: xr.DataArray):
@@ -1958,7 +2110,7 @@ class TimeSeries:
             else:
                 xa_.get_index(self._time_dim).freq = self._freq
 
-        # handle DatetimeIndex and RangeIndex:
+        # handle DatetimeIndex and Int64Index:
         if isinstance(key, pd.DatetimeIndex):
             _check_dt()
             xa_ = self._xa.sel({self._time_dim: key})
@@ -1968,7 +2120,7 @@ class TimeSeries:
             _set_freq_in_xa(xa_)
 
             return TimeSeries(xa_)
-        elif isinstance(key, pd.RangeIndex):
+        elif isinstance(key, pd.Int64Index):
             _check_range()
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
@@ -1976,7 +2128,7 @@ class TimeSeries:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
-            elif isinstance(key.start, int) or isinstance(key.stop, int):
+            elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
@@ -1989,7 +2141,7 @@ class TimeSeries:
         # handle simple types:
         elif isinstance(key, str):
             return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
-        elif isinstance(key, int):
+        elif isinstance(key, (int, np.int64)):
             return TimeSeries(self._xa.isel({self._time_dim: [key]}))
         elif isinstance(key, pd.Timestamp):
             _check_dt()
@@ -2004,7 +2156,7 @@ class TimeSeries:
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
-            elif all(isinstance(i, int) for i in key):
+            elif all(isinstance(i, (int, np.int64)) for i in key):
                 return TimeSeries(self._xa.isel({self._time_dim: key}))
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()

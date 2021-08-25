@@ -65,7 +65,7 @@ class EnergyDataset(DatasetLoaderCSV):
 class GasRateCO2Dataset(DatasetLoaderCSV):
     """
     Gas Rate CO2 dataset
-    Two components, length 296 (dummy time index)
+    Two components, length 296 (integer time index)
     """
 
     def __init__(self):
@@ -85,7 +85,7 @@ class HeartRateDataset(DatasetLoaderCSV):
     each series is exactly 15 minutes.
 
     This is the series1 here: http://ecg.mit.edu/time-series/
-    Using a dummy time index.
+    Using an integer time index.
     """
 
     def __init__(self):
@@ -140,7 +140,8 @@ class MonthlyMilkIncompleteDataset(DatasetLoaderCSV):
             uri=_DEFAULT_PATH+"/monthly-milk-incomplete.csv",
             hash="49b275c7e2f8f28a6a05224be1a049a4",
             header_time="Month",
-            format_time="%Y-%m"
+            format_time="%Y-%m",
+            freq='M'
         ))
 
 
@@ -168,7 +169,7 @@ class TaylorDataset(DatasetLoaderCSV):
     """
     Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
     Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts
-    (Uses a dummy time index).
+    (Uses an integer time index).
 
     https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor
 
@@ -197,7 +198,8 @@ class TemperatureDataset(DatasetLoaderCSV):
             uri=_DEFAULT_PATH+"/temps.csv",
             hash="ce5b5e4929793ec8b6a54711110acebf",
             header_time="Date",
-            format_time="%m/%d/%Y"
+            format_time="%m/%d/%Y",
+            freq='D'
         ))
 
 

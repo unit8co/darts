@@ -6,8 +6,8 @@ buildscript {
 }
 
 plugins {
-    id "com.palantir.docker" version "0.26.0"
-    id "com.palantir.docker-run" version "0.26.0"
+    id "com.palantir.docker" version "0.27.0"
+    id "com.palantir.docker-run" version "0.27.0"
 }
 
 // needed for palantir plugin
@@ -57,6 +57,21 @@ task setupPip(type: Exec) {
     commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
 }
 
+task installPipLatest {
+    dependsOn setupPip
+    doLast {
+        exec {
+            commandLine "pip", "install", "pip-tools"
+        }
+        exec {
+            commandLine "pip-compile", "-o", "requirements-latest.txt"
+        }
+        exec {
+            commandLine "pip", "install", "-r", "requirements-latest.txt"
+        }
+    }
+}
+
 void createPipInstallTask(String flavour) {
    String taskName = "pip_" + flavour;
    String taskArgument = "requirements/" + flavour + ".txt";
@@ -65,21 +80,21 @@ void createPipInstallTask(String flavour) {
    }
 }
 
-String[] flavours = ["core", "fbprophet", "pmdarima", "dev", "torch", "release"];
+String[] flavours = ["core", "prophet", "pmdarima", "dev", "torch", "release"];
 
 for(String flavour : flavours) {
     createPipInstallTask(flavour);
 }
 
 task installLocally(type:Exec) {
-    commandLine "pip", "install", ".[all]"
+    commandLine "pip", "install", "."
 }
 
 task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch, pip_release
+    dependsOn pip_core, pip_dev, pip_prophet, pip_pmdarima, pip_torch, pip_release
 }
 
 // Tests
@@ -115,19 +130,25 @@ void createPipRelatedTask(String flavour) {
    }
 }
 
-flavours = ["core", "fbprophet", "pmdarima", "torch"];
+flavours = ["core", "prophet", "pmdarima", "torch"];
 
 for(String flavour : flavours) {
     createPipRelatedTask(flavour);
 }
 
 task unitTest_all(type: Exec) {
-    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
+    dependsOn installPipLatest, pip_dev
+    doFirst {
+        installPipLatest
+    }
     commandLine "python", "-m", "unittest"
 }
 
 task coverageTest_all() {
-    dependsOn pip_core, pip_dev, pip_fbprophet, pip_pmdarima, pip_torch
+    dependsOn installPipLatest, pip_dev
+    doFirst {
+        installPipLatest
+    }
     doLast {
         coverageTestSteps()
     }

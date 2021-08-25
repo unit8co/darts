@@ -111,8 +111,10 @@ class Theta(ForecastingModel):
             self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=ALPHA_START)
             self.alpha = self.model.params["smoothing_level"]
 
-    def predict(self, n: int) -> 'TimeSeries':
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> 'TimeSeries':
+        super().predict(n, num_samples)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -296,8 +298,10 @@ class FourTheta(ForecastingModel):
         if self.normalization:
             self.fitted_values *= self.mean
 
-    def predict(self, n: int) -> 'TimeSeries':
-        super().predict(n)
+    def predict(self,
+                n: int,
+                num_samples: int = 1) -> 'TimeSeries':
+        super().predict(n, num_samples)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)

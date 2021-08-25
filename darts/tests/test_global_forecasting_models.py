@@ -7,12 +7,14 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
+from ..models.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
 try:
     from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihoodModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -26,6 +28,7 @@ if TORCH_AVAILABLE:
     models_cls_kwargs_errs = [
         (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
+        (RNNModel, {'training_length': 12, 'n_epochs': 10, 'likelihood': GaussianLikelihoodModel()}, 80),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
@@ -104,8 +107,12 @@ if TORCH_AVAILABLE:
             for model_cls, kwargs, err in models_cls_kwargs_errs:
 
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)
-                model.fit(series=[self.ts_pass_train, self.ts_pass_train_1],
-                          covariates=[self.time_covariates_train, self.time_covariates_train])
+
+                # Here we rely on the fact that all non-Dual models currently are Past models
+                cov_name = 'future_covariates' if isinstance(model, DualCovariatesTorchModel) else 'past_covariates'
+                cov_kwargs = {cov_name: [self.time_covariates_train, self.time_covariates_train]}
+
+                model.fit(series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs)
                 with self.assertRaises(ValueError):
                     # when model is fit from >1 series, one must provide a series in argument
                     model.predict(n=1)
@@ -114,25 +121,29 @@ if TORCH_AVAILABLE:
                     # when model is fit using multiple covariates, covariates are required at prediction time
                     model.predict(n=1, series=self.ts_pass_train)
 
+                cov_kwargs_train = {cov_name: self.time_covariates_train}
+                cov_kwargs_notrain = {cov_name: self.time_covariates}
                 with self.assertRaises(ValueError):
                     # when model is fit using covariates, n cannot be greater than output_chunk_length...
-                    model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates_train)
+                    model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_train)
 
                 # ... unless future covariates are provided
-                pred = model.predict(n=13, series=self.ts_pass_train, covariates=self.time_covariates)
+                pred = model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_notrain)
 
-                pred = model.predict(n=12, series=self.ts_pass_train, covariates=self.time_covariates)
+                pred = model.predict(n=12, series=self.ts_pass_train, **cov_kwargs_notrain)
                 mape_err = mape(self.ts_pass_val, pred)
                 self.assertTrue(mape_err < err, 'Model {} produces errors too high (several time '
                                                 'series with covariates). Error = {}'.format(model_cls, mape_err))
 
                 # when model is fit using 1 training and 1 covariate series, time series args are optional
+                if model._is_probabilistic:
+                    continue
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
-                model.fit(series=self.ts_pass_train, covariates=self.time_covariates_train)
+                model.fit(series=self.ts_pass_train, **cov_kwargs_train)
                 pred1 = model.predict(1)
                 pred2 = model.predict(1, series=self.ts_pass_train)
-                pred3 = model.predict(1, covariates=self.time_covariates_train)
-                pred4 = model.predict(1, covariates=self.time_covariates_train, series=self.ts_pass_train)
+                pred3 = model.predict(1, **cov_kwargs_train)
+                pred4 = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
                 self.assertEqual(pred1, pred2)
                 self.assertEqual(pred1, pred3)
                 self.assertEqual(pred1, pred4)
@@ -146,13 +157,13 @@ if TORCH_AVAILABLE:
             long_pred_no_cov = model.predict(n=160)
 
             model = TCNModel(input_chunk_length=50, output_chunk_length=5, n_epochs=20, random_state=0)
-            model.fit(series=self.target_past, covariates=self.covariates_past)
-            long_pred_with_cov = model.predict(n=160, covariates=self.covariates)
+            model.fit(series=self.target_past, past_covariates=self.covariates_past)
+            long_pred_with_cov = model.predict(n=160, past_covariates=self.covariates)
             self.assertTrue(mape(self.target_future, long_pred_no_cov) > mape(self.target_future, long_pred_with_cov),
                             'Models with future covariates should produce better predictions.')
 
             # block models can predict up to self.output_chunk_length points beyond the last future covariate...
-            model.predict(n=165, covariates=self.covariates)
+            model.predict(n=165, past_covariates=self.covariates)
 
             # ... not more
             with self.assertRaises(ValueError):
@@ -160,10 +171,10 @@ if TORCH_AVAILABLE:
 
             # recurrent models can only predict data points for time steps where future covariates are available
             model = RNNModel(n_epochs=1)
-            model.fit(series=self.target_past, covariates=self.covariates_past)
-            model.predict(n=160, covariates=self.covariates)
+            model.fit(series=self.target_past, future_covariates=self.covariates_past)
+            model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):
-                model.predict(n=161, covariates=self.covariates)
+                model.predict(n=161, future_covariates=self.covariates)
 
         def test_batch_predictions(self):
             # predicting multiple time series at once needs to work for arbitrary batch sizes
@@ -178,13 +189,14 @@ if TORCH_AVAILABLE:
         def _batch_prediction_test_helper_function(self, targets):
             epsilon = 1e-4
             model = TCNModel(input_chunk_length=50, output_chunk_length=10, n_epochs=10, random_state=0)
-            model.fit(series=targets[0], covariates=self.covariates_past)
+            model.fit(series=targets[0], past_covariates=self.covariates_past)
             preds_default = model.predict(n=160, series=targets,
-                                          covariates=[self.covariates] * len(targets), batch_size=None)
+                                          past_covariates=[self.covariates] * len(targets), batch_size=None)
 
-            for batch_size in range(1, 5):
+            # make batch size large enough to test stacking samples
+            for batch_size in range(1, 4 * len(targets)):
                 preds = model.predict(n=160, series=targets,
-                                      covariates=[self.covariates] * len(targets), batch_size=batch_size)
+                                      past_covariates=[self.covariates] * len(targets), batch_size=batch_size)
 
                 for i in range(len(targets)):
                     self.assertLess(sum(sum((preds[i] - preds_default[i]).values())), epsilon)
@@ -203,6 +215,8 @@ if TORCH_AVAILABLE:
         def test_same_result_with_different_n_jobs(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                if model._is_probabilistic():
+                    continue
                 multiple_ts = [self.ts_pass_train] * 10
 
                 model.fit(multiple_ts)
@@ -249,7 +263,7 @@ if TORCH_AVAILABLE:
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 multiple_ts = [self.ts_pass_train] * 10
-                train_dataset = model._build_train_dataset(multiple_ts, covariates=None)
+                train_dataset = model._build_train_dataset(multiple_ts, past_covariates=None, future_covariates=None)
                 epochs = 42
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
