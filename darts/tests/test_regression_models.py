@@ -525,7 +525,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model.predict(12, series=target_train, past_covariates=covariates)
 
     @patch.object(darts.models.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
-    def test_gradient_boosted_model_with_eval(self, lgb_fit_patch):
+    def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
+        """test whether these evaluation set parameters are passed to LGBRegressor """
         model = GradientBoostedModel(lags=4, lags_past_covariates=2)
         split_index = 450
         model.fit(series=self.ts_sum1[:split_index],
@@ -535,6 +536,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                   early_stopping_rounds=2,
                   )
 
-        #lgb_fit_patch.assert_called_once()
-        print(lgb_fit_patch.call_args)
+        lgb_fit_patch.assert_called_once()
         assert lgb_fit_patch.call_args.kwargs['eval_set'] is not None
+        assert lgb_fit_patch.call_args.kwargs['early_stopping_rounds'] == 2

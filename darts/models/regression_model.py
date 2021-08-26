@@ -358,7 +358,7 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = series_dim + covariates_dim
 
-        self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts)
+        self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts, **kwargs)
 
     def _get_prediction_data(
         self,
