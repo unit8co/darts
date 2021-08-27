@@ -37,15 +37,18 @@ class GradientBoostedModel(RegressionModel):
 
         Parameters
         ----------
-        lags : Union[int, list]
-            Number of lagged target values used to predict the next time step. If an integer is given
-            the last `lags` lags are used (inclusive). Otherwise a list of integers with lags is required.
-        lags_exog : Union[int, list, bool]
-            Number of lagged exogenous values used to predict the next time step. If an integer is given
-            the last `lags_exog` lags are used (inclusive). Otherwise a list of integers with lags is required.
-            If True `lags` will be used to determine lags_exog. If False, the values of all exogenous variables
-            at the current time `t`. This might lead to leakage if for **predictions** the values of the exogenous
-            variables at time `t` are not known.
+        lags
+            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
+            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+        lags_past_covariates
+            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
+            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
+            with lags < 0 is required.
+        lags_future_covariates
+            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
+            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
+            of integers with lags is required.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
@@ -66,27 +69,37 @@ class GradientBoostedModel(RegressionModel):
         )
 
     def fit(self,
-            series: TimeSeries,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            eval_series: TimeSeries = None,
+            eval_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             eval_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             eval_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             max_samples_per_ts: Optional[int] = None,
             **kwargs) -> None:
-        """ Fits/trains the model using the provided list of features time series and the target time series.
-            Optionally, validation dataset can be provided.
-
+        """
+        Fits/trains the model using the provided list of features time series and the target time series.
         Parameters
         ----------
-        series : TimeSeries
-            TimeSeries object containing the target values.
-        exog : TimeSeries, optional
-            TimeSeries object containing the exogenous values.
-        eval_series : TimeSeries, optional
-            Evaluation TimeSeries object containing the target values.
-        eval_exog : TimeSeries, optional
-            Evaluation TimeSeries object containing the exogenous values.
+        series : Union[TimeSeries, Sequence[TimeSeries]]
+            TimeSeries or Sequence[TimeSeries] object containing the target values.
+        past_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+            Optionally, a series or sequence of series specifying future-known covariates
+        eval_series : Union[TimeSeries, Sequence[TimeSeries]]
+            TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
+        eval_past_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+            Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
+        eval_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+            Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
+        max_samples_per_ts : int
+            This is an upper bound on the number of tuples that can be produced
+            per time series. It can be used in order to have an upper bound on the total size of the dataset and
+            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
+            creation) to know their sizes, which might be expensive on big datasets.
+            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
+            most recent `max_samples_per_ts` samples will be considered.
         """
 
         if eval_series is not None:
@@ -103,4 +116,3 @@ class GradientBoostedModel(RegressionModel):
                     future_covariates=future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
                     **kwargs)
-
