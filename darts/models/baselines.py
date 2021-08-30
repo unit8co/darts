@@ -130,7 +130,10 @@ class NaiveEnsembleModel(EnsembleModel):
             else:
                 model.fit(series=series)
 
-    def ensemble(self, predictions: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def ensemble(self,
+                 predictions: Union[TimeSeries, Sequence[TimeSeries]],
+                 series: Optional[Sequence[TimeSeries]] = None
+                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         if isinstance(predictions, Sequence):
             return [TimeSeries.from_series(p.pd_dataframe().sum(axis=1) / len(self.models)) for p in predictions]
         else:

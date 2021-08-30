@@ -153,8 +153,6 @@ class RegressionEnsembleModel(EnsembleModel):
         self.models = [model.untrained_model() if hasattr(model, "untrained_model") else model
                        for model in self.models]
 
-        # fit the forecasting models with all the data
-
         for model in self.models:
             if self.is_global_ensemble:
                 model.fit(series=series,
@@ -163,8 +161,11 @@ class RegressionEnsembleModel(EnsembleModel):
             else:
                 model.fit(self.training_series)
 
-    def ensemble(self, predictions: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def ensemble(self,
+                 predictions: Union[TimeSeries, Sequence[TimeSeries]],
+                 series: Optional[Sequence[TimeSeries]] = None) -> Union[TimeSeries, Sequence[TimeSeries]]:
         if self.is_univariate:
             return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
         else:
-            return self.regression_model.predict(n=len(predictions[0]), future_covariates=predictions)
+            return [self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)
+                    for serie, prediction in zip(series, predictions)]
