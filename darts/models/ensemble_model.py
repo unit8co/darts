@@ -44,7 +44,8 @@ class EnsembleModel(GlobalForecastingModel):
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
         """
         Fits the model on the provided series.
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
@@ -54,21 +55,21 @@ class EnsembleModel(GlobalForecastingModel):
                  "All models are of type darts.models.ForecastingModel which do not support covariates.",
                  logger
                  )
-        raise_if(not self.is_global_ensemble and covariates is not None,
+        raise_if(not self.is_global_ensemble and past_covariates is not None,
                  "All models are of type darts.models.ForecastingModel which do not support covariates.",
                  logger
                  )
 
         self.is_univariate = isinstance(series, TimeSeries)
-        if covariates is not None:
-            self.is_univariate_covariate = isinstance(covariates, TimeSeries)
+        if past_covariates is not None:
+            self.is_univariate_covariate = isinstance(past_covariates, TimeSeries)
 
-        raise_if(covariates is not None and (self.is_univariate != self.is_univariate_covariate),
+        raise_if(past_covariates is not None and (self.is_univariate != self.is_univariate_covariate),
                  "Both series and covariates have to be either univariate or multivariate.",
                  logger
                  )
 
-        super().fit(series, covariates)
+        super().fit(series, past_covariates, future_covariates)
 
     def _stack_ts_seq(self, seq1, seq2):
         # stacks two sequences of timeseries elementwise
@@ -77,21 +78,25 @@ class EnsembleModel(GlobalForecastingModel):
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
-        super().predict(n, series, covariates, num_samples)
+        super().predict(n=n, series=series,
+                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
 
         if self.is_global_ensemble and not self.is_univariate:
-            predictions = self.models[0].predict(n, series, covariates, num_samples)
+            predictions = self.models[0].predict(n=n, series=series,
+                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
         else:
             predictions = self.models[0].predict(n=n, num_samples=num_samples)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
                 if self.is_global_ensemble and not self.is_univariate:
-                    prediction = model.predict(n, series, covariates, num_samples)
+                    prediction = model.predict(n=n, series=series,
+                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
                     predictions = self._stack_ts_seq(predictions, prediction)
                 else:
                     prediction = model.predict(n=n, num_samples=num_samples)
