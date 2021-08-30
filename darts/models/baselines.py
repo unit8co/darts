@@ -119,12 +119,14 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None) -> None:
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            ) -> None:
 
-        super().fit(series, covariates)
+        super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(series=series, covariates=covariates)
+                model.fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
             else:
                 model.fit(series=series)
 
