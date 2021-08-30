@@ -66,13 +66,14 @@ class RegressionEnsembleModel(EnsembleModel):
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
             ) -> None:
 
-        super().fit(series, covariates)
+        super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
 
         # spare train_n_points points to serve as regression target
-        if isinstance(series, TimeSeries):
+        if self.is_univariate:
             train_n_points_too_big = len(self.training_series) <= self.train_n_points
         else:
             train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
@@ -87,32 +88,55 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
-        if covariates is not None:
-            if self.is_univariate_covariate:
-                forecast_covariates = self.covariate_series[:-self.train_n_points]
+        if past_covariates is not None:
+            if self.is_univariate:
+                past_forecast_covariates = self.past_covariate_series[:-self.train_n_points]
             else:
-                forecast_covariates, _ = \
-                    self._split_multi_ts_sequence(self.train_n_points, covariates)
+                past_forecast_covariates, _ = \
+                    self._split_multi_ts_sequence(self.train_n_points, past_covariates)
         else:
-            forecast_covariates=None
+            past_forecast_covariates=None
+
+        if future_covariates is not None:
+            if self.is_univariate:
+                split_point = len(series) - self.train_n_points
+                future_forecast_covariates = self.future_covariate_series[:split_point]
+            else:
+                # Just for convenience, shortest `series` determines splitting point. Doesn't matter if all timeseries
+                # are of the same length.
+                split_point = min([len(s) for s in series]) - self.train_n_points
+                future_forecast_covariates, _ = \
+                    self._split_multi_ts_sequence(split_point, future_covariates)
+        else:
+            future_forecast_covariates=None
 
         # fit the forecasting models
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(forecast_training, forecast_covariates)
+                model.fit(series=forecast_training,
+                          past_covariates=past_forecast_covariates,
+                          future_covariates=future_forecast_covariates)
             else:
                 model.fit(forecast_training)
 
         # predict train_n_points points for each model
         if self.is_global_ensemble and not self.is_univariate:
-            predictions = self.models[0].predict(n=self.train_n_points, series=forecast_training, covariates=covariates)
+            predictions = self.models[0].predict(
+                n=self.train_n_points,
+                series=forecast_training,
+                past_covariates=past_forecast_covariates,
+                future_covariates=future_forecast_covariates)
         else:
             predictions = self.models[0].predict(self.train_n_points)
 
         if len(self.models) > 1:
             for model in self.models[1:]:
                 if self.is_global_ensemble and not self.is_univariate:
-                    prediction = model.predict(n=self.train_n_points, series=forecast_training, covariates=covariates)
+                    prediction = model.predict(
+                        n=self.train_n_points,
+                        series=forecast_training,
+                        past_covariates=past_forecast_covariates,
+                        future_covariates=future_forecast_covariates)
                     predictions = self._stack_ts_seq(predictions, prediction)
                 else:
                     prediction = model.predict(self.train_n_points)
@@ -129,9 +153,18 @@ class RegressionEnsembleModel(EnsembleModel):
         self.models = [model.untrained_model() if hasattr(model, "untrained_model") else model
                        for model in self.models]
 
-        # fit the forecasting models
-        for model in self.models:
-            model.fit(self.training_series)
+        # fit the forecasting models with all the data
 
-    def ensemble(self, predictions: TimeSeries) -> TimeSeries:
-        return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
+        for model in self.models:
+            if self.is_global_ensemble:
+                model.fit(series=series,
+                          past_covariates=past_covariates,
+                          future_covariates=future_covariates)
+            else:
+                model.fit(self.training_series)
+
+    def ensemble(self, predictions: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        if self.is_univariate:
+            return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
+        else:
+            return self.regression_model.predict(n=len(predictions[0]), future_covariates=predictions)

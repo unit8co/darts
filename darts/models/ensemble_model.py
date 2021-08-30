@@ -105,7 +105,7 @@ class EnsembleModel(GlobalForecastingModel):
         return self.ensemble(predictions)
 
     @abstractmethod
-    def ensemble(self, predictions: TimeSeries) -> TimeSeries:
+    def ensemble(self, predictions: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
 
@@ -116,8 +116,8 @@ class EnsembleModel(GlobalForecastingModel):
 
         Returns
         -------
-        TimeSeries
-            The predicted `TimeSeries` obtained by ensembling the individual predictions
+        TimeSeries or Sequence[TimeSeries]
+            The predicted ``TimeSeries`` or sequence of ``TimeSeries`` obtained by ensembling the individual predictions
         """
         pass
 
