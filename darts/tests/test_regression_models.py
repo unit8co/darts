@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 
+import darts.models
 from .. import TimeSeries
 from ..metrics import rmse
-from ..models import RegressionModel, RandomForest, LinearRegressionModel
+from ..models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
@@ -14,7 +15,7 @@ from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegresso
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 from darts.models.regression_model import _shift_matrices, _update_min_max
-
+from unittest.mock import patch, ANY
 
 def train_test_split(features, target, split_ts):
     """
@@ -59,7 +60,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_sum2 = ts_sum1 + ts_random_walk
 
     # default regression models
-    models = [RandomForest, LinearRegressionModel, RegressionModel]
+    models = [
+        RandomForest,
+        LinearRegressionModel,
+        RegressionModel,
+        LightGBMModel
+    ]
 
     target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
     past_covariates = tg.linear_timeseries(start_value=50, end_value=99, length=50).stack(
@@ -344,7 +350,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19)
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19.5)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
@@ -517,3 +523,19 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model.predict(11, series=target_train, past_covariates=covariates)
         with self.assertRaises(ValueError):
             model.predict(12, series=target_train, past_covariates=covariates)
+
+    @patch.object(darts.models.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
+    def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
+        """test whether these evaluation set parameters are passed to LGBRegressor """
+        model = LightGBMModel(lags=4, lags_past_covariates=2)
+        split_index = 450
+        model.fit(series=self.ts_sum1[:split_index],
+                  past_covariates=self.ts_cov1[:split_index],
+                  eval_series=self.ts_sum1[split_index:],
+                  eval_past_covariates=self.ts_cov1[split_index:],
+                  early_stopping_rounds=2,
+                  )
+
+        lgb_fit_patch.assert_called_once()
+        assert lgb_fit_patch.call_args.kwargs['eval_set'] is not None
+        assert lgb_fit_patch.call_args.kwargs['early_stopping_rounds'] == 2
