@@ -4,7 +4,7 @@ import pandas as pd
 import darts.models
 from .. import TimeSeries
 from ..metrics import rmse
-from ..models import RegressionModel, RandomForest, LinearRegressionModel, GradientBoostedModel
+from ..models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
@@ -64,7 +64,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         RandomForest,
         LinearRegressionModel,
         RegressionModel,
-        GradientBoostedModel
+        LightGBMModel
     ]
 
     target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
@@ -527,7 +527,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     @patch.object(darts.models.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """test whether these evaluation set parameters are passed to LGBRegressor """
-        model = GradientBoostedModel(lags=4, lags_past_covariates=2)
+        model = LightGBMModel(lags=4, lags_past_covariates=2)
         split_index = 450
         model.fit(series=self.ts_sum1[:split_index],
                   past_covariates=self.ts_cov1[:split_index],

@@ -1,6 +1,6 @@
 """
-Gradient Boosted Model
-----------------------
+LightGBM Model
+--------------
 
 This is a LightGBM implementation of Gradient Boosted Trees algorightm.
 
@@ -27,7 +27,7 @@ import lightgbm as lgb
 logger = get_logger(__name__)
 
 
-class GradientBoostedModel(RegressionModel):
+class LightGBMModel(RegressionModel):
     def __init__(self,
                  lags: Union[int, list] = None,
                  lags_past_covariates: Union[int, List[int]] = None,

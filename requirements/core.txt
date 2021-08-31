@@ -11,4 +11,4 @@ scikit-learn>=0.24.0
 filterpy>=1.4.5
 joblib>=1.0.0
 requests>=2.25.0
-lightgbm==3.2.1
+lightgbm>=3.2.1

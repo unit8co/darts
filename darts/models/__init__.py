@@ -39,7 +39,7 @@ except ModuleNotFoundError:
 from .linear_regression_model import LinearRegressionModel
 from .random_forest import RandomForest
 from .regression_model import RegressionModel
-from .gradient_boosted_model import GradientBoostedModel
+from .gradient_boosted_model import LightGBMModel
 
 # Ensembling
 from .ensemble_model import EnsembleModel
