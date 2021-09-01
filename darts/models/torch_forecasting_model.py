@@ -847,6 +847,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.eval()
         with torch.no_grad():
             for batch_idx, val_batch in enumerate(val_loader):
+                val_batch = self._batch_to_device(val_batch)
                 output = self._produce_train_output(val_batch[:-1])
                 target = val_batch[-1]
                 loss = self._compute_loss(output, target)

@@ -40,14 +40,18 @@ jobs:
         run: |
           ./gradlew installPipLatest
 
-      - name: "5. Attach cache for pip"
+      - name: "5. Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "6. Attach cache for pip"
         uses: actions/cache@v1
         id: cache
         with:
           path: ~/.cache/pip
           key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
 
-      - name: "6. Tests"
+      - name: "7. Tests"
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
