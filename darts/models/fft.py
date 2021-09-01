@@ -196,7 +196,7 @@ class FFT(ForecastingModel):
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
         (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods
-        (controlled by the `required_matches` argument).
+        Note that if the training series contains any NaNs (missing values), these will be filled using `darts.utils.missing_values.fill_missing_values()`.
 
         Examples:
 

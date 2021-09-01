@@ -230,3 +230,12 @@ To build documentation locally just run
 ./gradlew buildDocs
 ```
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
+
+### LightGBM on Mac OS Big Sur
+
+To use LightGBM on your Mac, you need to have `openmp` installed. Please refer to the installation
+[documentation](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS from [LightGBM website](https://lightgbm.readthedocs.io/en/latest/index.html).
+
+**Warning**: as of July 2021 there is an issue with ``libomp`` version 12.0 that results in 
+[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
+Please refer to the [github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353) for details on how to downgrade the ``libomp`` library.
