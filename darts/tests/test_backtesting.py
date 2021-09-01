@@ -37,13 +37,14 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
-def compare_best_against_random(model_class, params, series):
+def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in expanding window mode
     np.random.seed(1)
     best_model_1, _ = model_class.gridsearch(params,
                                              series,
                                              forecast_horizon=10,
+                                             stride=stride,
                                              metric=mape,
                                              start=series.time_index[-21])
 
@@ -231,6 +232,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         theta_params = {"theta": list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series_int_index))
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series, stride=2))
 
         fft_params = {"nr_freqs_to_keep": [10, 50, 100], "trend": [None, "poly", "exp"]}
         self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
