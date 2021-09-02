@@ -35,9 +35,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
-    def get_global_models(self):
-        return [RNNModel(input_chunk_length=20, output_chunk_length=5, n_epochs=1),
-                BlockRNNModel(input_chunk_length=20, output_chunk_length=5, n_epochs=1),
+    def get_global_models(self, output_chunk_length=5):
+        return [RNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1),
                 ]
 
     def test_accepts_different_regression_models(self):
@@ -106,16 +106,16 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=2)
 
         def test_train_predict_global_models_univar(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(), 10)
-            ensemble.fit(self.combined)
+            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
+            ensemble.fit(series=self.combined)
             ensemble.predict(10)
 
         def test_train_predict_global_models_multivar_no_covariates(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(), 10)
+            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
             ensemble.fit(self.seq1)
             ensemble.predict(10, self.seq1)
 
         def test_train_predict_global_models_multivar_with_covariates(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(), 10)
+            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
             ensemble.fit(self.seq1, self.cov1)
             ensemble.predict(10, self.seq1, self.cov1)

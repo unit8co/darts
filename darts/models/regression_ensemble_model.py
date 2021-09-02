@@ -58,12 +58,6 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
-    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
-                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-        left = [ts[:-n] for ts in ts_sequence]
-        right = [ts[-n:] for ts in ts_sequence]
-        return left, right
-
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -113,9 +107,13 @@ class RegressionEnsembleModel(EnsembleModel):
         # fit the forecasting models
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(series=forecast_training,
-                          past_covariates=past_forecast_covariates,
-                          future_covariates=future_forecast_covariates)
+                kwargs = dict(series=forecast_training)
+                if model.uses_past_covariates:
+                    kwargs['past_covariates'] = past_forecast_covariates
+                if model.uses_future_covariates:
+                    kwargs['future_covariates'] = future_forecast_covariates
+                model.fit(**kwargs)
+
             else:
                 model.fit(forecast_training)
 
@@ -155,9 +153,13 @@ class RegressionEnsembleModel(EnsembleModel):
 
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(series=series,
-                          past_covariates=past_covariates,
-                          future_covariates=future_covariates)
+                kwargs = dict(series=forecast_training)
+                if model.uses_past_covariates:
+                    kwargs['past_covariates'] = past_forecast_covariates
+                if model.uses_future_covariates:
+                    kwargs['future_covariates'] = future_forecast_covariates
+                model.fit(**kwargs)
+
             else:
                 model.fit(self.training_series)
 

@@ -29,6 +29,7 @@ from ..utils import (
     _historical_forecasts_general_checks,
     _parallel_apply
 )
+import inspect
 
 from .. import metrics
 
@@ -86,6 +87,14 @@ class ForecastingModel(ABC):
         probabilistic predictions.
         """
         return False
+
+    @property
+    def uses_past_covariates(self):
+        return 'past_covariates' in inspect.signature(self.fit).parameters.keys()
+
+    @property
+    def uses_future_covariates(self):
+        return 'future_covariates' in inspect.signature(self.fit).parameters.keys()
 
     @abstractmethod
     def predict(self,

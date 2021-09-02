@@ -3,7 +3,7 @@ Ensemble Model Base Class
 """
 
 from abc import abstractmethod
-from typing import List, Optional, Union, Sequence
+from typing import List, Optional, Union, Sequence, Tuple
 from functools import reduce
 
 from ..timeseries import TimeSeries
@@ -74,6 +74,12 @@ class EnsembleModel(GlobalForecastingModel):
     def _stack_ts_seq(self, seq1, seq2):
         # stacks two sequences of timeseries elementwise
         return [ts1.stack(ts2) for ts1, ts2 in zip(seq1, seq2)]
+
+    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
+                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        left = [ts[:-n] for ts in ts_sequence]
+        right = [ts[-n:] for ts in ts_sequence]
+        return left, right
 
     def predict(self,
                 n: int,

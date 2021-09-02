@@ -78,7 +78,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         naive_ensemble.fit(self.seq1, self.cov1)
         predict_series = [s[:12] for s in self.seq1]
         predict_covariates = [c[:14] for c in self.cov1]
-        naive_ensemble.predict(n=2, series=predict_series, covariates=predict_covariates)
+        naive_ensemble.predict(n=2, series=predict_series, past_covariates=predict_covariates)
 
     def test_input_models_mixed(self):
         with self.assertRaises(ValueError):

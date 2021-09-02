@@ -126,7 +126,12 @@ class NaiveEnsembleModel(EnsembleModel):
         super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
         for model in self.models:
             if self.is_global_ensemble:
-                model.fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
+                kwargs = dict(series=series)
+                if model.uses_past_covariates:
+                    kwargs['past_covariates'] = past_covariates
+                if model.uses_future_covariates:
+                    kwargs['future_covariates'] = future_covariates
+                model.fit(**kwargs)
             else:
                 model.fit(series=series)
 
