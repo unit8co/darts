@@ -11,6 +11,7 @@ from statsmodels.tsa.stattools import acf
 from .forecasting_model import ForecastingModel
 from ..timeseries import TimeSeries
 from ..logging import get_logger
+from ..utils.missing_values import fill_missing_values
 
 logger = get_logger(__name__)
 
@@ -195,8 +196,7 @@ class FFT(ForecastingModel):
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
         (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods
-        (controlled by the `required_matches` argument).
-        Please note that the training sequence must not contain any NaN values for the model to produce useful output.
+        Note that if the training series contains any NaNs (missing values), these will be filled using `darts.utils.missing_values.fill_missing_values()`.
 
         Examples:
 
@@ -234,6 +234,7 @@ class FFT(ForecastingModel):
         return 'FFT(nr_freqs_to_keep=' + str(self.nr_freqs_to_keep) + ', trend=' + str(self.trend) + ')'
 
     def fit(self, series: TimeSeries):
+        series = fill_missing_values(series)
         super().fit(series)
         series = self.training_series
 

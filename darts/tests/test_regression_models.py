@@ -537,5 +537,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                   )
 
         lgb_fit_patch.assert_called_once()
-        assert lgb_fit_patch.call_args.kwargs['eval_set'] is not None
-        assert lgb_fit_patch.call_args.kwargs['early_stopping_rounds'] == 2
+
+        assert lgb_fit_patch.call_args[1]['eval_set'] is not None
+        assert lgb_fit_patch.call_args[1]['early_stopping_rounds'] == 2

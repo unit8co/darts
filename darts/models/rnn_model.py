@@ -141,7 +141,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
-            `darts.models.rnn_model.RNNModule`.
+            `darts.models.rnn_model._RNNModule`.
         input_chunk_length
             Number of past time steps that are fed to the forecasting module at prediction time.
         hidden_dim
@@ -237,7 +237,12 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                                dropout=self.dropout,
                                num_layers=self.n_rnn_layers)
         else:
-            model = self.rnn_type_or_module
+            model = self.rnn_type_or_module(name='custom_module',
+                                            input_size=input_dim,
+                                            target_size=target_size,
+                                            hidden_dim=self.hidden_dim,
+                                            dropout=self.dropout,
+                                            num_layers=self.n_rnn_layers)
         return model
 
     def _build_train_dataset(self,
