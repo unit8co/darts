@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union
+from typing import Tuple, Optional, Callable, Any, List, Union, TextIO
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
@@ -911,6 +911,57 @@ class TimeSeries:
         else:
             return self._xa[:, 0, sample].values
 
+    def head(self, samples:int = 5):
+        """Return first n samples from TimeSeries.
+
+            Parameters
+            ----------
+            samples
+                number of samples to display
+
+            Returns
+            -------
+            numpy.ndarray
+                Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
+                # of ``samples`` samples. [Default: 5]
+        """
+        # test how this will work for univariate and multivariate cases
+        pass
+
+    def tail(self, samples: int = 5):
+        """Return last n samples from TimeSeries.
+
+            Parameters
+            ----------
+            samples
+                number of samples to display
+
+            Returns
+            -------
+            numpy.ndarray
+                Three dimensional array of (time, component, samples) where "samples" dimension has been cut off except
+                # of ``samples`` from the bottom. [Default: 5]
+        """
+        # test how this will work for univariate and multivariate cases
+        pass
+
+    def concatenate(self, other: 'TimeSeries', axis: int = 0):
+        """Concatenates other timeseries to the current one along given axis.
+
+            Parameters
+            ----------
+            other: TimeSeries
+                another timeseries to concatenate to this one
+            axis:
+                axis along which timeseries will be concatenated. [0, 1 or 2; Default: 0]
+
+            Returns
+            -------
+            TimeSeries
+                concatenated timeseries
+        """
+        pass
+
     """
     Other methods
     =============
@@ -1724,6 +1775,19 @@ class TimeSeries:
             A JSON String representing the time series
         """
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
+
+    def to_csv(self,
+               path_or_buf: Optional[Union[str, TextIO]],
+               sep: str = ",",
+               header: Union[bool, List[str]] = True,
+               index: bool = True
+               ):
+        if not self.is_deterministic:
+            raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
+                                     'time series, and this series is not deterministic (it contains several samples). '
+                                     'Consider calling quantile_df() instead.'))
+
+        self.pd_dataframe().to_csv(path_or_buf=path_or_buf, sep=sep, header=header, index=index)
 
     def plot(self,
              new_plot: bool = False,
