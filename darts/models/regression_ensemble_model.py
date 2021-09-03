@@ -153,11 +153,11 @@ class RegressionEnsembleModel(EnsembleModel):
 
         for model in self.models:
             if self.is_global_ensemble:
-                kwargs = dict(series=forecast_training)
+                kwargs = dict(series=series)
                 if model.uses_past_covariates:
-                    kwargs['past_covariates'] = past_forecast_covariates
+                    kwargs['past_covariates'] = past_covariates
                 if model.uses_future_covariates:
-                    kwargs['future_covariates'] = future_forecast_covariates
+                    kwargs['future_covariates'] = future_covariates
                 model.fit(**kwargs)
 
             else:
