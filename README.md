@@ -33,7 +33,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 * [Using Past and Future Covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 
-## Install
+## Quick Install
 
 We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
@@ -123,34 +123,43 @@ inferences of the underlying states/values.
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.
 
-Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support
---- | --- | --- | --- | --- | --- | ---
-`ARIMA` | x | | x | | |
-`VARIMA` | x | x | | | |
-`AutoARIMA` | x | | | | |
-`ExponentialSmoothing` | x | | x | | |
-`Theta` and `FourTheta` | x | | | | |
-`Prophet` | x | | | | |
-`FFT` (Fast Fourier Transform) | x | | | | |
-`RegressionModel` (incl `RandomForest` and `LinearRegressionModel`) | x | x | | x | x | x
-`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | 
-`NBEATSModel` | x | x | | x | x | 
-`TCNModel` | x | x | x | x | x | 
-`TransformerModel` | x | x | | x | x | 
-Naive Baselines | x | | | | |
+Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support | Reference
+--- | --- | --- | --- | --- | --- | --- | ---
+`ARIMA` | x | | x | | | |
+`VARIMA` | x | x | | | | |
+`AutoARIMA` | x | | | | | |
+`ExponentialSmoothing` | x | | x | | | |
+`Theta` and `FourTheta` | x | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
+`Prophet` | x | | | | | | [Prophet repo](https://github.com/facebook/prophet)
+`FFT` (Fast Fourier Transform) | x | | | | | |
+`RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | x | x | | x | x | x |
+`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x | [DeepAR paper](https://arxiv.org/abs/1704.04110)
+`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | |
+`NBEATSModel` | x | x | | x | x | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
+`TCNModel` | x | x | x | x | x | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
+`TransformerModel` | x | x | | x | x | | 
+Naive Baselines | x | | | | | |
 
-## Contribute
+
+## Community & Contact
+
+Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
+ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
+or have a feature request, Github issues are also welcome.
+
+If what you want to tell us is not suitable for Discord or Github, 
+feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for 
+darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other 
+inquiries.
+
+### Contribute
 
 The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on GitHub.
+We welcome pull requests and issues on Github.
 
-Before working on a contribution (a new feature or a fix), [**check our contribution guidelines**](CONTRIBUTE.md).
+Before working on a contribution (a new feature or a fix),
+ [**check our contribution guidelines**](CONTRIBUTE.md).
 
-
-## Contact Us
-
-If what you want to tell us is not a suitable github issue, feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other inquiries.
 
 ## Installation Guide
 
@@ -191,6 +200,25 @@ we also maintain the `u8darts` package, which provides the following alternate l
 * Install core + Facebook Prophet: `pip install 'u8darts[prophet]'`
 * Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
 
+### Enabling Support for LightGBM
+
+To enable support for LightGBM in Darts, please follow the 
+[installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
+
+#### MacOS Issues with LightGBM
+At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
+[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
+Here's the procedure to downgrade the ``libomp`` library (from the 
+[original Github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353)):
+* [Install brew](https://brew.sh/) if you don't already have it.
+* Install `wget` if you don't already have it : `brew install wget`.
+* Run the commands below:
+```
+wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
+brew unlink libomp
+brew install libomp.rb
+```
+
 
 ### Running the examples only, without installing:
 
@@ -230,12 +258,3 @@ To build documentation locally just run
 ./gradlew buildDocs
 ```
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
-
-### LightGBM on Mac OS Big Sur
-
-To use LightGBM on your Mac, you need to have `openmp` installed. Please refer to the installation
-[documentation](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS from [LightGBM website](https://lightgbm.readthedocs.io/en/latest/index.html).
-
-**Warning**: as of July 2021 there is an issue with ``libomp`` version 12.0 that results in 
-[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
-Please refer to the [github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353) for details on how to downgrade the ``libomp`` library.
