@@ -157,7 +157,7 @@
         </li>
     
         <li class="nav-item toc-entry toc-h3">
-            <a href="#install" class="nav-link">Install</a>
+            <a href="#quick-install" class="nav-link">Quick Install</a>
         </li>
     
         <li class="nav-item toc-entry toc-h3">
@@ -173,15 +173,11 @@
         </li>
     
         <li class="nav-item toc-entry toc-h3">
-            <a href="#contribute" class="nav-link">Contribute</a>
+            <a href="#community-contact" class="nav-link">Community & Contact</a>
         </li>
     
         <li class="nav-item toc-entry toc-h3">
-            <a href="#contact-us" class="nav-link">Contact Us</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#id1" class="nav-link">Installation Guide</a>
+            <a href="#id2" class="nav-link">Installation Guide</a>
         </li>
     
             </ul>
@@ -245,8 +241,8 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 </ul>
 </section>
 </section>
-<section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<section id="quick-install">
+<h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h2>
 <p>We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
 <p>Once your environment is set up you can install darts using pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
@@ -319,13 +315,14 @@ inferences of the underlying states/values.</p>
 on bringing more models and features.</p>
 <table class="table">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
@@ -335,6 +332,7 @@ on bringing more models and features.</p>
 <th class="head"><p>Multiple-series training</p></th>
 <th class="head"><p>Past-observed covariates support</p></th>
 <th class="head"><p>Future-known covariates support</p></th>
+<th class="head"><p>Reference</p></th>
 </tr>
 </thead>
 <tbody>
@@ -342,6 +340,7 @@ on bringing more models and features.</p>
 <td><p>x</p></td>
 <td></td>
 <td><p>x</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -353,9 +352,11 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
 <td><p>x</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -369,6 +370,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
 <td><p>x</p></td>
@@ -377,6 +379,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
 <td><p>x</p></td>
@@ -385,6 +388,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
 <td><p>x</p></td>
@@ -393,14 +397,16 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> and <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code>)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>, <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>)</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p>x</p></td>
@@ -409,6 +415,7 @@ on bringing more models and features.</p>
 <td><p>x</p></td>
 <td></td>
 <td><p>x</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
 <td><p>x</p></td>
@@ -416,6 +423,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
+<td></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
@@ -425,6 +433,7 @@ on bringing more models and features.</p>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
 <td><p>x</p></td>
@@ -433,6 +442,7 @@ on bringing more models and features.</p>
 <td><p>x</p></td>
 <td><p>x</p></td>
 <td></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
 <td><p>x</p></td>
@@ -440,6 +450,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>x</p></td>
 <td><p>x</p></td>
+<td></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p>Naive Baselines</p></td>
@@ -449,22 +460,29 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="contribute">
-<h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
+<section id="community-contact">
+<h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this headline">¶</a></h2>
+<p>Anyone is welcome to join our <a class="reference external" href="https://discord.gg/Um3jBTYFsA">Discord server</a> to
+ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
+or have a feature request, Github issues are also welcome.</p>
+<p>If what you want to tell us is not suitable for Discord or Github,
+feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for
+darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other
+inquiries.</p>
 <p>The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on GitHub.</p>
-<p>Before working on a contribution (a new feature or a fix), <a class="reference external" href="CONTRIBUTE.md">**check our contribution guidelines**</a>.</p>
+We welcome pull requests and issues on Github.</p>
+<dl class="simple">
+<dt>Before working on a contribution (a new feature or a fix),</dt><dd><p><a class="reference external" href="CONTRIBUTE.md">**check our contribution guidelines**</a>.</p>
+</dd>
+</dl>
 </section>
-<section id="contact-us">
-<h2>Contact Us<a class="headerlink" href="#contact-us" title="Permalink to this headline">¶</a></h2>
-<p>If what you want to tell us is not a suitable github issue, feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other inquiries.</p>
-</section>
-<section id="id1">
-<h2>Installation Guide<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<section id="id2">
+<h2>Installation Guide<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
 <p>Currently only Linux and macOS on the x86_64 architecture are fully supported with
@@ -494,6 +512,24 @@ we also maintain the <code class="docutils literal notranslate"><span class="pre
 <li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[torch]'</span></code></p></li>
 <li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[prophet]'</span></code></p></li>
 <li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'u8darts[pmdarima]'</span></code></p></li>
+</ul>
+<p>To enable support for LightGBM in Darts, please follow the
+<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html">installation instructions</a> for your OS.</p>
+<p>At the time of writing, there is an issue with <code class="docutils literal notranslate"><span class="pre">libomp</span></code> 12.0.1 that results in
+<a class="reference external" href="https://github.com/microsoft/LightGBM/issues/4229">segmentation fault on Mac OS Big Sur</a>.
+Here’s the procedure to downgrade the <code class="docutils literal notranslate"><span class="pre">libomp</span></code> library (from the
+<a class="reference external" href="https://github.com/microsoft/LightGBM/issues/4229#issue-867528353">original Github issue</a>):</p>
+<ul>
+<li><p><a class="reference external" href="https://brew.sh/">Install brew</a> if you don’t already have it.</p></li>
+<li><p>Install <code class="docutils literal notranslate"><span class="pre">wget</span></code> if you don’t already have it : <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">wget</span></code>.</p></li>
+<li><p>Run the commands below:
+.. code-block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Homebrew</span><span class="o">/</span><span class="n">homebrew</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="n">fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0</span><span class="o">/</span><span class="n">Formula</span><span class="o">/</span><span class="n">libomp</span><span class="o">.</span><span class="n">rb</span>
+<span class="n">brew</span> <span class="n">unlink</span> <span class="n">libomp</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">libomp</span><span class="o">.</span><span class="n">rb</span>
+</pre></div>
+</div>
+</li>
 </ul>
 <p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>

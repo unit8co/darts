@@ -588,6 +588,7 @@
                    <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                    <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
                    <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                    <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -648,6 +649,8 @@
 <span class="sd">            An optional future-known covariate series. This applies only if the model supports future covariates.</span>
 <span class="sd">        forecast_horizon</span>
 <span class="sd">            The integer value of the forecasting horizon used in expanding window mode.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between two consecutive predictions. Only used in expanding window mode.</span>
 <span class="sd">        start</span>
 <span class="sd">            The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index</span>
 <span class="sd">            of `training_series` from which predictions will be made to evaluate the model.</span>
@@ -718,6 +721,7 @@
                                        <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                                        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
                                        <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                                       <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
                                        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
                                        <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">,</span>
                                        <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">)</span>

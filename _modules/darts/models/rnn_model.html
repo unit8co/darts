@@ -288,7 +288,7 @@
 <span class="sd">        model</span>
 <span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;),</span>
 <span class="sd">            or a PyTorch module with the same specifications as</span>
-<span class="sd">            `darts.models.rnn_model.RNNModule`.</span>
+<span class="sd">            `darts.models.rnn_model._RNNModule`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Number of past time steps that are fed to the forecasting module at prediction time.</span>
 <span class="sd">        hidden_dim</span>
@@ -384,7 +384,12 @@
                                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
                                <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;custom_module&#39;</span><span class="p">,</span>
+                                            <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
+                                            <span class="n">target_size</span><span class="o">=</span><span class="n">target_size</span><span class="p">,</span>
+                                            <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
+                                            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                                            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">model</span>
 
     <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>

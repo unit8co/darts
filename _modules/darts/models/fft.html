@@ -161,6 +161,7 @@
 <span class="kn">from</span> <span class="nn">.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">..utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -345,8 +346,7 @@
 <span class="sd">        This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering</span>
 <span class="sd">        (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend</span>
 <span class="sd">        the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods</span>
-<span class="sd">        (controlled by the `required_matches` argument).</span>
-<span class="sd">        Please note that the training sequence must not contain any NaN values for the model to produce useful output.</span>
+<span class="sd">        Note that if the training series contains any NaNs (missing values), these will be filled using `darts.utils.missing_values.fill_missing_values()`.</span>
 
 <span class="sd">        Examples:</span>
 
@@ -384,6 +384,7 @@
         <span class="k">return</span> <span class="s1">&#39;FFT(nr_freqs_to_keep=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;, trend=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
 
 <div class="viewcode-block" id="FFT.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.fft.html#darts.models.fft.FFT.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 

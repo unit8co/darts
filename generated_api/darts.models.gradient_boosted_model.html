@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Fast Fourier Transform &#8212; darts  documentation</title>
+    <title>LightGBM Model &#8212; darts  documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
 
@@ -42,8 +42,8 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.models.filtering_model.html" />
-    <link rel="prev" title="Exponential Smoothing" href="darts.models.exponential_smoothing.html" />
+    <link rel="next" title="Kalman Filter" href="darts.models.kalman_filter.html" />
+    <link rel="prev" title="Gaussian Processes" href="darts.models.gaussian_process_filter.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
   </head>
@@ -166,16 +166,16 @@
                             <a href="darts.models.exponential_smoothing.html">Exponential Smoothing</a>
                         </li>
                     
-                        <li class="active">
-                            <a href="">Fast Fourier Transform</a>
+                        <li class="">
+                            <a href="darts.models.fft.html">Fast Fourier Transform</a>
                         </li>
                     
                         <li class="">
                             <a href="darts.models.gaussian_process_filter.html">Gaussian Processes</a>
                         </li>
                     
-                        <li class="">
-                            <a href="darts.models.gradient_boosted_model.html">LightGBM Model</a>
+                        <li class="active">
+                            <a href="">LightGBM Model</a>
                         </li>
                     
                         <li class="">
@@ -276,41 +276,35 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.fft"></span><section id="fast-fourier-transform">
-<h1>Fast Fourier Transform<a class="headerlink" href="#fast-fourier-transform" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-darts.models.gradient_boosted_model"></span><section id="lightgbm-model">
+<h1>LightGBM Model<a class="headerlink" href="#lightgbm-model" title="Permalink to this headline">¶</a></h1>
+<p>This is a LightGBM implementation of Gradient Boosted Trees algorightm.</p>
+<p>To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the README:
+<a class="reference external" href="https://github.com/unit8co/darts/blob/master/README.md">https://github.com/unit8co/darts/blob/master/README.md</a></p>
 <dl class="py class">
-<dt id="darts.models.fft.FFT">
-<em class="property">class </em><code class="sig-prename descclassname">darts.models.fft.</code><code class="sig-name descname">FFT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nr_freqs_to_keep</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">10</span></em>, <em class="sig-param"><span class="n">required_matches</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>set<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">trend</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">trend_poly_degree</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">3</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/fft.html#FFT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.fft.FFT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting_model.ForecastingModel</span></code></p>
-<p>This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
-(controlled by the <cite>nr_freqs_to_keep</cite> argument) and  inverse FFT, combined with the option to detrend
-the data (controlled by the <cite>trend</cite> argument) and to crop the training sequence to full seasonal periods
-Note that if the training series contains any NaNs (missing values), these will be filled using <cite>darts.utils.missing_values.fill_missing_values()</cite>.</p>
-<p>Examples:</p>
-<p>FFT(nr_freqs_to_keep=10)
-- model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
-forecasting and expects no global trend to be present in the data</p>
-<p>FFT(required_matches={<cite>month</cite>}, trend=`exp`)
-- model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
-global trend, and it will not perform any frequency filtering</p>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel">
+<em class="property">class </em><code class="sig-prename descclassname">darts.models.gradient_boosted_model.</code><code class="sig-name descname">LightGBMModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lags</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>list<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>int<span class="p">, </span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Tuple<span class="p">[</span>int<span class="p">, </span>int<span class="p">]</span><span class="p">, </span>List<span class="p">[</span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/gradient_boosted_model.html#LightGBMModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.regression_model.html#darts.models.regression_model.RegressionModel" title="darts.models.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.regression_model.RegressionModel</span></code></a></p>
+<p>Light Gradient Boosted Model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>nr_freqs_to_keep</strong> – The total number of frequencies that will be used for forecasting.</p></li>
-<li><p><strong>required_matches</strong> – The attributes of pd.Timestamp that will be used to create a training sequence that is cropped at the
-beginning such that the first timestamp of the training sequence and the first prediction point have
-matching phases. If the series has a yearly seasonality, include <cite>month</cite>, if it has a monthly
-seasonality, include <cite>day</cite>, etc. If not set, or explicitly set to None, the model tries to find the
-pd.Timestamp attributes that are relevant for the seasonality automatically.</p></li>
-<li><p><strong>trend</strong> – If set, indicates what kind of detrending will be applied before performing DFT.
-Possible values: <cite>poly</cite> or <cite>exp</cite>, for polynomial trend, or exponential trend, respectively.</p></li>
-<li><p><strong>trend_poly_degree</strong> – The degree of the polynomial that will be used for detrending, if <cite>trend=`poly`</cite>.</p></li>
+<li><p><strong>lags</strong> – Lagged target values used to predict the next time step. If an integer is given the last <cite>lags</cite> past lags
+are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be &lt; 0).</p></li>
+<li><p><strong>lags_past_covariates</strong> – Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
+<cite>lags_past_covariates</cite> past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
+with lags &lt; 0 is required.</p></li>
+<li><p><strong>lags_future_covariates</strong> – Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+given the last <cite>past</cite> lags in the past are used (inclusive, starting from lag -1) along with the first
+<cite>future</cite> future lags (starting from 0 - the prediction time - up to <cite>future - 1</cite> included). Otherwise a list
+of integers with lags is required.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments passed to <cite>lightgbm.LGBRegressor</cite>.</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="darts.models.fft.FFT.backtest">
-<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.fft.FFT.backtest" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.backtest">
+<code class="sig-name descname">backtest</code><span class="sig-paren">(</span><em class="sig-param">series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, num_samples: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, forecast_horizon: int = 1, stride: int = 1, retrain: bool = True, overlap_end: bool = False, last_points_only: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Optional[Callable[[numpy.ndarray], float]] = &lt;function mean&gt;, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes error scores between the historical forecasts the model would have produced
 with an expanding training window over <cite>series</cite> and the actual values.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -367,19 +361,41 @@ Set to np.mean by default.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.models.fft.FFT.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/fft.html#FFT.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.fft.FFT.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Trains the model on the provided univariate series.</p>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eval_series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eval_past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eval_future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/models/gradient_boosted_model.html#LightGBMModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model using the provided list of features time series and the target time series.
+:param series: TimeSeries or Sequence[TimeSeries] object containing the target values.
+:type series: Union[TimeSeries, Sequence[TimeSeries]]
+:param past_covariates: Optionally, a series or sequence of series specifying past-observed covariates
+:type past_covariates: Union[TimeSeries, Sequence[TimeSeries]]
+:param future_covariates: Optionally, a series or sequence of series specifying future-known covariates
+:type future_covariates: Union[TimeSeries, Sequence[TimeSeries]]
+:param eval_series: TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
+:type eval_series: Union[TimeSeries, Sequence[TimeSeries]]
+:param eval_past_covariates: Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
+:type eval_past_covariates: Union[TimeSeries, Sequence[TimeSeries]]
+:param eval_future_covariates: Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
+:type eval_future_covariates: Union[TimeSeries, Sequence[TimeSeries]]
+:param max_samples_per_ts: This is an upper bound on the number of tuples that can be produced</p>
+<blockquote>
+<div><p>per time series. It can be used in order to have an upper bound on the total size of the dataset and
+ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
+creation) to know their sizes, which might be expensive on big datasets.
+If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
+most recent <cite>max_samples_per_ts</cite> samples will be considered.</p>
+</div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – A target time series. The model will be trained to forecast this time series.</p>
-</dd>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.future_covariate_series">
+<code class="sig-name descname">future_covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.future_covariate_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
-<dt id="darts.models.fft.FFT.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, stride: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.fft.FFT.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.gridsearch">
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, stride: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -449,8 +465,8 @@ along with a dictionary containing these best hyper-parameters.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.models.fft.FFT.historical_forecasts">
-<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.fft.FFT.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.historical_forecasts">
+<code class="sig-name descname">historical_forecasts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">start</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>pandas._libs.tslibs.timestamps.Timestamp<span class="p">, </span>float<span class="p">, </span>int<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stride</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">retrain</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">overlap_end</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">last_points_only</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the historical forecasts the model would have produced with an expanding training window
 and (by default) returns a time series created from the last point of each of these individual forecasts.
 To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -504,36 +520,45 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.models.fft.FFT.min_train_series_length">
-<em class="property">property </em><code class="sig-name descname">min_train_series_length</code><a class="headerlink" href="#darts.models.fft.FFT.min_train_series_length" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.min_train_series_length">
+<em class="property">property </em><code class="sig-name descname">min_train_series_length</code><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.min_train_series_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class property defining the minimum required length for the training series.
 This function/property should be overridden if a value higher than 3 is required.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.past_covariate_series">
+<code class="sig-name descname">past_covariate_series</code><em class="property"> = None</em><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.past_covariate_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
-<dt id="darts.models.fft.FFT.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/fft.html#FFT.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.models.fft.FFT.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">int</span></em>, <em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_samples</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forecasts values for <cite>n</cite> time steps after the end of the series.
+:param n: Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+:type n: int
+:param series: Optionally, one or several input <cite>TimeSeries</cite>, representing the history of the target series whose future</p>
+<blockquote>
+<div><p>is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
+returns the forecast of the (single) training series.</p>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
-<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-for deterministic models.</p></li>
+<li><p><strong>past_covariates</strong> – Optionally, the past-observed covariates series needed as inputs for the model.
+They must match the covariates used for training in terms of dimension and type.</p></li>
+<li><p><strong>future_covariates</strong> – Optionally, the future-known covariates series needed as inputs for the model.
+They must match the covariates used for training in terms of dimension and type.</p></li>
+<li><p><strong>num_samples</strong> – Currently this parameter is ignored for regression models.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments passed to the <cite>predict</cite> method of the model.</p></li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A time series containing the <cite>n</cite> next points after then end of the training series.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.models.fft.FFT.residuals">
-<code class="sig-name descname">residuals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.models.fft.FFT.residuals" title="Permalink to this definition">¶</a></dt>
+<dt id="darts.models.gradient_boosted_model.LightGBMModel.residuals">
+<code class="sig-name descname">residuals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">series</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><a class="headerlink" href="#darts.models.gradient_boosted_model.LightGBMModel.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for computing the residuals produced by the current model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -572,8 +597,8 @@ prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</
               
               <div class='prev-next-bottom'>
                 
-    <a class='left-prev' id="prev-link" href="darts.models.exponential_smoothing.html" title="previous page">Exponential Smoothing</a>
-    <a class='right-next' id="next-link" href="darts.models.filtering_model.html" title="next page">&lt;no title&gt;</a>
+    <a class='left-prev' id="prev-link" href="darts.models.gaussian_process_filter.html" title="previous page">Gaussian Processes</a>
+    <a class='right-next' id="next-link" href="darts.models.kalman_filter.html" title="next page">Kalman Filter</a>
 
               </div>
               

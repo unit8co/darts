@@ -19,6 +19,7 @@
         darts.models.filtering_model
         darts.models.forecasting_model
         darts.models.gaussian_process_filter
+        darts.models.gradient_boosted_model
         darts.models.kalman_filter
         darts.models.linear_regression_model
         darts.models.moving_average

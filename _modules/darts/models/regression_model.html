@@ -224,7 +224,7 @@
     <span class="k">return</span> <span class="n">new_min</span><span class="p">,</span> <span class="n">new_max</span>
 
 
-<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.gradient_boosted_model.RegressionModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -448,7 +448,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training_samples</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="RegressionModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="RegressionModel.fit"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.gradient_boosted_model.RegressionModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -508,7 +508,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">series_dim</span> <span class="o">+</span> <span class="n">covariates_dim</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_model</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">max_samples_per_ts</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_model</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">max_samples_per_ts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_get_prediction_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -554,7 +554,7 @@
             <span class="o">*</span><span class="n">covariates_matrices</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="RegressionModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.linear_regression_model.RegressionModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+<div class="viewcode-block" id="RegressionModel.predict"><a class="viewcode-back" href="../../../generated_api/darts.models.regression_model.html#darts.models.gradient_boosted_model.RegressionModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

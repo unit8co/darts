@@ -175,6 +175,10 @@
                         </li>
                     
                         <li class="">
+                            <a href="darts.models.gradient_boosted_model.html">LightGBM Model</a>
+                        </li>
+                    
+                        <li class="">
                             <a href="darts.models.kalman_filter.html">Kalman Filter</a>
                         </li>
                     
@@ -473,7 +477,7 @@ was provided to the model constructor.</p></li>
 
 <dl class="py method">
 <dt id="darts.models.transformer_model.TransformerModel.gridsearch">
-<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.transformer_model.TransformerModel.gridsearch" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="sig-name descname">gridsearch</code><span class="sig-paren">(</span><em class="sig-param">parameters: dict, series: darts.timeseries.TimeSeries, past_covariates: Optional[darts.timeseries.TimeSeries] = None, future_covariates: Optional[darts.timeseries.TimeSeries] = None, forecast_horizon: Optional[int] = None, stride: int = 1, start: Union[pandas._libs.tslibs.timestamps.Timestamp, float, int] = 0.5, last_points_only: bool = False, val_series: Optional[darts.timeseries.TimeSeries] = None, use_fitted_values: bool = False, metric: Callable[[darts.timeseries.TimeSeries, darts.timeseries.TimeSeries], float] = &lt;function mape&gt;, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, verbose=False, n_jobs: int = 1</em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>darts.models.forecasting_model.ForecastingModel<span class="p">, </span>Dict<span class="p">]</span><a class="headerlink" href="#darts.models.transformer_model.TransformerModel.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function for finding the best hyper-parameters among a given set.
 This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -513,6 +517,7 @@ respective hyperparameter.</p></li>
 <li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
 <li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions. Only used in expanding window mode.</p></li>
 <li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
 of <cite>training_series</cite> from which predictions will be made to evaluate the model.
 For a detailed description of how the different data types are interpreted, please see the documentation

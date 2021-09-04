@@ -84,8 +84,8 @@ Articles on Selected Topics
 * `Using Past and Future Covariates <https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993>`_
 * `Temporal Convolutional Networks and Forecasting <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
 
-Install
--------
+Quick Install
+-------------
 
 We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
 
@@ -197,10 +197,12 @@ on bringing more models and features.
      - Multiple-series training
      - Past-observed covariates support
      - Future-known covariates support
+     - Reference
    * - ``ARIMA``
      - x
      - 
      - x
+     - 
      - 
      - 
      - 
@@ -211,8 +213,10 @@ on bringing more models and features.
      - 
      - 
      - 
+     - 
    * - ``AutoARIMA``
      - x
+     - 
      - 
      - 
      - 
@@ -225,6 +229,7 @@ on bringing more models and features.
      - 
      - 
      - 
+     - 
    * - ``Theta`` and ``FourTheta``
      - x
      - 
@@ -232,6 +237,7 @@ on bringing more models and features.
      - 
      - 
      - 
+     - `Theta <https://robjhyndman.com/papers/Theta.pdf>`_ & `4 Theta <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_
    * - ``Prophet``
      - x
      - 
@@ -239,6 +245,7 @@ on bringing more models and features.
      - 
      - 
      - 
+     - `Prophet repo <https://github.com/facebook/prophet>`_
    * - ``FFT`` (Fast Fourier Transform)
      - x
      - 
@@ -246,13 +253,15 @@ on bringing more models and features.
      - 
      - 
      - 
-   * - ``RegressionModel`` (incl ``RandomForest`` and ``LinearRegressionModel``\ )
+     - 
+   * - ``RegressionModel`` (incl ``RandomForest``\ , ``LinearRegressionModel`` and ``LightGBMModel``\ )
      - x
      - x
      - 
      - x
      - x
      - x
+     - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - x
      - x
@@ -260,12 +269,14 @@ on bringing more models and features.
      - x
      - 
      - x
+     - `DeepAR paper <https://arxiv.org/abs/1704.04110>`_
    * - ``BlockRNNModel`` (incl. LSTM and GRU)
      - x
      - x
      - 
      - x
      - x
+     - 
      - 
    * - ``NBEATSModel``
      - x
@@ -274,6 +285,7 @@ on bringing more models and features.
      - x
      - x
      - 
+     - `N-BEATS paper <https://arxiv.org/abs/1905.10437>`_
    * - ``TCNModel``
      - x
      - x
@@ -281,12 +293,14 @@ on bringing more models and features.
      - x
      - x
      - 
+     - `TCN paper <https://arxiv.org/abs/1803.01271>`_\ , `DeepTCN paper <https://arxiv.org/abs/1906.04397>`_\ , `blog post <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
    * - ``TransformerModel``
      - x
      - x
      - 
      - x
      - x
+     - 
      - 
    * - Naive Baselines
      - x
@@ -295,20 +309,29 @@ on bringing more models and features.
      - 
      - 
      - 
+     - 
 
+
+Community & Contact
+-------------------
+
+Anyone is welcome to join our `Discord server <https://discord.gg/Um3jBTYFsA>`_ to
+ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
+or have a feature request, Github issues are also welcome.
+
+If what you want to tell us is not suitable for Discord or Github, 
+feel free to send us an email at :raw-html-m2r:`<a href="mailto:darts@unit8.co">darts@unit8.co</a>` for 
+darts related matters or :raw-html-m2r:`<a href="mailto:info@unit8.co">info@unit8.co</a>` for any other 
+inquiries.
 
 Contribute
-----------
+^^^^^^^^^^
 
 The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on GitHub.
+We welcome pull requests and issues on Github.
 
-Before working on a contribution (a new feature or a fix), `\ **check our contribution guidelines** <CONTRIBUTE.md>`_.
-
-Contact Us
-----------
-
-If what you want to tell us is not a suitable github issue, feel free to send us an email at :raw-html-m2r:`<a href="mailto:darts@unit8.co">darts@unit8.co</a>` for darts related matters or :raw-html-m2r:`<a href="mailto:info@unit8.co">info@unit8.co</a>` for any other inquiries.
+Before working on a contribution (a new feature or a fix),
+ `\ **check our contribution guidelines** <CONTRIBUTE.md>`_.
 
 Installation Guide
 ------------------
@@ -360,6 +383,30 @@ we also maintain the ``u8darts`` package, which provides the following alternate
 * Install core + neural networks (PyTorch): ``pip install 'u8darts[torch]'``
 * Install core + Facebook Prophet: ``pip install 'u8darts[prophet]'``
 * Install core + AutoARIMA: ``pip install 'u8darts[pmdarima]'``
+
+Enabling Support for LightGBM
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable support for LightGBM in Darts, please follow the 
+`installation instructions <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ for your OS.
+
+MacOS Issues with LightGBM
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
+`segmentation fault on Mac OS Big Sur <https://github.com/microsoft/LightGBM/issues/4229>`_. 
+Here's the procedure to downgrade the ``libomp`` library (from the 
+`original Github issue <https://github.com/microsoft/LightGBM/issues/4229#issue-867528353>`_\ ):
+
+
+* `Install brew <https://brew.sh/>`_ if you don't already have it.
+* Install ``wget`` if you don't already have it : ``brew install wget``.
+* Run the commands below:
+  .. code-block::
+
+     wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
+     brew unlink libomp
+     brew install libomp.rb
 
 Running the examples only, without installing:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

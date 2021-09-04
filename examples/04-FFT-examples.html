@@ -466,7 +466,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">Prophet</span><span class="p">,</span>
     <span class="n">Theta</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
 <span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">TemperatureDataset</span><span class="p">,</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">EnergyDataset</span>
 
@@ -489,7 +489,7 @@ Importing plotly failed. Interactive plots will not work.
 <h2>Read and format<a class="headerlink" href="#Read-and-format" title="Permalink to this headline">¶</a></h2>
 <p>Here we simply read the CSV file containing daily temperatures, and transform the values into the desired format.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -501,13 +501,13 @@ Importing plotly failed. Interactive plots will not work.
 <section id="Constructing-TimeSeries-instances-for-training-and-validation">
 <h2>Constructing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances for training and validation<a class="headerlink" href="#Constructing-TimeSeries-instances-for-training-and-validation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19850701&#39;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -521,8 +521,8 @@ Importing plotly failed. Interactive plots will not work.
 </section>
 <section id="Basic-FFT-model">
 <h2>Basic FFT model<a class="headerlink" href="#Basic-FFT-model" title="Permalink to this headline">¶</a></h2>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -532,38 +532,16 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-             0
-1985-07-02 NaN
-1985-07-03 NaN
-1985-07-04 NaN
-1985-07-05 NaN
-1985-07-06 NaN
-...         ..
-1990-12-27 NaN
-1990-12-28 NaN
-1990-12-29 NaN
-1990-12-30 NaN
-1990-12-31 NaN
-
-[2009 rows x 1 columns]
-Freq: D
-</pre></div></div>
-</div>
 <p>The plot below shows us that a simple DFT with a random train-test split will most likely lead to bad results. Upon closer inspection we can see that the prediction (in purple) simply repeats the training set (blue). This is the standard behavior of the DFT, and by itself it is quite useless, since repeating our training set could be done much more efficiently. Three improvements were made to this approach.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE:&quot;</span><span class="p">,</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
+<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -572,7 +550,7 @@ Freq: D
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: nan
+MAE: 5.424526892430279
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -604,10 +582,10 @@ model will attempt to automatically find the pd.Timestamp attributes that are re
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE:&quot;</span><span class="p">,</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
+<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;predict&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -616,7 +594,7 @@ model will attempt to automatically find the pd.Timestamp attributes that are re
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: nan
+MAE: 3.0995766932270916
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -631,8 +609,8 @@ MAPE: nan
 <h2>Improvement 2: Filtering out low-amplitude waves<a class="headerlink" href="#Improvement-2:-Filtering-out-low-amplitude-waves" title="Permalink to this headline">¶</a></h2>
 <p>The decomposition of the DFT into the frequency domain allows us to selectively filter out waves with low amplitudes. This allows us to keep strong seasonal trends while discarding some noise. This is achieved in the FFT model by passing the optional argument <code class="docutils literal notranslate"><span class="pre">nr_freqs_to_keep</span></code>. This argument represents the total number of frequencies that will be kept. For instance, if a value of 20 is passed, only the 20 frequencies with the highest amplitudes will be utilized. The default value is set to
 10.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -642,85 +620,16 @@ MAPE: nan
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-            #Passengers           0
-1956-01-01          284  173.742530
-1956-02-01          277  144.396160
-1956-03-01          317  138.462730
-1956-04-01          313  120.252093
-1956-05-01          318  103.180017
-1956-06-01          374  120.744737
-1956-07-01          413  147.431682
-1956-08-01          405  153.423451
-1956-09-01          355  137.392169
-1956-10-01          306  114.550907
-1956-11-01          271  114.355890
-1956-12-01          306  126.487990
-1957-01-01          315  119.827053
-1957-02-01          301  118.838696
-1957-03-01          356  135.261790
-1957-04-01          348  132.543617
-1957-05-01          355  124.277515
-1957-06-01          422  145.020211
-1957-07-01          465  170.914177
-1957-08-01          467  174.048510
-1957-09-01          404  154.899844
-1957-10-01          347  130.090437
-1957-11-01          305  129.901170
-1957-12-01          336  144.191883
-1958-01-01          340  141.441516
-1958-02-01          318  145.303241
-1958-03-01          362  166.521089
-1958-04-01          348  167.605013
-1958-05-01          363  161.470996
-1958-06-01          435  182.386265
-1958-07-01          491  206.625397
-1958-08-01          505  206.771771
-1958-09-01          404  184.025743
-1958-10-01          359  155.790469
-1958-11-01          310  153.012929
-1958-12-01          337  165.969924
-1959-01-01          360  163.238634
-1959-02-01          342  168.258532
-1959-03-01          406  191.325454
-1959-04-01          396  194.393689
-1959-05-01          420  189.861330
-1959-06-01          472  211.644510
-1959-07-01          548  235.916488
-1959-08-01          559  235.427291
-1959-09-01          463  211.761749
-1959-10-01          407  182.818972
-1959-11-01          362  180.016022
-1959-12-01          405  193.938015
-1960-01-01          417  193.206813
-1960-02-01          391  201.000516
-1960-03-01          419  227.076955
-1960-04-01          461  232.673566
-1960-05-01          472  229.439851
-1960-06-01          535  250.677394
-1960-07-01          622  272.227468
-1960-08-01          606  266.888493
-1960-09-01          508  236.697492
-1960-10-01          461  200.350122
-1960-11-01          390  190.271007
-1960-12-01          432  198.081697
-Freq: MS
-</pre></div></div>
-</div>
 <p>We get a signal that is less noisy. Depending on the data set, this might be a better forecast. Looking at the error metric, we can see that this model performs significantly better than the previous models.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE:&quot;</span><span class="p">,</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
+<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;predict&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -729,78 +638,7 @@ Freq: MS
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
-<span class="ansi-green-fg">&lt;ipython-input-12-c1535da949de&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-intense-fg ansi-bold">      2</span> val<span class="ansi-blue-fg">.</span>plot<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">      3</span> pred_val<span class="ansi-blue-fg">.</span>plot<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">----&gt; 4</span><span class="ansi-red-fg"> </span>print<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#34;MAPE:&#34;</span><span class="ansi-blue-fg">,</span> mape<span class="ansi-blue-fg">(</span>pred_val<span class="ansi-blue-fg">,</span> val<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">      5</span> print<span class="ansi-blue-fg">(</span>pred_val<span class="ansi-blue-fg">)</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/metrics/metrics.py</span> in <span class="ansi-cyan-fg">wrapper_multivariate_support</span><span class="ansi-blue-fg">(*args, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">     38</span>         value_list <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">]</span>
-<span class="ansi-green-intense-fg ansi-bold">     39</span>         <span class="ansi-green-fg">for</span> i <span class="ansi-green-fg">in</span> range<span class="ansi-blue-fg">(</span>series1<span class="ansi-blue-fg">.</span>width<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">---&gt; 40</span><span class="ansi-red-fg">             value_list.append(func(series1.univariate_component(i), series2.univariate_component(i),
-</span><span class="ansi-green-intense-fg ansi-bold">     41</span>                               *args[num_series_in_args:], **kwargs))
-<span class="ansi-green-intense-fg ansi-bold">     42</span>         <span class="ansi-green-fg">if</span> <span class="ansi-blue-fg">&#39;reduction&#39;</span> <span class="ansi-green-fg">in</span> kwargs<span class="ansi-blue-fg">:</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/metrics/metrics.py</span> in <span class="ansi-cyan-fg">mape</span><span class="ansi-blue-fg">(actual_series, pred_series, intersect, reduction)</span>
-<span class="ansi-green-intense-fg ansi-bold">    297</span>     &#34;&#34;&#34;
-<span class="ansi-green-intense-fg ansi-bold">    298</span>
-<span class="ansi-green-fg">--&gt; 299</span><span class="ansi-red-fg">     </span>y_true<span class="ansi-blue-fg">,</span> y_hat <span class="ansi-blue-fg">=</span> _get_values_or_raise<span class="ansi-blue-fg">(</span>actual_series<span class="ansi-blue-fg">,</span> pred_series<span class="ansi-blue-fg">,</span> intersect<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    300</span>     y_true<span class="ansi-blue-fg">,</span> y_hat <span class="ansi-blue-fg">=</span> _remove_nan_union<span class="ansi-blue-fg">(</span>y_true<span class="ansi-blue-fg">,</span> y_hat<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    301</span>     raise_if_not<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">(</span>y_true <span class="ansi-blue-fg">!=</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">.</span>all<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;The actual series must be strictly positive to compute the MAPE.&#39;</span><span class="ansi-blue-fg">,</span> logger<span class="ansi-blue-fg">)</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/metrics/metrics.py</span> in <span class="ansi-cyan-fg">_get_values_or_raise</span><span class="ansi-blue-fg">(series_a, series_b, intersect)</span>
-<span class="ansi-green-intense-fg ansi-bold">     58</span>                  logger)
-<span class="ansi-green-intense-fg ansi-bold">     59</span>
-<span class="ansi-green-fg">---&gt; 60</span><span class="ansi-red-fg">     </span>series_a_common <span class="ansi-blue-fg">=</span> series_a<span class="ansi-blue-fg">.</span>slice_intersect<span class="ansi-blue-fg">(</span>series_b<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">if</span> intersect <span class="ansi-green-fg">else</span> series_a
-<span class="ansi-green-intense-fg ansi-bold">     61</span>     series_b_common <span class="ansi-blue-fg">=</span> series_b<span class="ansi-blue-fg">.</span>slice_intersect<span class="ansi-blue-fg">(</span>series_a<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">if</span> intersect <span class="ansi-green-fg">else</span> series_b
-<span class="ansi-green-intense-fg ansi-bold">     62</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">slice_intersect</span><span class="ansi-blue-fg">(self, other)</span>
-<span class="ansi-green-intense-fg ansi-bold">    522</span>         &#34;&#34;&#34;
-<span class="ansi-green-intense-fg ansi-bold">    523</span>         time_index <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>time_index<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">.</span>intersection<span class="ansi-blue-fg">(</span>other<span class="ansi-blue-fg">.</span>time_index<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">--&gt; 524</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">return</span> self<span class="ansi-blue-fg">.</span>__getitem__<span class="ansi-blue-fg">(</span>time_index<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    525</span>
-<span class="ansi-green-intense-fg ansi-bold">    526</span>     <span class="ansi-green-fg">def</span> get_timestamp_at_point<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> point<span class="ansi-blue-fg">:</span> Union<span class="ansi-blue-fg">[</span>pd<span class="ansi-blue-fg">.</span>Timestamp<span class="ansi-blue-fg">,</span> float<span class="ansi-blue-fg">,</span> int<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span> <span class="ansi-blue-fg">-&gt;</span> pd<span class="ansi-blue-fg">.</span>Timestamp<span class="ansi-blue-fg">:</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">__getitem__</span><span class="ansi-blue-fg">(self, key)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1593</span>             <span class="ansi-green-fg">if</span> <span class="ansi-green-fg">not</span> np<span class="ansi-blue-fg">.</span>all<span class="ansi-blue-fg">(</span>check<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">   1594</span>                 raise_log<span class="ansi-blue-fg">(</span>IndexError<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#34;None of {} in the index&#34;</span><span class="ansi-blue-fg">.</span>format<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">~</span>check<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> logger<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">-&gt; 1595</span><span class="ansi-red-fg">             </span><span class="ansi-green-fg">return</span> use_loc<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1596</span>         <span class="ansi-green-fg">elif</span> isinstance<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">,</span> slice<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">   1597</span>             <span class="ansi-green-fg">if</span> isinstance<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">.</span>start<span class="ansi-blue-fg">,</span> str<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">or</span> isinstance<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">.</span>stop<span class="ansi-blue-fg">,</span> str<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">use_loc</span><span class="ansi-blue-fg">(key, col_indexing)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1587</span>                 <span class="ansi-green-fg">return</span> TimeSeries<span class="ansi-blue-fg">.</span>from_dataframe<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_df<span class="ansi-blue-fg">.</span>loc<span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">,</span> key<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> freq<span class="ansi-blue-fg">=</span>self<span class="ansi-blue-fg">.</span>freq_str<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1588</span>             <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">-&gt; 1589</span><span class="ansi-red-fg">                 </span><span class="ansi-green-fg">return</span> TimeSeries<span class="ansi-blue-fg">.</span>from_dataframe<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_df<span class="ansi-blue-fg">.</span>loc<span class="ansi-blue-fg">[</span>key<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> freq<span class="ansi-blue-fg">=</span>self<span class="ansi-blue-fg">.</span>freq_str<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1590</span>
-<span class="ansi-green-intense-fg ansi-bold">   1591</span>         <span class="ansi-green-fg">if</span> isinstance<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">,</span> pd<span class="ansi-blue-fg">.</span>DatetimeIndex<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">from_dataframe</span><span class="ansi-blue-fg">(df, time_col, value_cols, freq, fill_missing_dates, dummy_index)</span>
-<span class="ansi-green-intense-fg ansi-bold">    799</span>                 series_df<span class="ansi-blue-fg">.</span>index <span class="ansi-blue-fg">=</span> pd<span class="ansi-blue-fg">.</span>to_datetime<span class="ansi-blue-fg">(</span>df<span class="ansi-blue-fg">[</span>time_col<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> errors<span class="ansi-blue-fg">=</span><span class="ansi-blue-fg">&#39;raise&#39;</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    800</span>
-<span class="ansi-green-fg">--&gt; 801</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">return</span> TimeSeries<span class="ansi-blue-fg">(</span>series_df<span class="ansi-blue-fg">,</span> freq<span class="ansi-blue-fg">,</span> fill_missing_dates<span class="ansi-blue-fg">,</span> dummy_index<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    802</span>
-<span class="ansi-green-intense-fg ansi-bold">    803</span>     <span class="ansi-blue-fg">@</span>staticmethod
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/timeseries.py</span> in <span class="ansi-cyan-fg">__init__</span><span class="ansi-blue-fg">(self, df, freq, fill_missing_dates, dummy_index)</span>
-<span class="ansi-green-intense-fg ansi-bold">     51</span>         raise_if_not(isinstance(df, pd.DataFrame), &#34;Data must be provided in form of a pandas.DataFrame instance&#34;,
-<span class="ansi-green-intense-fg ansi-bold">     52</span>                      logger)
-<span class="ansi-green-fg">---&gt; 53</span><span class="ansi-red-fg">         </span>raise_if_not<span class="ansi-blue-fg">(</span>len<span class="ansi-blue-fg">(</span>df<span class="ansi-blue-fg">)</span> <span class="ansi-blue-fg">&gt;</span> <span class="ansi-cyan-fg">0</span> <span class="ansi-green-fg">and</span> df<span class="ansi-blue-fg">.</span>shape<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span> <span class="ansi-blue-fg">&gt;</span> <span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;Time series must not be empty.&#39;</span><span class="ansi-blue-fg">,</span> logger<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     54</span>         raise_if_not(df.dtypes.apply(lambda x: np.issubdtype(x, np.number)).all(), &#39;Time series must&#39;
-<span class="ansi-green-intense-fg ansi-bold">     55</span>                      &#39; contain only numerical values.&#39;, logger)
-
-<span class="ansi-green-fg">~/Documents/unit8/cx/Darts/darts/darts/logging.py</span> in <span class="ansi-cyan-fg">raise_if_not</span><span class="ansi-blue-fg">(condition, message, logger)</span>
-<span class="ansi-green-intense-fg ansi-bold">     52</span>     <span class="ansi-green-fg">if</span> <span class="ansi-blue-fg">(</span><span class="ansi-green-fg">not</span> condition<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">     53</span>         logger<span class="ansi-blue-fg">.</span>error<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">&#34;ValueError: &#34;</span> <span class="ansi-blue-fg">+</span> message<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">---&gt; 54</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">raise</span> ValueError<span class="ansi-blue-fg">(</span>message<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     55</span>
-<span class="ansi-green-intense-fg ansi-bold">     56</span>
-
-<span class="ansi-red-fg">ValueError</span>: Time series must not be empty.
+MAE: 2.2941917142812893
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -821,8 +659,8 @@ Freq: MS
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">ts_2</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19551201&#39;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -850,9 +688,9 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
+<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -881,9 +719,9 @@ Freq: MS
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
+<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -898,7 +736,7 @@ Freq: MS
 <section id="New-Data:-Hourly-Nuclear-Energy-Generation">
 <h2>New Data: Hourly Nuclear Energy Generation<a class="headerlink" href="#New-Data:-Hourly-Nuclear-Energy-Generation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -906,8 +744,8 @@ Freq: MS
 <span class="n">ts_3</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">ts_3</span><span class="p">,</span> <span class="s1">&#39;auto&#39;</span><span class="p">)</span>
 <span class="n">ts_3</span> <span class="o">=</span> <span class="n">ts_3</span><span class="p">[</span><span class="s1">&#39;generation nuclear&#39;</span><span class="p">]</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_3</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2017-07-01&#39;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
+<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;val&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -918,8 +756,8 @@ Freq: MS
 <img alt="../_images/examples_04-FFT-examples_29_0.png" src="../_images/examples_04-FFT-examples_29_0.png" />
 </div>
 </div>
-<p>Instead of simply looking at the performance of the FFT model, we can also look at how a bunch of other forecasting models performs on this new data set in terms of MAPE. Surprisingly, on this dataset, the FFT model outperforms all of the others (at least with their default parameters). Granted, this dataset was specifically chosen because of its highly seasonal nature. However, this shows us that there definitely are use cases for FFT. Furthermore, the FFT model has a much shorter running time
-than the other models!</p>
+<p>Instead of simply looking at the performance of the FFT model, we can also look at how a bunch of other forecasting models performs on this new data set in terms of MAE. Surprisingly, on this dataset, the FFT model outperforms all of the others (at least with their default parameters). Granted, this dataset was specifically chosen because of its highly seasonal nature. However, this shows us that there are use cases for FFT. Furthermore, the FFT model has a much shorter running time than the
+other models!</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
@@ -936,8 +774,7 @@ than the other models!</p>
 <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
     <span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; MAPE: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
-
+    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; MAE: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -946,11 +783,11 @@ than the other models!</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Auto-ARIMA MAPE: 13.46753956256134
-Prophet MAPE: 10.773018989608806
-Exponential smoothing MAPE: 17.849425318793447
-Theta(2) MAPE: 13.330007725418852
-FFT(nr_freqs_to_keep=10, trend=None) MAPE: 10.263184839655274
+Auto-ARIMA MAE: 956.1953089418552
+Prophet MAE: 653.8682864837639
+Exponential smoothing MAE: 1667.805755244887
+Theta(2) MAE: 944.0038491197353
+FFT(nr_freqs_to_keep=10, trend=None) MAE: 643.337489093281
 </pre></div></div>
 </div>
 </section>
