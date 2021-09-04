@@ -40,6 +40,13 @@ from .linear_regression_model import LinearRegressionModel
 from .random_forest import RandomForest
 from .regression_model import RegressionModel
 
+try:
+    from .gradient_boosted_model import LightGBMModel
+except:
+    logger.warning("Support for LightGBM not available. To enable LightGBM support in Darts, follow the detailed "
+                   "install instructions for LightGBM in the README: "
+                   "https://github.com/unit8co/darts/blob/master/README.md")
+
 # Ensembling
 from .ensemble_model import EnsembleModel
 from .baselines import NaiveEnsembleModel
