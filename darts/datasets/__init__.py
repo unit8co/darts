@@ -13,7 +13,7 @@ from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
     ts: TimeSeries = AirPassengersDataset.load()
 """
 
-_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/develop/datasets"
+_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/master/datasets"
 
 
 class AirPassengersDataset(DatasetLoaderCSV):

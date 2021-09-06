@@ -1,6 +1,6 @@
 # Time Series Made Easy in Python
 
-![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts")
+![darts](https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png "darts")
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
@@ -80,7 +80,7 @@ plt.legend()
 ```
 
 <div style="text-align:center;">
-<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
+<img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
 </div>
 
 We invite you to go over the example and tutorial notebooks in
