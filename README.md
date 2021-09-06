@@ -182,6 +182,7 @@ Don't forget to activate your virtual environment
 As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
 * Install darts with all available models (recommended): `conda install -c conda-forge u8darts-all`.
+* Install core + neural networks (PyTorch): `conda install -c conda-forge u8darts-torch`
 * Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
 
 
