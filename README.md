@@ -201,12 +201,12 @@ we also maintain the `u8darts` package, which provides the following alternate l
 * Install core + Facebook Prophet: `pip install 'u8darts[prophet]'`
 * Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
 
-### Enabling Support for LightGBM
+#### Enabling Support for LightGBM
 
 To enable support for LightGBM in Darts, please follow the 
 [installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
 
-#### MacOS Issues with LightGBM
+##### MacOS Issues with LightGBM
 At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
 [segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
 Here's the procedure to downgrade the ``libomp`` library (from the 
