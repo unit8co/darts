@@ -224,7 +224,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         output_dim = train_sample[-1].shape[1]
 
         target_size = (
-            self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
+            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
         )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             model = _RNNModule(name=self.rnn_type_or_module,
@@ -269,7 +269,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
     def _produce_predict_output(self, input, last_hidden_state=None):
         if self.likelihood:
             output, hidden = self.model(input, last_hidden_state)
-            return self.likelihood._sample(output), hidden
+            return self.likelihood.sample(output), hidden
         else:
             return self.model(input, last_hidden_state)
 

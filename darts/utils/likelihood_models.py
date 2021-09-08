@@ -18,7 +18,7 @@ class LikelihoodModel(ABC):
         pass
 
     @abstractmethod
-    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
@@ -26,7 +26,7 @@ class LikelihoodModel(ABC):
         pass
 
     @abstractmethod
-    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Samples a prediction from the probability distributions defined by the specific likelihood model
         and the parameters given in `model_output`.
@@ -35,7 +35,7 @@ class LikelihoodModel(ABC):
 
     @property
     @abstractmethod
-    def _num_parameters(self) -> int:
+    def num_parameters(self) -> int:
         """
         Returns the number of parameters that define the probability distribution for one single
         target value.
@@ -52,16 +52,16 @@ class GaussianLikelihoodModel(LikelihoodModel):
         self.softplus = nn.Softplus()
         super().__init__()
 
-    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
         return self.loss(model_output_means.contiguous(), target.contiguous(), model_output_vars.contiguous())
 
-    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
         return torch.normal(model_output_means, model_output_vars)
 
     @property
-    def _num_parameters(self) -> int:
+    def num_parameters(self) -> int:
         return 2
 
     def _means_and_vars_from_model_output(self, model_output):
@@ -82,16 +82,16 @@ class PoissonLikelihoodModel(LikelihoodModel):
         self.softplus = nn.Softplus()
         super().__init__()
 
-    def _compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         model_output = self._lambda_from_output(model_output)
         return self.loss(model_output, target)
 
-    def _sample(self, model_output: torch.Tensor) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_lambda = self._lambda_from_output(model_output)
         return torch.poisson(model_lambda)
 
     @property
-    def _num_parameters(self) -> int:
+    def num_parameters(self) -> int:
         return 1
 
     def _lambda_from_output(self, model_output):
