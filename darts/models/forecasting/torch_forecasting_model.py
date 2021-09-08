@@ -1004,7 +1004,7 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
 
     def _compute_loss(self, output, target):
         if self.likelihood:
-            return self.likelihood._compute_loss(output, target)
+            return self.likelihood.compute_loss(output, target)
         else:
             return super()._compute_loss(output, target)
 
