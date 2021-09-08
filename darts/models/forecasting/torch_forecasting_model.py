@@ -32,31 +32,31 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 
-from ..timeseries import TimeSeries
-from ..utils import _build_tqdm_iterator
-from ..utils.torch import random_method
+from darts.timeseries import TimeSeries
+from darts.utils import _build_tqdm_iterator
+from darts.utils.torch import random_method
 
-from ..utils.data.training_dataset import (TrainingDataset,
-                                           PastCovariatesTrainingDataset,
-                                           FutureCovariatesTrainingDataset,
-                                           DualCovariatesTrainingDataset,
-                                           MixedCovariatesTrainingDataset,
-                                           SplitCovariatesTrainingDataset)
-from ..utils.data.inference_dataset import (InferenceDataset,
-                                            PastCovariatesInferenceDataset,
-                                            FutureCovariatesInferenceDataset,
-                                            DualCovariatesInferenceDataset,
-                                            MixedCovariatesInferenceDataset,
-                                            SplitCovariatesInferenceDataset)
-from ..utils.data.sequential_dataset import (PastCovariatesSequentialDataset,
-                                             FutureCovariatesSequentialDataset,
-                                             DualCovariatesSequentialDataset,
-                                             MixedCovariatesSequentialDataset,
-                                             SplitCovariatesSequentialDataset)
+from darts.utils.data.training_dataset import (TrainingDataset,
+                                               PastCovariatesTrainingDataset,
+                                               FutureCovariatesTrainingDataset,
+                                               DualCovariatesTrainingDataset,
+                                               MixedCovariatesTrainingDataset,
+                                               SplitCovariatesTrainingDataset)
+from darts.utils.data.inference_dataset import (InferenceDataset,
+                                                PastCovariatesInferenceDataset,
+                                                FutureCovariatesInferenceDataset,
+                                                DualCovariatesInferenceDataset,
+                                                MixedCovariatesInferenceDataset,
+                                                SplitCovariatesInferenceDataset)
+from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset,
+                                                 FutureCovariatesSequentialDataset,
+                                                 DualCovariatesSequentialDataset,
+                                                 MixedCovariatesSequentialDataset,
+                                                 SplitCovariatesSequentialDataset)
 
-from ..utils.likelihood_models import LikelihoodModel
-from ..logging import raise_if_not, get_logger, raise_log, raise_if
-from .forecasting_model import GlobalForecastingModel
+from darts.utils.likelihood_models import LikelihoodModel
+from darts.logging import raise_if_not, get_logger, raise_log, raise_if
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 DEFAULT_DARTS_FOLDER = '.darts'
 CHECKPOINTS_FOLDER = 'checkpoints'

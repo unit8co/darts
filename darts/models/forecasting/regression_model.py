@@ -25,10 +25,10 @@ denoting past lags and positive values including 0 denoting future lags).
 from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
 
-from ..timeseries import TimeSeries
+from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
-from .forecasting_model import GlobalForecastingModel
-from ..logging import raise_if, raise_if_not, get_logger, raise_log
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.logging import raise_if, raise_if_not, get_logger, raise_log
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 

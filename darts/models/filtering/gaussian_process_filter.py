@@ -10,8 +10,8 @@ from darts.timeseries import TimeSeries
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
 
-from ..utils.utils import raise_if_not
-from .filtering_model import FilteringModel
+from darts.utils.utils import raise_if_not
+from darts.models.filtering.filtering_model import FilteringModel
 
 
 class GaussianProcessFilter(FilteringModel):

@@ -6,10 +6,10 @@ Facebook Prophet
 from typing import Optional
 import logging
 
-from ..timeseries import TimeSeries
-from .forecasting_model import ForecastingModel
+from darts.timeseries import TimeSeries
+from darts.models.forecasting.forecasting_model import ForecastingModel
 import pandas as pd
-from ..logging import get_logger, execute_and_suppress_output
+from darts.logging import get_logger, execute_and_suppress_output
 import prophet
 
 

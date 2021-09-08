@@ -9,9 +9,9 @@ import torch
 import torch.nn as nn
 from typing import Optional, Union, Tuple
 
-from ..utils.torch import random_method
-from ..logging import get_logger
-from .torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.torch import random_method
+from darts.logging import get_logger
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 

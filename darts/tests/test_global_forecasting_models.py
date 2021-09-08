@@ -1,5 +1,5 @@
 import numpy as np
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import patch, ANY
 
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
@@ -7,7 +7,7 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
-from ..models.torch_forecasting_model import DualCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -226,9 +226,9 @@ if TORCH_AVAILABLE:
 
                 self.assertEqual(pred1, pred2, 'Model {} produces different predictions with different number of jobs')
 
-        @patch('darts.models.torch_forecasting_model.torch.save')
-        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
-        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        @patch('darts.models.forecasting.torch_forecasting_model.torch.save')
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.forecasting.torch_forecasting_model.shutil.rmtree')
         def test_fit_with_constr_epochs(self, rmtree_patch, train_patch, save_patch):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
@@ -237,9 +237,9 @@ if TORCH_AVAILABLE:
 
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs['n_epochs'])
 
-        @patch('darts.models.torch_forecasting_model.torch.save')
-        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
-        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        @patch('darts.models.forecasting.torch_forecasting_model.torch.save')
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.forecasting.torch_forecasting_model.shutil.rmtree')
         def test_fit_with_fit_epochs(self, rmtree_patch, train_patch, save_patch):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
@@ -256,9 +256,9 @@ if TORCH_AVAILABLE:
 
                 train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
 
-        @patch('darts.models.torch_forecasting_model.torch.save')
-        @patch('darts.models.torch_forecasting_model.TorchForecastingModel._train')
-        @patch('darts.models.torch_forecasting_model.shutil.rmtree')
+        @patch('darts.models.forecasting.torch_forecasting_model.torch.save')
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train')
+        @patch('darts.models.forecasting.torch_forecasting_model.shutil.rmtree')
         def test_fit_from_dataset_with_epochs(self, rmtree_patch, train_patch, save_patch):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)

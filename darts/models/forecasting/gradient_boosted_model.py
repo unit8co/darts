@@ -8,10 +8,10 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/README.md
 """
 
-from ..logging import get_logger
+from darts.logging import get_logger
 from typing import Union, Optional, Sequence, List, Tuple
-from .regression_model import RegressionModel
-from ..timeseries import TimeSeries
+from darts.models.forecasting.regression_model import RegressionModel
+from darts.timeseries import TimeSeries
 import lightgbm as lgb
 
 logger = get_logger(__name__)

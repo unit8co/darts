@@ -9,11 +9,11 @@ from typing import Optional, List
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
-from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
-from .forecasting_model import ForecastingModel
-from ..logging import raise_log, get_logger, raise_if_not
-from ..timeseries import TimeSeries
-from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.logging import raise_log, get_logger, raise_if_not
+from darts.timeseries import TimeSeries
+from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
 
 logger = get_logger(__name__)
 ALPHA_START = 0.2
@@ -363,7 +363,7 @@ class FourTheta(ForecastingModel):
             The best performing model on the time series.
         """
         # Only import if needed
-        from ..metrics import mae
+        from darts.metrics import mae
         if thetas is None:
             thetas = [1, 2, 3]
         if (ts.values() <= 0).any():
