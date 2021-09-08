@@ -12,7 +12,7 @@ from typing import Optional, Union, Sequence, Tuple
 from darts.timeseries import TimeSeries
 from darts.utils.torch import random_method
 from darts.utils.data import PastCovariatesShiftedDataset
-from darts.utils.likelihood_models import LikelihoodModel
+from darts.utils.likelihood_models import Likelihood
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
@@ -217,7 +217,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                  dilation_base: int = 2,
                  weight_norm: bool = False,
                  dropout: float = 0.2,
-                 likelihood: Optional[LikelihoodModel] = None,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -344,12 +344,12 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                                             shift=self.output_chunk_length)
     
     @random_method
-    def _produce_predict_output(self, input):
+    def _produce_predict_output(self, x):
         if self.likelihood:
-            output = self.model(input)
+            output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(input)
+            return self.model(x)
 
     @property
     def first_prediction_index(self) -> int:

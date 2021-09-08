@@ -12,7 +12,9 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
-from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
+                                                              PastCovariatesTorchModel)
+from darts.utils.likelihood_models import Likelihood
 
 logger = get_logger(__name__)
 
@@ -357,7 +359,7 @@ class _NBEATSModule(nn.Module):
         return y
 
 
-class NBEATSModel(PastCovariatesTorchModel):
+class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -369,6 +371,7 @@ class NBEATSModel(PastCovariatesTorchModel):
                  layer_widths: Union[int, List[int]] = 256,
                  expansion_coefficient_dim: int = 5,
                  trend_polynomial_degree: int = 2,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -459,7 +462,7 @@ class NBEATSModel(PastCovariatesTorchModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        super().__init__(**kwargs)
+        super().__init__(likelihood=likelihood, **kwargs)
 
         raise_if_not(isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
                      "Please pass an integer or a list of integers with length `num_stacks`"
@@ -486,9 +489,13 @@ class NBEATSModel(PastCovariatesTorchModel):
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
 
+        target_size = (
+            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
+        )
+
         return _NBEATSModule(
             input_dim=input_dim,
-            output_dim=output_dim,
+            output_dim=target_size,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             generic_architecture=self.generic_architecture,
@@ -499,3 +506,11 @@ class NBEATSModel(PastCovariatesTorchModel):
             expansion_coefficient_dim=self.expansion_coefficient_dim,
             trend_polynomial_degree=self.trend_polynomial_degree
         )
+
+    @random_method
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self.model(x)
+            return self.likelihood.sample(output)
+        else:
+            return self.model(x)

@@ -8,7 +8,7 @@ import torch
 from numpy.random import RandomState
 from typing import List, Optional, Union, Tuple
 
-from darts.utils.likelihood_models import LikelihoodModel
+from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger
 from darts.utils.torch import random_method
 from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
@@ -123,7 +123,7 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
                  n_rnn_layers: int = 1,
                  hidden_fc_sizes: Optional[List] = None,
                  dropout: float = 0.,
-                 likelihood: Optional[LikelihoodModel] = None,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -251,9 +251,9 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
         return model
 
     @random_method
-    def _produce_predict_output(self, input):
+    def _produce_predict_output(self, x):
         if self.likelihood:
-            output = self.model(input)
+            output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(input)
+            return self.model(x)

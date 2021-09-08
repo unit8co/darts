@@ -54,7 +54,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
 
-from darts.utils.likelihood_models import LikelihoodModel
+from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
@@ -982,7 +982,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 
 class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
-    def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
+    def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
         This is a base class for pytroch parametric probabilistic models. "Parametric"

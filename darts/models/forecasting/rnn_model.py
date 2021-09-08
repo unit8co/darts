@@ -13,7 +13,7 @@ from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
 from darts.utils.torch import random_method
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
-from darts.utils.likelihood_models import LikelihoodModel
+from darts.utils.likelihood_models import Likelihood
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ class _RNNModule(nn.Module):
             The fraction of neurons that are dropped in all-but-last RNN layers.
         likelihood
             Optionally, the likelihood model to be used for probabilistic forecasts.
-            Expects an instance of 'darts.utils.likelihood_model.LikelihoodModel'.
+            Expects an instance of 'darts.utils.likelihood_model.Likelihood'.
 
         Inputs
         ------
@@ -104,7 +104,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                  n_rnn_layers: int = 1,
                  dropout: float = 0.,
                  training_length: int = 24,
-                 likelihood: Optional[LikelihoodModel] = None,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -266,12 +266,12 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         return self.model(model_input)[0]
 
     @random_method
-    def _produce_predict_output(self, input, last_hidden_state=None):
+    def _produce_predict_output(self, x, last_hidden_state=None):
         if self.likelihood:
-            output, hidden = self.model(input, last_hidden_state)
+            output, hidden = self.model(x, last_hidden_state)
             return self.likelihood.sample(output), hidden
         else:
-            return self.model(input, last_hidden_state)
+            return self.model(x, last_hidden_state)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
