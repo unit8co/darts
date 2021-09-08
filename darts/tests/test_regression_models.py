@@ -534,8 +534,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         split_index = 450
         model.fit(series=self.ts_sum1[:split_index],
                   past_covariates=self.ts_cov1[:split_index],
-                  eval_series=self.ts_sum1[split_index:],
-                  eval_past_covariates=self.ts_cov1[split_index:],
+                  val_series=self.ts_sum1[split_index:],
+                  val_past_covariates=self.ts_cov1[split_index:],
                   early_stopping_rounds=2,
                   )
 
