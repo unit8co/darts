@@ -159,7 +159,7 @@ class TimeSeries:
                     for x
                     in range(len(time_index) - samples_size + 1)]
 
-                observed_frequencies = set(filter(None.__ne__, observed_frequencies))
+                observed_frequencies = set(obs_freq for obs_freq in observed_frequencies if obs_freq is not None)
 
                 raise_if_not(
                     len(observed_frequencies) == 1,
