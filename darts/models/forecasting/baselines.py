@@ -8,10 +8,10 @@ A collection of simple benchmark models for univariate series.
 from typing import List, Optional
 import numpy as np
 
-from .forecasting_model import ForecastingModel
-from .ensemble_model import EnsembleModel
-from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.ensemble_model import EnsembleModel
+from darts.timeseries import TimeSeries
+from darts.logging import raise_if_not, get_logger
 
 logger = get_logger(__name__)
 

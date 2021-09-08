@@ -9,13 +9,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
 from typing import Optional, Union, Sequence, Tuple
-from ..timeseries import TimeSeries
-from ..utils.torch import random_method
-from ..utils.data import PastCovariatesShiftedDataset
-from ..utils.likelihood_models import LikelihoodModel
+from darts.timeseries import TimeSeries
+from darts.utils.torch import random_method
+from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.likelihood_models import LikelihoodModel
 
-from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+from darts.logging import raise_if_not, get_logger
+from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 

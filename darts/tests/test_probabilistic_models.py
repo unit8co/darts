@@ -5,7 +5,7 @@ from ..utils import timeseries_generation as tg
 from ..metrics import mae
 from ..logging import get_logger
 from darts.models import ExponentialSmoothing, ARIMA
-from darts.models.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 logger = get_logger(__name__)
 

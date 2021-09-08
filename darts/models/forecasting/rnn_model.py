@@ -7,13 +7,13 @@ import torch.nn as nn
 import torch
 from numpy.random import RandomState
 from typing import Sequence, Optional, Union, Tuple
-from ..timeseries import TimeSeries
+from darts.timeseries import TimeSeries
 
-from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
-from ..utils.torch import random_method
-from ..utils.data import DualCovariatesShiftedDataset, TrainingDataset
-from ..utils.likelihood_models import LikelihoodModel
+from darts.logging import raise_if_not, get_logger
+from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
+from darts.utils.torch import random_method
+from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
+from darts.utils.likelihood_models import LikelihoodModel
 
 logger = get_logger(__name__)
 

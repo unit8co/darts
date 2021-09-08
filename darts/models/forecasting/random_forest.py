@@ -14,9 +14,9 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
-from ..logging import get_logger
+from darts.logging import get_logger
 from typing import Optional, Union, Tuple, List
-from .regression_model import RegressionModel
+from darts.models.forecasting.regression_model import RegressionModel
 from sklearn.ensemble import RandomForestRegressor
 
 logger = get_logger(__name__)

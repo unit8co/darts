@@ -8,9 +8,9 @@ import torch
 from numpy.random import RandomState
 from typing import List, Optional, Union, Tuple
 
-from ..logging import raise_if_not, get_logger
-from ..utils.torch import random_method
-from .torch_forecasting_model import PastCovariatesTorchModel
+from darts.logging import raise_if_not, get_logger
+from darts.utils.torch import random_method
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 

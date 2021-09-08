@@ -7,7 +7,7 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from typing import List
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
-from darts.models.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
 
 logger = get_logger(__name__)
