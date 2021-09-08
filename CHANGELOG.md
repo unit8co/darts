@@ -3,8 +3,8 @@
 
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
-## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.11.0...develop)
+## [Unreleased](https://github.com/unit8co/darts/tree/master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.11.0...master)
 
 ## [0.11.0](https://github.com/unit8co/darts/tree/0.11.0) (2021-09-04)
 ### For users of the library:
@@ -181,7 +181,7 @@ more closely.
 
 ### For developers of the library:
 **Added:**
-- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/develop/CONTRIBUTE.md).
+- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTE.md).
 
 ## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
 
@@ -334,7 +334,7 @@ All implementations of `GlobalForecastingModel`s support multivariate time serie
 ### For developers of the library
 **Changed:**
 - GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
-- (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
+- (A limited number of) notebook examples are now run as part of the GitHub PR workflow.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 
