@@ -306,17 +306,19 @@ class RegressionModel(GlobalForecastingModel):
         max_samples_per_ts: Optional[int] = None,
         **kwargs
     ) -> None:
-        """Fits/trains the model using the provided list of features time series and the target time series.
+        """
+        Fits/trains the model using the provided list of features time series and the target time series.
+
         Parameters
         ----------
-        series : Union[TimeSeries, Sequence[TimeSeries]]
+        series
             TimeSeries or Sequence[TimeSeries] object containing the target values.
         past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts : int
-            This is an upper bound on the number of tuples that can be produced
+        max_samples_per_ts
+            This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
             ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
             creation) to know their sizes, which might be expensive on big datasets.
