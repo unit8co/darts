@@ -84,7 +84,7 @@ class _ResidualBlock(nn.Module):
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
-        if nr_blocks_below == 0 or nr_blocks_below == num_layers - 1:
+        if nr_blocks_below in (0, num_layers - 1) and input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
 
     def forward(self, x):
