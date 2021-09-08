@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 
-class LikelihoodModel(ABC):
+class Likelihood(ABC):
 
     def __init__(self):
         """
@@ -43,7 +43,7 @@ class LikelihoodModel(ABC):
         pass
 
 
-class GaussianLikelihoodModel(LikelihoodModel):
+class GaussianLikelihood(Likelihood):
     """
     Gaussian Likelihood
     """
@@ -71,7 +71,7 @@ class GaussianLikelihoodModel(LikelihoodModel):
         return output_means, output_vars
 
 
-class PoissonLikelihoodModel(LikelihoodModel):
+class PoissonLikelihood(Likelihood):
     """
     Poisson Likelihood; can typically be used to model event counts in fixed intervals
     https://en.wikipedia.org/wiki/Poisson_distribution

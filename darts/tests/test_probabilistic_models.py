@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 try:
     from ..models import RNNModel, TCNModel
-    from darts.utils.likelihood_models import GaussianLikelihoodModel
+    from darts.utils.likelihood_models import GaussianLikelihood
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')
@@ -25,9 +25,9 @@ models_cls_kwargs_errs = [
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs += [
         (RNNModel, {'input_chunk_length': 2, 'training_length': 10, 'n_epochs': 20, 'random_state': 0,
-                    'likelihood': GaussianLikelihoodModel()}, 1.9),
+                    'likelihood': GaussianLikelihood()}, 1.9),
         (TCNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 60, 'random_state': 0,
-                    'likelihood': GaussianLikelihoodModel()}, 0.28)
+                    'likelihood': GaussianLikelihood()}, 0.28)
     ]
 
 
