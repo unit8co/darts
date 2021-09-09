@@ -4,8 +4,12 @@ Likelihood Models
 """
 
 from abc import ABC, abstractmethod
+from typing import Optional
+
 import torch
 import torch.nn as nn
+from torch.distributions.normal import Normal
+from torch.distributions.kl import kl_divergence
 
 
 class Likelihood(ABC):
@@ -45,16 +49,37 @@ class Likelihood(ABC):
 
 class GaussianLikelihood(Likelihood):
     """
-    Gaussian Likelihood
+    Univariate Gaussian Likelihood
+    Components are modeled by separate univariate distributions, with optional time-independent priors.
     """
-    def __init__(self):
-        self.loss = nn.GaussianNLLLoss(reduction='mean')
+    def __init__(self, prior_mu: Optional[float] = None, prior_sigma: Optional[float] = None, beta=1.):
+        self.prior_mu = prior_mu
+        self.prior_sigma = prior_sigma
+        self.use_prior = self.prior_mu is not None or self.prior_sigma is not None
+        self.beta = beta
+
+        self.nllloss = nn.GaussianNLLLoss(reduction='mean', full=True)
         self.softplus = nn.Softplus()
+
         super().__init__()
 
     def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
-        return self.loss(model_output_means.contiguous(), target.contiguous(), model_output_vars.contiguous())
+        out_means, out_sigmas = self._means_and_vars_from_model_output(model_output)
+        loss = self.nllloss(out_means.contiguous(),  # TODO: can remove contiguous?
+                            target.contiguous(),
+                            out_sigmas.contiguous())
+
+        if self.use_prior:
+            out_distr = Normal(out_means, out_sigmas)
+
+            prior_mu = torch.tensor(self.prior_mu).to(out_means.device) if self.prior_mu is not None else out_means
+            prior_sigma = torch.tensor(self.prior_sigma).to(out_means.device) if self.prior_sigma is not None else out_sigmas
+            prior_distr = Normal(prior_mu, prior_sigma)
+
+            # add KL term
+            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
+
+        return loss
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
