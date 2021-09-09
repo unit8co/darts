@@ -8,12 +8,13 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-from torch.distributions import Normal, Poisson
+
+# TODO: rename internally to avoid exports
+from torch.distributions import Normal, Poisson, NegativeBinomial
 from torch.distributions.kl import kl_divergence
 
 
 class Likelihood(ABC):
-
     def __init__(self):
         """
         Abstract class for a likelihood model. It contains all the logic to compute the loss
@@ -155,3 +156,56 @@ class PoissonLikelihood(Likelihood):
 
     def _lambda_from_output(self, model_output):
         return self.softplus(model_output)
+
+
+class NegativeBinomialLikelihood(Likelihood):
+    def __init__(self, prior_mu: Optional[float] = None, prior_alpha: Optional[float] = None, beta=1.):
+        """
+        Negative Binomial Likelihood
+        """
+        self.prior_mu = prior_mu
+        self.prior_alpha = prior_alpha
+        self.beta = beta
+        self.use_prior = self.prior_mu is not None or self.prior_alpha is not None
+
+        self.softplus = nn.Softplus()
+        super().__init__()
+
+    @staticmethod
+    def _get_r_and_p_from_mu_and_alpha(mu, alpha):
+        # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations
+        r = 1. / alpha
+        p = r / (mu + r)
+        return r, p
+
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
+        mu_out, alpha_out = self._means_and_alphas_from_model_output(model_output)
+
+        r_out, p_out = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu_out, alpha_out)
+        out_distr = NegativeBinomial(r_out, p_out)
+
+        # take negative log likelihood as loss
+        loss = - out_distr.log_prob(target).mean()
+        if self.use_prior:
+            prior_mu = torch.tensor(self.prior_mu).to(mu_out.device) if self.prior_mu is not None else mu_out
+            prior_alpha = torch.tensor(self.prior_alpha).to(mu_out.device) if self.prior_alpha is not None else alpha_out
+            prior_r, prior_p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(prior_mu, prior_alpha)
+            prior_distr = NegativeBinomial(prior_r, prior_p)
+            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
+        return loss
+
+    def sample(self, model_output: torch.Tensor):
+        mu, alpha = self._means_and_alphas_from_model_output(model_output)
+        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
+        distr = NegativeBinomial(r, p)
+        return distr.sample()
+
+    def _means_and_alphas_from_model_output(self, model_output):
+        output_size = model_output.shape[-1]
+        output_means = self.softplus(model_output[:, :, :output_size // 2])
+        output_alphas = self.softplus(model_output[:, :, output_size // 2:])
+        return output_means, output_alphas
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
