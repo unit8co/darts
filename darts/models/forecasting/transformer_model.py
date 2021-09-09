@@ -9,9 +9,11 @@ import torch
 import torch.nn as nn
 from typing import Optional, Union, Tuple
 
+from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.logging import get_logger
-from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
+                                                              PastCovariatesTorchModel)
 
 logger = get_logger(__name__)
 
@@ -179,7 +181,7 @@ class _TransformerModule(nn.Module):
         return predictions
 
 
-class TransformerModel(PastCovariatesTorchModel):
+class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -193,6 +195,7 @@ class TransformerModel(PastCovariatesTorchModel):
                  activation: str = "relu",
                  custom_encoder: Optional[nn.Module] = None,
                  custom_decoder: Optional[nn.Module] = None,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -249,6 +252,9 @@ class TransformerModel(PastCovariatesTorchModel):
             a custom user-provided encoder module for the transformer (default=None)
         custom_decoder
             a custom user-provided decoder module for the transformer (default=None)
+        likelihood
+            Optionally, the likelihood model to be used for probabilistic forecasts.
+            If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Controls the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -297,7 +303,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        super().__init__(**kwargs)
+        super().__init__(likelihood=likelihood, **kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -316,10 +322,13 @@ class TransformerModel(PastCovariatesTorchModel):
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
 
+        target_size = (
+            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
+        )
         return _TransformerModule(input_chunk_length=self.input_chunk_length,
                                   output_chunk_length=self.output_chunk_length,
                                   input_size=input_dim,
-                                  output_size=output_dim,
+                                  output_size=target_size,
                                   d_model=self.d_model,
                                   nhead=self.nhead,
                                   num_encoder_layers=self.num_encoder_layers,
@@ -329,4 +338,12 @@ class TransformerModel(PastCovariatesTorchModel):
                                   activation=self.activation,
                                   custom_encoder=self.custom_encoder,
                                   custom_decoder=self.custom_decoder)
+
+    @random_method
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self.model(x)
+            return self.likelihood.sample(output)
+        else:
+            return self.model(x)
 
