@@ -65,6 +65,7 @@ class _Block(nn.Module):
                  expansion_coefficient_dim: int,
                  input_chunk_length: int,
                  target_length: int,
+                 nr_params: int,
                  g_type: GTypes):
         """ PyTorch module implementing the basic building block of the N-BEATS architecture.
 
@@ -81,6 +82,8 @@ class _Block(nn.Module):
             The length of the input sequence fed to the model.
         target_length
             The length of the forecast of the model.
+        nr_params
+            This is 1 for deterministic models, and otherwise equal to the number of parameters of the likelihood
         g_type
             The type of function that is implemented by the waveform generator.
 
@@ -359,7 +362,7 @@ class _NBEATSModule(nn.Module):
         return y
 
 
-class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
+class NBEATSModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -371,7 +374,6 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
                  layer_widths: Union[int, List[int]] = 256,
                  expansion_coefficient_dim: int = 5,
                  trend_polynomial_degree: int = 2,
-                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -462,7 +464,7 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        super().__init__(**kwargs)
 
         raise_if_not(isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
                      "Please pass an integer or a list of integers with length `num_stacks`"
@@ -489,13 +491,9 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
-
         return _NBEATSModule(
             input_dim=input_dim,
-            output_dim=target_size,
+            output_dim=output_dim,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             generic_architecture=self.generic_architecture,
@@ -506,11 +504,3 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             expansion_coefficient_dim=self.expansion_coefficient_dim,
             trend_polynomial_degree=self.trend_polynomial_degree
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x)
