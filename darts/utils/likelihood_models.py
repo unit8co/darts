@@ -8,7 +8,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-from torch.distributions.normal import Normal
+from torch.distributions import Normal, Poisson
 from torch.distributions.kl import kl_divergence
 
 
@@ -17,7 +17,10 @@ class Likelihood(ABC):
     def __init__(self):
         """
         Abstract class for a likelihood model. It contains all the logic to compute the loss
-        and to sample the distribution, given the parameters of the distribution
+        and to sample the distribution, given the parameters of the distribution.
+        It also allows for users to specify "prior" beliefs about the distribution parameters.
+        In such cases, the a KL-divergence term is added to the loss in order to regularise it in the
+        direction of the prior distribution. The parameter `beta` controls the strength of the regularisation.
         """
         pass
 
@@ -48,11 +51,23 @@ class Likelihood(ABC):
 
 
 class GaussianLikelihood(Likelihood):
-    """
-    Univariate Gaussian Likelihood
-    Components are modeled by separate univariate distributions, with optional time-independent priors.
-    """
     def __init__(self, prior_mu: Optional[float] = None, prior_sigma: Optional[float] = None, beta=1.):
+        """
+        Univariate Gaussian Likelihood
+        Components are modeled by separate univariate distributions, with optional time-independent priors.
+
+        It is possible to specify a prior on mu or sigma only. Leaving both to `None` won't be using a prior,
+        and corresponds to doing maximum likelihood.
+
+        Parameters
+        ----------
+        prior_mu
+            mean of the prior Gaussian distribution (default: None)
+        prior_sigma
+            standard deviation (or scale) of the prior Gaussian distribution (default: None)
+        beta
+            strength of the loss regularisation induced by the prior
+        """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
         self.use_prior = self.prior_mu is not None or self.prior_sigma is not None
@@ -97,19 +112,38 @@ class GaussianLikelihood(Likelihood):
 
 
 class PoissonLikelihood(Likelihood):
-    """
-    Poisson Likelihood; can typically be used to model event counts in fixed intervals
-    https://en.wikipedia.org/wiki/Poisson_distribution
-    """
+    def __init__(self, prior_lambda: Optional[float] = None, beta=1.):
+        """
+        Poisson Likelihood; can typically be used to model event counts during time intervals, when the events
+        happen independently of the time since the last event.
+        https://en.wikipedia.org/wiki/Poisson_distribution
 
-    def __init__(self):
-        self.loss = nn.PoissonNLLLoss(log_input=False)
+        It is possible to specify a time-independent prior rate `lambda` to capture a-priori
+        knowledge about the process. Leaving it to `None` won't be using a prior,
+        and corresponds to doing maximum likelihood.
+
+        Parameters
+        ----------
+        prior_lambda
+            rate of the prior Poisson distribution (default: None)
+        beta
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_lambda = prior_lambda
+        self.beta = beta
+
+        self.nllloss = nn.PoissonNLLLoss(log_input=False, full=True)
         self.softplus = nn.Softplus()
         super().__init__()
 
     def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        model_output = self._lambda_from_output(model_output)
-        return self.loss(model_output, target)
+        lambda_out = self._lambda_from_output(model_output)
+        loss = self.nllloss(lambda_out, target)
+        if self.prior_lambda is not None:
+            out_distr = Poisson(lambda_out)
+            prior_distr = Poisson(torch.tensor(self.prior_lambda).to(lambda_out.device))
+            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
+        return loss
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_lambda = self._lambda_from_output(model_output)
