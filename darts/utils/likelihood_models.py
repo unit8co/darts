@@ -159,15 +159,13 @@ class PoissonLikelihood(Likelihood):
 
 
 class NegativeBinomialLikelihood(Likelihood):
-    def __init__(self, prior_mu: Optional[float] = None, prior_alpha: Optional[float] = None, beta=1.):
+    def __init__(self):
         """
-        Negative Binomial Likelihood
-        """
-        self.prior_mu = prior_mu
-        self.prior_alpha = prior_alpha
-        self.beta = beta
-        self.use_prior = self.prior_mu is not None or self.prior_alpha is not None
+        Negative Binomial Likelihood.
+        https://en.wikipedia.org/wiki/Negative_binomial_distribution
 
+        It does not support priors.
+        """
         self.softplus = nn.Softplus()
         super().__init__()
 
@@ -186,12 +184,6 @@ class NegativeBinomialLikelihood(Likelihood):
 
         # take negative log likelihood as loss
         loss = - out_distr.log_prob(target).mean()
-        if self.use_prior:
-            prior_mu = torch.tensor(self.prior_mu).to(mu_out.device) if self.prior_mu is not None else mu_out
-            prior_alpha = torch.tensor(self.prior_alpha).to(mu_out.device) if self.prior_alpha is not None else alpha_out
-            prior_r, prior_p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(prior_mu, prior_alpha)
-            prior_distr = NegativeBinomial(prior_r, prior_p)
-            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
         return loss
 
     def sample(self, model_output: torch.Tensor):
