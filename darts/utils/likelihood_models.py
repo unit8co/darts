@@ -3,15 +3,35 @@ Likelihood Models
 -----------------
 """
 
+# TODO: Table on README listing distribution, possible priors and wiki article
+from darts.utils.utils import raise_if_not
+
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
-
-# TODO: rename internally to avoid exports
-from torch.distributions import Normal, Poisson, NegativeBinomial
 from torch.distributions.kl import kl_divergence
+from torch.distributions import (Normal as _Normal,
+                                 Poisson as _Poisson,
+                                 NegativeBinomial as _NegativeBinomial,
+                                 Bernoulli as _Bernoulli,
+                                 Laplace as _Laplace,
+                                 Beta as _Beta,
+                                 Exponential as _Exponential,
+                                 MultivariateNormal as _MultivariateNormal,
+                                 Dirichlet as _Dirichlet,
+                                 Geometric as _Geometric,
+                                 Binomial as _Binomial,
+                                 Cauchy as _Cauchy,
+                                 ContinuousBernoulli as _ContinuousBernoulli,
+                                 HalfNormal as _HalfNormal,
+                                 LogNormal as _LogNormal,
+                                 LowRankMultivariateNormal as _LowRankMultivariateNormal,  # scales?
+                                 Pareto as _Pareto,
+                                 Uniform as _Uniform,
+                                 Weibull as _Weibull
+                                 )
 
 
 class Likelihood(ABC):
@@ -25,11 +45,60 @@ class Likelihood(ABC):
         """
         pass
 
-    @abstractmethod
-    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor, ):
         """
         Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
+        """
+        params_out = self._params_from_output(model_output)
+        # out_distr = self._distr_from_params(params_out)
+        # loss = -out_distr.log_prob(target).mean()
+        loss = self._nllloss(params_out, target)
+
+        prior_params = self._prior_params
+        if prior_params is not None:
+            out_distr = self._distr_from_params(params_out)
+            device = params_out[0].device
+            prior_params = tuple([
+                # use model output as "prior" for parameters not specified as prior
+                torch.tensor(prior_params[i]).to(device) if prior_params[i] is not None else params_out[i]
+                for i in range(len(prior_params))
+            ])
+            prior_distr = self._distr_from_params(prior_params)
+
+            # Loss regularization using the prior distribution
+            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
+
+        return loss
+
+    def _nllloss(self, params_out, target):
+        """
+        This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which
+        PyTorch proposes a numerically better NLL loss.
+        """
+        out_distr = self._distr_from_params(params_out)
+        return -out_distr.log_prob(target).mean()
+
+    @property
+    def _prior_params(self):
+        """
+        Has to be overwritten by the Likelihood objects supporting specifying a prior distribution on the
+        outputs. If it returns None, no prior will be used and the model will be trained with plain maximum likelihood.
+        """
+        return None
+
+    @abstractmethod
+    def _distr_from_params(self, params: Tuple) -> torch.distributions.Distribution:
+        """
+        Returns a torch distribution built with the specified params
+        """
+        pass
+
+    @abstractmethod
+    def _params_from_output(self, model_output: torch.Tensor):
+        """
+        Returns the distribution parameters, obtained from the raw model outputs
+        (e.g. applies softplus or sigmoids to get parameters in the expected domains).
         """
         pass
 
@@ -51,8 +120,54 @@ class Likelihood(ABC):
         pass
 
 
+class BernoulliLikelihood(Likelihood):
+    def __init__(self, prior_p: Optional[float] = None, beta=1.):
+        """
+        Bernoulli Likelihood; can be used to model binary events in {0, 1}
+        https://en.wikipedia.org/wiki/Bernoulli_distribution
+
+        It is possible to specify a time-independent prior on the probability parameter `p` to capture a-priori
+        knowledge about the process. Leaving it to `None` won't be using a prior,
+        and corresponds to doing maximum likelihood.
+
+        Parameters
+        ----------
+        prior_p
+            probability `p` of the prior Bernoulli distribution, in (0, 1) (default: None)
+        beta
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_p = prior_p
+        if self.prior_p is not None:
+            raise_if_not(0 < self.prior_p < 1., 'The parameter p must be in the open interval (0, 1)')
+        self.beta = beta
+
+        self.sigmoid = nn.Sigmoid()
+        super().__init__()
+
+    @property
+    def _prior_params(self):
+        return (self.prior_p, ) if self.prior_p is not None else None
+
+    def _distr_from_params(self, params):
+        p = params[0]
+        return _Bernoulli(p)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_p = self._params_from_output(model_output)
+        return torch.bernoulli(model_p)
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        p = self.sigmoid(model_output)
+        return p
+
+
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu: Optional[float] = None, prior_sigma: Optional[float] = None, beta=1.):
+    def __init__(self, prior_mu=None, prior_sigma=None, beta=1.):
         """
         Univariate Gaussian Likelihood
         Components are modeled by separate univariate distributions, with optional time-independent priors.
@@ -60,10 +175,13 @@ class GaussianLikelihood(Likelihood):
         It is possible to specify a prior on mu or sigma only. Leaving both to `None` won't be using a prior,
         and corresponds to doing maximum likelihood.
 
+        For the prior parameters: if a scalar value is provided, one value will be used as prior for all components,
+        and if an array-like is provided, one value can be specified per component.
+
         Parameters
         ----------
         prior_mu
-            mean of the prior Gaussian distribution (default: None)
+            mean of the prior Gaussian distribution (default: None).
         prior_sigma
             standard deviation (or scale) of the prior Gaussian distribution (default: None)
         beta
@@ -71,7 +189,6 @@ class GaussianLikelihood(Likelihood):
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
-        self.use_prior = self.prior_mu is not None or self.prior_sigma is not None
         self.beta = beta
 
         self.nllloss = nn.GaussianNLLLoss(reduction='mean', full=True)
@@ -79,37 +196,35 @@ class GaussianLikelihood(Likelihood):
 
         super().__init__()
 
-    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        out_means, out_sigmas = self._means_and_vars_from_model_output(model_output)
-        loss = self.nllloss(out_means.contiguous(),  # TODO: can remove contiguous?
-                            target.contiguous(),
-                            out_sigmas.contiguous())
+    def _nllloss(self, params_out, target):
+        means_out, sigmas_out = params_out
+        return self.nllloss(means_out.contiguous(), target.contiguous(), sigmas_out.contiguous())
 
-        if self.use_prior:
-            out_distr = Normal(out_means, out_sigmas)
+    @property
+    def _prior_params(self):
+        # return None if no prior
+        if self.prior_mu is None and self.prior_sigma is None:
+            return None
+        else:
+            return self.prior_mu, self.prior_sigma
 
-            prior_mu = torch.tensor(self.prior_mu).to(out_means.device) if self.prior_mu is not None else out_means
-            prior_sigma = torch.tensor(self.prior_sigma).to(out_means.device) if self.prior_sigma is not None else out_sigmas
-            prior_distr = Normal(prior_mu, prior_sigma)
-
-            # add KL term
-            loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
-
-        return loss
+    def _distr_from_params(self, params):
+        mu, sigma = params
+        return _Normal(mu, sigma)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_output_means, model_output_vars = self._means_and_vars_from_model_output(model_output)
-        return torch.normal(model_output_means, model_output_vars)
+        mu, sigma = self._params_from_output(model_output)
+        return torch.normal(mu, sigma)
 
     @property
     def num_parameters(self) -> int:
         return 2
 
-    def _means_and_vars_from_model_output(self, model_output):
+    def _params_from_output(self, model_output):
         output_size = model_output.shape[-1]
-        output_means = model_output[:, :, :output_size // 2]
-        output_vars = self.softplus(model_output[:, :, output_size // 2:])
-        return output_means, output_vars
+        mu = model_output[:, :, :output_size // 2]
+        sigma = self.softplus(model_output[:, :, output_size // 2:])
+        return mu, sigma
 
 
 class PoissonLikelihood(Likelihood):
@@ -141,8 +256,8 @@ class PoissonLikelihood(Likelihood):
         lambda_out = self._lambda_from_output(model_output)
         loss = self.nllloss(lambda_out, target)
         if self.prior_lambda is not None:
-            out_distr = Poisson(lambda_out)
-            prior_distr = Poisson(torch.tensor(self.prior_lambda).to(lambda_out.device))
+            out_distr = _Poisson(lambda_out)
+            prior_distr = _Poisson(torch.tensor(self.prior_lambda).to(lambda_out.device))
             loss += self.beta * torch.mean(kl_divergence(prior_distr, out_distr))
         return loss
 
@@ -180,16 +295,16 @@ class NegativeBinomialLikelihood(Likelihood):
         mu_out, alpha_out = self._means_and_alphas_from_model_output(model_output)
 
         r_out, p_out = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu_out, alpha_out)
-        out_distr = NegativeBinomial(r_out, p_out)
+        out_distr = _NegativeBinomial(r_out, p_out)
 
         # take negative log likelihood as loss
-        loss = - out_distr.log_prob(target).mean()
+        loss = -out_distr.log_prob(target).mean()
         return loss
 
     def sample(self, model_output: torch.Tensor):
         mu, alpha = self._means_and_alphas_from_model_output(model_output)
         r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        distr = NegativeBinomial(r, p)
+        distr = _NegativeBinomial(r, p)
         return distr.sample()
 
     def _means_and_alphas_from_model_output(self, model_output):
@@ -201,3 +316,6 @@ class NegativeBinomialLikelihood(Likelihood):
     @property
     def num_parameters(self) -> int:
         return 2
+
+
+
