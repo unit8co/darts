@@ -685,3 +685,105 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         #  Linear7 doesn't exist
         with self.assertRaises(ValueError):
             series1.with_columns_renamed('linear7', 'linear5')
+
+    def test_to_csv_probabilistic_ts(self):
+        samples = [linear_timeseries(10), linear_timeseries(20), linear_timeseries(30)]
+        ts = TimeSeries.concatenate(samples, axis=2)
+        with self.assertRaises(AssertionError):
+            ts.to_csv('blah.csv')
+
+    def test_to_csv_deterministic(self):
+        pass
+
+
+class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
+
+    #
+    # COMPONENT TESTS
+    #
+
+    def test_concatenate_component_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='component')
+        self.assertEqual((10, 3, 1), ts._xa.shape)
+
+    def test_concatenate_component_different_time_axes_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-02-11'), freq='D')]
+
+        with self.assertRaises(AttributeError):
+            ts = TimeSeries.concatenate(samples, axis='component')
+
+    def test_concatenate_component_different_time_axes_with_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-02-11'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
+        self.assertEqual((10, 3, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-10'), ts.end_time())
+
+    def test_concatenate_component_different_time_axes_with_force_uneven_series(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=20, start_ts=pd.Timestamp('2000-02-11'), freq='D')]
+
+        with self.assertRaises(AttributeError):
+            TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
+
+    #
+    # SAMPLE TESTS
+    #
+
+    def test_concatenate_sample_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='sample')
+        self.assertEqual((10, 1, 3), ts._xa.shape)
+
+    #
+    # TIME TESTS
+    #
+
+    def test_concatenate_time_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-21'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='time')
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
+
+    def test_concatenate_time_same_time_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D')]
+
+        with self.assertRaises(AttributeError):
+            TimeSeries.concatenate(samples, axis='time')
+
+    def test_concatenate_time_same_time_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='time', ignore_time_axes=True)
+        self.assertEqual((10, 1, 1), ts._xa.shape)
+        self.assertEqual(samples[0], ts)
+
+    def test_concatenate_time_different_time_axes_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-12'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-18'), freq='D')]
+
+        with self.assertRaises(AttributeError):
+            TimeSeries.concatenate(samples, axis='time')
+
